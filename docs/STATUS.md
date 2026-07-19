@@ -67,16 +67,23 @@ depends on Rust yet.
 
 ## Next gate
 
-The bridge correctness gate remains a non-game diagnostic that records the
-enabled-extension list at `vkCreateDevice` and reproduces the new runtime's HDR
-proc behavior for that exact list. Only after that evidence should another
-startup experiment be designed, with an explicit choice between filtering the
-newly advertised HDR extension and providing a guarded compatibility
-implementation.
+No user launch or gameplay is requested at the current gate. Agent-owned work
+must happen first, in this order:
 
-In parallel, the performance gate is a repeat of the original-runtime baseline
-on a fixed route with paired Metal HUD captures before and after spontaneous
-recovery. This does not require or authorize another bridge installation.
+1. Wrap `vkCreateDevice` to record the exact enabled device-extension list.
+2. Filter `VK_EXT_hdr_metadata` from device-extension enumeration so the new
+   runtime presents the same decision path as embedded MoltenVK 1.0.18.
+3. Reproduce the filtered negotiation in a non-game probe, confirm all expected
+   proc results, rebuild from source, and pass static and Rosetta smoke checks.
+4. Prepare a separate startup-only experiment and its evidence collector. Only
+   then request explicit installation approval.
 
-Do not repeat either failed installation unchanged. Any next bridge run remains
-a startup evidence test, not a gameplay or performance test.
+If those checks pass, the sole user action will be a Steam-authenticated launch
+to character selection, a 60-second wait there, and exit: approximately 3-5
+minutes total, with no world entry, Metal HUD, screenshot, or performance
+measurement. The bridge log must prove MoltenVK 1.4.1 activation, HDR filtering,
+the device extension state, and the absence of the earlier unsafe HDR path.
+
+Performance investigation is deferred until a startup experiment proves that
+MoltenVK 1.4.1 remains active and stable. Do not repeat either failed
+installation unchanged.

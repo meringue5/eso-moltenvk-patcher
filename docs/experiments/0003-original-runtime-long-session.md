@@ -131,3 +131,11 @@ time, frame interval, app and Metal memory, thermal state, zone, camera, player
 density estimate, and cache hash. Keep this performance track separate from the
 next MoltenVK compatibility experiment, which still must resolve the HDR
 extension-negotiation mismatch before another installation.
+
+### 2026-07-19 planning amendment
+
+The performance follow-up above is deferred. It was premature to request a
+manual Metal HUD capture or further gameplay before resolving the active bridge
+correctness blocker. The authoritative next gate is now the agent-only HDR
+filtering, device-extension logging, and non-game validation sequence in
+[`docs/STATUS.md`](../STATUS.md). No user test is needed until that work passes.

@@ -6,15 +6,18 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P0: explain the first bridge crash
 
-- Record the exact device-extension names ESO passes to `vkCreateDevice` and
-  reproduce that advertised-versus-enabled state in the non-game probe.
-- Determine whether hiding `VK_EXT_hdr_metadata` during extension enumeration
-  restores the 1.0.18 decision path without changing unrelated capabilities.
-- Compare that filtering approach with a guarded compatibility implementation
-  of `vkSetHdrMetadataEXT`; prefer the smallest behavior that matches the old
-  runtime and fails closed on an unexpected device state.
-- Design a third startup-only experiment only after the negotiation mismatch is
-  reproduced without launching the game.
+- Add deterministic per-run logging and wrap `vkCreateDevice` to record its
+  enabled extension names without changing them.
+- Filter `VK_EXT_hdr_metadata` during device-extension enumeration and verify in
+  a non-game probe that this restores the 1.0.18 decision path without changing
+  unrelated capabilities.
+- Re-run wrapper/proc analysis, rebuild from source, and pass all non-game smoke
+  checks before preparing another installation.
+- Only after those gates pass, design a startup-only experiment whose user step
+  is limited to character selection plus a 60-second wait. Define log-based
+  pass/fail criteria and restore immediately after evidence collection.
+- If filtering does not remove the unsafe path, return to source and binary
+  analysis before considering a guarded `vkSetHdrMetadataEXT` implementation.
 
 ## P1: keep redirection verifiable
 
@@ -25,18 +28,18 @@ are in [Project status](STATUS.md); completed runs belong in the
   ownership before changing the redirect set.
 - Add a startup smoke mode that stops before account login or world entry.
 
-## P2: controlled performance experiments
+## P2: deferred controlled performance experiments
 
-- Use the Experiment 0003 embedded-runtime checkpoint for a fixed-zone,
-  fixed-route repeat before attributing any change to MoltenVK 1.4.1.
-- Capture paired Metal HUD states during the object-heavy 40-FPS condition and
-  after spontaneous recovery: FPS, GPU time, frame interval, app memory, Metal
-  memory, and thermal state.
-- Record route duration, camera, resolution, player-density estimate, settings
-  snapshot, and pipeline-cache hash. Preserve the warm cache before any
-  cold-cache comparison; never delete it.
-- Use GPU time versus frame interval to distinguish a GPU-work increase from a
-  CPU/submission/streaming stall before changing another option.
+- Do not request gameplay or performance telemetry until a startup experiment
+  proves that MoltenVK 1.4.1 is active and stable.
+- Before requesting a performance run, establish an automated measurement path
+  that does not depend on the currently unavailable Metal HUD or manual image
+  capture.
+- Retain Experiment 0003 only as the embedded-runtime settings and warm-cache
+  checkpoint; do not attribute its qualitative FPS change to MoltenVK 1.4.1.
+- When correctness is established, define a fixed-zone, fixed-route A/B with a
+  maximum duration, event-based stop condition, exact metrics, and pass/fail
+  criteria before asking the user to play.
 - Compare MoltenVK defaults against live-resource compatibility mode.
 - Evaluate asynchronous queue submission only after correctness is established.
 - Keep Metal argument buffers and command pooling at their 1.4.1 defaults first.

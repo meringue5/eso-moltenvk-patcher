@@ -120,6 +120,12 @@ state. Do not describe an unproven mode as a fix.
 
 - Separate confirmed observation, inference, and hypothesis in documentation.
 - Record exact build hashes, runtime versions, timestamps, and test modes.
+- Treat user-controlled launches and gameplay as scarce experimental actions.
+  Exhaust source analysis, non-game probes, static checks, and local log
+  inspection before requesting one. Every request must state the unresolved
+  question, exact hypothesis, why agent-only evidence is insufficient, maximum
+  duration, stop condition, required user actions, evidence to collect, and
+  pass/fail criteria. Do not request unrelated telemetry or exploratory play.
 - For performance A/B tests, hold zone, camera, resolution, settings, player
   density, and test duration as constant as possible.
 - Capture FPS, GPU time, frame interval, app memory, Metal memory, and thermal
