@@ -13,6 +13,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0003 | 2026-07-19 | Original-runtime long session | Inconclusive as override test; baseline captured | [Run](0003-original-runtime-long-session.md) |
 | 0004 | 2026-07-19 | HDR-advertisement-filtered startup | Failed at confirmed NULL HDR setter; evidence preserved, later restored for rebuild | [Run](0004-hdr-advertisement-filter-startup.md) |
 | 0005 | 2026-07-19 | Exact HDR surface-format filter | Succeeded at startup; failed rendering correctness | [Run](0005-hdr-surface-format-filter-startup.md) |
+| 0006 | 2026-07-19 | Metal argument buffers disabled | Planned; lobby-to-world correctness gate | [Plan](0006-metal-argument-buffers-disabled.md) |
 
 ## Recording policy
 

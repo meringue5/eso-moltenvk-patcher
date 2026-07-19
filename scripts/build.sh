@@ -44,6 +44,9 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" -o "$BUILD/probe_vulkan"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
+  -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_mvk_config.c" -o "$BUILD/probe_mvk_config"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -DTESO4M4_STATIC_MOLTENVK=1 -I"$ROOT/src" \
   -I"$MVK_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" "$LEGACY_MVK" \
@@ -69,4 +72,6 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
 "$BUILD/probe_self_patch"
 "$BUILD/probe_hdr_filter"
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" default
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" descriptor-compat
 echo "Built teso4m4 artifacts in $BUILD"

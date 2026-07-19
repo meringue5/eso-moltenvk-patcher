@@ -98,6 +98,19 @@ def evaluate_startup_log(
     if required_active not in lines:
         reasons.append(f"missing exact activation record: {required_active}")
     if (
+        "MODE: descriptor compatibility enabled live_resources=1 "
+        "metal_argument_buffers=0"
+        not in lines
+    ):
+        reasons.append("descriptor compatibility mode was not enabled")
+    if (
+        "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
+        "use_mtlheap=1 synchronous_queue_submits=1 command_pooling=1 "
+        "prefill=0"
+        not in lines
+    ):
+        reasons.append("the effective MoltenVK configuration was not verified")
+    if (
         "HDR_COMPAT: filter=enabled extension=VK_EXT_hdr_metadata"
         not in lines
     ):

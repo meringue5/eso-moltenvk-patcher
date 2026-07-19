@@ -91,6 +91,22 @@ GDPA, and exact surface-format removal from 60 raw to 59 visible entries. That
 proves the local compatibility transitions and successful device creation; it
 does not prove ESO startup behavior.
 
+## Descriptor compatibility mode
+
+Experiment 0006 adds a fail-closed `descriptor-compat` marker mode. Before
+loading MoltenVK it retains the live-resource check and disables only Metal
+argument buffers. After `dlopen`, the bridge queries
+`vkGetMoltenVKConfigurationMVK` and refuses to patch unless the effective
+runtime reports live-resource checking enabled, argument buffers disabled, and
+the controlled MTLHeap, queue-submit, command-pooling, and prefill values still
+at the 1.4.1 defaults used by Experiment 0005.
+
+This check distinguishes the effective runtime state from merely recording
+successful `setenv` calls. A separate non-game probe verifies both the clean
+1.4.1 default and the descriptor-compatible state in independent processes.
+Neither check establishes rendering correctness; only the staged ESO run can
+answer that question.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

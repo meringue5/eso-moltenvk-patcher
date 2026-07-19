@@ -10,8 +10,9 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > restoration became necessary for the next clean rebuild. The Experiment 0005
 > surface-format filter then prevented that call and completed its approved
 > character-selection test without a crash, but produced severe transient pink
-> output and persistent black-layer/shadow flicker. The installed checkpoint is
-> **not ready for gameplay**. See the
+> output and persistent black-layer/shadow flicker. Experiment 0006 disables
+> only Metal argument buffers and is not yet validated in ESO. No bridge build
+> is currently established as **ready for gameplay**. See the
 > [current status](docs/STATUS.md) before using any experimental tooling.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
@@ -50,8 +51,8 @@ Steam copy of ESO. No ESO or Bink binaries are distributed by this repository.
 ./scripts/build.sh
 ```
 
-Installation is deliberately gated because all live bridge builds tested so
-far crashed during graphics startup:
+Installation is deliberately gated because live bridge builds have crashed or
+produced severe rendering corruption during graphics startup:
 
 ```sh
 TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK ./scripts/install.sh

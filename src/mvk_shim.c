@@ -14,6 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <vulkan/vulkan.h>
+#include <MoltenVK/mvk_private_api.h>
 
 #include "mvk_compat.h"
 
@@ -146,7 +147,7 @@ static bool own_directory(char* output, size_t capacity) {
     return true;
 }
 
-static bool marker_mode(const char* directory, bool* live_check) {
+static bool marker_mode(const char* directory) {
     char path[4096];
     if (snprintf(path, sizeof(path), "%s/.teso4m4-enable", directory) >= (int)sizeof(path)) {
         return false;
@@ -159,13 +160,55 @@ static bool marker_mode(const char* directory, bool* live_check) {
     if (fgets(mode, sizeof(mode), marker)) {
         mode[strcspn(mode, "\r\n")] = '\0';
     }
-    if (strcmp(mode, "live-check") == 0) {
-        *live_check = true;
-    } else {
+    if (strcmp(mode, "descriptor-compat") != 0) {
         fclose(marker);
         return false;
     }
     fclose(marker);
+    return true;
+}
+
+static bool verify_moltenvk_configuration(void* moltenvk) {
+    PFN_vkGetMoltenVKConfigurationMVK get_configuration =
+        (PFN_vkGetMoltenVKConfigurationMVK)dlsym(
+            moltenvk, "vkGetMoltenVKConfigurationMVK");
+    if (!get_configuration) {
+        log_message("ERROR: MoltenVK configuration query is unavailable");
+        return false;
+    }
+
+    MVKConfiguration configuration = {0};
+    size_t configuration_size = sizeof(configuration);
+    VkResult result = get_configuration(
+        VK_NULL_HANDLE, &configuration, &configuration_size);
+    if (result != VK_SUCCESS || configuration_size != sizeof(configuration)) {
+        log_message(
+            "ERROR: MoltenVK configuration query failed result=%d size=%zu expected=%zu",
+            result, configuration_size, sizeof(configuration));
+        return false;
+    }
+
+    log_message(
+        "MOLTENVK_CONFIG: live_resources=%u metal_argument_buffers=%u "
+        "use_mtlheap=%d synchronous_queue_submits=%u command_pooling=%u "
+        "prefill=%d",
+        configuration.liveCheckAllResources,
+        configuration.useMetalArgumentBuffers,
+        configuration.useMTLHeap,
+        configuration.synchronousQueueSubmits,
+        configuration.useCommandPooling,
+        configuration.prefillMetalCommandBuffers);
+
+    if (configuration.liveCheckAllResources != VK_TRUE ||
+        configuration.useMetalArgumentBuffers != VK_FALSE ||
+        configuration.useMTLHeap != MVK_CONFIG_USE_MTLHEAP_WHERE_SAFE ||
+        configuration.synchronousQueueSubmits != VK_TRUE ||
+        configuration.useCommandPooling != VK_TRUE ||
+        configuration.prefillMetalCommandBuffers !=
+            MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS_STYLE_NO_PREFILL) {
+        log_message("ERROR: MoltenVK configuration differs from Experiment 0006");
+        return false;
+    }
     return true;
 }
 
@@ -290,19 +333,19 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     log_message("RUN_START: bridge starting pid=%ld", (long)getpid());
 
     char directory[4096];
-    bool live_check = false;
-    if (!own_directory(directory, sizeof(directory)) || !marker_mode(directory, &live_check)) {
+    if (!own_directory(directory, sizeof(directory)) || !marker_mode(directory)) {
         log_message("SKIP: enable marker absent");
         return;
     }
-    if (live_check) {
-        if (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0) {
-            log_message("ERROR: could not set live-resource mode: %s",
-                        strerror(errno));
-            return;
-        }
-        log_message("MODE: live-resource compatibility check enabled");
+    if (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
+        setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0) {
+        log_message("ERROR: could not set descriptor-compat mode: %s",
+                    strerror(errno));
+        return;
     }
+    log_message(
+        "MODE: descriptor compatibility enabled live_resources=1 "
+        "metal_argument_buffers=0");
 
     const struct mach_header* raw = _dyld_get_image_header(0);
     if (!raw || raw->magic != MH_MAGIC_64 || raw->cputype != CPU_TYPE_X86_64) {
@@ -326,6 +369,9 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         return;
     }
     log_message("MOLTENVK: loaded path=%s", moltenvk_path);
+    if (!verify_moltenvk_configuration(moltenvk)) {
+        return;
+    }
     if (!install_patches(header, moltenvk)) {
         log_message("ERROR: patch transaction aborted");
         return;

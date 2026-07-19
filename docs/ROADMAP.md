@@ -11,16 +11,17 @@ are in [Project status](STATUS.md); completed runs belong in the
   marker, and cache state.
 - Preserve Experiment 0005 as the verified startup-pass/rendering-fail
   checkpoint until restoration is technically required for a clean rebuild.
-- Prepare a single-variable Experiment 0006 candidate that retains both HDR
-  filters and live-resource checking but disables Metal argument buffers to
-  emulate a capability absent from MoltenVK 1.0.18.
+- Build and install the single-variable Experiment 0006 candidate that retains
+  both HDR filters and live-resource checking but disables Metal argument
+  buffers, a capability absent from MoltenVK 1.0.18.
 - Reuse the bounded character-selection observation with two predefined visual
   outcomes: hot-pink startup frame present/absent and black-layer flicker
-  present/absent. Do not enter the world for this comparison.
+  present/absent. If the lobby is visually clean, continue in the same run to a
+  five-minute low-risk world correctness test; otherwise exit there.
 - If disabling argument buffers does not improve the artifact, test MTLHeap and
   legacy asynchronous queue submission separately; never change both at once.
-- Only after character selection is visually clean, design a separate short
-  gameplay stability experiment. Do not treat that as performance validation.
+- Preserve the first visually clean five-minute world result as a gameplay
+  checkpoint. Do not treat it as performance validation.
 
 ## P1: keep redirection verifiable
 

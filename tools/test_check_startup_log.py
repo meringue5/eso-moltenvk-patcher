@@ -18,7 +18,13 @@ def good_log() -> str:
     return "\n".join(
         [
             record("RUN_START: bridge starting pid=70000"),
+            record(
+                "MODE: descriptor compatibility enabled live_resources=1 metal_argument_buffers=0"
+            ),
             record("MOLTENVK: loaded path=/sanitized/libMoltenVK.teso4m4.dylib"),
+            record(
+                "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 use_mtlheap=1 synchronous_queue_submits=1 command_pooling=1 prefill=0"
+            ),
             record("HDR_COMPAT: filter=enabled extension=VK_EXT_hdr_metadata"),
             record(
                 "HDR_SURFACE_COMPAT: filter=enabled format=64 colorSpace=1000104008"
@@ -75,6 +81,32 @@ class StartupLogTests(unittest.TestCase):
         self.assertFalse(verdict.passed)
         self.assertIn(
             "at least one VkDevice enabled VK_EXT_hdr_metadata", verdict.reasons
+        )
+
+    def test_rejects_missing_effective_descriptor_configuration(self) -> None:
+        text = "\n".join(
+            line
+            for line in good_log().splitlines()
+            if "MOLTENVK_CONFIG:" not in line
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "the effective MoltenVK configuration was not verified",
+            verdict.reasons,
+        )
+
+    def test_rejects_missing_descriptor_mode(self) -> None:
+        text = "\n".join(
+            line
+            for line in good_log().splitlines()
+            if "MODE: descriptor compatibility" not in line
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "descriptor compatibility mode was not enabled",
+            verdict.reasons,
         )
 
     def test_time_gate_rejects_stale_run(self) -> None:

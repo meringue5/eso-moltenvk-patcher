@@ -3,15 +3,15 @@ set -euo pipefail
 
 if [[ "${TESO4M4_EXPERIMENTAL:-}" != "I_ACCEPT_CRASH_RISK" ]]; then
   echo "Prior bridge experiments crashed after activation."
-  echo "The current HDR compatibility build is still unvalidated in ESO."
+  echo "The current descriptor compatibility build is still unvalidated in ESO."
   echo "Read docs/STATUS.md and the linked experiment record first."
   echo "Set TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK only for a controlled test."
   exit 1
 fi
 
 ROOT="${0:A:h:h}"
-MODE="${TESO4M4_MODE:-live-check}"
-[[ "$MODE" == "live-check" ]] || {
+MODE="${TESO4M4_MODE:-descriptor-compat}"
+[[ "$MODE" == "descriptor-compat" ]] || {
   echo "Unsupported experiment mode: $MODE"
   exit 1
 }

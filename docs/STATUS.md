@@ -57,6 +57,15 @@ full-screen hot-pink frame, and character selection showed high-frequency
 flicker in a black layer described as shadow-like. The installed checkpoint is
 being preserved for analysis; it is not approved for world entry or gameplay.
 
+After all 16 Experiment 0005 evidence checksums were reverified, restoration
+became technically necessary for the Experiment 0006 source rebuild. At
+approximately 23:37 KST, `scripts/restore.sh` restored the pristine loader and
+the prior pipeline cache. The Experiment 0005 marker and its new cache remain
+preserved under timestamped names. Post-restore status reports the exact ESO
+fingerprint, original/inactive loader, absent active marker, and byte-identical
+active/pristine Bink files. This is a build checkpoint, not an operational
+rollback objective.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -117,14 +126,22 @@ depends on Rust yet.
 
 ## Next gate
 
-Do not extend Experiment 0005 into gameplay. The lobby artifact already fails
-the rendering-correctness gate, and world entry would not distinguish its
-cause. Preserve the installed state and verified evidence until restoration is
-technically required for the next clean build.
+Experiment 0006 is the next single-variable candidate. It keeps both proven HDR
+filters and live-resource checking but disables Metal argument buffers.
+MoltenVK 1.0.18 predates argument-buffer support, MoltenVK 1.4.1 enables it by
+default, and ESO enabled no descriptor-indexing extension in the captured
+device. The bridge will query and validate the effective configuration before
+writing any patch.
 
-The next source candidate is a separate, single-variable experiment that keeps
-both proven HDR filters and live-resource checking but disables Metal argument
-buffers. MoltenVK 1.0.18 predates argument-buffer support, MoltenVK 1.4.1 enables
-it by default, and ESO enabled no descriptor-indexing extension in the captured
-device. Only if character selection becomes visually clean should a separate
-short gameplay stability test be planned.
+The rebuilt candidate has passed configuration, Vulkan/Metal, HDR filter,
+wrapper coverage, proc route, Python, and shell checks. In independent
+processes the packaged runtime reported argument buffers `1` under controlled
+defaults and `0` in `descriptor-compat`, with all other named controls
+unchanged. A clean source commit, evidence preparation, and installation are
+the remaining non-game gates.
+
+After clean rebuild and installation, use one staged run: observe character
+selection for 30 seconds; if it is visually clean, continue in the same run to
+five minutes of low-risk world movement. If the black/shadow-layer flicker
+remains, exit without world entry. This is a correctness and short-stability
+gate, not a performance test; no HUD, capture, or settings change is requested.
