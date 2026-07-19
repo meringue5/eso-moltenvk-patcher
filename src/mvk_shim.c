@@ -101,6 +101,11 @@ static PFN_vkVoidFunction VKAPI_CALL traced_get_instance_proc_addr(
     } else if (raw_result && name && strcmp(name, "vkCreateDevice") == 0) {
         returned_result = (PFN_vkVoidFunction)&teso4m4_create_device;
         shim = "device-trace";
+    } else if (raw_result && name &&
+               strcmp(name, "vkGetPhysicalDeviceSurfaceFormatsKHR") == 0) {
+        returned_result = (PFN_vkVoidFunction)
+            &teso4m4_get_physical_device_surface_formats;
+        shim = "surface-format-filter";
     }
     log_message(
         "GIPA: instance=%p name=%s raw=%p returned=%p shim=%s%s",
@@ -223,14 +228,18 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             moltenvk, "vkEnumerateDeviceExtensionProperties");
     PFN_vkCreateDevice create_device =
         (PFN_vkCreateDevice)dlsym(moltenvk, "vkCreateDevice");
+    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR get_surface_formats =
+        (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)dlsym(
+            moltenvk, "vkGetPhysicalDeviceSurfaceFormatsKHR");
     if (!g_next_get_instance_proc_addr || !g_next_get_device_proc_addr ||
-        !enumerate_device_extensions || !create_device) {
+        !enumerate_device_extensions || !create_device || !get_surface_formats) {
         log_message("ERROR: required compatibility entry point is unavailable");
         return false;
     }
     teso4m4_compat_set_enumerate_device_extensions(
         enumerate_device_extensions);
     teso4m4_compat_set_create_device(create_device);
+    teso4m4_compat_set_get_surface_formats(get_surface_formats);
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
         uintptr_t address = (uintptr_t)header + kPatchTargets[index].image_offset;
@@ -323,6 +332,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     }
     log_message("HDR_COMPAT: filter=%s extension=%s", "enabled",
                 VK_EXT_HDR_METADATA_EXTENSION_NAME);
+    log_message(
+        "HDR_SURFACE_COMPAT: filter=enabled format=%d colorSpace=%d",
+        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+        VK_COLOR_SPACE_HDR10_ST2084_EXT);
     log_message("ACTIVE: redirected %d Vulkan entry points", ESO_TARGET_COUNT);
     log_message("ESO SHA-256: %s", ESO_EXPECTED_SHA256);
 }

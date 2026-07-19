@@ -6,15 +6,16 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P0: explain the first bridge crash
 
-- After explicit installation approval, run Experiment 0004 once with the user
-  action limited to character selection plus a 60-second wait.
-- Collect the run-scoped automatic verdict and new `.ips` evidence, then restore
-  the original loader immediately regardless of the result.
-- If filtering does not remove the unsafe path, return to non-game source,
-  crash, and binary analysis before proposing a no-op setter or another user
-  run.
-- If it passes, design a separate short stability experiment. Do not treat a
-  character-selection pass as gameplay or performance validation.
+- Experiment 0004 was preserved until restoration became technically necessary
+  for the Experiment 0005 clean rebuild; retain its verified evidence, displaced
+  marker, and cache state.
+- Commit the fully validated Experiment 0005 source state, prepare fresh ignored
+  evidence, and obtain separate approval before any installation.
+- If the exact surface-format filter prevents the setter query and reaches a
+  stable character selection, design a separate short stability experiment.
+  Do not treat that pass as gameplay or performance validation.
+- If it fails, use the new run-scoped query and crash evidence before considering
+  a guarded setter. Do not add a no-op merely because the proc is NULL.
 
 ## P1: keep redirection verifiable
 

@@ -11,8 +11,8 @@ library with a small x86_64 proxy that:
 3. Validates the main executable UUID and patch-site bytes.
 4. Loads official `libMoltenVK.dylib` with `dlopen`.
 5. Redirects selected old Vulkan wrapper entries with 12-byte absolute jumps.
-6. Routes GIPA requests for device-extension enumeration and device creation
-   through a narrow compatibility layer.
+6. Routes GIPA requests for device-extension enumeration, surface-format
+   enumeration, and device creation through a narrow compatibility layer.
 
 Mach-O text pages do not accept added write permission through ordinary
 `mprotect`. The prototype uses `mach_vm_protect` with `VM_PROT_COPY`, writes to a
@@ -48,7 +48,7 @@ creation as one state transition. Comparing names against an arbitrary device
 is insufficient when the replacement runtime advertises capabilities absent
 from the embedded runtime.
 
-## HDR advertisement compatibility layer
+## HDR compatibility layer
 
 Embedded MoltenVK 1.0.18 does not advertise `VK_EXT_hdr_metadata`, while
 MoltenVK 1.4.1 does. The compatibility layer removes only that exact name from
@@ -61,19 +61,35 @@ the original `VkDeviceCreateInfo` unchanged. An explicit HDR request is still
 forwarded; Experiment 0004 instead expects ESO not to request the extension and
 not to query `vkSetHdrMetadataEXT` through GDPA.
 
-The raw enumeration, device-creation, GIPA, and GDPA destinations are all
-resolved before any code page becomes writable. Proc lookup only selects a
-wrapper after that initialization; it does not mutate those destinations.
+Experiment 0004 proved that filtering the device-extension advertisement does
+not control ESO's HDR branch. ESO independently inspects surface formats. For
+the fingerprinted executable, the exact pair
+`VK_FORMAT_A2B10G10R10_UNORM_PACK32` plus
+`VK_COLOR_SPACE_HDR10_ST2084_EXT` sets the object flag that guards an unchecked
+`vkSetHdrMetadataEXT` call. Embedded MoltenVK 1.0.18 does not expose this pair
+on the test M4; MoltenVK 1.4.1 does.
+
+The Experiment 0005 source candidate also wraps
+`vkGetPhysicalDeviceSurfaceFormatsKHR` and removes only that exact pair. It
+preserves every other entry and order and implements count/data and
+`VK_INCOMPLETE` behavior. It deliberately does not provide a fake setter or
+remove every wide-color/HDR format.
+
+The raw enumeration, surface-format, device-creation, GIPA, and GDPA
+destinations are all resolved before any code page becomes writable. Proc
+lookup only selects a wrapper after that initialization; it does not mutate
+those destinations.
 
 Each bridge log line carries a UTC nanosecond run timestamp and PID. The startup
 checker groups records by that identity, applies the experiment preparation
 time as a lower bound, and fails closed on missing filter evidence, HDR enable,
 an HDR device-proc query, or bridge errors.
 
-The real MoltenVK 1.4.1 non-game probe reports raw HDR advertisement, filtered
-visible absence, HDR disabled at device creation, non-null GIPA, and NULL GDPA.
-That proves the local compatibility transition and successful device creation;
-it does not prove ESO startup behavior.
+The real MoltenVK 1.4.1 non-game probes report raw HDR device advertisement,
+filtered visible absence, HDR disabled at device creation, non-null GIPA, NULL
+GDPA, and exact surface-format removal from 60 raw to 59 visible entries. That
+proves the local compatibility transitions and successful device creation; it
+does not prove ESO startup behavior.
 
 ## Remaining architectural risk
 

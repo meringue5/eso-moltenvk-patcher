@@ -4,10 +4,12 @@ Experimental macOS performance research and runtime tooling for the Steam build
 of **The Elder Scrolls Online** on Apple Silicon.
 
 > [!WARNING]
-> The MoltenVK bridge is a research prototype. Earlier redirection tests loaded
-> MoltenVK 1.4.1 but crashed during graphics startup. The current HDR
-> compatibility build passes non-game validation but has not been installed or
-> tested with ESO. It is **not ready for normal gameplay**. See the
+> The MoltenVK bridge is a research prototype. Experiment 0004 loaded MoltenVK
+> 1.4.1, successfully hid the new HDR device extension, and still crashed at
+> the confirmed NULL HDR-metadata call. That failed state was preserved until
+> restoration became necessary for the next clean rebuild. The Experiment 0005
+> surface-format filter now passes its complete non-game preflight but has not
+> been installed. The bridge is **not ready for normal gameplay**. See the
 > [current status](docs/STATUS.md) before using any experimental tooling.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
@@ -46,8 +48,8 @@ Steam copy of ESO. No ESO or Bink binaries are distributed by this repository.
 ./scripts/build.sh
 ```
 
-Installation is deliberately gated because predecessor builds crashed and the
-current compatibility build has not completed its startup-only experiment:
+Installation is deliberately gated because all live bridge builds tested so
+far crashed during graphics startup:
 
 ```sh
 TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK ./scripts/install.sh

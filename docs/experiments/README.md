@@ -11,7 +11,8 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0001 | 2026-07-19 | MoltenVK 1.4.1 full redirect | Failed after activation; rolled back | [Run](0001-moltenvk-1.4.1-full-redirect.md), [crash analysis](0001-crash-analysis.md) |
 | 0002 | 2026-07-19 | Live-check proc-traced startup | Failed after activation; rolled back | [Run](0002-live-check-proc-trace-startup.md) |
 | 0003 | 2026-07-19 | Original-runtime long session | Inconclusive as override test; baseline captured | [Run](0003-original-runtime-long-session.md) |
-| 0004 | 2026-07-19 | HDR-advertisement-filtered startup | Planned; awaiting installation approval | [Plan](0004-hdr-advertisement-filter-startup.md) |
+| 0004 | 2026-07-19 | HDR-advertisement-filtered startup | Failed at confirmed NULL HDR setter; evidence preserved, later restored for rebuild | [Run](0004-hdr-advertisement-filter-startup.md) |
+| 0005 | 2026-07-19 | Exact HDR surface-format filter | Planned; non-game preflight complete | [Plan](0005-hdr-surface-format-filter-startup.md) |
 
 ## Recording policy
 

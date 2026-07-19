@@ -12,6 +12,15 @@ static const VkExtensionProperties kRawExtensions[] = {
     {{"VK_EXT_debug_marker"}, 4},
 };
 
+static const VkSurfaceFormatKHR kRawSurfaceFormats[] = {
+    {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},
+    {VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+     VK_COLOR_SPACE_HDR10_ST2084_EXT},
+    {VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+     VK_COLOR_SPACE_HDR10_ST2084_EXT},
+    {VK_FORMAT_R16G16B16A16_SFLOAT, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},
+};
+
 static bool g_create_called;
 static uint32_t g_create_extension_count;
 static bool g_create_hdr_enabled;
@@ -61,6 +70,27 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_create_device(
     return VK_SUCCESS;
 }
 
+static VKAPI_ATTR VkResult VKAPI_CALL fake_get_surface_formats(
+    VkPhysicalDevice physical_device,
+    VkSurfaceKHR surface,
+    uint32_t* surface_format_count,
+    VkSurfaceFormatKHR* surface_formats) {
+    (void)physical_device;
+    (void)surface;
+    const uint32_t available =
+        (uint32_t)(sizeof(kRawSurfaceFormats) / sizeof(kRawSurfaceFormats[0]));
+    if (!surface_formats) {
+        *surface_format_count = available;
+        return VK_SUCCESS;
+    }
+    const uint32_t capacity = *surface_format_count;
+    const uint32_t written = capacity < available ? capacity : available;
+    memcpy(surface_formats, kRawSurfaceFormats,
+           written * sizeof(*surface_formats));
+    *surface_format_count = written;
+    return capacity < available ? VK_INCOMPLETE : VK_SUCCESS;
+}
+
 static bool check(bool condition, const char* message) {
     if (!condition) {
         fprintf(stderr, "HDR filter smoke failed: %s\n", message);
@@ -74,6 +104,7 @@ int main(void) {
     teso4m4_compat_set_enumerate_device_extensions(
         &fake_enumerate_device_extensions);
     teso4m4_compat_set_create_device(&fake_create_device);
+    teso4m4_compat_set_get_surface_formats(&fake_get_surface_formats);
 
     VkPhysicalDevice physical_device = (VkPhysicalDevice)(uintptr_t)0x1;
     uint32_t count = 0;
@@ -115,6 +146,44 @@ int main(void) {
     if (!check(result == VK_SUCCESS && count == 4 && g_last_layer_name &&
                    strcmp(g_last_layer_name, "VK_LAYER_FAKE") == 0,
                "layer-specific enumeration must pass through unchanged")) {
+        return 1;
+    }
+
+    VkSurfaceKHR surface = (VkSurfaceKHR)(uintptr_t)0x3;
+    count = 0;
+    result = teso4m4_get_physical_device_surface_formats(
+        physical_device, surface, &count, NULL);
+    if (!check(result == VK_SUCCESS && count == 3,
+               "surface count should remove the exact ESO HDR pair")) {
+        return 1;
+    }
+
+    VkSurfaceFormatKHR surface_exact[3] = {0};
+    count = 3;
+    result = teso4m4_get_physical_device_surface_formats(
+        physical_device, surface, &count, surface_exact);
+    if (!check(result == VK_SUCCESS && count == 3,
+               "exact-capacity surface data query should succeed") ||
+        !check(surface_exact[0].format == VK_FORMAT_B8G8R8A8_UNORM &&
+                   surface_exact[1].format ==
+                       VK_FORMAT_A2R10G10B10_UNORM_PACK32 &&
+                   surface_exact[1].colorSpace ==
+                       VK_COLOR_SPACE_HDR10_ST2084_EXT &&
+                   surface_exact[2].format == VK_FORMAT_R16G16B16A16_SFLOAT,
+               "only the exact ESO HDR pair must be removed without reordering")) {
+        return 1;
+    }
+
+    VkSurfaceFormatKHR surface_partial[2] = {0};
+    count = 2;
+    result = teso4m4_get_physical_device_surface_formats(
+        physical_device, surface, &count, surface_partial);
+    if (!check(result == VK_INCOMPLETE && count == 2,
+               "short surface data query should return VK_INCOMPLETE") ||
+        !check(surface_partial[0].format == VK_FORMAT_B8G8R8A8_UNORM &&
+                   surface_partial[1].format ==
+                       VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+               "short surface query must contain only visible formats")) {
         return 1;
     }
 

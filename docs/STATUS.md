@@ -9,23 +9,41 @@ The experimental MoltenVK bridge is not validated for gameplay. Experiments
 startup. Experiment 0002 added complete proc tracing and is documented in its
 [experiment record](experiments/0002-live-check-proc-trace-startup.md).
 
-The non-destructive `scripts/status.sh` check after Experiment 0003 on
-2026-07-19 reported:
+Experiment 0004 was explicitly approved, rebuilt from source commit `e8ee4d2`,
+installed in `live-check` mode, and launched by the user through Steam. It
+successfully filtered `VK_EXT_hdr_metadata`, recorded a device created without
+that extension, and still crashed immediately at the confirmed NULL HDR setter.
+See its [completed record](experiments/0004-hdr-advertisement-filter-startup.md).
+
+After preserving the failed Experiment 0004 checkpoint and re-verifying all 14
+evidence-file checksums, restoration became technically necessary for the
+Experiment 0005 clean rebuild. The user stopped Steam and the launcher, and
+`scripts/restore.sh` ran at approximately 2026-07-19 22:40 KST. The
+non-destructive `scripts/status.sh` check after restoration reports:
 
 - the analyzed ESO executable still matches the fingerprint in the
   [target manifest](../config/targets-eso-2026-07-11.json);
 - the active Bink loader is original and the bridge is inactive;
-- the enable marker is absent.
+- the enable marker is absent;
+- the active and pristine Bink SHA-256 values both equal
+  `c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`.
 
 This is a point-in-time observation, not a persistent guarantee. Run the status
 check again before any work involving the game bundle. Inactive companion files
 may exist beside the game executable; the status result above does not inventory
 or remove them.
 
+The user directed that rollback is not an operational goal. The failed state
+was preserved until restoration became necessary for a clean rebuild. Its raw
+evidence, displaced marker, and pipeline-cache state remain preserved; the
+current original-loader state is a build prerequisite, not an assertion that
+normal operation was the objective.
+
 Experiment 0002 was explicitly approved, installed from source commit
-`7a235dc`, run by the user, collected, and rolled back. The active loader
-byte-matches the pristine backup. Raw evidence and its checksum manifest remain
-under the ignored `artifacts/` directory; they must not be committed.
+`7a235dc`, run by the user, collected, and rolled back. Immediately after that
+rollback, the then-active loader byte-matched the pristine backup. Raw evidence
+and its checksum manifest remain under the ignored `artifacts/` directory; they
+must not be committed.
 
 Experiment 0003 retrospectively examined a user-controlled session lasting
 about 2 hours 27 minutes. Its loaded-image list contains only the original Bink
@@ -37,23 +55,23 @@ an ignored baseline checkpoint. See the
 
 ## Active blocker
 
-Experiment 0002 reproduced `EXC_BAD_ACCESS` with `RIP=0` and the same first
-recoverable ESO return offset as Experiment 0001. The last recorded proc lookup
-was a NULL GDPA result for `vkSetHdrMetadataEXT`. MoltenVK 1.0.18 does not
-advertise `VK_EXT_hdr_metadata`; MoltenVK 1.4.1 advertises it but returns a NULL
-device proc unless that extension was enabled when creating the device.
+Experiment 0004 falsified the device-advertisement-only hypothesis. The bridge
+removed exactly one HDR device extension, and ESO still queried and called the
+NULL setter. In both Experiments 0002 and 0004, Rosetta `tmp1` equals the
+ASLR-adjusted instruction immediately after ESO's indirect
+`vkSetHdrMetadataEXT` call, confirming that call as the fault site.
 
-An extension-negotiation mismatch is now the leading explanation, but it is not
-confirmed. The bridge did not record the extension list passed to
-`vkCreateDevice`, and the crash report cannot prove that ESO called the last
-logged null pointer. MoltenVK 1.4.1 performance A/B testing remains blocked.
+The actual branch input is now identified. ESO enables its HDR surface flag
+when surface enumeration includes format `64` with color space `1000104008`.
+Embedded MoltenVK 1.0.18 reports three sRGB formats and no matching pair;
+MoltenVK 1.4.1 reports 60 formats and includes exactly one. A source-only
+wrapper removes that pair, produces 59 visible formats, and passes fake and real
+non-game enumeration validation. The clean full build, legacy/raw/filtered
+surface probes, device/proc probes, and static binary analyzers now pass. It has
+not been installed or run with ESO.
 
-The Experiment 0004 build now filters only the HDR advertisement and records
-the exact device-extension list. Its shared fake-runtime tests and real
-MoltenVK 1.4.1 non-game probe pass with raw HDR advertisement present, visible
-advertisement absent, HDR disabled, non-null GIPA, and NULL GDPA. This is
-evidence that the compatibility transition works locally; it does not confirm
-the proposed crash cause in ESO.
+MoltenVK 1.4.1 performance A/B testing remains blocked until a startup
+experiment is stable.
 
 The Experiment 0003 process ended with `EXC_BAD_INSTRUCTION / SIGILL` in an
 audio teardown thread after otherwise usable gameplay. This is a separate
@@ -74,19 +92,12 @@ depends on Rust yet.
 
 ## Next gate
 
-All agent-owned pre-installation gates for the
-[Experiment 0004 plan](experiments/0004-hdr-advertisement-filter-startup.md)
-have passed. The game remains original and unmodified. The next gate is the
-user's explicit approval to install that exact startup-only experiment; the
-current goal and prior approvals do not imply it.
+The Experiment 0005 non-game preflight and static checks are complete. Its clean
+source state and fresh ignored evidence are prepared as the exact pre-install
+checkpoint. The next gate is explicit user approval for the exact Experiment
+0005 installation; Experiment 0004 approval does not carry over.
 
-After an approved install, the sole user action will be a Steam-authenticated
-launch to character selection, a 60-second wait there, and exit: approximately
-3-5 minutes total. There is no world entry, Metal HUD, screenshot, settings
-change, or performance measurement. Evidence collection applies an automatic
-run-scoped verdict, and the bridge is restored immediately regardless of the
-outcome.
-
-Performance investigation is deferred until a startup experiment proves that
-MoltenVK 1.4.1 remains active and stable. Do not repeat either failed
-installation unchanged.
+If separately approved and installed, the sole user action is limited to a
+Steam-authenticated launch to character selection plus a 60-second wait. No
+world entry, Metal HUD, screenshot, settings change, or performance measurement
+is part of that run.

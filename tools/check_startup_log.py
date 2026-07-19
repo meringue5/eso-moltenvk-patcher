@@ -3,7 +3,7 @@
 
 This checker deliberately evaluates only bridge evidence. Reaching character
 selection and the timing/classification of any crash report remain separate
-Experiment 0004 observations.
+user-observed startup behavior.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ CREATE_DEVICE_RESULT = re.compile(
     r"^CREATE_DEVICE_RESULT: call=(?P<call>\d+) result=(?P<result>-?\d+) "
     r"device=(?P<device>.*)$"
 )
+REMOVED_ONE = re.compile(r"(?:^| )removed=1(?: |$)")
 
 
 @dataclass(frozen=True)
@@ -101,6 +102,11 @@ def evaluate_startup_log(
         not in lines
     ):
         reasons.append("HDR advertisement filter was not enabled")
+    if (
+        "HDR_SURFACE_COMPAT: filter=enabled format=64 colorSpace=1000104008"
+        not in lines
+    ):
+        reasons.append("the exact ESO HDR surface-format filter was not enabled")
     if not any(
         line.startswith("MOLTENVK: loaded path=") for line in lines
     ):
@@ -119,14 +125,43 @@ def evaluate_startup_log(
         for line in lines
     ):
         reasons.append("GIPA did not route vkCreateDevice through the trace wrapper")
+    if not any(
+        line.startswith("GIPA: ")
+        and "name=vkGetPhysicalDeviceSurfaceFormatsKHR" in line
+        and "shim=surface-format-filter" in line
+        for line in lines
+    ):
+        reasons.append("GIPA did not route surface-format enumeration through the filter")
 
     filter_lines = [line for line in lines if line.startswith("HDR_FILTER: ")]
-    if not any("query=count" in line and "removed=1" in line for line in filter_lines):
+    if not any(
+        "query=count" in line and REMOVED_ONE.search(line)
+        for line in filter_lines
+    ):
         reasons.append("no count query proved that exactly one HDR extension was removed")
-    if not any("query=data" in line and "removed=1" in line for line in filter_lines):
+    if not any(
+        "query=data" in line and REMOVED_ONE.search(line)
+        for line in filter_lines
+    ):
         reasons.append("no data query proved that exactly one HDR extension was removed")
-    if any("removed=1" not in line for line in filter_lines):
+    if any(not REMOVED_ONE.search(line) for line in filter_lines):
         reasons.append("at least one filtered enumeration did not remove exactly one HDR extension")
+
+    surface_filter_lines = [
+        line for line in lines if line.startswith("SURFACE_FORMAT_FILTER: ")
+    ]
+    if not any(
+        "query=count" in line and REMOVED_ONE.search(line)
+        for line in surface_filter_lines
+    ):
+        reasons.append("no surface-format count query removed the exact ESO HDR pair")
+    if not any(
+        "query=data" in line and REMOVED_ONE.search(line)
+        for line in surface_filter_lines
+    ):
+        reasons.append("no surface-format data query removed the exact ESO HDR pair")
+    if any(not REMOVED_ONE.search(line) for line in surface_filter_lines):
+        reasons.append("at least one surface-format query removed an unexpected count")
 
     create_records: dict[str, tuple[int, str]] = {}
     create_extensions: dict[str, dict[int, str]] = {}

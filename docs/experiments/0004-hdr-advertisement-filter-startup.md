@@ -1,8 +1,8 @@
 # Experiment 0004: HDR-advertisement-filtered startup
 
 - Date planned: 2026-07-19
-- Outcome: **planned; awaiting explicit installation approval**
-- Rollback: **not started; pristine restore path verified**
+- Outcome: **failed after confirmed filter activation**
+- Rollback: **later performed solely for the Experiment 0005 clean rebuild**
 
 ## Question
 
@@ -178,6 +178,10 @@ No result authorizes world entry or a performance claim.
 
 ## Immediate rollback
 
+This section records the original run plan. The user superseded the automatic
+operational rollback assumption after the failure; see the dated run amendment
+below.
+
 After evidence collection, regardless of pass, fail, or inconclusive result:
 
 1. Run `scripts/restore.sh` immediately.
@@ -197,3 +201,114 @@ design a separate short stability experiment; do not begin performance testing
 automatically. If it fails or is inconclusive, restore first and return to
 non-game source, log, crash, and binary analysis before proposing another user
 run.
+
+## Run amendment: 2026-07-19 failure and post-mortem
+
+### Installation and evidence
+
+The user explicitly approved Experiment 0004. Source commit `e8ee4d2` was
+rebuilt after the active loader, target fingerprint, pristine backup, restore
+path, and preserved pipeline-cache state were checked. The build passed the
+Bink re-export lookup, Rosetta self-patch transition `1 -> 2`, HDR-filter smoke
+probe, eight startup-checker tests, and static checks. The bridge was installed
+in `live-check` mode and the prepared evidence directory was created before the
+user launch.
+
+The user launched through the normal Steam and launcher path. ESO started at
+2026-07-19 21:56:17 KST and crashed about 1.79 seconds later, before character
+selection. Evidence collection selected run
+`20260719T125618.172357000Z-pid85927`; all 14 files in its checksum manifest
+passed verification. The files establishing the failure have these hashes:
+
+| File | SHA-256 |
+|---|---|
+| `bridge-log-after.txt` | `a4615ba77e4e68eca2c38476622a16dea8914f8623bc5f1cc0e1ea31691340a3` |
+| `startup-verdict.txt` | `260a5af76f8ef948f570e8d5218a67020c46c2d853a7093e6fceb4c79a1d09de` |
+| `system-eso-2026-07-19-215622.ips` | `ae2f6a0aaeae040255433b627986ff85595d36ef4f077d6bd7bbfcd9df72cb8d` |
+
+Raw evidence remains under the ignored
+`artifacts/experiment-0004-20260719T124959Z/` directory and is not committed.
+
+### Confirmed result
+
+The bridge loaded MoltenVK 1.4.1 and redirected all 17 entries. Its device
+extension wrapper observed 131 raw properties, exposed 130, and removed exactly
+one `VK_EXT_hdr_metadata` property in both count and data calls. ESO then
+created a device successfully with exactly these three extensions and did not
+enable HDR metadata:
+
+```text
+VK_KHR_swapchain
+VK_KHR_maintenance1
+VK_EXT_debug_marker
+```
+
+Despite that transition, ESO queried `vkSetHdrMetadataEXT` through GDPA and
+received NULL. The automatic verdict therefore failed exactly as designed.
+The crash was main-thread `EXC_BAD_ACCESS / SIGSEGV` at address zero with
+`RIP=0`, `RAX=0`, and the same first two ESO offsets (`0x364a7a5` and
+`0x3608fcb`) as Experiment 0002. The loaded-image list contains the bridge,
+pristine Bink companion, and MoltenVK 1.4.1.
+
+The Rosetta state makes the immediate call site recoverable even though the
+ordinary frame list starts at the outer virtual call. For both Experiments 0002
+and 0004, `rosetta.tmp1` equals the ASLR-adjusted address
+`image_base + 0x364c5c2`, the instruction immediately after ESO's indirect
+`vkSetHdrMetadataEXT` call. This confirms that the NULL HDR setter was called;
+it is no longer merely the last logged lookup.
+
+### Root-cause refinement
+
+Static disassembly shows that the setter path is guarded by an ESO object flag,
+not directly by the device-extension list. ESO sets that flag when surface
+format enumeration contains this exact pair:
+
+```text
+format     VK_FORMAT_A2B10G10R10_UNORM_PACK32 (64)
+colorSpace VK_COLOR_SPACE_HDR10_ST2084_EXT     (1000104008)
+```
+
+An Apple M4 non-game surface probe returned three sRGB formats from embedded
+MoltenVK 1.0.18 and no such pair. MoltenVK 1.4.1 returned 60 formats and did
+include the pair. Hiding `VK_EXT_hdr_metadata` does not alter surface-format
+enumeration, so Experiment 0004 left the actual ESO branch condition intact.
+
+The Experiment 0004 hypothesis is therefore falsified: HDR device-extension
+advertisement alone did not select the unsafe path. The confirmed incompatibility
+is the combination of a newly visible HDR surface format, ESO's selection of
+that format, a device created without `VK_EXT_hdr_metadata`, and ESO's
+unchecked device-proc call.
+
+### Rollback state and follow-up
+
+After evidence collection, the user explicitly directed that rollback should
+not be treated as an operational requirement. The installed Experiment 0004
+state and marker remain in place as a failed checkpoint. Restoration is
+allowed only when it becomes technically necessary for comparison, rebuilding,
+or the next experiment; no claim is made that the installed state is usable.
+
+The next source candidate filters only the exact surface-format pair above,
+while retaining the Experiment 0004 extension filter and device tracing. Its
+separate plan is [Experiment 0005](0005-hdr-surface-format-filter-startup.md).
+
+## Second amendment: technical restore for Experiment 0005 rebuild
+
+The failed installed state was not restored merely to produce a normal
+operating state. It remained intact until Experiment 0005 source work reached a
+hard build prerequisite: `scripts/build.sh` correctly refuses to use an active
+proxy as its Bink input.
+
+After the user reported that Steam and the launcher were stopped, process checks
+found no ESO, launcher, or Steam process. The 14-file Experiment 0004 checksum
+manifest was verified again before the transition. At approximately
+2026-07-19 22:40 KST, `scripts/restore.sh` restored the pristine loader and old
+pipeline cache. The displaced enable marker was retained as
+`.teso4m4-enable.disabled-20260719-224048`; earlier displaced markers and the
+raw crash evidence were also retained.
+
+Post-restore status reported the known ESO fingerprint, original/inactive
+loader, and absent enable marker. The active and pristine Bink files both had
+SHA-256
+`c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`.
+This closes Experiment 0004's installed checkpoint only because the clean
+rebuild required it; the failed result and its evidence remain unchanged.

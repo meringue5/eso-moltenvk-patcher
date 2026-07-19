@@ -54,6 +54,17 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_hdr_filter.c" "$ROOT/src/mvk_compat.c" \
   -o "$BUILD/probe_hdr_filter"
+xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
+  -Wall -Wextra -Werror -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_surface_formats.m" "$ROOT/src/mvk_compat.c" \
+  -framework AppKit -framework QuartzCore -o "$BUILD/probe_surface_formats"
+xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
+  -Wall -Wextra -Werror -DTESO4M4_STATIC_MOLTENVK=1 \
+  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_surface_formats.m" "$ROOT/src/mvk_compat.c" "$LEGACY_MVK" \
+  -framework Metal -framework Foundation -framework QuartzCore -framework IOSurface \
+  -framework IOKit -framework CoreGraphics -framework AppKit -lc++ \
+  -o "$BUILD/probe_surface_formats_legacy"
 
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
 "$BUILD/probe_self_patch"

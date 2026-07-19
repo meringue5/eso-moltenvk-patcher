@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-OUTPUT="${1:-$ROOT/artifacts/experiment-0004-$STAMP}"
+OUTPUT="${1:-$ROOT/artifacts/experiment-0005-$STAMP}"
 OUTPUT="${OUTPUT:A}"
 PROXY="$ROOT/build/libBink2Macx64.dylib"
 MOLTENVK="$ROOT/build/libMoltenVK.teso4m4.dylib"

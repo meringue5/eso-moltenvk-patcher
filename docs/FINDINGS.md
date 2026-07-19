@@ -74,17 +74,22 @@ The initial old/new 100-name probe found no old-nonnull/new-null change, but it
 tested only one device-extension configuration. Experiment 0002 showed why that
 qualification matters: the last recorded startup lookup was a NULL GDPA result
 for `vkSetHdrMetadataEXT`, followed by the same `RIP=0` and first recoverable
-ESO return offset observed in Experiment 0001.
+ESO return offset observed in Experiment 0001. Experiment 0004 reproduced the
+same state after successfully hiding the HDR device extension.
 
 MoltenVK 1.0.18 does not advertise `VK_EXT_hdr_metadata` and returns NULL for
 that proc. MoltenVK 1.4.1 advertises the extension; GIPA returns non-null, while
 GDPA returns NULL until the extension is enabled on the device and non-null
 after it is enabled. Proc compatibility tests must therefore reproduce both the
-advertised extension set and the extensions enabled at device creation. The
-evidence strongly suggests an HDR extension-negotiation mismatch, but does not
-yet prove which null pointer ESO called.
+advertised extension set and the extensions enabled at device creation.
 
-## HDR compatibility preflight
+The NULL call is now confirmed. In both Experiments 0002 and 0004, Rosetta's
+saved `tmp1` equals the ASLR-adjusted ESO instruction immediately after the
+indirect `vkSetHdrMetadataEXT` call. The ordinary report frames begin at its
+outer virtual caller, which is why the earlier report alone appeared less
+specific.
+
+## HDR compatibility and surface-format trigger
 
 The shared compatibility implementation passes both fake-runtime semantics
 tests and a real MoltenVK 1.4.1 non-game probe. The real probe observes HDR in
@@ -93,8 +98,22 @@ disabled at device creation, obtains a non-null GIPA result and NULL GDPA
 result for `vkSetHdrMetadataEXT`, and creates and destroys the device
 successfully.
 
-Fake-runtime coverage verifies count-only, exact-capacity, short-capacity
-`VK_INCOMPLETE`, property order, layer-specific pass-through, and unchanged
+Experiment 0004 confirmed all of those transitions inside ESO but still reached
+the setter query and NULL call. Static disassembly establishes that ESO's
+setter path is instead guarded by an internal flag set when
+`vkGetPhysicalDeviceSurfaceFormatsKHR` exposes
+`VK_FORMAT_A2B10G10R10_UNORM_PACK32` with
+`VK_COLOR_SPACE_HDR10_ST2084_EXT`. Hiding the device extension does not alter
+that independent list.
+
+On the same M4, a non-game AppKit/Metal probe returned three sRGB surface
+formats from embedded MoltenVK 1.0.18 and no matching HDR pair. MoltenVK 1.4.1
+returned 60 formats and one exact matching pair. A source-only wrapper that
+removes only that pair returned 59 formats and passed count/data validation.
+
+Fake-runtime coverage now verifies count-only, exact-capacity, short-capacity
+`VK_INCOMPLETE`, property order, exact pair matching, preservation of other HDR
+formats, layer-specific device-extension pass-through, and unchanged
 device-create forwarding. These findings establish the local wrapper semantics
-only. They do not establish ESO startup compatibility; Experiment 0004 owns
-that gate.
+and the failed-run root cause. They do not establish that the new wrapper lets
+ESO start; Experiment 0005 owns that gate.

@@ -20,6 +20,9 @@ def good_log() -> str:
             record("RUN_START: bridge starting pid=70000"),
             record("MOLTENVK: loaded path=/sanitized/libMoltenVK.teso4m4.dylib"),
             record("HDR_COMPAT: filter=enabled extension=VK_EXT_hdr_metadata"),
+            record(
+                "HDR_SURFACE_COMPAT: filter=enabled format=64 colorSpace=1000104008"
+            ),
             record("ACTIVE: redirected 17 Vulkan entry points"),
             record(
                 "GIPA: instance=0x1 name=vkEnumerateDeviceExtensionProperties raw=0x2 returned=0x3 shim=hdr-filter"
@@ -28,10 +31,19 @@ def good_log() -> str:
                 "GIPA: instance=0x1 name=vkCreateDevice raw=0x4 returned=0x5 shim=device-trace"
             ),
             record(
+                "GIPA: instance=0x1 name=vkGetPhysicalDeviceSurfaceFormatsKHR raw=0x6 returned=0x7 shim=surface-format-filter"
+            ),
+            record(
                 "HDR_FILTER: physical=0x1 raw=131 visible=130 removed=1 query=count result=0"
             ),
             record(
                 "HDR_FILTER: physical=0x1 raw=131 visible=130 removed=1 query=data capacity=130 written=130 result=0"
+            ),
+            record(
+                "SURFACE_FORMAT_FILTER: physical=0x1 surface=0x3 raw=60 visible=59 removed=1 query=count result=0"
+            ),
+            record(
+                "SURFACE_FORMAT_FILTER: physical=0x1 surface=0x3 raw=60 visible=59 removed=1 query=data capacity=59 written=59 result=0"
             ),
             record("CREATE_DEVICE: call=1 physical=0x1 extensions=2 hdr_enabled=no"),
             record("CREATE_DEVICE_EXT: call=1 index=0 name=VK_KHR_swapchain"),
@@ -80,6 +92,28 @@ class StartupLogTests(unittest.TestCase):
         self.assertFalse(verdict.passed)
         self.assertIn(
             "no data query proved that exactly one HDR extension was removed",
+            verdict.reasons,
+        )
+
+    def test_rejects_missing_surface_filter_evidence(self) -> None:
+        text = "\n".join(
+            line
+            for line in good_log().splitlines()
+            if not line.startswith(record("SURFACE_FORMAT_FILTER:"))
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "no surface-format data query removed the exact ESO HDR pair",
+            verdict.reasons,
+        )
+
+    def test_rejects_non_exact_removed_counts(self) -> None:
+        text = good_log().replace("removed=1", "removed=10")
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "no surface-format data query removed the exact ESO HDR pair",
             verdict.reasons,
         )
 
