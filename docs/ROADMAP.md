@@ -11,9 +11,9 @@ are in [Project status](STATUS.md); completed runs belong in the
   marker, and cache state.
 - Preserve Experiment 0005 as the verified startup-pass/rendering-fail
   checkpoint until restoration is technically required for a clean rebuild.
-- Build and install the single-variable Experiment 0006 candidate that retains
-  both HDR filters and live-resource checking but disables Metal argument
-  buffers, a capability absent from MoltenVK 1.0.18.
+- Preserve the installed single-variable Experiment 0006 candidate and its
+  prepared evidence. It retains both HDR filters and live-resource checking but
+  disables Metal argument buffers, a capability absent from MoltenVK 1.0.18.
 - Reuse the bounded character-selection observation with two predefined visual
   outcomes: hot-pink startup frame present/absent and black-layer flicker
   present/absent. If the lobby is visually clean, continue in the same run to a

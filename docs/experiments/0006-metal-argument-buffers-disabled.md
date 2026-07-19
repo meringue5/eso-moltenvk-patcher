@@ -1,10 +1,9 @@
 # Experiment 0006: Metal argument buffers disabled
 
 - Date planned: 2026-07-19
-- Outcome: **pending**
-- Installation: **not yet performed**
-- Rollback: **Experiment 0005 checkpoint remains installed until restoration is
-  required for this clean rebuild**
+- Outcome: **installed; user run pending**
+- Installation: **approved and performed from source commit `b2817da`**
+- Rollback: **not performed; Experiment 0006 checkpoint installed**
 
 ## Question
 
@@ -105,8 +104,44 @@ candidate, or old-nonnull/new-null regression on ESO's actual route.
 
 Twelve startup-checker tests now fail closed on missing mode or effective
 configuration evidence in addition to the HDR conditions. Python compilation,
-shell syntax, and whitespace checks pass. Installation remains pending until a
-clean source commit and ignored evidence directory identify the exact build.
+shell syntax, and whitespace checks pass. Source commit
+`b2817dad137e04e6558d213ad6a4796d8fb66de2` identifies the exact build.
+
+## Installation checkpoint
+
+The user-authorized objective includes preparing and installing the next
+candidate without another intermediate pause. Immediately before installation,
+process inspection found no ESO, Steam, or launcher process. Status reported
+the known ESO fingerprint, original/inactive loader, and absent marker. The
+worktree was clean; both the repository and ignored evidence identified source
+commit `b2817dad137e04e6558d213ad6a4796d8fb66de2`.
+
+The prepared artifact hashes were reverified before installation:
+
+| Artifact | SHA-256 |
+|---|---|
+| proxy Bink | `fa8b89c2e090c36663f578e6a7d9fae557b0aebc6aa47a03ba4d9faeb3046550` |
+| MoltenVK 1.4.1 | `d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398` |
+
+Installation ran through the experimental gate in `descriptor-compat` mode at
+approximately 23:44 KST. The prepared ignored evidence directory is
+`artifacts/experiment-0006-20260719T144353Z/`.
+
+Immediate post-install checks confirmed:
+
+- exact ESO fingerprint, installed bridge, and present marker containing only
+  `descriptor-compat`;
+- active proxy and MoltenVK hashes identical to the prepared artifacts;
+- pristine Bink unchanged at SHA-256
+  `c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`;
+- the 6,800,792-byte embedded-runtime cache preserved as
+  `PipelineCache.esopc.teso4m4-old-backup`;
+- the Experiment 0005 3,141,826-byte cache still preserved under its
+  timestamped name, with no new active Experiment 0006 cache before launch;
+- a clean source worktree.
+
+No agent launched Steam, the launcher, or ESO. Installation is not runtime
+evidence; the staged user run below remains the result gate.
 
 ## Exact user action after installation
 

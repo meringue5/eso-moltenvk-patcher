@@ -137,10 +137,17 @@ The rebuilt candidate has passed configuration, Vulkan/Metal, HDR filter,
 wrapper coverage, proc route, Python, and shell checks. In independent
 processes the packaged runtime reported argument buffers `1` under controlled
 defaults and `0` in `descriptor-compat`, with all other named controls
-unchanged. A clean source commit, evidence preparation, and installation are
-the remaining non-game gates.
+unchanged.
 
-After clean rebuild and installation, use one staged run: observe character
+Source commit `b2817da` was recorded in the ignored evidence directory
+`artifacts/experiment-0006-20260719T144353Z/`. With no ESO, Steam, or launcher
+process present, the matching artifacts were installed at approximately 23:44
+KST. Immediate status reports an installed bridge and a marker containing
+`descriptor-compat`; active proxy and MoltenVK hashes match the prepared
+evidence, the pristine Bink is unchanged, and both older cache generations are
+preserved. No agent launched the game.
+
+The installed checkpoint is ready for one staged run: observe character
 selection for 30 seconds; if it is visually clean, continue in the same run to
 five minutes of low-risk world movement. If the black/shadow-layer flicker
 remains, exit without world entry. This is a correctness and short-stability

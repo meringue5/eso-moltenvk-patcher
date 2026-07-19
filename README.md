@@ -10,8 +10,9 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > restoration became necessary for the next clean rebuild. The Experiment 0005
 > surface-format filter then prevented that call and completed its approved
 > character-selection test without a crash, but produced severe transient pink
-> output and persistent black-layer/shadow flicker. Experiment 0006 disables
-> only Metal argument buffers and is not yet validated in ESO. No bridge build
+> output and persistent black-layer/shadow flicker. The installed Experiment
+> 0006 candidate disables only Metal argument buffers and is not yet validated
+> in ESO. No bridge build
 > is currently established as **ready for gameplay**. See the
 > [current status](docs/STATUS.md) before using any experimental tooling.
 
