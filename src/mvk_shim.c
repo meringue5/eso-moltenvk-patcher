@@ -22,7 +22,9 @@ typedef struct {
 static FILE* g_log;
 typedef void (*VkVoidFunction)(void);
 typedef VkVoidFunction (*VkGetInstanceProcAddrFunction)(void* instance, const char* name);
+typedef VkVoidFunction (*VkGetDeviceProcAddrFunction)(void* device, const char* name);
 static VkGetInstanceProcAddrFunction g_next_get_instance_proc_addr;
+static VkGetDeviceProcAddrFunction g_next_get_device_proc_addr;
 
 static void log_line(const char* message) {
     if (g_log) {
@@ -31,11 +33,27 @@ static void log_line(const char* message) {
     }
 }
 
+static VkVoidFunction traced_get_device_proc_addr(void* device, const char* name) {
+    VkVoidFunction result = g_next_get_device_proc_addr(device, name);
+    if (g_log) {
+        fprintf(g_log, "GDPA: device=%p %s -> %p%s\n", device,
+                name ? name : "(null)", (void*)result, result ? "" : " [NULL]");
+        fflush(g_log);
+    }
+    return result;
+}
+
 static VkVoidFunction traced_get_instance_proc_addr(void* instance, const char* name) {
     VkVoidFunction result = g_next_get_instance_proc_addr(instance, name);
+    if (result && name && strcmp(name, "vkGetDeviceProcAddr") == 0) {
+        g_next_get_device_proc_addr = (VkGetDeviceProcAddrFunction)result;
+        result = (VkVoidFunction)&traced_get_device_proc_addr;
+    } else if (result && name && strcmp(name, "vkGetInstanceProcAddr") == 0) {
+        result = (VkVoidFunction)&traced_get_instance_proc_addr;
+    }
     if (g_log) {
-        fprintf(g_log, "GIPA: %s -> %p%s\n", name ? name : "(null)", (void*)result,
-                result ? "" : " [NULL]");
+        fprintf(g_log, "GIPA: instance=%p %s -> %p%s\n", instance,
+                name ? name : "(null)", (void*)result, result ? "" : " [NULL]");
         fflush(g_log);
     }
     return result;
@@ -90,6 +108,30 @@ static bool marker_mode(const char* directory, bool* live_check) {
     return true;
 }
 
+static bool restore_rx_pages(const uintptr_t* pages, size_t count,
+                             mach_vm_size_t page_size) {
+    bool restored = true;
+    for (size_t index = 0; index < count; ++index) {
+        kern_return_t result = mach_vm_protect(
+            mach_task_self(), pages[index], page_size, FALSE,
+            VM_PROT_READ | VM_PROT_EXECUTE);
+        if (result != KERN_SUCCESS) {
+            fprintf(g_log, "ERROR: could not restore RX page 0x%lx: %s\n",
+                    (unsigned long)pages[index], mach_error_string(result));
+            restored = false;
+        }
+    }
+    return restored;
+}
+
+static void require_rx_restore(const uintptr_t* pages, size_t count,
+                               mach_vm_size_t page_size) {
+    if (!restore_rx_pages(pages, count, page_size)) {
+        log_line("FATAL: code-page permissions could not be restored; exiting");
+        _exit(126);
+    }
+}
+
 static bool install_patches(const struct mach_header_64* header, void* moltenvk) {
     void* destinations[ESO_TARGET_COUNT];
     uintptr_t writable_pages[ESO_TARGET_COUNT];
@@ -133,11 +175,8 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
         if (result != KERN_SUCCESS) {
             fprintf(g_log, "ERROR: mach_vm_protect: %s\n", mach_error_string(result));
-            for (size_t page_index = 0; page_index < writable_page_count; ++page_index) {
-                mach_vm_protect(mach_task_self(), writable_pages[page_index],
-                                (mach_vm_size_t)page_size, FALSE,
-                                VM_PROT_READ | VM_PROT_EXECUTE);
-            }
+            require_rx_restore(writable_pages, writable_page_count,
+                               (mach_vm_size_t)page_size);
             return false;
         }
         writable_pages[writable_page_count++] = page;
@@ -154,23 +193,16 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
         __builtin___clear_cache((char*)address, (char*)address + sizeof(patch));
     }
 
-    for (size_t index = 0; index < writable_page_count; ++index) {
-        kern_return_t result = mach_vm_protect(
-            mach_task_self(), writable_pages[index], (mach_vm_size_t)page_size, FALSE,
-            VM_PROT_READ | VM_PROT_EXECUTE);
-        if (result != KERN_SUCCESS) {
-            fprintf(g_log, "WARNING: could not restore RX page: %s\n",
-                    mach_error_string(result));
-        }
-    }
+    require_rx_restore(writable_pages, writable_page_count, (mach_vm_size_t)page_size);
     return true;
 }
 
 __attribute__((constructor)) static void teso4m4_init(void) {
     g_log = fopen("/tmp/teso4m4.log", "a");
-    if (g_log) {
-        setvbuf(g_log, NULL, _IOLBF, 0);
+    if (!g_log) {
+        return;
     }
+    setvbuf(g_log, NULL, _IOLBF, 0);
     log_line("--- teso4m4 bridge starting ---");
 
     char directory[4096];

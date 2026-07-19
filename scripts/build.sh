@@ -6,12 +6,13 @@ ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zen
 GAME_MAC="$ESO_APP/Contents/MacOS"
 ESO="$GAME_MAC/eso"
 BINK="$GAME_MAC/libBink2Macx64.dylib"
+LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 MVK_ROOT="${MVK_ROOT:-$ROOT/vendor/MoltenVK}"
 MVK="$MVK_ROOT/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib"
 MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-11.json}"
 BUILD="$ROOT/build"
 
-for file in "$ESO" "$BINK" "$MVK" "$MANIFEST"; do
+for file in "$ESO" "$BINK" "$LEGACY_MVK" "$MVK" "$MANIFEST"; do
   [[ -f "$file" ]] || { echo "Missing required file: $file"; exit 1; }
 done
 if otool -L "$BINK" | grep -q 'teso4m4-original'; then
@@ -40,8 +41,13 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O0 \
   "$ROOT/tools/probe_self_patch.c" -o "$BUILD/probe_self_patch"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$MVK_ROOT/MoltenVK/include" "$ROOT/tools/probe_vulkan.c" -o "$BUILD/probe_vulkan"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
+  -DTESO4M4_STATIC_MOLTENVK=1 -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_vulkan.c" "$LEGACY_MVK" \
+  -framework Metal -framework Foundation -framework QuartzCore -framework IOSurface \
+  -framework IOKit -framework CoreGraphics -framework AppKit -lc++ \
+  -o "$BUILD/probe_vulkan_legacy"
 
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
 "$BUILD/probe_self_patch"
 echo "Built teso4m4 artifacts in $BUILD"
-

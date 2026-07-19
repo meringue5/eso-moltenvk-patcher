@@ -6,6 +6,109 @@
 #include <string.h>
 #include <vulkan/vulkan.h>
 
+static const char* kEsoProcNames[] = {
+    "vkCmdClearAttachments",
+    "vkCmdBindVertexBuffers",
+    "vkCmdBindIndexBuffer",
+    "vkCmdBindPipeline",
+    "vkCmdSetScissor",
+    "vkCmdSetViewport",
+    "vkCmdDrawIndexed",
+    "vkCmdDraw",
+    "vkCmdDispatch",
+    "vkCmdCopyBuffer",
+    "vkCmdCopyBufferToImage",
+    "vkCmdCopyImageToBuffer",
+    "vkCmdPipelineBarrier",
+    "vkCmdBindDescriptorSets",
+    "vkCmdBeginRenderPass",
+    "vkBeginCommandBuffer",
+    "vkCmdWriteTimestamp",
+    "vkCmdResetQueryPool",
+    "vkCmdDebugMarkerBeginEXT",
+    "vkCmdDebugMarkerEndEXT",
+    "vkCmdDebugMarkerInsertEXT",
+    "vkEnumerateInstanceLayerProperties",
+    "vkEnumerateInstanceExtensionProperties",
+    "vkCreateInstance",
+    "vkGetDeviceProcAddr",
+    "vkGetPhysicalDeviceProperties",
+    "vkEnumeratePhysicalDevices",
+    "vkGetPhysicalDeviceFeatures",
+    "vkGetPhysicalDeviceQueueFamilyProperties",
+    "vkGetPhysicalDeviceSurfaceSupportKHR",
+    "vkEnumerateDeviceExtensionProperties",
+    "vkCreateDevice",
+    "vkGetDeviceQueue",
+    "vkGetPhysicalDeviceMemoryProperties",
+    "vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
+    "vkGetPhysicalDeviceSurfacePresentModesKHR",
+    "vkGetPhysicalDeviceSurfaceFormatsKHR",
+    "vkCreateSwapchainKHR",
+    "vkDestroySwapchainKHR",
+    "vkSetHdrMetadataEXT",
+    "vkDeviceWaitIdle",
+    "vkGetSwapchainImagesKHR",
+    "vkDestroyPipelineCache",
+    "vkDestroyDevice",
+    "vkDestroySurfaceKHR",
+    "vkDestroyInstance",
+    "vkQueuePresentKHR",
+    "vkAcquireNextImageKHR",
+    "vkCreateBuffer",
+    "vkGetBufferMemoryRequirements",
+    "vkBindBufferMemory",
+    "vkDestroyBuffer",
+    "vkMapMemory",
+    "vkUnmapMemory",
+    "vkCreateImage",
+    "vkCreateImageView",
+    "vkDestroyImage",
+    "vkDestroyImageView",
+    "vkCreateBufferView",
+    "vkDestroyBufferView",
+    "vkCreateCommandPool",
+    "vkDestroyCommandPool",
+    "vkAllocateCommandBuffers",
+    "vkAllocateMemory",
+    "vkFreeMemory",
+    "vkCreateDescriptorSetLayout",
+    "vkDestroyDescriptorSetLayout",
+    "vkCreatePipelineLayout",
+    "vkDestroyPipelineLayout",
+    "vkDestroyPipeline",
+    "vkCreateDescriptorPool",
+    "vkDestroyDescriptorPool",
+    "vkAllocateDescriptorSets",
+    "vkResetDescriptorPool",
+    "vkUpdateDescriptorSets",
+    "vkBindImageMemory",
+    "vkGetImageMemoryRequirements",
+    "vkCreateShaderModule",
+    "vkDestroyShaderModule",
+    "vkCreateGraphicsPipelines",
+    "vkCreateComputePipelines",
+    "vkCreateFence",
+    "vkDestroyFence",
+    "vkWaitForFences",
+    "vkResetFences",
+    "vkQueueSubmit",
+    "vkCreateSemaphore",
+    "vkDestroySemaphore",
+    "vkCreateRenderPass",
+    "vkDestroyRenderPass",
+    "vkCreateFramebuffer",
+    "vkDestroyFramebuffer",
+    "vkCreateSampler",
+    "vkDestroySampler",
+    "vkFreeDescriptorSets",
+    "vkCreateQueryPool",
+    "vkDestroyQueryPool",
+    "vkGetQueryPoolResults",
+    "vkCreatePipelineCache",
+    "vkGetPipelineCacheData",
+};
+
 static bool has_extension(const VkExtensionProperties* properties, uint32_t count, const char* name) {
     for (uint32_t index = 0; index < count; ++index) {
         if (strcmp(properties[index].extensionName, name) == 0) {
@@ -15,7 +118,34 @@ static bool has_extension(const VkExtensionProperties* properties, uint32_t coun
     return false;
 }
 
+static void report_proc_addresses(VkInstance instance, VkDevice device,
+                                  PFN_vkGetInstanceProcAddr get_instance_proc) {
+    PFN_vkGetDeviceProcAddr get_device_proc =
+        (PFN_vkGetDeviceProcAddr)get_instance_proc(instance, "vkGetDeviceProcAddr");
+    size_t missing_instance = 0;
+    size_t missing_device = 0;
+    for (size_t index = 0; index < sizeof(kEsoProcNames) / sizeof(kEsoProcNames[0]); ++index) {
+        const char* name = kEsoProcNames[index];
+        PFN_vkVoidFunction instance_result = get_instance_proc(instance, name);
+        PFN_vkVoidFunction device_result = get_device_proc(device, name);
+        missing_instance += instance_result == NULL;
+        missing_device += device_result == NULL;
+        printf("proc %-44s GIPA=%s GDPA=%s\n", name, instance_result ? "yes" : "NULL",
+               device_result ? "yes" : "NULL");
+    }
+    printf("proc summary candidates=%zu GIPA-null=%zu GDPA-null=%zu\n",
+           sizeof(kEsoProcNames) / sizeof(kEsoProcNames[0]), missing_instance,
+           missing_device);
+}
+
 int main(int argc, char** argv) {
+#ifdef TESO4M4_STATIC_MOLTENVK
+    if (argc != 1) {
+        fprintf(stderr, "usage: %s\n", argv[0]);
+        return 2;
+    }
+    PFN_vkGetInstanceProcAddr get_proc = vkGetInstanceProcAddr;
+#else
     if (argc != 2) {
         fprintf(stderr, "usage: %s libMoltenVK.dylib\n", argv[0]);
         return 2;
@@ -27,6 +157,7 @@ int main(int argc, char** argv) {
     }
 
     PFN_vkGetInstanceProcAddr get_proc = (PFN_vkGetInstanceProcAddr)dlsym(library, "vkGetInstanceProcAddr");
+#endif
     PFN_vkCreateInstance create_instance =
         (PFN_vkCreateInstance)get_proc(VK_NULL_HANDLE, "vkCreateInstance");
     PFN_vkEnumerateInstanceExtensionProperties enumerate_instance_extensions =
@@ -143,6 +274,7 @@ int main(int argc, char** argv) {
             result = create_device(devices[0], &device_info, NULL, &device);
             printf("vkCreateDevice (ESO-era extension set): %d\n", result);
             if (result == VK_SUCCESS) {
+                report_proc_addresses(instance, device, get_proc);
                 PFN_vkDestroyDevice destroy_device =
                     (PFN_vkDestroyDevice)get_proc(instance, "vkDestroyDevice");
                 destroy_device(device, NULL);
