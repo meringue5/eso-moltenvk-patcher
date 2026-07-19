@@ -20,11 +20,13 @@ check again before any work involving the game bundle. Inactive companion files
 may exist beside the game executable; the status result above does not inventory
 or remove them.
 
-Experiment 0002 preflight is prepared at source commit `7a235dc`, but nothing
-has been installed. Its static analysis covers direct branches, address-taken
-wrappers, dyld rebase pointers, and the GIPA/GDPA slots for this exact target.
-The old/new non-game proc comparison found no old-nonnull/new-null result on an
-actual ESO query route. See the [planned run](experiments/0002-live-check-proc-trace-startup.md).
+Experiment 0002 was explicitly approved and installed at 2026-07-19 15:08 KST
+from source commit `7a235dc` in `live-check` mode. The active Bink loader is now
+the bridge and the enable marker is present. Before replacement, the absent
+pristine backup was created from the active original loader and byte-verified;
+the old pipeline cache backup and proxy re-export target were also verified.
+Evidence collection is prepared, but ESO has not yet been launched. See the
+[running experiment](experiments/0002-live-check-proc-trace-startup.md).
 
 ## Active blocker
 
@@ -42,10 +44,8 @@ experimental marker mode is `live-check`, which enables
 
 ## Next gate
 
-The static gates and evidence tooling for Experiment 0002 are complete. The
-next gate is explicit approval for one `live-check`, startup-only installation
-of commit `7a235dc`. The user-controlled Steam launch must stop at a crash,
-stable character selection, or 60 seconds, whichever comes first; it must not
+The next gate is the user-controlled Steam launch. It must stop at a crash,
+stable character selection, or 60 seconds, whichever comes first, and must not
 enter the game world. Evidence must then be collected and the pristine loader
 and old pipeline cache restored immediately.
 

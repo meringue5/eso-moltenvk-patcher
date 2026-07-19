@@ -1,8 +1,8 @@
 # Experiment 0002: live-check proc-traced startup
 
 - Date: 2026-07-19
-- Outcome: **planned**
-- Rollback: **not started; active loader verified original**
+- Outcome: **running; installed, awaiting user-controlled startup**
+- Rollback: **pending; pristine backup and old pipeline cache verified**
 
 ## Question
 
@@ -86,7 +86,12 @@ added here.
 
 ## Result
 
-Not run. Installation approval has not yet been requested or recorded.
+The user explicitly approved this installation. At 2026-07-19 15:08 KST, the
+bridge was installed in `live-check` mode after creating and byte-verifying the
+previously absent pristine Bink backup. The old pipeline cache was moved to its
+preserved backup path, the enable marker was verified, and evidence collection
+was prepared. ESO, Steam, and the launcher remained stopped; the startup test
+has not yet begun.
 
 ## Interpretation
 
@@ -94,8 +99,9 @@ No runtime interpretation is available before the controlled startup.
 
 ## Rollback
 
-Not started. The active Bink loader remains original and the enable marker is
-absent.
+Pending after the user-controlled startup. The pristine Bink backup is present
+and classified as original, the proxy re-export target is present, and the old
+pipeline cache backup is present.
 
 ## Follow-up
 
