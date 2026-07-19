@@ -4,7 +4,8 @@ This document separates observed behavior from unverified internet advice.
 
 ## Current sanitized snapshot
 
-The relevant values observed after the July 2026 tests are stored in
+The relevant values preserved after the Experiment 0003 long baseline session
+are stored in
 [`config/usersettings-performance-observed.txt`](../config/usersettings-performance-observed.txt).
 
 Notable values:
@@ -19,7 +20,8 @@ Notable values:
 | `REFLECTION_QUALITY` | `0` | Reduced |
 | `PLANAR_WATER_REFLECTION_QUALITY` | `0` | Disabled/reduced |
 | `SCREENSPACE_WATER_REFLECTION_QUALITY` | `1` | Still enabled at a low setting |
-| `SHADOWS` | `1` | Low |
+| `SHADOWS` | `2` | Current checkpoint value |
+| `ANTIALIASING_TYPE` | `0` | Disabled in the current checkpoint |
 | `AMBIENT_OCCLUSION_TYPE` | `0` | Disabled |
 | `GOD_RAYS` / `BLOOM` | `0` | Disabled |
 | `VSYNC` | `1` | Enabled |
@@ -45,3 +47,6 @@ Notable values:
   in-game slider numerically. ESO rewrote the manually tested `0.80` value after
   later in-game changes.
 
+The current full settings file and 6.8 MB pipeline cache are retained only in
+ignored Experiment 0003 evidence. Their committed counterpart is this sanitized
+setting subset; neither the raw settings nor the cache belongs in Git.

@@ -17,6 +17,14 @@ Tested observations:
 - The practical workaround was to return to character select, wait briefly,
   then exit. This reduced disruption but did not constitute a fix.
 
+Experiment 0003 provided a concrete shutdown report after about 2 hours 27
+minutes of otherwise usable gameplay on the original embedded runtime. It was
+`EXC_BAD_INSTRUCTION / SIGILL` on an audio cleanup thread whose stack included
+`ExtendedAudioBufferList_Destroy` and `AudioComponentInstanceDispose`. This
+confirms that audio teardown is involved in at least that exit crash; it does
+not prove an audio-device fault, and it is distinct from the MoltenVK bridge's
+startup `RIP=0` failure.
+
 ## Performance degradation
 
 Symptoms:
@@ -40,4 +48,3 @@ For future tests, record the same camera position and wait 20 seconds before
 capturing. Include FPS, GPU time, frame interval, app memory, Metal memory,
 thermal state, player count, zone, and minutes since login. Do not compare only
 the FPS number from different scenes.
-

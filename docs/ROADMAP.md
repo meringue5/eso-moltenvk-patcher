@@ -27,6 +27,16 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P2: controlled performance experiments
 
+- Use the Experiment 0003 embedded-runtime checkpoint for a fixed-zone,
+  fixed-route repeat before attributing any change to MoltenVK 1.4.1.
+- Capture paired Metal HUD states during the object-heavy 40-FPS condition and
+  after spontaneous recovery: FPS, GPU time, frame interval, app memory, Metal
+  memory, and thermal state.
+- Record route duration, camera, resolution, player-density estimate, settings
+  snapshot, and pipeline-cache hash. Preserve the warm cache before any
+  cold-cache comparison; never delete it.
+- Use GPU time versus frame interval to distinguish a GPU-work increase from a
+  CPU/submission/streaming stall before changing another option.
 - Compare MoltenVK defaults against live-resource compatibility mode.
 - Evaluate asynchronous queue submission only after correctness is established.
 - Keep Metal argument buffers and command pooling at their 1.4.1 defaults first.

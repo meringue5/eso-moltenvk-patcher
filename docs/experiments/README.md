@@ -10,6 +10,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 |---:|---|---|---|---|
 | 0001 | 2026-07-19 | MoltenVK 1.4.1 full redirect | Failed after activation; rolled back | [Run](0001-moltenvk-1.4.1-full-redirect.md), [crash analysis](0001-crash-analysis.md) |
 | 0002 | 2026-07-19 | Live-check proc-traced startup | Failed after activation; rolled back | [Run](0002-live-check-proc-trace-startup.md) |
+| 0003 | 2026-07-19 | Original-runtime long session | Inconclusive as override test; baseline captured | [Run](0003-original-runtime-long-session.md) |
 
 ## Recording policy
 
