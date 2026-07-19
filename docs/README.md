@@ -13,8 +13,9 @@ treating every old result as current.
 | What has been established across experiments? | [Findings](FINDINGS.md) |
 | How does the bridge work? | [Architecture](ARCHITECTURE.md) |
 | What happened in a specific run? | [Experiment index](experiments/README.md) |
+| What do comparable external projects teach us? | [Research index](research/README.md) |
 | Which settings and operational workarounds are known? | [Settings](SETTINGS.md) and [Troubleshooting](TROUBLESHOOTING.md) |
-| Which external material supports the research? | [Sources](SOURCES.md) |
+| Which primary external sources support the research? | [Sources](SOURCES.md) |
 
 `AGENTS.md` at the repository root owns standing workflow and safety rules.
 `CHANGELOG.md` records repository releases. Neither file should accumulate test
@@ -28,6 +29,9 @@ results or a rolling narrative of the investigation.
   experiment record rather than retaining a diary in the roadmap.
 - Treat experiment records as append-only evidence. Correct them with a dated
   amendment, and preserve the original observation.
+- Store dated searches, precedent comparisons, and literature syntheses under
+  `research/`. Keep their search limitations explicit and do not present an
+  absence of public results as proof that no private or unindexed work exists.
 - Promote a result to `FINDINGS.md` only when the evidence is durable enough to
   guide later work.
 - Link to the owning document instead of copying exact hashes, crash details, or

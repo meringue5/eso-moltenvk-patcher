@@ -37,6 +37,8 @@ and evidence preservation take priority over obtaining a quick FPS result.
 - `docs/FINDINGS.md`: durable observations promoted from completed work.
 - `docs/experiments/`: immutable per-run intent, procedure, evidence, result,
   interpretation, and rollback state.
+- `docs/research/`: dated external searches, precedent reviews, and literature
+  syntheses; these are context for decisions, not local experiment evidence.
 - `CHANGELOG.md`: repository release history, not research history.
 
 When information changes, update its owner and link to it instead of copying it

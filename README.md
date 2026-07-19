@@ -29,6 +29,7 @@ Start with the [documentation guide](docs/README.md), then use the
 config/             Build fingerprints and non-personal settings snapshots
 docs/               Current status, findings, plans, and technical guidance
 docs/experiments/   Append-only experiment records and their evidence summaries
+docs/research/      Dated external precedent reviews and literature notes
 scripts/            Fetch, build, install, restore, and status helpers
 src/                Runtime bridge source
 tools/              Binary-analysis and compatibility probes
