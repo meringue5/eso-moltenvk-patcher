@@ -51,3 +51,13 @@ mode are reviewed together.
 
 The full `.ips` is intentionally not committed because it contains local paths
 and persistent device/report identifiers.
+
+## 2026-07-19 amendment after Experiment 0002
+
+Experiment 0002 reproduced `RIP=0` with the same first recoverable ESO return
+offset, `0x364a7a5`. Its complete proc trace ended with a NULL GDPA result for
+`vkSetHdrMetadataEXT`. A non-game probe then showed that MoltenVK 1.4.1
+advertises `VK_EXT_hdr_metadata` but returns that device proc only when the
+extension is enabled on the device. This supersedes the earlier broad
+missing-function-table diagnosis with a narrower extension-negotiation lead;
+it still does not prove which null pointer the indirect call reached.

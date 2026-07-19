@@ -39,8 +39,8 @@ for DIRECTORY in "$HOME/Library/Logs/DiagnosticReports" "/Library/Logs/Diagnosti
 done
 echo "$REPORT_COUNT" > "$OUTPUT/crash-report-count.txt"
 
-START_UTC="$(<"$START_UTC_FILE")"
-log show --style syslog --start "$START_UTC" --predicate 'process == "eso"' \
+START_LOCAL="$(date -r "$START_EPOCH" '+%Y-%m-%d %H:%M:%S')"
+/usr/bin/log show --style syslog --start "$START_LOCAL" --predicate 'process == "eso"' \
   > "$OUTPUT/eso-unified.log" 2> "$OUTPUT/eso-unified.stderr" || true
 "$ROOT/scripts/status.sh" > "$OUTPUT/status-after.txt"
 

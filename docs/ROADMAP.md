@@ -6,13 +6,15 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P0: explain the first bridge crash
 
-- Run Experiment 0002 once in startup-only `live-check` mode with GIPA and GDPA
-  tracing, prepared `.ips` capture, and unified-log collection.
-- If no null proc result precedes the same fault, trace the ESO graphics
-  abstraction vtable and initialization callbacks around the recovered
-  indirect call.
-- Distinguish descriptor lifetime, ABI/configuration, and early
-  surface/swapchain failure before adding broad Vulkan-call tracing.
+- Record the exact device-extension names ESO passes to `vkCreateDevice` and
+  reproduce that advertised-versus-enabled state in the non-game probe.
+- Determine whether hiding `VK_EXT_hdr_metadata` during extension enumeration
+  restores the 1.0.18 decision path without changing unrelated capabilities.
+- Compare that filtering approach with a guarded compatibility implementation
+  of `vkSetHdrMetadataEXT`; prefer the smallest behavior that matches the old
+  runtime and fails closed on an unexpected device state.
+- Design a third startup-only experiment only after the negotiation mismatch is
+  reproduced without launching the game.
 
 ## P1: keep redirection verifiable
 

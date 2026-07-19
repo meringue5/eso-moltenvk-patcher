@@ -35,14 +35,22 @@ entry points: 39 calls/jumps to 16 wrappers plus one address-taken
 are exported by MoltenVK 1.4.1.
 
 ESO directly queries 17 unique names through GIPA and 65 through GDPA. A
-100-name old/new non-game probe found no case where 1.0.18 returned non-null and
-1.4.1 returned null on the route ESO actually uses. The bridge now traces both
-proc-address functions so a controlled run can verify the dynamic sequence.
+100-name old/new non-game probe initially found no old-nonnull/new-null case,
+but Experiment 0002 exposed a conditional route: MoltenVK 1.4.1 advertises
+`VK_EXT_hdr_metadata`, and its `vkSetHdrMetadataEXT` GDPA result is non-null only
+when that extension was enabled on the device. The bridge trace recorded a NULL
+result for this proc immediately before the repeated startup crash sequence.
+
+Future compatibility probes must model extension enumeration and device
+creation as one state transition. Comparing names against an arbitrary device
+is insufficient when the replacement runtime advertises capabilities absent
+from the embedded runtime.
 
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially
 reduces the obvious public-wrapper mixing risk for this exact executable, but
-does not prove callback, private ABI, object-lifetime, or surface/swapchain
-compatibility. Any target update invalidates the coverage until fingerprints,
-offsets, cross-references, and proc behavior are re-established.
+does not prove callback, private ABI, extension-negotiation, object-lifetime,
+or surface/swapchain compatibility. Any target update invalidates the coverage
+until fingerprints, offsets, cross-references, extension state, and proc
+behavior are re-established.

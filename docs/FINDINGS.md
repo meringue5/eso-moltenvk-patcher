@@ -70,8 +70,16 @@ covers all 17, and MoltenVK 1.4.1 exports each one. Static analysis also
 recovered every direct proc lookup: 17 unique GIPA names and 65 unique GDPA
 names.
 
-The old static 1.0.18 and new dynamic 1.4.1 runtimes were queried with the same
-100-name candidate set after instance and device creation. No function changed
-from non-null in 1.0.18 to null in 1.4.1 on the route ESO actually uses. This
-reduces the missing-public-proc and obvious handle-mixing hypotheses; it does
-not establish startup compatibility or explain Experiment 0001's `RIP=0`.
+The initial old/new 100-name probe found no old-nonnull/new-null change, but it
+tested only one device-extension configuration. Experiment 0002 showed why that
+qualification matters: the last recorded startup lookup was a NULL GDPA result
+for `vkSetHdrMetadataEXT`, followed by the same `RIP=0` and first recoverable
+ESO return offset observed in Experiment 0001.
+
+MoltenVK 1.0.18 does not advertise `VK_EXT_hdr_metadata` and returns NULL for
+that proc. MoltenVK 1.4.1 advertises the extension; GIPA returns non-null, while
+GDPA returns NULL until the extension is enabled on the device and non-null
+after it is enabled. Proc compatibility tests must therefore reproduce both the
+advertised extension set and the extensions enabled at device creation. The
+evidence strongly suggests an HDR extension-negotiation mismatch, but does not
+yet prove which null pointer ESO called.

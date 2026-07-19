@@ -1,8 +1,8 @@
 # Experiment 0002: live-check proc-traced startup
 
 - Date: 2026-07-19
-- Outcome: **running; installed, awaiting user-controlled startup**
-- Rollback: **pending; pristine backup and old pipeline cache verified**
+- Outcome: **failed after activation**
+- Rollback: **complete; original loader and old pipeline cache restored**
 
 ## Question
 
@@ -60,6 +60,11 @@ These checks establish public wrapper and proc-lookup coverage for this exact
 build. They do not prove compatible private ABI, callbacks, object lifetime,
 surface/swapchain behavior, or gameplay stability.
 
+Post-run amendment: the initial proc comparison created the new device without
+enabling the new runtime's advertised `VK_EXT_hdr_metadata` extension. It
+therefore verified a single extension-negotiation state, not all states that
+ESO could select after seeing a larger advertised extension set.
+
 ## Procedure
 
 1. Obtain explicit approval for this exact game-bundle modification.
@@ -78,11 +83,20 @@ Agents must not launch ESO, Steam, or the launcher.
 
 ## Evidence
 
-Planned evidence is the bridge log with GIPA/GDPA results, any new `.ips`, ESO
-unified log since the prepared timestamp, target fingerprints, and before/after
-status snapshots. Raw evidence stays under ignored `artifacts/` because it may
-contain local paths or identifiers. Only sanitized facts and excerpts may be
-added here.
+Raw evidence is preserved under ignored directory
+`artifacts/experiment-0002-20260719T060809Z/`. It contains the before/after
+status snapshots, bridge log, one new `.ips`, unified log, timestamps, and a
+checksum manifest. The files that establish the failure have these SHA-256
+hashes:
+
+| File | SHA-256 |
+|---|---|
+| `bridge-log-after.txt` | `1a17a7cbb6405fdb3caf9ea34a6551c6513adc6560a07443a15c5f172f2f8cfc` |
+| `system-eso-2026-07-19-151031.ips` | `f862334e77b518f67cb49c634463cc0a63e6aa3495059121b1c6c9beacf6324c` |
+| `eso-unified.log` | `f7132bf6fc00031bcdab7e47c6c7b93c55cf27deb19dc108b3e2c4323f8c2100` |
+
+`shasum -c SHA256SUMS` passed after collection. Raw evidence is intentionally
+not committed because it may contain local paths or identifiers.
 
 ## Result
 
@@ -90,22 +104,68 @@ The user explicitly approved this installation. At 2026-07-19 15:08 KST, the
 bridge was installed in `live-check` mode after creating and byte-verifying the
 previously absent pristine Bink backup. The old pipeline cache was moved to its
 preserved backup path, the enable marker was verified, and evidence collection
-was prepared. ESO, Steam, and the launcher remained stopped; the startup test
-has not yet begun.
+was prepared.
+
+The user then launched through Steam. MoltenVK 1.4.1 activated and all 17
+manifest entries were redirected. Startup crashed at 2026-07-19 15:10:31 KST.
+The bridge log ended with these successful device queries followed by one null
+result:
+
+```text
+GDPA: ... vkCreateSwapchainKHR -> non-null
+GDPA: ... vkCreateSemaphore -> non-null
+GDPA: ... vkSetHdrMetadataEXT -> 0x0 [NULL]
+```
+
+The crash was `EXC_BAD_ACCESS / SIGSEGV` on the main thread with `RIP=0`,
+`RAX=0`, and `KERN_INVALID_ADDRESS at 0`. The first recoverable ESO return
+address was again executable offset `0x364a7a5`, exactly matching Experiment
+0001. The loaded-image list included the bridge, pristine re-export library,
+and MoltenVK 1.4.1. The collected unified log did not add a relevant Vulkan or
+MoltenVK message before the crash.
+
+A post-run non-game probe established the extension-dependent behavior:
+
+| Runtime/device state | Advertises `VK_EXT_hdr_metadata` | GIPA | GDPA |
+|---|---:|---:|---:|
+| MoltenVK 1.0.18 | no | NULL | NULL |
+| MoltenVK 1.4.1, extension not enabled | yes | non-null | NULL |
+| MoltenVK 1.4.1, extension enabled | yes | non-null | non-null |
 
 ## Interpretation
 
-No runtime interpretation is available before the controlled startup.
+Confirmed observations are that ESO reached device and swapchain setup, the
+last recorded proc lookup returned NULL for `vkSetHdrMetadataEXT`, and the
+subsequent crash reproduced Experiment 0001's null instruction pointer and ESO
+return offset. The new runtime exposes a conditional HDR path that the old
+runtime did not advertise.
+
+The strongest current inference is an extension-negotiation mismatch: ESO may
+select an HDR-metadata path because MoltenVK 1.4.1 advertises the extension,
+then create a device without enabling that extension and eventually call the
+null device proc. The trace does not prove that the last returned pointer was
+the one called, nor does it record the enabled-extension list passed to
+`vkCreateDevice`, so this is not yet a confirmed root cause.
+
+The original hypothesis that the 100-name probe ruled out a public-proc
+availability problem was too broad. Proc availability depends on which device
+extensions were enabled, and the first probe did not model that conditional
+state.
 
 ## Rollback
 
-Pending after the user-controlled startup. The pristine Bink backup is present
-and classified as original, the proxy re-export target is present, and the old
-pipeline cache backup is present.
+The bridge was restored immediately after collection. At 2026-07-19 15:15 KST,
+`scripts/status.sh` reported the active Bink loader as original/inactive and the
+enable marker as absent. The active loader byte-matches the pristine backup,
+and the old pipeline cache was restored. The former enable marker was preserved
+under a disabled timestamped name rather than deleted.
 
 ## Follow-up
 
-Classify the outcome by the last GIPA/GDPA result and crash address. If no null
-proc result precedes the same fault, investigate the ESO graphics abstraction
-vtable, initialization callbacks, and surface/swapchain path before adding
-broader Vulkan-call tracing.
+Before another installation, wrap or intercept `vkCreateDevice` in a non-game
+diagnostic path and record its enabled device-extension names. Then reproduce
+the exact advertised-versus-enabled state and choose between two narrowly
+scoped compatibility experiments: hide `VK_EXT_hdr_metadata` during device
+extension enumeration to emulate 1.0.18, or supply a guarded compatibility
+implementation for the null HDR setter. Filtering the advertised extension is
+the more principled first candidate, but neither approach is yet validated.

@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
             calloc(device_extension_count, sizeof(*device_extensions));
         enumerate_device_extensions(
             devices[0], NULL, &device_extension_count, device_extensions);
-        const char* requested_device_extensions[] = {
+        const char* requested_device_extensions[5] = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_MAINTENANCE1_EXTENSION_NAME,
             VK_AMD_NEGATIVE_VIEWPORT_HEIGHT_EXTENSION_NAME,
@@ -240,6 +240,17 @@ int main(int argc, char** argv) {
                        ? "yes"
                        : "NO");
         }
+        uint32_t requested_device_extension_count = 4;
+        bool enable_hdr_metadata =
+            getenv("TESO4M4_PROBE_ENABLE_HDR_METADATA") != NULL &&
+            has_extension(device_extensions, device_extension_count,
+                          VK_EXT_HDR_METADATA_EXTENSION_NAME);
+        if (enable_hdr_metadata) {
+            requested_device_extensions[requested_device_extension_count++] =
+                VK_EXT_HDR_METADATA_EXTENSION_NAME;
+        }
+        printf("probe enable      %-40s %s\n", VK_EXT_HDR_METADATA_EXTENSION_NAME,
+               enable_hdr_metadata ? "yes" : "no");
 
         uint32_t queue_family_count = 0;
         get_queue_family_properties(devices[0], &queue_family_count, NULL);
@@ -267,7 +278,7 @@ int main(int argc, char** argv) {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                 .queueCreateInfoCount = 1,
                 .pQueueCreateInfos = &queue_info,
-                .enabledExtensionCount = 4,
+                .enabledExtensionCount = requested_device_extension_count,
                 .ppEnabledExtensionNames = requested_device_extensions,
             };
             VkDevice device = VK_NULL_HANDLE;
