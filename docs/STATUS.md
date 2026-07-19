@@ -39,6 +39,16 @@ evidence, displaced marker, and pipeline-cache state remain preserved; the
 current original-loader state is a build prerequisite, not an assertion that
 normal operation was the objective.
 
+At 2026-07-19 22:54 KST, the user approved continuing directly with the
+prepared Experiment 0005 installation. Pre-install checks found no ESO, Steam,
+or launcher process; required original/inactive status and exact source commit
+`b00ced5d521c301a1bc159b74cfa16056a5c5e36`; and reverified both prepared
+artifact hashes. The bridge was then installed in `live-check` mode. Immediate
+post-install status reports the bridge installed and marker present. The active
+proxy and MoltenVK hashes match the prepared evidence, the pristine Bink remains
+unchanged, and the 6,800,792-byte old pipeline cache is preserved under its
+backup name.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -92,12 +102,8 @@ depends on Rust yet.
 
 ## Next gate
 
-The Experiment 0005 non-game preflight and static checks are complete. Its clean
-source state and fresh ignored evidence are prepared as the exact pre-install
-checkpoint. The next gate is explicit user approval for the exact Experiment
-0005 installation; Experiment 0004 approval does not carry over.
-
-If separately approved and installed, the sole user action is limited to a
-Steam-authenticated launch to character selection plus a 60-second wait. No
-world entry, Metal HUD, screenshot, settings change, or performance measurement
-is part of that run.
+The Experiment 0005 non-game preflight, static checks, clean commit, evidence
+preparation, approval, and installation are complete. The next gate is the sole
+user action: a Steam-authenticated launch to character selection and a 60-second
+wait there. No world entry, Metal HUD, screenshot, settings change, or
+performance measurement is part of this run.

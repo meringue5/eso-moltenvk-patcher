@@ -9,8 +9,8 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Experiment 0004 was preserved until restoration became technically necessary
   for the Experiment 0005 clean rebuild; retain its verified evidence, displaced
   marker, and cache state.
-- Commit the fully validated Experiment 0005 source state, prepare fresh ignored
-  evidence, and obtain separate approval before any installation.
+- Collect Experiment 0005 after its approved startup-only run and classify the
+  automatic bridge verdict together with the user's 60-second observation.
 - If the exact surface-format filter prevents the setter query and reaches a
   stable character selection, design a separate short stability experiment.
   Do not treat that pass as gameplay or performance validation.

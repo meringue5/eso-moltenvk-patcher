@@ -1,9 +1,9 @@
 # Experiment 0005: exact HDR surface-format filter startup
 
 - Date planned: 2026-07-19
-- Outcome: **planned; non-game source preflight complete**
-- Installation: **not approved or performed**
-- Baseline: **original loader active; Experiment 0004 evidence preserved**
+- Outcome: **running; awaiting user-controlled startup**
+- Installation: **approved and performed from source commit `b00ced5`**
+- Baseline: **Experiment 0004 evidence and pristine restore source preserved**
 
 ## Question
 
@@ -121,8 +121,37 @@ HDR setter sites were recovered at ESO offsets `0x364c103` and `0x364c59d`.
 Ten startup-checker tests, Python byte-compilation, shell syntax checks, and
 `git diff --check` all pass. The clean source commit and a fresh ignored
 Experiment 0005 evidence directory form the exact pre-install checkpoint. None
-of these steps authorizes installation; explicit approval for this exact bundle
-modification remains mandatory.
+of these steps authorized installation; explicit approval for this exact bundle
+modification was still mandatory and was obtained separately below.
+
+## Installation checkpoint
+
+The user approved continuing directly with the prepared Experiment 0005
+installation. Immediately before modification on 2026-07-19, process inspection
+found no ESO, Steam, or launcher process. Status required the known ESO
+fingerprint, original/inactive loader, and absent marker. The clean worktree and
+prepared evidence both identified source commit
+`b00ced5d521c301a1bc159b74cfa16056a5c5e36`.
+
+The prepared proxy and MoltenVK hashes were reverified, and installation ran
+through the experimental `live-check` gate at approximately 22:54 KST. The
+ignored evidence directory is
+`artifacts/experiment-0005-20260719T135010Z/`.
+
+Immediate post-install checks confirmed:
+
+- installed bridge and present `live-check` marker;
+- active proxy SHA-256
+  `a4f4a4b61a40f165d11ef26b43cf7ec00454be7304127a98de0c96a55c7a9933`;
+- installed MoltenVK SHA-256
+  `d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398`;
+- unchanged pristine Bink SHA-256
+  `c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`;
+- the 6,800,792-byte prior pipeline cache preserved as the old backup, with no
+  new active experimental cache yet.
+
+No agent launched Steam, the ESO launcher, or ESO. Installation does not count
+as startup evidence; the exact user action below remains the experiment gate.
 
 ## Exact user action after a separately approved install
 
