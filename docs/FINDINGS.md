@@ -130,8 +130,8 @@ build.
 
 The same run was not rendering-correct. The user observed a full-screen hot-pink
 frame during startup and high-frequency flicker of a black, shadow-like layer at
-character selection despite otherwise smooth animation. This blocks gameplay
-and performance testing.
+character selection despite otherwise smooth animation. This blocked gameplay
+and performance testing in Experiment 0005.
 
 The unified log recorded 106 Metal compiler warnings during shader and texture
 loading, but macOS redacted their contents. They are correlated evidence only,
@@ -139,3 +139,23 @@ not proof that compilation caused either visual symptom. ESO's own logs reported
 renderer and texture completion without a relevant error. The new 3,141,826-byte
 pipeline cache and prior 6,800,792-byte cache are both preserved with hashes in
 the ignored evidence.
+
+## Metal argument-buffer compatibility boundary
+
+Experiment 0006 retained the same MoltenVK 1.4.1 runtime, live-resource check,
+HDR filters, and 17 redirects, and disabled only Metal argument buffers. The
+runtime reported the effective change before activation. In that run the
+Experiment 0005 black/shadow-layer flicker was absent at character selection
+and through world entry, and world rendering remained visually correct for
+about 2 minutes 33 seconds before the user changed a graphics setting.
+
+This single-variable A/B strongly implicates the Metal argument-buffer
+descriptor path in the Experiment 0005 corruption. It establishes a first
+short gameplay-capable baseline with ambient occlusion disabled, not extended
+stability or support for every graphics option.
+
+The later live switch to SSAO coincided with ESO's graphics-device reset and
+reduced output to changing solid colors without a Vulkan error, device loss, or
+process crash. That one setting transition is preserved as an active safety
+boundary in the Experiment 0006 record; it is not yet repeatable enough to
+assign a specific MoltenVK subsystem as its cause.

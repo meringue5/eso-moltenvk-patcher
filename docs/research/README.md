@@ -12,6 +12,9 @@ do not replace local experiment records or establish the current safety state.
 - [MoltenVK 1.0.18-to-1.4.1 rendering compatibility delta](moltenvk-rendering-compatibility-delta.md)
   (2026-07-19): upstream configuration and descriptor-path differences relevant
   to Experiment 0005's hot-pink frame and black-layer flicker.
+- [MoltenVK SSAO and stuttering post-mortem context](moltenvk-ssao-stutter-postmortem.md)
+  (2026-07-19): pipeline-cache guidance, adjacent depth/render-pass precedent,
+  and the limits of interpreting Experiment 0006's SSAO transition.
 
 ## Maintenance rules
 

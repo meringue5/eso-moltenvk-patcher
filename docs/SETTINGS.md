@@ -50,3 +50,17 @@ Notable values:
 The current full settings file and 6.8 MB pipeline cache are retained only in
 ignored Experiment 0003 evidence. Their committed counterpart is this sanitized
 setting subset; neither the raw settings nor the cache belongs in Git.
+
+## Experiment 0006 SSAO safety amendment
+
+The table above remains the verified baseline, not the active post-run value.
+During Experiment 0006, changing `AMBIENT_OCCLUSION_TYPE` from `0` to SSAO value
+`1` coincided with a live graphics-device reset and left the game presenting
+only changing solid colors. The process did not crash, but usable scene
+rendering did not recover before exit.
+
+ESO persisted value `1` to the active settings file. Do not launch the current
+experimental bridge again until that one setting is deliberately restored to
+`0` outside the game UI or an instrumented SSAO test explicitly requires value
+`1`. This is a one-run compatibility warning, not a claim that SSAO is broken
+on every MoltenVK configuration.

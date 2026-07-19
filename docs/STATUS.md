@@ -4,7 +4,9 @@ Last updated: 2026-07-19
 
 ## Safety state
 
-The experimental MoltenVK bridge is not validated for gameplay. Experiments
+The experimental MoltenVK bridge is validated only for a short world interval
+with ambient occlusion disabled; it is not yet a general gameplay build.
+Experiments
 0001 and 0002 activated MoltenVK 1.4.1 and then crashed during early graphics
 startup. Experiment 0002 added complete proc tracing and is documented in its
 [experiment record](experiments/0002-live-check-proc-trace-startup.md).
@@ -66,6 +68,17 @@ fingerprint, original/inactive loader, absent active marker, and byte-identical
 active/pristine Bink files. This is a build checkpoint, not an operational
 rollback objective.
 
+The user then ran Experiment 0006 through Steam from 23:50:51 to 23:54:43 KST.
+The bridge verdict passed, no crash report was created, and the user reached
+character selection and Auridon without the Experiment 0005 black/shadow-layer
+flicker. World rendering remained visually correct for about 2 minutes 33
+seconds. The user then changed ambient occlusion from disabled to SSAO, after
+which the display became changing solid colors despite continued input
+response. The process ultimately completed an orderly AppKit and Vulkan
+teardown. All 17 ignored evidence files and the post-run settings file are
+checksum-preserved in the Experiment 0006 directory. The bridge remains
+installed; no rollback was performed.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -97,12 +110,19 @@ wrapper removed that pair from both ESO count and data queries, produced 59
 visible formats, and prevented any `vkSetHdrMetadataEXT` lookup. ESO continued
 through swapchain, pipeline, draw, present, and orderly teardown calls.
 
-The active blocker is now rendering correctness. The user observed a transient
-hot-pink full screen and persistent high-frequency black/shadow-layer flicker
-at character selection. The unified log contains 106 privacy-redacted Metal
-compiler warnings between 23:04:34 and 23:05:08 KST, but neither that timing nor
-the hidden messages prove the cause. ESO's own short logs report renderer and
-texture completion without a relevant error.
+Disabling Metal argument buffers removed the Experiment 0005 persistent
+black/shadow-layer flicker in one single-variable A/B and allowed world entry.
+This strongly implicates the argument-buffer descriptor path, but an unchanged
+five-minute world interval and a repeat run are still missing.
+
+The active rendering blocker is the live SSAO transition. The settings change
+coincided with `DeviceWaitIdle`, swapchain recreation, `OnDeviceReset`, and a
+new compiler-warning burst at 23:54:18 KST. No command-buffer error, device
+loss, bridge error, or crash occurred. Current evidence cannot distinguish an
+SSAO shader/render-pass incompatibility from state lost during the live device
+reset or an incorrect new pipeline. The persisted settings value is now
+`AMBIENT_OCCLUSION_TYPE "1"`, so the next launch is gated on restoring it to
+the preserved baseline `0` outside the game UI.
 
 MoltenVK 1.4.1 performance A/B testing remains blocked until rendering
 correctness and short gameplay stability are established.
@@ -126,29 +146,16 @@ depends on Rust yet.
 
 ## Next gate
 
-Experiment 0006 is the next single-variable candidate. It keeps both proven HDR
-filters and live-resource checking but disables Metal argument buffers.
-MoltenVK 1.0.18 predates argument-buffer support, MoltenVK 1.4.1 enables it by
-default, and ESO enabled no descriptor-indexing extension in the captured
-device. The bridge will query and validate the effective configuration before
-writing any patch.
+Preserve the installed Experiment 0006 bridge and its new 3,983,422-byte
+pipeline cache. Do not restore the game bundle merely for normal operation.
 
-The rebuilt candidate has passed configuration, Vulkan/Metal, HDR filter,
-wrapper coverage, proc route, Python, and shell checks. In independent
-processes the packaged runtime reported argument buffers `1` under controlled
-defaults and `0` in `descriptor-compat`, with all other named controls
-unchanged.
+Before another launch, obtain approval to preserve the current settings file
+and change only `AMBIENT_OCCLUSION_TYPE` from `1` back to the verified baseline
+`0`. Then repeat the same area for five minutes without any settings change.
+The run will test short gameplay stability and whether the observed stuttering
+falls with a warm cache; the compiler-warning timing makes that plausible but
+does not establish causation.
 
-Source commit `b2817da` was recorded in the ignored evidence directory
-`artifacts/experiment-0006-20260719T144353Z/`. With no ESO, Steam, or launcher
-process present, the matching artifacts were installed at approximately 23:44
-KST. Immediate status reports an installed bridge and a marker containing
-`descriptor-compat`; active proxy and MoltenVK hashes match the prepared
-evidence, the pristine Bink is unchanged, and both older cache generations are
-preserved. No agent launched the game.
-
-The installed checkpoint is ready for one staged run: observe character
-selection for 30 seconds; if it is visually clean, continue in the same run to
-five minutes of low-risk world movement. If the black/shadow-layer flicker
-remains, exit without world entry. This is a correctness and short-stability
-gate, not a performance test; no HUD, capture, or settings change is requested.
+Only after that unchanged run should a separate instrumented SSAO experiment
+compare clean-start SSAO against a live toggle. No additional MoltenVK control
+should change in that comparison.

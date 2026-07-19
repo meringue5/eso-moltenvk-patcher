@@ -14,14 +14,20 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve the installed single-variable Experiment 0006 candidate and its
   prepared evidence. It retains both HDR filters and live-resource checking but
   disables Metal argument buffers, a capability absent from MoltenVK 1.0.18.
-- Reuse the bounded character-selection observation with two predefined visual
-  outcomes: hot-pink startup frame present/absent and black-layer flicker
-  present/absent. If the lobby is visually clean, continue in the same run to a
-  five-minute low-risk world correctness test; otherwise exit there.
-- If disabling argument buffers does not improve the artifact, test MTLHeap and
-  legacy asynchronous queue submission separately; never change both at once.
-- Preserve the first visually clean five-minute world result as a gameplay
-  checkpoint. Do not treat it as performance validation.
+- Preserve the Experiment 0006 run as the first lobby-to-world rendering pass:
+  the old flicker disappeared, but an unchanged five-minute interval was not
+  completed before the user enabled SSAO.
+- Before relaunch, preserve the current settings and restore only
+  `AMBIENT_OCCLUSION_TYPE` from `1` to the verified `0` baseline.
+- Repeat the installed build unchanged in the same area for five minutes. Use
+  the warm pipeline cache and compiler-warning timing to test, not assume, the
+  shader-compilation explanation for stuttering.
+- Instrument pipeline creation and the graphics-device reset before a separate
+  SSAO experiment. Compare clean-start SSAO with a live SSAO toggle; do not
+  change a MoltenVK control in that comparison.
+- Defer MTLHeap and asynchronous queue-submission experiments. Argument buffers
+  improved the original artifact, and the new SSAO boundary must be isolated
+  first.
 
 ## P1: keep redirection verifiable
 
@@ -34,8 +40,8 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P2: deferred controlled performance experiments
 
-- Do not request gameplay or performance telemetry until a startup experiment
-  proves that MoltenVK 1.4.1 is active and stable.
+- Do not request performance telemetry until the unchanged five-minute
+  Experiment 0006 repeat establishes short gameplay stability.
 - Before requesting a performance run, establish an automated measurement path
   that does not depend on the currently unavailable Metal HUD or manual image
   capture.

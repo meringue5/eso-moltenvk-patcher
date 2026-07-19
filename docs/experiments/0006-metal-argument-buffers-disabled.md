@@ -1,7 +1,8 @@
 # Experiment 0006: Metal argument buffers disabled
 
 - Date planned: 2026-07-19
-- Outcome: **installed; user run pending**
+- Outcome: **baseline lobby/world rendering succeeded; live SSAO toggle exposed
+  a new solid-color rendering failure**
 - Installation: **approved and performed from source commit `b2817da`**
 - Rollback: **not performed; Experiment 0006 checkpoint installed**
 
@@ -202,3 +203,112 @@ next candidates are MTLHeap and legacy asynchronous submission, tested one at a
 time. If five-minute gameplay passes, preserve this configuration as the first
 gameplay-capable MoltenVK 1.4.1 checkpoint before designing any performance
 measurement.
+
+## Run amendment: gameplay reached, SSAO transition failed
+
+### Preserved evidence
+
+The user launched through the normal Steam and launcher path. Run
+`20260719T145051.899384000Z-pid35259` lasted from 23:50:51.899 to
+23:54:43.454 KST, about 3 minutes 52 seconds. All 17 files in the final ignored
+evidence manifest under `artifacts/experiment-0006-20260719T144353Z/` pass
+checksum verification. The full post-run settings file was added to ignored
+evidence before any corrective edit.
+
+| File | SHA-256 |
+|---|---|
+| `bridge-log-after.txt` | `d9f2e7ef9b8c316abe65f6f2fa8a1fc87830940221437bc1bd56a128cf7c7337` |
+| `startup-verdict.txt` | `b8acbfb8eeac07ae64a330d70ddf279592bf28497e6d83b658113b7309f8fb05` |
+| `eso-client.log` | `60b2df871be71ef7585b39a32894b2ebaff7a6e6a725850c5a4fe5b3f90a20ec` |
+| `eso-interface.log` | `e1d2c0ca3d7777669ee755407596a609ce56990181d867ad84ab794e8ce88f01` |
+| `eso-unified.log` | `d14a39d5dee40828e3e328983059827006f2e05b3967e80987e5076dec70d886` |
+| `UserSettings-after-ssao.txt` | `0ccfd0c6d30257454d495d0c74ba6b584a46609792d357f6499ca64c81690fab` |
+| `SHA256SUMS` | `2dede3092ba3a804dd1b41efc929f393395903362d6a4b7b1bfeefc179622da9` |
+
+The automatic bridge verdict was `PASS`:
+
+- the effective runtime configuration was live-resource checking `1`, Metal
+  argument buffers `0`, MTLHeap `1`, synchronous submits `1`, command pooling
+  `1`, and prefill `0`;
+- MoltenVK 1.4.1 loaded and all 17 redirects activated;
+- both HDR filters removed exactly one item in count and data queries;
+- the device was created with ESO's three legacy extensions and without HDR;
+- ESO never queried `vkSetHdrMetadataEXT` and the bridge recorded no error;
+- no new macOS crash report was created.
+
+Although the user described the final action as a force quit, the system log
+shows a Quit AppleEvent, one initially canceled termination request, a second
+approved request, and `Termination complete. Exiting without sudden
+termination.` The bridge also reached device, swapchain, surface, and instance
+destruction. This was a render-correctness failure, not a process crash.
+
+### Baseline rendering result
+
+The transient hot-pink frame still appeared during the pre-game logo sequence.
+The user did not regard it as a game-frame defect. More importantly, the
+Experiment 0005 black/shadow-layer flicker was absent from character selection
+through world entry, and normal world graphics were described as comfortable.
+
+ESO entered character selection at 23:51:20.749, completed its character-select
+textures at 23:51:28.641, began loading Auridon at 23:51:37.053, activated the
+character at 23:51:43.769, and completed the load-screen transition at
+23:51:45.601. The visually correct world interval lasted about 2 minutes 33
+seconds before the later settings transition. The planned unchanged five-minute
+interval was therefore not completed.
+
+This single-variable A/B strongly implicates Metal argument-buffer use in the
+Experiment 0005 flicker. It does not yet prove that every zone or extended
+session is stable.
+
+### Stuttering observation
+
+The user observed stuttering during otherwise correct rendering. The unified
+log contains 189 privacy-redacted Metal compiler warnings: 158 occurred during
+the 23:50-23:51 startup and world-loading interval, with smaller bursts through
+23:54. The new pipeline cache reached 3,983,422 bytes with SHA-256
+`971293cca9a9ed748a894aa84aa60dc64bae5c590bb47da9dfed780039252d8c`.
+
+This timing and cache growth are consistent with first-run shader/pipeline
+compilation, but they do not prove that compilation caused each stutter. A
+second unchanged run with this warm cache is the narrow test; no manual HUD or
+capture is required.
+
+### SSAO failure boundary
+
+The user changed ambient occlusion from disabled to SSAO during live gameplay.
+ESO then showed only changing solid colors while still responding to input.
+The post-run settings file confirms `AMBIENT_OCCLUSION_TYPE "1"`; the preserved
+baseline value was `0`.
+
+At 23:54:18.513, the client recorded a 12.010 ms `DeviceWaitIdle`, followed by
+swapchain creation and `OnDeviceReset` completion at 23:54:18.515. Metal
+compiler warnings resumed immediately afterward. There is no logged Metal
+command-buffer error, GPU address fault, device-lost result, bridge error, or
+crash report. Presentation therefore appears to have continued while the scene
+or post-processing composition became invalid.
+
+The evidence does not yet distinguish these possibilities:
+
+- SSAO's shader/render-pass path is incompatible with this runtime mode;
+- the live graphics-device reset loses state that would be valid on a clean
+  start;
+- a new pipeline compiled or cached incorrectly during the transition.
+
+Do not describe MoltenVK occlusion-query support as the cause; Vulkan occlusion
+queries and screen-space ambient occlusion are different mechanisms.
+
+### Revised next gate
+
+The active settings file now contains SSAO `1`, so an uncontrolled relaunch may
+start in the failed path. Do not ask the user to relaunch yet.
+
+1. With explicit approval, preserve the current file and restore only
+   `AMBIENT_OCCLUSION_TYPE` from `1` to the verified baseline `0` outside the
+   game UI.
+2. Re-run this installed bridge unchanged for five minutes in the same area,
+   without changing graphics settings. This confirms the gameplay checkpoint
+   and tests whether stuttering falls with the warm cache.
+3. Treat any further SSAO test as a separate instrumented experiment. Capture
+   pipeline-creation results and the device-reset boundary first, then compare
+   clean-start SSAO with a live toggle. Do not change another MoltenVK control
+   at the same time.

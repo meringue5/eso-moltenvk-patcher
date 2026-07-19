@@ -11,9 +11,10 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > surface-format filter then prevented that call and completed its approved
 > character-selection test without a crash, but produced severe transient pink
 > output and persistent black-layer/shadow flicker. The installed Experiment
-> 0006 candidate disables only Metal argument buffers and is not yet validated
-> in ESO. No bridge build
-> is currently established as **ready for gameplay**. See the
+> 0006 candidate disabled Metal argument buffers, removed that flicker, and
+> reached the world. Enabling SSAO during play then reduced output to changing
+> solid colors without crashing. The active settings file still requests SSAO,
+> so **do not relaunch yet**. See the
 > [current status](docs/STATUS.md) before using any experimental tooling.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
