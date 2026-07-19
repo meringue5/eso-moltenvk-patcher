@@ -1,0 +1,45 @@
+name: Runtime or performance report
+description: Report a reproducible ESO macOS issue without private or proprietary data.
+title: "[Report]: "
+labels: [investigation]
+body:
+  - type: markdown
+    attributes:
+      value: Do not attach game binaries, account details, pipeline caches, or unredacted crash reports.
+  - type: input
+    id: hardware
+    attributes:
+      label: Mac model and chip
+      placeholder: MacBook Air, Apple M4
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+    validations:
+      required: true
+  - type: input
+    id: eso_sha
+    attributes:
+      label: ESO executable SHA-256
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include zone, duration, graphics settings, and whether logout restores FPS.
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metal HUD metrics
+      description: FPS, GPU time, app memory, Metal memory, and thermal state.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      render: text
+

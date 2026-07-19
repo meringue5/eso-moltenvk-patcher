@@ -1,0 +1,25 @@
+{
+  "description": "Steam macOS ESO build analyzed on 2026-07-11",
+  "sha256": "dcca9fa9012edf7674e048ec3d5123d5e2b4ed6fa2c4e23f04c7ca33f56b4bd3",
+  "uuid": "867e93bc-a6e7-3109-bf8e-542ff59ccdff",
+  "targets": [
+    {"symbol": "vkGetPhysicalDeviceProperties", "image_offset": "0x1a14680"},
+    {"symbol": "vkGetPhysicalDeviceMemoryProperties", "image_offset": "0x1a146a0"},
+    {"symbol": "vkGetInstanceProcAddr", "image_offset": "0x1a146b0"},
+    {"symbol": "vkAllocateMemory", "image_offset": "0x1a149f0"},
+    {"symbol": "vkFreeMemory", "image_offset": "0x1a14a20"},
+    {"symbol": "vkMapMemory", "image_offset": "0x1a14a40"},
+    {"symbol": "vkUnmapMemory", "image_offset": "0x1a14a60"},
+    {"symbol": "vkBindBufferMemory", "image_offset": "0x1a14b30"},
+    {"symbol": "vkBindImageMemory", "image_offset": "0x1a14b50"},
+    {"symbol": "vkGetBufferMemoryRequirements", "image_offset": "0x1a14b70"},
+    {"symbol": "vkGetImageMemoryRequirements", "image_offset": "0x1a14b90"},
+    {"symbol": "vkCreateBuffer", "image_offset": "0x1a14e00"},
+    {"symbol": "vkDestroyBuffer", "image_offset": "0x1a14e20"},
+    {"symbol": "vkCreateImage", "image_offset": "0x1a14e80"},
+    {"symbol": "vkDestroyImage", "image_offset": "0x1a14ea0"},
+    {"symbol": "vkEndCommandBuffer", "image_offset": "0x1a152c0"},
+    {"symbol": "vkCmdEndRenderPass", "image_offset": "0x1a155b0"}
+  ]
+}
+

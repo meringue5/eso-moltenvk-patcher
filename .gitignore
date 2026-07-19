@@ -1,0 +1,17 @@
+.DS_Store
+build/
+vendor/
+artifacts/
+logs/
+*.dylib
+*.framework
+*.o
+*.a
+*.tar
+*.zip
+*.ips
+*.esopc
+*.cooked
+UserSettings.txt
+generated_targets.h
+

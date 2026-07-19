@@ -1,0 +1,22 @@
+name: Static checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python syntax
+        run: python3 -m compileall -q tools
+      - name: Check shell syntax
+        run: zsh -n scripts/*.sh
+      - name: Reject proprietary build artifacts
+        run: |
+          if find . -type f \( -name '*.dylib' -o -name '*.o' -o -name '*.esopc' -o -name '*.cooked' \) | grep -q .; then
+            echo 'Proprietary or generated binary artifact found.'
+            exit 1
+          fi
+
