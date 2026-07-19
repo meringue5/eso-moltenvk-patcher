@@ -115,5 +115,27 @@ Fake-runtime coverage now verifies count-only, exact-capacity, short-capacity
 `VK_INCOMPLETE`, property order, exact pair matching, preservation of other HDR
 formats, layer-specific device-extension pass-through, and unchanged
 device-create forwarding. These findings establish the local wrapper semantics
-and the failed-run root cause. They do not establish that the new wrapper lets
-ESO start; Experiment 0005 owns that gate.
+and the failed-run root cause.
+
+## Startup compatibility passed, rendering correctness did not
+
+In one controlled Experiment 0005 run, the exact surface-format wrapper was
+active for both count and data queries and removed one pair from 60 raw to 59
+visible formats. ESO never queried `vkSetHdrMetadataEXT`, continued through
+swapchain and pipeline setup, remained alive at character selection for more
+than 60 seconds, and exited through normal AppKit termination. The automatic
+bridge verdict passed and no crash report was created. This confirms the HDR
+surface pair as the trigger for the repeated startup crash on the fingerprinted
+build.
+
+The same run was not rendering-correct. The user observed a full-screen hot-pink
+frame during startup and high-frequency flicker of a black, shadow-like layer at
+character selection despite otherwise smooth animation. This blocks gameplay
+and performance testing.
+
+The unified log recorded 106 Metal compiler warnings during shader and texture
+loading, but macOS redacted their contents. They are correlated evidence only,
+not proof that compilation caused either visual symptom. ESO's own logs reported
+renderer and texture completion without a relevant error. The new 3,141,826-byte
+pipeline cache and prior 6,800,792-byte cache are both preserved with hashes in
+the ignored evidence.

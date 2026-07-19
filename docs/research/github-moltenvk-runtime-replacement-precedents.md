@@ -131,3 +131,14 @@ Even if a stable override is achieved, retain the old runtime as the performance
 baseline. The replacement should be considered successful only if controlled
 measurements show a worthwhile benefit without new correctness or stability
 regressions.
+
+## Amendment after Experiment 0005
+
+Later on 2026-07-19, the exact HDR surface-format compatibility filter allowed
+one controlled ESO run to remain at character selection for more than 60
+seconds and exit normally. This crosses the bounded startup gate anticipated by
+the original review, but the same run produced severe hot-pink and black-layer
+visual corruption. The evidence therefore improves “reach stable startup” from
+plausible to locally demonstrated for the fingerprinted build; it does not
+improve the “sustain normal gameplay” assessment, which remains blocked on
+rendering correctness.

@@ -1,9 +1,9 @@
 # Experiment 0005: exact HDR surface-format filter startup
 
 - Date planned: 2026-07-19
-- Outcome: **running; awaiting user-controlled startup**
+- Outcome: **succeeded at startup; failed rendering correctness**
 - Installation: **approved and performed from source commit `b00ced5`**
-- Baseline: **Experiment 0004 evidence and pristine restore source preserved**
+- Rollback: **not performed; installed checkpoint and both caches preserved**
 
 ## Question
 
@@ -194,3 +194,84 @@ If it fails, preserve the new checkpoint and return to the exact last query,
 crash return address, and surface/device state before considering a guarded
 setter implementation. No result here authorizes gameplay or performance
 claims.
+
+## Run amendment: startup pass with visual corruption
+
+### Evidence and automatic result
+
+The user launched through the normal Steam and launcher path. ESO run
+`20260719T140428.178380000Z-pid11260` was active from 23:04:28 until orderly
+AppKit termination at 23:05:44 KST, about 76 seconds. The ignored evidence is
+under `artifacts/experiment-0005-20260719T135010Z/`; all 16 files in its final
+checksum manifest pass verification.
+
+| File | SHA-256 |
+|---|---|
+| `bridge-log-after.txt` | `4e3bf8be28e9be7311e4c6d505f9d556f941aa26fd1ceeec0adeac97df30d483` |
+| `startup-verdict.txt` | `cc09ed7e3c6efc2741a1a5e09ed97141dc6a7dee4cef76238c2eff3a65d7c3d3` |
+| `eso-unified.log` | `180a9dc59aaa67679510ec88bf8ceb54977ab4d9d1acb9cb8b1c4a5cbd8dfeeb` |
+| `eso-client.log` | `d058db269d556913c4552639e66a93cc32af9c4da6fdd9ad2d9ebee6b37a93bb` |
+| `eso-interface.log` | `93d60545e7c65c9a166c5c871d65d0f73d5e557782e31488028c334c5c22894d` |
+| `pipeline-cache-fingerprints.txt` | `f95d66fba13a7a7519322f03f6f95e9d55cb6c4f2cc32faa7e82df9f965e0184` |
+
+The automatic verdict was `PASS`:
+
+- MoltenVK 1.4.1 loaded and all 17 redirects activated;
+- device extensions changed from 131 raw to 130 visible, removing one HDR
+  property in both count and data queries;
+- surface formats changed from 60 raw to 59 visible, removing one exact ESO HDR
+  pair in both count and data queries;
+- the device was created with the same three legacy extensions and without
+  `VK_EXT_hdr_metadata`;
+- `vkSetHdrMetadataEXT` was never queried;
+- swapchain, rendering pipeline, draw, present, and destruction procedures were
+  all reached without a bridge error;
+- no new `.ips` report was created.
+
+This answers the experiment question affirmatively: the exact surface pair was
+the branch input for the repeated NULL setter crash, and removing it allowed the
+bounded startup interval to complete.
+
+### User-observed rendering failure
+
+The user reported two visual defects despite otherwise smooth and natural
+character-selection animation:
+
+1. a full-screen hot-pink frame immediately after startup, followed by the
+   normal loading screen;
+2. persistent high-frequency flicker in a black layer described as shadow-like
+   at character selection.
+
+Neither defect caused a crash, but the second is a severe rendering-correctness
+failure. Experiment 0005 is therefore a startup compatibility success, not a
+gameplay-ready result. Entering the world in this configuration would only
+expand exposure to a known visual defect and is not required to classify this
+run.
+
+The macOS unified log contains 106 privacy-redacted Metal compiler warnings
+from 23:04:34.507 through 23:05:08.478 KST. ESO's own logs report the renderer
+complete at 23:04:57.796 and textures complete at 23:05:05.360 without a
+relevant error. The warning burst overlaps asset loading but does not identify
+its messages or prove causation.
+
+The run generated a new 3,141,826-byte pipeline cache with SHA-256
+`088eedb8bdce87ba23700866241b4b3280e69805bc4a45fd8946a873ebaaba0f`.
+The preserved embedded-runtime cache remains 6,800,792 bytes with SHA-256
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+
+### Next hypothesis
+
+MoltenVK 1.0.18 predates Metal argument-buffer support. MoltenVK 1.4.1 enables
+argument buffers by default, while ESO's captured device enabled only
+`VK_KHR_swapchain`, `VK_KHR_maintenance1`, and `VK_EXT_debug_marker` and did
+not request descriptor indexing. Argument buffers materially change descriptor
+resource binding and are therefore the narrowest next compatibility variable
+for the black/shadow-layer failure.
+
+A separate experiment should disable only
+`MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS`, retaining live-resource checking and
+both HDR filters. Do not simultaneously change MTLHeap, command pooling,
+synchronous queue submission, or shader math. The next bounded observation
+should remain at character selection and record only whether each of the two
+predefined visual defects is present. World entry is gated on a visually clean
+lobby.

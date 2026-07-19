@@ -8,6 +8,7 @@ fi
 
 ROOT="${0:A:h:h}"
 OUTPUT="$1"
+ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 START_EPOCH_FILE="$OUTPUT/started-at-epoch.txt"
 START_UTC_FILE="$OUTPUT/started-at-utc.txt"
 [[ -d "$OUTPUT" ]] || { echo "Missing evidence directory: $OUTPUT"; exit 1; }
@@ -48,6 +49,31 @@ echo "$REPORT_COUNT" > "$OUTPUT/crash-report-count.txt"
 START_LOCAL="$(date -r "$START_EPOCH" '+%Y-%m-%d %H:%M:%S')"
 /usr/bin/log show --style syslog --start "$START_LOCAL" --predicate 'process == "eso"' \
   > "$OUTPUT/eso-unified.log" 2> "$OUTPUT/eso-unified.stderr" || true
+
+for LOG_NAME in client interface; do
+  SOURCE_LOG="$ESO_LIVE/Logs/$LOG_NAME.log"
+  if [[ -f "$SOURCE_LOG" ]]; then
+    cp -p "$SOURCE_LOG" "$OUTPUT/eso-$LOG_NAME.log"
+  fi
+done
+
+PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
+OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
+{
+  if [[ -f "$PIPELINE_CACHE" ]]; then
+    stat -f 'active bytes=%z modified_epoch=%m' "$PIPELINE_CACHE"
+    shasum -a 256 "$PIPELINE_CACHE"
+  else
+    echo "active absent"
+  fi
+  if [[ -f "$OLD_PIPELINE_CACHE" ]]; then
+    stat -f 'old-backup bytes=%z modified_epoch=%m' "$OLD_PIPELINE_CACHE"
+    shasum -a 256 "$OLD_PIPELINE_CACHE"
+  else
+    echo "old-backup absent"
+  fi
+} > "$OUTPUT/pipeline-cache-fingerprints.txt"
+
 "$ROOT/scripts/status.sh" > "$OUTPUT/status-after.txt"
 
 (

@@ -4,18 +4,23 @@ This document is forward-looking. The current safety state and active blocker
 are in [Project status](STATUS.md); completed runs belong in the
 [experiment index](experiments/README.md).
 
-## P0: explain the first bridge crash
+## P0: restore rendering correctness after the startup fix
 
 - Experiment 0004 was preserved until restoration became technically necessary
   for the Experiment 0005 clean rebuild; retain its verified evidence, displaced
   marker, and cache state.
-- Collect Experiment 0005 after its approved startup-only run and classify the
-  automatic bridge verdict together with the user's 60-second observation.
-- If the exact surface-format filter prevents the setter query and reaches a
-  stable character selection, design a separate short stability experiment.
-  Do not treat that pass as gameplay or performance validation.
-- If it fails, use the new run-scoped query and crash evidence before considering
-  a guarded setter. Do not add a no-op merely because the proc is NULL.
+- Preserve Experiment 0005 as the verified startup-pass/rendering-fail
+  checkpoint until restoration is technically required for a clean rebuild.
+- Prepare a single-variable Experiment 0006 candidate that retains both HDR
+  filters and live-resource checking but disables Metal argument buffers to
+  emulate a capability absent from MoltenVK 1.0.18.
+- Reuse the bounded character-selection observation with two predefined visual
+  outcomes: hot-pink startup frame present/absent and black-layer flicker
+  present/absent. Do not enter the world for this comparison.
+- If disabling argument buffers does not improve the artifact, test MTLHeap and
+  legacy asynchronous queue submission separately; never change both at once.
+- Only after character selection is visually clean, design a separate short
+  gameplay stability experiment. Do not treat that as performance validation.
 
 ## P1: keep redirection verifiable
 
@@ -40,7 +45,9 @@ are in [Project status](STATUS.md); completed runs belong in the
   criteria before asking the user to play.
 - Compare MoltenVK defaults against live-resource compatibility mode.
 - Evaluate asynchronous queue submission only after correctness is established.
-- Keep Metal argument buffers and command pooling at their 1.4.1 defaults first.
+- Keep command pooling at its 1.4.1 default. Metal argument buffers now require
+  a correctness A/B because Experiment 0005 exposed a descriptor-like visual
+  failure and the embedded runtime predates that feature.
 - Avoid command-buffer prefilling until reset/reuse behavior is known; it can
   increase memory and create artifacts for incompatible command-buffer usage.
 

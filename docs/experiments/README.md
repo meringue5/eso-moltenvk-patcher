@@ -12,7 +12,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0002 | 2026-07-19 | Live-check proc-traced startup | Failed after activation; rolled back | [Run](0002-live-check-proc-trace-startup.md) |
 | 0003 | 2026-07-19 | Original-runtime long session | Inconclusive as override test; baseline captured | [Run](0003-original-runtime-long-session.md) |
 | 0004 | 2026-07-19 | HDR-advertisement-filtered startup | Failed at confirmed NULL HDR setter; evidence preserved, later restored for rebuild | [Run](0004-hdr-advertisement-filter-startup.md) |
-| 0005 | 2026-07-19 | Exact HDR surface-format filter | Running; installed for approved startup test | [Run](0005-hdr-surface-format-filter-startup.md) |
+| 0005 | 2026-07-19 | Exact HDR surface-format filter | Succeeded at startup; failed rendering correctness | [Run](0005-hdr-surface-format-filter-startup.md) |
 
 ## Recording policy
 

@@ -49,6 +49,14 @@ proxy and MoltenVK hashes match the prepared evidence, the pristine Bink remains
 unchanged, and the 6,800,792-byte old pipeline cache is preserved under its
 backup name.
 
+The user ran Experiment 0005 through the normal Steam path from 23:04:28 to
+23:05:44 KST, about 76 seconds. The automatic bridge verdict passed and no new
+crash report was created. The run reached character selection and exited
+normally, but rendering correctness failed visibly: startup briefly showed a
+full-screen hot-pink frame, and character selection showed high-frequency
+flicker in a black layer described as shadow-like. The installed checkpoint is
+being preserved for analysis; it is not approved for world entry or gameplay.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -71,17 +79,24 @@ NULL setter. In both Experiments 0002 and 0004, Rosetta `tmp1` equals the
 ASLR-adjusted instruction immediately after ESO's indirect
 `vkSetHdrMetadataEXT` call, confirming that call as the fault site.
 
-The actual branch input is now identified. ESO enables its HDR surface flag
-when surface enumeration includes format `64` with color space `1000104008`.
+The former startup blocker is resolved for one controlled run. ESO enables its
+HDR surface flag when surface enumeration includes format `64` with color space
+`1000104008`.
 Embedded MoltenVK 1.0.18 reports three sRGB formats and no matching pair;
 MoltenVK 1.4.1 reports 60 formats and includes exactly one. A source-only
-wrapper removes that pair, produces 59 visible formats, and passes fake and real
-non-game enumeration validation. The clean full build, legacy/raw/filtered
-surface probes, device/proc probes, and static binary analyzers now pass. It has
-not been installed or run with ESO.
+wrapper removed that pair from both ESO count and data queries, produced 59
+visible formats, and prevented any `vkSetHdrMetadataEXT` lookup. ESO continued
+through swapchain, pipeline, draw, present, and orderly teardown calls.
 
-MoltenVK 1.4.1 performance A/B testing remains blocked until a startup
-experiment is stable.
+The active blocker is now rendering correctness. The user observed a transient
+hot-pink full screen and persistent high-frequency black/shadow-layer flicker
+at character selection. The unified log contains 106 privacy-redacted Metal
+compiler warnings between 23:04:34 and 23:05:08 KST, but neither that timing nor
+the hidden messages prove the cause. ESO's own short logs report renderer and
+texture completion without a relevant error.
+
+MoltenVK 1.4.1 performance A/B testing remains blocked until rendering
+correctness and short gameplay stability are established.
 
 The Experiment 0003 process ended with `EXC_BAD_INSTRUCTION / SIGILL` in an
 audio teardown thread after otherwise usable gameplay. This is a separate
@@ -102,8 +117,14 @@ depends on Rust yet.
 
 ## Next gate
 
-The Experiment 0005 non-game preflight, static checks, clean commit, evidence
-preparation, approval, and installation are complete. The next gate is the sole
-user action: a Steam-authenticated launch to character selection and a 60-second
-wait there. No world entry, Metal HUD, screenshot, settings change, or
-performance measurement is part of this run.
+Do not extend Experiment 0005 into gameplay. The lobby artifact already fails
+the rendering-correctness gate, and world entry would not distinguish its
+cause. Preserve the installed state and verified evidence until restoration is
+technically required for the next clean build.
+
+The next source candidate is a separate, single-variable experiment that keeps
+both proven HDR filters and live-resource checking but disables Metal argument
+buffers. MoltenVK 1.0.18 predates argument-buffer support, MoltenVK 1.4.1 enables
+it by default, and ESO enabled no descriptor-indexing extension in the captured
+device. Only if character selection becomes visually clean should a separate
+short gameplay stability test be planned.

@@ -8,9 +8,10 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > 1.4.1, successfully hid the new HDR device extension, and still crashed at
 > the confirmed NULL HDR-metadata call. That failed state was preserved until
 > restoration became necessary for the next clean rebuild. The Experiment 0005
-> surface-format filter passed its complete non-game preflight and is installed
-> only for its approved startup test. The bridge is **not ready for normal
-> gameplay**. See the
+> surface-format filter then prevented that call and completed its approved
+> character-selection test without a crash, but produced severe transient pink
+> output and persistent black-layer/shadow flicker. The installed checkpoint is
+> **not ready for gameplay**. See the
 > [current status](docs/STATUS.md) before using any experimental tooling.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
