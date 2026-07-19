@@ -6,21 +6,21 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P0: explain the first bridge crash
 
-- Use the recovered system `.ips` baseline and capture bridge/GIPA logs before
-  any second gameplay test.
-- Determine whether the crash is a descriptor lifetime violation, a missing
-  public Vulkan entry-point redirect, an ABI/configuration difference, or an
-  early surface/swapchain failure.
-- Test `MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES=1` in a controlled startup-only run.
-- Review the new `vkGetInstanceProcAddr` trace for null returns before adding
-  broader opt-in Vulkan-call tracing.
+- Run Experiment 0002 once in startup-only `live-check` mode with GIPA and GDPA
+  tracing, prepared `.ips` capture, and unified-log collection.
+- If no null proc result precedes the same fault, trace the ESO graphics
+  abstraction vtable and initialization callbacks around the recovered
+  indirect call.
+- Distinguish descriptor lifetime, ABI/configuration, and early
+  surface/swapchain failure before adding broad Vulkan-call tracing.
 
-## P1: make redirection exhaustive
+## P1: keep redirection verifiable
 
-- Enumerate all public Vulkan wrappers in the statically linked archive.
-- Find call, jump, pointer-load, relocation, and table references from ESO, not
-  only `E8`/`E9` direct calls.
-- Prevent any old/new MoltenVK handle mixing.
+- Re-run wrapper and GIPA/GDPA analysis after every target executable update.
+- Fail closed if any externally referenced old wrapper lacks a new-runtime
+  export or any proc query regresses from non-null to null on its actual route.
+- Investigate any newly discovered path that could mix old and new runtime
+  ownership before changing the redirect set.
 - Add a startup smoke mode that stops before account login or world entry.
 
 ## P2: controlled performance experiments

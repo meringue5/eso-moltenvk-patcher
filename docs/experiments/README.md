@@ -9,6 +9,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | ID | Date | Subject | Outcome | Record |
 |---:|---|---|---|---|
 | 0001 | 2026-07-19 | MoltenVK 1.4.1 full redirect | Failed after activation; rolled back | [Run](0001-moltenvk-1.4.1-full-redirect.md), [crash analysis](0001-crash-analysis.md) |
+| 0002 | 2026-07-19 | Live-check proc-traced startup | Planned; not installed | [Plan](0002-live-check-proc-trace-startup.md) |
 
 ## Recording policy
 

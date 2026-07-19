@@ -61,3 +61,17 @@ device extension set. The release also contains a new descriptor state tracker,
 new descriptor set/pool implementation, and occlusion-query improvements. These
 areas overlap with the observed accumulation pattern, but no performance gain
 has been demonstrated in ESO because the first full bridge test crashed.
+
+## Public Vulkan routing coverage
+
+For the fingerprinted ESO executable, expanded Mach-O analysis found 40
+external references to 17 old MoltenVK entry points. The redirect manifest
+covers all 17, and MoltenVK 1.4.1 exports each one. Static analysis also
+recovered every direct proc lookup: 17 unique GIPA names and 65 unique GDPA
+names.
+
+The old static 1.0.18 and new dynamic 1.4.1 runtimes were queried with the same
+100-name candidate set after instance and device creation. No function changed
+from non-null in 1.0.18 to null in 1.4.1 on the route ESO actually uses. This
+reduces the missing-public-proc and obvious handle-mixing hypotheses; it does
+not establish startup compatibility or explain Experiment 0001's `RIP=0`.

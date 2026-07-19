@@ -25,11 +25,24 @@ This mechanism was independently verified under Rosetta.
 - Installation preserves the pristine Bink library and old pipeline cache.
 - Unknown game builds fail closed.
 
-## Known architectural risk
+## Verified coverage for the current target
 
-Vulkan handles are runtime-owned opaque objects. If ESO creates a handle through
-new MoltenVK and later passes it into an unredirected old MoltenVK wrapper, a
-crash is expected. Direct-call scanning found 39 external calls to 16 Vulkan
-entry points, but it did not prove the absence of address-taken or table-based
-references. Exhaustive cross-reference coverage is required.
+The current analyzer enumerates old Vulkan text symbols and checks direct calls
+and jumps, RIP-relative address-taking, absolute immediates, and dyld rebase
+pointers. For the fingerprinted ESO build it found 40 external references to 17
+entry points: 39 calls/jumps to 16 wrappers plus one address-taken
+`vkGetInstanceProcAddr`. This exactly matches the redirect manifest, and all 17
+are exported by MoltenVK 1.4.1.
 
+ESO directly queries 17 unique names through GIPA and 65 through GDPA. A
+100-name old/new non-game probe found no case where 1.0.18 returned non-null and
+1.4.1 returned null on the route ESO actually uses. The bridge now traces both
+proc-address functions so a controlled run can verify the dynamic sequence.
+
+## Remaining architectural risk
+
+Vulkan handles remain runtime-owned opaque objects. The analysis substantially
+reduces the obvious public-wrapper mixing risk for this exact executable, but
+does not prove callback, private ABI, object-lifetime, or surface/swapchain
+compatibility. Any target update invalidates the coverage until fingerprints,
+offsets, cross-references, and proc behavior are re-established.
