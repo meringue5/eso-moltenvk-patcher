@@ -14,6 +14,7 @@ treating every old result as current.
 | How does the bridge work? | [Architecture](ARCHITECTURE.md) |
 | What happened in a specific run? | [Experiment index](experiments/README.md) |
 | What do comparable external projects teach us? | [Research index](research/README.md) |
+| Which unscheduled ideas are worth retaining? | [Miscellaneous notes](misc.md) |
 | Which settings and operational workarounds are known? | [Settings](SETTINGS.md) and [Troubleshooting](TROUBLESHOOTING.md) |
 | Which primary external sources support the research? | [Sources](SOURCES.md) |
 
