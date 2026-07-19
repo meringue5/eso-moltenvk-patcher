@@ -20,12 +20,25 @@ typedef struct {
 #include "generated_targets.h"
 
 static FILE* g_log;
+typedef void (*VkVoidFunction)(void);
+typedef VkVoidFunction (*VkGetInstanceProcAddrFunction)(void* instance, const char* name);
+static VkGetInstanceProcAddrFunction g_next_get_instance_proc_addr;
 
 static void log_line(const char* message) {
     if (g_log) {
         fprintf(g_log, "%s\n", message);
         fflush(g_log);
     }
+}
+
+static VkVoidFunction traced_get_instance_proc_addr(void* instance, const char* name) {
+    VkVoidFunction result = g_next_get_instance_proc_addr(instance, name);
+    if (g_log) {
+        fprintf(g_log, "GIPA: %s -> %p%s\n", name ? name : "(null)", (void*)result,
+                result ? "" : " [NULL]");
+        fflush(g_log);
+    }
+    return result;
 }
 
 static bool has_expected_uuid(const struct mach_header_64* header) {
@@ -98,6 +111,11 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             fprintf(g_log, "ERROR: MoltenVK does not export %s\n", target->symbol);
             return false;
         }
+        if (strcmp(target->symbol, "vkGetInstanceProcAddr") == 0) {
+            g_next_get_instance_proc_addr =
+                (VkGetInstanceProcAddrFunction)destinations[index];
+            destinations[index] = (void*)&traced_get_instance_proc_addr;
+        }
     }
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
@@ -150,6 +168,9 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
 
 __attribute__((constructor)) static void teso4m4_init(void) {
     g_log = fopen("/tmp/teso4m4.log", "a");
+    if (g_log) {
+        setvbuf(g_log, NULL, _IOLBF, 0);
+    }
     log_line("--- teso4m4 bridge starting ---");
 
     char directory[4096];

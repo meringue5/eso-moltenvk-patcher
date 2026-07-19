@@ -26,7 +26,7 @@ authentication.
 - Original game loader and old pipeline cache were restored successfully.
 
 See [Findings](docs/FINDINGS.md), [Experiment 0001](docs/experiments/0001-moltenvk-1.4.1-full-redirect.md),
-and the [Roadmap](docs/ROADMAP.md).
+the [Crash analysis](docs/CRASH_ANALYSIS.md), and the [Roadmap](docs/ROADMAP.md).
 
 ## Repository layout
 

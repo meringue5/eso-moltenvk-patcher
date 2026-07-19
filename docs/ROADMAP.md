@@ -2,13 +2,14 @@
 
 ## P0: explain the first bridge crash
 
-- Capture stderr/stdout and a backtrace before any second gameplay test.
+- Use the recovered system `.ips` baseline and capture bridge/GIPA logs before
+  any second gameplay test.
 - Determine whether the crash is a descriptor lifetime violation, a missing
   public Vulkan entry-point redirect, an ABI/configuration difference, or an
   early surface/swapchain failure.
 - Test `MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES=1` in a controlled startup-only run.
-- Add opt-in Vulkan-call tracing around initialization without logging every
-  gameplay call indefinitely.
+- Review the new `vkGetInstanceProcAddr` trace for null returns before adding
+  broader opt-in Vulkan-call tracing.
 
 ## P1: make redirection exhaustive
 
@@ -32,4 +33,3 @@
   trim releases the accumulated state.
 - Search for safe engine commands or API paths before considering invasive
   runtime state destruction.
-

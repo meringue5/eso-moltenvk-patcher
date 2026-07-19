@@ -8,5 +8,5 @@
 - Added MoltenVK 1.4.1 compatibility probes.
 - Added an x86_64 Bink re-export proxy and Mach VM patch prototype.
 - Recorded the failed 17-entry-point redirect experiment and successful restore.
+- Added sanitized null-function-pointer crash forensics and GIPA result tracing.
 - Added guarded build, install, status, and recovery scripts.
-
