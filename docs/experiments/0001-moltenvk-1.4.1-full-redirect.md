@@ -1,7 +1,8 @@
 # Experiment 0001: MoltenVK 1.4.1 full redirect
 
-Date: 2026-07-19  
-Result: **Failed after bridge activation; restored successfully**
+- Date: 2026-07-19
+- Outcome: **failed after bridge activation**
+- Rollback: **restored and verified**
 
 ## Goal
 
@@ -38,7 +39,8 @@ ACTIVE: redirected 17 Vulkan entry points to MoltenVK 1.4.1
 ESO then crashed about 3.1 seconds after process launch. The crash report was
 written later to the system DiagnosticReports directory rather than the user's
 directory. It records `EXC_BAD_ACCESS / SIGSEGV`, `RIP=0`, on the main thread
-during early Vulkan/Metal initialization. See [Crash analysis](../CRASH_ANALYSIS.md).
+during early Vulkan/Metal initialization. See the experiment's
+[crash analysis](0001-crash-analysis.md).
 The proxy, new runtime, and new pipeline cache were removed from the active
 path, and the pristine Bink loader plus old pipeline cache were restored.
 

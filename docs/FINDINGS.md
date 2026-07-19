@@ -1,5 +1,9 @@
 # Findings
 
+This document contains durable observations promoted from completed work. Run
+specific procedures, failures, and hypotheses remain in the
+[experiment records](experiments/README.md).
+
 ## Test platform
 
 - Apple M4 MacBook Air
@@ -57,4 +61,3 @@ device extension set. The release also contains a new descriptor state tracker,
 new descriptor set/pool implementation, and occlusion-query improvements. These
 areas overlap with the observed accumulation pattern, but no performance gain
 has been demonstrated in ESO because the first full bridge test crashed.
-

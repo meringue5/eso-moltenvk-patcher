@@ -1,5 +1,9 @@
 # Roadmap
 
+This document is forward-looking. The current safety state and active blocker
+are in [Project status](STATUS.md); completed runs belong in the
+[experiment index](experiments/README.md).
+
 ## P0: explain the first bridge crash
 
 - Use the recovered system `.ips` baseline and capture bridge/GIPA logs before

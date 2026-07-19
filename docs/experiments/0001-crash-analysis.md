@@ -1,4 +1,7 @@
-# First bridge crash analysis
+# Experiment 0001 crash analysis
+
+- Date analyzed: 2026-07-19
+- Related run: [MoltenVK 1.4.1 full redirect](0001-moltenvk-1.4.1-full-redirect.md)
 
 ## Confirmed crash facts
 
@@ -48,4 +51,3 @@ mode are reviewed together.
 
 The full `.ips` is intentionally not committed because it contains local paths
 and persistent device/report identifiers.
-

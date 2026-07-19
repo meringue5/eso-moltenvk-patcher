@@ -1,14 +1,14 @@
 # AGENTS.md
 
-This file is the operational memory for coding agents working on `teso4m4`.
-Read it before changing code, running a game test, or drawing conclusions from
-older experiments.
+This file contains standing instructions for coding agents working on
+`teso4m4`. Keep changing project state and experiment history in `docs/` rather
+than accumulating it here.
 
 ## Mission
 
 `teso4m4` investigates Steam ESO behavior and performance on Apple Silicon,
-with a current focus on replacing or bridging ESO's statically linked MoltenVK
-1.0.18 runtime without breaking Steam launch and authentication.
+including ways to replace or bridge its statically linked MoltenVK runtime
+without breaking Steam launch and authentication.
 
 This is a research project, not a working gameplay mod. Accuracy, reversibility,
 and evidence preservation take priority over obtaining a quick FPS result.
@@ -18,79 +18,30 @@ and evidence preservation take priority over obtaining a quick FPS result.
 1. Run `git status --short --branch` and do not overwrite unrelated work.
 2. Read these files in order:
    - `README.md`
-   - `docs/CRASH_ANALYSIS.md`
-   - `docs/experiments/0001-moltenvk-1.4.1-full-redirect.md`
+   - `docs/README.md`
+   - `docs/STATUS.md`
    - `docs/ROADMAP.md`
    - `docs/ARCHITECTURE.md`
-3. Confirm that the active game loader is original before assuming a clean
+3. Use `docs/experiments/README.md` to find only the experiment records relevant
+   to the task. Do not infer current state from an old experiment.
+4. Confirm that the active game loader is original before assuming a clean
    baseline. `scripts/status.sh` is the non-destructive status check.
-4. Rebuild from source after bridge changes. Never rely on a stale `build/`
+5. Rebuild from source after bridge changes. Never rely on a stale `build/`
    directory.
 
-## Established facts
+## Documentation ownership
 
-- The analyzed Steam macOS ESO executable is x86_64 and runs under Rosetta.
-- Analyzed executable SHA-256:
-  `dcca9fa9012edf7674e048ec3d5123d5e2b4ed6fa2c4e23f04c7ca33f56b4bd3`
-- Mach-O UUID: `867e93bc-a6e7-3109-bf8e-542ff59ccdff`.
-- Bundled headers identify MoltenVK 1.0.18.
-- ESO statically links MoltenVK. The bundled framework payload is a static `ar`
-  archive, and ESO has no dynamic Vulkan/MoltenVK dependency.
-- Replacing the bundled MoltenVK archive alone cannot change the linked runtime.
-- Official MoltenVK 1.4.1 successfully created a Vulkan 1.0 instance and device
-  on Apple M4 with ESO's observed legacy extension set.
-- A Bink re-export proxy can load before ESO and can patch x86_64 text entries
-  under Rosetta using `mach_vm_protect(..., VM_PROT_COPY)`.
-- Direct-call analysis found 39 ESO calls/jumps to 16 static Vulkan wrappers.
+- `AGENTS.md`: stable operating and safety rules only.
+- `docs/STATUS.md`: current verified baseline, active blocker, and next gate.
+- `docs/ROADMAP.md`: ordered future work, not completed experiment history.
+- `docs/FINDINGS.md`: durable observations promoted from completed work.
+- `docs/experiments/`: immutable per-run intent, procedure, evidence, result,
+  interpretation, and rollback state.
+- `CHANGELOG.md`: repository release history, not research history.
 
-## Experiment 0001 result
-
-The first bridge redirected `vkGetInstanceProcAddr` plus those 16 directly
-referenced Vulkan wrappers to MoltenVK 1.4.1. The bridge log confirmed all 17
-redirects were active.
-
-ESO then crashed approximately 3.1 seconds after launch:
-
-- `EXC_BAD_ACCESS / SIGSEGV`
-- main thread
-- `RIP=0`
-- early Vulkan/Metal initialization
-- first recoverable ESO return address near unslid `0x10364a7a5`
-- last ESO unified-log event was a Metal compiler warning at the same millisecond
-
-The loaded-image list confirmed MoltenVK 1.4.1 was active. The null instruction
-pointer makes a missing/unpopulated function or callback the leading hypothesis.
-Old/new MoltenVK handle mixing remains another serious possibility.
-
-Do not repeat Experiment 0001 unchanged.
-
-## Current baseline outside the repository
-
-After Experiment 0001, the active Bink loader and old pipeline cache were
-restored. The pristine and active Bink SHA-256 values matched at the last check.
-Experimental companion dylibs may remain beside the game executable, but they
-are inactive when the pristine Bink loader is active.
-
-Always verify this state rather than assuming it persisted across Steam updates
-or later user activity.
-
-## Immediate technical objective
-
-Explain the startup null call before attempting performance measurement.
-
-The current source wraps `vkGetInstanceProcAddr` and logs every requested name,
-returned address, and null result. The next controlled launch should use this
-trace and `MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES=1`, then stop at startup evidence
-collection. It is not a gameplay test.
-
-Before that launch:
-
-1. Make Vulkan wrapper cross-reference analysis exhaustive. Direct `E8`/`E9`
-   scanning alone does not cover address-taken functions, tables, or relocations.
-2. Review all functions queried through `vkGetInstanceProcAddr` and compare old
-   1.0.18 behavior against 1.4.1.
-3. Ensure every path receiving new MoltenVK handles stays in new MoltenVK.
-4. Prepare crash, bridge-log, and unified-log collection before installation.
+When information changes, update its owner and link to it instead of copying it
+into multiple files. Preserve superseded experiment conclusions as dated
+amendments; do not rewrite the original observation.
 
 ## Safety rules
 
@@ -160,8 +111,8 @@ TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK
 That environment variable is not standing user approval. An agent must still
 receive explicit approval for each modification of the game bundle.
 
-The current default experimental marker mode is `live-check`; it is unproven.
-Do not describe it as a fix.
+Consult `docs/STATUS.md` for the current experimental mode and known failure
+state. Do not describe an unproven mode as a fix.
 
 ## Evidence standards
 
@@ -182,10 +133,13 @@ At the end of substantial work:
 
 1. Update the relevant experiment document with result, evidence, and rollback
    state, including failed experiments.
-2. Update `docs/ROADMAP.md` when the leading hypothesis or next gate changes.
-3. Update this file only when durable operational facts or safety rules change.
-4. Run static checks and confirm `git status` is understood.
-5. Commit a coherent unit of work with a message that names the experiment or
+2. Promote only repeatable or independently supported observations to
+   `docs/FINDINGS.md`.
+3. Update `docs/STATUS.md` and `docs/ROADMAP.md` when the active blocker or next
+   gate changes.
+4. Update this file only when standing workflow or safety rules change.
+5. Run static checks and confirm `git status` is understood.
+6. Commit a coherent unit of work with a message that names the experiment or
    analysis performed.
 
 Conversation history is supporting context. The repository documents and Git

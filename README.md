@@ -6,7 +6,8 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > [!WARNING]
 > The MoltenVK bridge is a research prototype. The first full redirection test
 > successfully loaded MoltenVK 1.4.1 and redirected Vulkan entry points, but ESO
-> crashed afterward. It is **not ready for normal gameplay**.
+> crashed afterward. It is **not ready for normal gameplay**. See the
+> [current status](docs/STATUS.md) before using any experimental tooling.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
 an experimental method for redirecting ESO's statically linked MoltenVK 1.0.18
@@ -15,27 +16,22 @@ authentication.
 
 ## Current status
 
-- Confirmed ESO is an x86_64 app running through Rosetta on Apple Silicon.
-- Confirmed ESO statically links MoltenVK 1.0.18; replacing the bundled
-  framework/archive alone has no effect.
-- Confirmed official MoltenVK 1.4.1 supports ESO's Vulkan 1.0 extension set and
-  creates a device on Apple M4.
-- Built a Bink re-export proxy that loads before ESO and can patch executable
-  entry points under Rosetta.
-- First 17-entry-point redirection test became active, then ESO crashed.
-- Original game loader and old pipeline cache were restored successfully.
+The latest verified baseline, active blocker, and next test gate are maintained
+in [Project status](docs/STATUS.md). Use that dated snapshot rather than this
+landing page when deciding whether an experiment is safe to continue.
 
-See [Findings](docs/FINDINGS.md), [Experiment 0001](docs/experiments/0001-moltenvk-1.4.1-full-redirect.md),
-the [Crash analysis](docs/CRASH_ANALYSIS.md), and the [Roadmap](docs/ROADMAP.md).
+Start with the [documentation guide](docs/README.md), then use the
+[experiment index](docs/experiments/README.md) for historical evidence.
 
 ## Repository layout
 
 ```text
-config/       Build fingerprints and non-personal settings snapshots
-docs/         Findings, settings guidance, troubleshooting, experiments
-scripts/      Fetch, build, install, restore, and status helpers
-src/          Runtime bridge source
-tools/        Binary-analysis and compatibility probes
+config/             Build fingerprints and non-personal settings snapshots
+docs/               Current status, findings, plans, and technical guidance
+docs/experiments/   Append-only experiment records and their evidence summaries
+scripts/            Fetch, build, install, restore, and status helpers
+src/                Runtime bridge source
+tools/              Binary-analysis and compatibility probes
 ```
 
 ## Build overview

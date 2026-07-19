@@ -14,3 +14,7 @@ Runtime changes must retain three properties:
 Performance claims need an A/B test in the same location and camera angle, with
 FPS, GPU frame time, app memory, Metal memory, and thermal state recorded.
 
+Before a controlled runtime test, assign an experiment ID and copy
+[`docs/experiments/TEMPLATE.md`](docs/experiments/TEMPLATE.md). Follow the
+[`docs/README.md`](docs/README.md) ownership rules so current state, durable
+findings, and per-run evidence remain distinct.

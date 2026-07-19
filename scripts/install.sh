@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [[ "${TESO4M4_EXPERIMENTAL:-}" != "I_ACCEPT_CRASH_RISK" ]]; then
   echo "The current bridge is known to crash after activation."
-  echo "Read docs/experiments/0001-moltenvk-1.4.1-full-redirect.md first."
+  echo "Read docs/STATUS.md and the linked experiment record first."
   echo "Set TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK only for a controlled test."
   exit 1
 fi
@@ -47,4 +47,3 @@ if [[ -f "$PIPELINE_CACHE" && ! -e "$OLD_PIPELINE_CACHE" ]]; then
   mv "$PIPELINE_CACHE" "$OLD_PIPELINE_CACHE"
 fi
 echo "Installed experimental teso4m4 bridge in ${TESO4M4_MODE:-live-check} mode."
-
