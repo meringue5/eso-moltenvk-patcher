@@ -83,3 +83,18 @@ after it is enabled. Proc compatibility tests must therefore reproduce both the
 advertised extension set and the extensions enabled at device creation. The
 evidence strongly suggests an HDR extension-negotiation mismatch, but does not
 yet prove which null pointer ESO called.
+
+## HDR compatibility preflight
+
+The shared compatibility implementation passes both fake-runtime semantics
+tests and a real MoltenVK 1.4.1 non-game probe. The real probe observes HDR in
+the raw device-extension list, hides it from the visible list, leaves it
+disabled at device creation, obtains a non-null GIPA result and NULL GDPA
+result for `vkSetHdrMetadataEXT`, and creates and destroys the device
+successfully.
+
+Fake-runtime coverage verifies count-only, exact-capacity, short-capacity
+`VK_INCOMPLETE`, property order, layer-specific pass-through, and unchanged
+device-create forwarding. These findings establish the local wrapper semantics
+only. They do not establish ESO startup compatibility; Experiment 0004 owns
+that gate.

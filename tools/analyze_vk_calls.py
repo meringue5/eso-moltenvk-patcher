@@ -11,6 +11,7 @@ boundary.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import struct
 import subprocess
@@ -238,6 +239,7 @@ def main() -> None:
     parser.add_argument("--object", required=True, type=Path)
     parser.add_argument("--link-delta", required=True, type=integer)
     parser.add_argument("--new-runtime", type=Path)
+    parser.add_argument("--manifest", type=Path)
     args = parser.parse_args()
 
     executable_sections = load_sections(args.exe)
@@ -274,6 +276,21 @@ def main() -> None:
         )
         print(f"{len(items):4d} {symbol:48s} {rendered}")
 
+    coverage_ok = True
+    if args.manifest:
+        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+        manifest_symbols = {target["symbol"] for target in manifest["targets"]}
+        referenced_symbols = set(references)
+        missing_from_manifest = sorted(referenced_symbols - manifest_symbols)
+        unreferenced_manifest = sorted(manifest_symbols - referenced_symbols)
+        print(f"referenced entry points absent from manifest: {len(missing_from_manifest)}")
+        for symbol in missing_from_manifest:
+            print(f"  {symbol}")
+        print(f"manifest entry points without an external reference: {len(unreferenced_manifest)}")
+        for symbol in unreferenced_manifest:
+            print(f"  {symbol}")
+        coverage_ok = not missing_from_manifest and not unreferenced_manifest
+
     if args.new_runtime:
         exports = load_exports(args.new_runtime)
         old_names = set(symbols.values())
@@ -290,7 +307,10 @@ def main() -> None:
         for symbol in referenced_unavailable:
             print(f"  {symbol}")
         if referenced_unavailable:
-            raise SystemExit(2)
+            coverage_ok = False
+
+    if not coverage_ok:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

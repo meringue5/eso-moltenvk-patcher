@@ -29,8 +29,9 @@ install_name_tool -id @loader_path/libBink2Macx64.teso4m4-original.dylib \
 cp -p "$MVK" "$BUILD/libMoltenVK.teso4m4.dylib"
 
 xcrun clang -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
-  -Wall -Wextra -Werror -O2 -I"$BUILD" \
-  "$ROOT/src/mvk_shim.c" \
+  -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
+  -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_compat.c" \
   -Wl,-install_name,@executable_path/libBink2Macx64.dylib \
   -Wl,-reexport_library,"$BUILD/libBink2Macx64.teso4m4-original.dylib" \
   -o "$BUILD/libBink2Macx64.dylib"
@@ -40,14 +41,21 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O0 \
   "$ROOT/tools/probe_self_patch.c" -o "$BUILD/probe_self_patch"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -I"$MVK_ROOT/MoltenVK/include" "$ROOT/tools/probe_vulkan.c" -o "$BUILD/probe_vulkan"
+  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" -o "$BUILD/probe_vulkan"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -DTESO4M4_STATIC_MOLTENVK=1 -I"$MVK_ROOT/MoltenVK/include" \
-  "$ROOT/tools/probe_vulkan.c" "$LEGACY_MVK" \
+  -DTESO4M4_STATIC_MOLTENVK=1 -I"$ROOT/src" \
+  -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" "$LEGACY_MVK" \
   -framework Metal -framework Foundation -framework QuartzCore -framework IOSurface \
   -framework IOKit -framework CoreGraphics -framework AppKit -lc++ \
   -o "$BUILD/probe_vulkan_legacy"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
+  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_hdr_filter.c" "$ROOT/src/mvk_compat.c" \
+  -o "$BUILD/probe_hdr_filter"
 
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
 "$BUILD/probe_self_patch"
+"$BUILD/probe_hdr_filter"
 echo "Built teso4m4 artifacts in $BUILD"

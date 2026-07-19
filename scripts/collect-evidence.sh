@@ -22,7 +22,13 @@ if [[ -f /tmp/teso4m4.log ]]; then
   cp -p /tmp/teso4m4.log "$OUTPUT/bridge-log-after.txt"
 else
   echo "No /tmp/teso4m4.log was present." > "$OUTPUT/bridge-log-missing.txt"
+  : > "$OUTPUT/bridge-log-after.txt"
 fi
+VERDICT_EXIT=0
+python3 "$ROOT/tools/check_startup_log.py" \
+  "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" \
+  > "$OUTPUT/startup-verdict.txt" 2>&1 || VERDICT_EXIT=$?
+echo "$VERDICT_EXIT" > "$OUTPUT/startup-verdict-exit-code.txt"
 
 REPORT_COUNT=0
 for DIRECTORY in "$HOME/Library/Logs/DiagnosticReports" "/Library/Logs/DiagnosticReports"; do
@@ -44,6 +50,16 @@ START_LOCAL="$(date -r "$START_EPOCH" '+%Y-%m-%d %H:%M:%S')"
   > "$OUTPUT/eso-unified.log" 2> "$OUTPUT/eso-unified.stderr" || true
 "$ROOT/scripts/status.sh" > "$OUTPUT/status-after.txt"
 
+(
+  cd "$OUTPUT"
+  : > SHA256SUMS
+  for FILE in *(N.); do
+    [[ "$FILE" == SHA256SUMS ]] && continue
+    shasum -a 256 "$FILE" >> SHA256SUMS
+  done
+)
+
 echo "Evidence collected in: $OUTPUT"
 echo "Crash reports copied: $REPORT_COUNT"
+[[ -f "$OUTPUT/startup-verdict.txt" ]] && cat "$OUTPUT/startup-verdict.txt"
 echo "Raw evidence may contain local paths or identifiers; do not commit it."

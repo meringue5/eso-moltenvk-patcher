@@ -2,13 +2,19 @@
 set -euo pipefail
 
 if [[ "${TESO4M4_EXPERIMENTAL:-}" != "I_ACCEPT_CRASH_RISK" ]]; then
-  echo "The current bridge is known to crash after activation."
+  echo "Prior bridge experiments crashed after activation."
+  echo "The current HDR compatibility build is still unvalidated in ESO."
   echo "Read docs/STATUS.md and the linked experiment record first."
   echo "Set TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK only for a controlled test."
   exit 1
 fi
 
 ROOT="${0:A:h:h}"
+MODE="${TESO4M4_MODE:-live-check}"
+[[ "$MODE" == "live-check" ]] || {
+  echo "Unsupported experiment mode: $MODE"
+  exit 1
+}
 ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zenimax Online/The Elder Scrolls Online/game_mac/pubplayerclient/eso.app}"
 GAME_MAC="$ESO_APP/Contents/MacOS"
 ESO="$GAME_MAC/eso"
@@ -32,9 +38,25 @@ for file in libBink2Macx64.dylib libBink2Macx64.teso4m4-original.dylib libMolten
   [[ -f "$ROOT/build/$file" ]] || { echo "Run scripts/build.sh first."; exit 1; }
 done
 
+if otool -L "$BINK" | grep -q 'teso4m4-original'; then
+  echo "Active Bink is already a bridge; restore before installing."
+  exit 1
+fi
+[[ ! -e "$MARKER" ]] || {
+  echo "Enable marker already exists; restore and re-check status first."
+  exit 1
+}
+[[ ! -e "$OLD_PIPELINE_CACHE" ]] || {
+  echo "Old pipeline-cache backup already exists; restore first."
+  exit 1
+}
 if [[ ! -f "$PRISTINE" ]]; then
   cp -p "$BINK" "$PRISTINE"
 fi
+cmp -s "$BINK" "$PRISTINE" || {
+  echo "Active Bink does not match the pristine restore source; refusing."
+  exit 1
+}
 cp -p "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" "$ORIGINAL.installing"
 mv -f "$ORIGINAL.installing" "$ORIGINAL"
 cp -p "$ROOT/build/libMoltenVK.teso4m4.dylib" "$MVK.installing"
@@ -42,8 +64,8 @@ mv -f "$MVK.installing" "$MVK"
 cp -p "$ROOT/build/libBink2Macx64.dylib" "$BINK.installing"
 mv -f "$BINK.installing" "$BINK"
 
-printf '%s\n' "${TESO4M4_MODE:-live-check}" > "$MARKER"
+printf '%s\n' "$MODE" > "$MARKER"
 if [[ -f "$PIPELINE_CACHE" && ! -e "$OLD_PIPELINE_CACHE" ]]; then
   mv "$PIPELINE_CACHE" "$OLD_PIPELINE_CACHE"
 fi
-echo "Installed experimental teso4m4 bridge in ${TESO4M4_MODE:-live-check} mode."
+echo "Installed experimental teso4m4 bridge in $MODE mode."

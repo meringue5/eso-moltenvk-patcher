@@ -11,6 +11,8 @@ library with a small x86_64 proxy that:
 3. Validates the main executable UUID and patch-site bytes.
 4. Loads official `libMoltenVK.dylib` with `dlopen`.
 5. Redirects selected old Vulkan wrapper entries with 12-byte absolute jumps.
+6. Routes GIPA requests for device-extension enumeration and device creation
+   through a narrow compatibility layer.
 
 Mach-O text pages do not accept added write permission through ordinary
 `mprotect`. The prototype uses `mach_vm_protect` with `VM_PROT_COPY`, writes to a
@@ -45,6 +47,33 @@ Future compatibility probes must model extension enumeration and device
 creation as one state transition. Comparing names against an arbitrary device
 is insufficient when the replacement runtime advertises capabilities absent
 from the embedded runtime.
+
+## HDR advertisement compatibility layer
+
+Embedded MoltenVK 1.0.18 does not advertise `VK_EXT_hdr_metadata`, while
+MoltenVK 1.4.1 does. The compatibility layer removes only that exact name from
+device-extension enumeration. It preserves every other property and its order,
+implements count/data and `VK_INCOMPLETE` behavior, and leaves layer-specific
+enumeration unchanged.
+
+The `vkCreateDevice` wrapper logs the exact enabled-extension list and forwards
+the original `VkDeviceCreateInfo` unchanged. An explicit HDR request is still
+forwarded; Experiment 0004 instead expects ESO not to request the extension and
+not to query `vkSetHdrMetadataEXT` through GDPA.
+
+The raw enumeration, device-creation, GIPA, and GDPA destinations are all
+resolved before any code page becomes writable. Proc lookup only selects a
+wrapper after that initialization; it does not mutate those destinations.
+
+Each bridge log line carries a UTC nanosecond run timestamp and PID. The startup
+checker groups records by that identity, applies the experiment preparation
+time as a lower bound, and fails closed on missing filter evidence, HDR enable,
+an HDR device-proc query, or bridge errors.
+
+The real MoltenVK 1.4.1 non-game probe reports raw HDR advertisement, filtered
+visible absence, HDR disabled at device creation, non-null GIPA, and NULL GDPA.
+That proves the local compatibility transition and successful device creation;
+it does not prove ESO startup behavior.
 
 ## Remaining architectural risk
 

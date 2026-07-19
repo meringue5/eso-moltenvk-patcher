@@ -1,15 +1,21 @@
 #include <dlfcn.h>
+#include <errno.h>
 #include <mach/mach.h>
 #include <mach/mach_error.h>
 #include <mach/mach_vm.h>
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
+#include <vulkan/vulkan.h>
+
+#include "mvk_compat.h"
 
 typedef struct {
     const char* symbol;
@@ -20,43 +26,87 @@ typedef struct {
 #include "generated_targets.h"
 
 static FILE* g_log;
-typedef void (*VkVoidFunction)(void);
-typedef VkVoidFunction (*VkGetInstanceProcAddrFunction)(void* instance, const char* name);
-typedef VkVoidFunction (*VkGetDeviceProcAddrFunction)(void* device, const char* name);
-static VkGetInstanceProcAddrFunction g_next_get_instance_proc_addr;
-static VkGetDeviceProcAddrFunction g_next_get_device_proc_addr;
+static char g_run_id[80] = "uninitialized";
+static PFN_vkGetInstanceProcAddr g_next_get_instance_proc_addr;
+static PFN_vkGetDeviceProcAddr g_next_get_device_proc_addr;
 
-static void log_line(const char* message) {
-    if (g_log) {
-        fprintf(g_log, "%s\n", message);
-        fflush(g_log);
+static void initialize_run_id(void) {
+    struct timespec now = {0};
+    struct tm utc = {0};
+    char timestamp[32] = "unknown-time";
+    if (clock_gettime(CLOCK_REALTIME, &now) == 0 &&
+        gmtime_r(&now.tv_sec, &utc) != NULL) {
+        strftime(timestamp, sizeof(timestamp), "%Y%m%dT%H%M%S", &utc);
     }
+    snprintf(g_run_id, sizeof(g_run_id), "%s.%09ldZ-pid%ld", timestamp,
+             now.tv_nsec, (long)getpid());
 }
 
-static VkVoidFunction traced_get_device_proc_addr(void* device, const char* name) {
-    VkVoidFunction result = g_next_get_device_proc_addr(device, name);
-    if (g_log) {
-        fprintf(g_log, "GDPA: device=%p %s -> %p%s\n", device,
-                name ? name : "(null)", (void*)result, result ? "" : " [NULL]");
-        fflush(g_log);
+static void log_message(const char* format, ...) {
+    if (!g_log) {
+        return;
     }
+    flockfile(g_log);
+    fprintf(g_log, "[run=%s] ", g_run_id);
+    va_list arguments;
+    va_start(arguments, format);
+    vfprintf(g_log, format, arguments);
+    va_end(arguments);
+    fputc('\n', g_log);
+    fflush(g_log);
+    funlockfile(g_log);
+}
+
+static void compat_log_message(const char* message) {
+    log_message("%s", message);
+}
+
+static PFN_vkVoidFunction VKAPI_CALL traced_get_device_proc_addr(
+    VkDevice device, const char* name) {
+    if (!g_next_get_device_proc_addr) {
+        log_message("GDPA_ERROR: next function is unset name=%s",
+                    name ? name : "(null)");
+        return NULL;
+    }
+    PFN_vkVoidFunction result = g_next_get_device_proc_addr(device, name);
+    log_message("GDPA: device=%p name=%s result=%p%s", (void*)device,
+                name ? name : "(null)", (void*)result,
+                result ? "" : " [NULL]");
     return result;
 }
 
-static VkVoidFunction traced_get_instance_proc_addr(void* instance, const char* name) {
-    VkVoidFunction result = g_next_get_instance_proc_addr(instance, name);
-    if (result && name && strcmp(name, "vkGetDeviceProcAddr") == 0) {
-        g_next_get_device_proc_addr = (VkGetDeviceProcAddrFunction)result;
-        result = (VkVoidFunction)&traced_get_device_proc_addr;
-    } else if (result && name && strcmp(name, "vkGetInstanceProcAddr") == 0) {
-        result = (VkVoidFunction)&traced_get_instance_proc_addr;
+static PFN_vkVoidFunction VKAPI_CALL traced_get_instance_proc_addr(
+    VkInstance instance, const char* name) {
+    if (!g_next_get_instance_proc_addr) {
+        log_message("GIPA_ERROR: next function is unset name=%s",
+                    name ? name : "(null)");
+        return NULL;
     }
-    if (g_log) {
-        fprintf(g_log, "GIPA: instance=%p %s -> %p%s\n", instance,
-                name ? name : "(null)", (void*)result, result ? "" : " [NULL]");
-        fflush(g_log);
+    PFN_vkVoidFunction raw_result =
+        g_next_get_instance_proc_addr(instance, name);
+    PFN_vkVoidFunction returned_result = raw_result;
+    const char* shim = "none";
+    if (raw_result && name && strcmp(name, "vkGetDeviceProcAddr") == 0) {
+        returned_result = (PFN_vkVoidFunction)&traced_get_device_proc_addr;
+        shim = "proc-trace";
+    } else if (raw_result && name &&
+               strcmp(name, "vkGetInstanceProcAddr") == 0) {
+        returned_result = (PFN_vkVoidFunction)&traced_get_instance_proc_addr;
+        shim = "proc-trace";
+    } else if (raw_result && name &&
+               strcmp(name, "vkEnumerateDeviceExtensionProperties") == 0) {
+        returned_result = (PFN_vkVoidFunction)
+            &teso4m4_enumerate_device_extension_properties;
+        shim = "hdr-filter";
+    } else if (raw_result && name && strcmp(name, "vkCreateDevice") == 0) {
+        returned_result = (PFN_vkVoidFunction)&teso4m4_create_device;
+        shim = "device-trace";
     }
-    return result;
+    log_message(
+        "GIPA: instance=%p name=%s raw=%p returned=%p shim=%s%s",
+        (void*)instance, name ? name : "(null)", (void*)raw_result,
+        (void*)returned_result, shim, raw_result ? "" : " [NULL]");
+    return returned_result;
 }
 
 static bool has_expected_uuid(const struct mach_header_64* header) {
@@ -101,8 +151,14 @@ static bool marker_mode(const char* directory, bool* live_check) {
         return false;
     }
     char mode[64] = {0};
-    if (fgets(mode, sizeof(mode), marker) && strncmp(mode, "live-check", 10) == 0) {
+    if (fgets(mode, sizeof(mode), marker)) {
+        mode[strcspn(mode, "\r\n")] = '\0';
+    }
+    if (strcmp(mode, "live-check") == 0) {
         *live_check = true;
+    } else {
+        fclose(marker);
+        return false;
     }
     fclose(marker);
     return true;
@@ -116,8 +172,8 @@ static bool restore_rx_pages(const uintptr_t* pages, size_t count,
             mach_task_self(), pages[index], page_size, FALSE,
             VM_PROT_READ | VM_PROT_EXECUTE);
         if (result != KERN_SUCCESS) {
-            fprintf(g_log, "ERROR: could not restore RX page 0x%lx: %s\n",
-                    (unsigned long)pages[index], mach_error_string(result));
+            log_message("ERROR: could not restore RX page 0x%lx: %s",
+                        (unsigned long)pages[index], mach_error_string(result));
             restored = false;
         }
     }
@@ -127,7 +183,7 @@ static bool restore_rx_pages(const uintptr_t* pages, size_t count,
 static void require_rx_restore(const uintptr_t* pages, size_t count,
                                mach_vm_size_t page_size) {
     if (!restore_rx_pages(pages, count, page_size)) {
-        log_line("FATAL: code-page permissions could not be restored; exiting");
+        log_message("FATAL: code-page permissions could not be restored; exiting");
         _exit(126);
     }
 }
@@ -145,20 +201,36 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
         const PatchTarget* target = &kPatchTargets[index];
         const uint8_t* address = (const uint8_t*)header + target->image_offset;
         if (memcmp(address, target->expected, sizeof(target->expected)) != 0) {
-            fprintf(g_log, "ERROR: original bytes differ at %s\n", target->symbol);
+            log_message("ERROR: original bytes differ at %s", target->symbol);
             return false;
         }
         destinations[index] = dlsym(moltenvk, target->symbol);
         if (!destinations[index]) {
-            fprintf(g_log, "ERROR: MoltenVK does not export %s\n", target->symbol);
+            log_message("ERROR: MoltenVK does not export %s", target->symbol);
             return false;
         }
         if (strcmp(target->symbol, "vkGetInstanceProcAddr") == 0) {
             g_next_get_instance_proc_addr =
-                (VkGetInstanceProcAddrFunction)destinations[index];
+                (PFN_vkGetInstanceProcAddr)destinations[index];
             destinations[index] = (void*)&traced_get_instance_proc_addr;
         }
     }
+
+    g_next_get_device_proc_addr =
+        (PFN_vkGetDeviceProcAddr)dlsym(moltenvk, "vkGetDeviceProcAddr");
+    PFN_vkEnumerateDeviceExtensionProperties enumerate_device_extensions =
+        (PFN_vkEnumerateDeviceExtensionProperties)dlsym(
+            moltenvk, "vkEnumerateDeviceExtensionProperties");
+    PFN_vkCreateDevice create_device =
+        (PFN_vkCreateDevice)dlsym(moltenvk, "vkCreateDevice");
+    if (!g_next_get_instance_proc_addr || !g_next_get_device_proc_addr ||
+        !enumerate_device_extensions || !create_device) {
+        log_message("ERROR: required compatibility entry point is unavailable");
+        return false;
+    }
+    teso4m4_compat_set_enumerate_device_extensions(
+        enumerate_device_extensions);
+    teso4m4_compat_set_create_device(create_device);
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
         uintptr_t address = (uintptr_t)header + kPatchTargets[index].image_offset;
@@ -174,7 +246,7 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             mach_task_self(), page, (mach_vm_size_t)page_size, FALSE,
             VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
         if (result != KERN_SUCCESS) {
-            fprintf(g_log, "ERROR: mach_vm_protect: %s\n", mach_error_string(result));
+            log_message("ERROR: mach_vm_protect: %s", mach_error_string(result));
             require_rx_restore(writable_pages, writable_page_count,
                                (mach_vm_size_t)page_size);
             return false;
@@ -198,32 +270,39 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
 }
 
 __attribute__((constructor)) static void teso4m4_init(void) {
+    initialize_run_id();
     g_log = fopen("/tmp/teso4m4.log", "a");
     if (!g_log) {
         return;
     }
     setvbuf(g_log, NULL, _IOLBF, 0);
-    log_line("--- teso4m4 bridge starting ---");
+    teso4m4_compat_reset();
+    teso4m4_compat_set_logger(&compat_log_message);
+    log_message("RUN_START: bridge starting pid=%ld", (long)getpid());
 
     char directory[4096];
     bool live_check = false;
     if (!own_directory(directory, sizeof(directory)) || !marker_mode(directory, &live_check)) {
-        log_line("SKIP: enable marker absent");
+        log_message("SKIP: enable marker absent");
         return;
     }
     if (live_check) {
-        setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 0);
-        log_line("MODE: live-resource compatibility check enabled");
+        if (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0) {
+            log_message("ERROR: could not set live-resource mode: %s",
+                        strerror(errno));
+            return;
+        }
+        log_message("MODE: live-resource compatibility check enabled");
     }
 
     const struct mach_header* raw = _dyld_get_image_header(0);
     if (!raw || raw->magic != MH_MAGIC_64 || raw->cputype != CPU_TYPE_X86_64) {
-        log_line("SKIP: unexpected main executable architecture");
+        log_message("SKIP: unexpected main executable architecture");
         return;
     }
     const struct mach_header_64* header = (const struct mach_header_64*)raw;
     if (!has_expected_uuid(header)) {
-        log_line("SKIP: ESO UUID mismatch");
+        log_message("SKIP: ESO UUID mismatch");
         return;
     }
 
@@ -234,14 +313,16 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     }
     void* moltenvk = dlopen(moltenvk_path, RTLD_NOW | RTLD_LOCAL);
     if (!moltenvk) {
-        fprintf(g_log, "ERROR: dlopen: %s\n", dlerror());
+        log_message("ERROR: dlopen: %s", dlerror());
         return;
     }
+    log_message("MOLTENVK: loaded path=%s", moltenvk_path);
     if (!install_patches(header, moltenvk)) {
-        log_line("ERROR: patch transaction aborted");
+        log_message("ERROR: patch transaction aborted");
         return;
     }
-    fprintf(g_log, "ACTIVE: redirected %d Vulkan entry points\n", ESO_TARGET_COUNT);
-    fprintf(g_log, "ESO SHA-256: %s\n", ESO_EXPECTED_SHA256);
-    fflush(g_log);
+    log_message("HDR_COMPAT: filter=%s extension=%s", "enabled",
+                VK_EXT_HDR_METADATA_EXTENSION_NAME);
+    log_message("ACTIVE: redirected %d Vulkan entry points", ESO_TARGET_COUNT);
+    log_message("ESO SHA-256: %s", ESO_EXPECTED_SHA256);
 }

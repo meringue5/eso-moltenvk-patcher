@@ -14,4 +14,4 @@ logs/
 *.cooked
 UserSettings.txt
 generated_targets.h
-
+__pycache__/

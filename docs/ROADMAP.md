@@ -6,18 +6,15 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P0: explain the first bridge crash
 
-- Add deterministic per-run logging and wrap `vkCreateDevice` to record its
-  enabled extension names without changing them.
-- Filter `VK_EXT_hdr_metadata` during device-extension enumeration and verify in
-  a non-game probe that this restores the 1.0.18 decision path without changing
-  unrelated capabilities.
-- Re-run wrapper/proc analysis, rebuild from source, and pass all non-game smoke
-  checks before preparing another installation.
-- Only after those gates pass, design a startup-only experiment whose user step
-  is limited to character selection plus a 60-second wait. Define log-based
-  pass/fail criteria and restore immediately after evidence collection.
-- If filtering does not remove the unsafe path, return to source and binary
-  analysis before considering a guarded `vkSetHdrMetadataEXT` implementation.
+- After explicit installation approval, run Experiment 0004 once with the user
+  action limited to character selection plus a 60-second wait.
+- Collect the run-scoped automatic verdict and new `.ips` evidence, then restore
+  the original loader immediately regardless of the result.
+- If filtering does not remove the unsafe path, return to non-game source,
+  crash, and binary analysis before proposing a no-op setter or another user
+  run.
+- If it passes, design a separate short stability experiment. Do not treat a
+  character-selection pass as gameplay or performance validation.
 
 ## P1: keep redirection verifiable
 

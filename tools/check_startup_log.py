@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""Classify the latest instrumented teso4m4 startup run.
+
+This checker deliberately evaluates only bridge evidence. Reaching character
+selection and the timing/classification of any crash report remain separate
+Experiment 0004 observations.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+from collections import OrderedDict
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+LINE = re.compile(r"^\[run=([^]]+)] (.*)$")
+RUN_ID = re.compile(
+    r"^(?P<stamp>\d{8}T\d{6})\.(?P<nanos>\d{9})Z-pid(?P<pid>\d+)$"
+)
+CREATE_DEVICE = re.compile(
+    r"^CREATE_DEVICE: call=(?P<call>\d+) .* extensions=(?P<count>\d+) "
+    r"hdr_enabled=(?P<hdr>yes|no)$"
+)
+CREATE_DEVICE_EXT = re.compile(
+    r"^CREATE_DEVICE_EXT: call=(?P<call>\d+) index=(?P<index>\d+) "
+    r"name=(?P<name>.*)$"
+)
+CREATE_DEVICE_RESULT = re.compile(
+    r"^CREATE_DEVICE_RESULT: call=(?P<call>\d+) result=(?P<result>-?\d+) "
+    r"device=(?P<device>.*)$"
+)
+
+
+@dataclass(frozen=True)
+class Verdict:
+    run_id: str | None
+    reasons: tuple[str, ...]
+
+    @property
+    def passed(self) -> bool:
+        return self.run_id is not None and not self.reasons
+
+
+def run_epoch(run_id: str) -> float | None:
+    match = RUN_ID.fullmatch(run_id)
+    if not match:
+        return None
+    try:
+        stamp = datetime.strptime(match.group("stamp"), "%Y%m%dT%H%M%S").replace(
+            tzinfo=timezone.utc
+        )
+    except ValueError:
+        return None
+    return stamp.timestamp() + int(match.group("nanos")) / 1_000_000_000
+
+
+def parse_runs(text: str) -> OrderedDict[str, list[str]]:
+    runs: OrderedDict[str, list[str]] = OrderedDict()
+    for line in text.splitlines():
+        match = LINE.match(line)
+        if match:
+            runs.setdefault(match.group(1), []).append(match.group(2))
+    return runs
+
+
+def evaluate_startup_log(
+    text: str, *, after_epoch: float | None = None, expected_redirects: int = 17
+) -> Verdict:
+    runs = parse_runs(text)
+    eligible: list[tuple[float, int, str, list[str]]] = []
+    for order, (run_id, lines) in enumerate(runs.items()):
+        epoch = run_epoch(run_id)
+        if after_epoch is not None and (epoch is None or epoch < after_epoch):
+            continue
+        if any(line.startswith("ACTIVE: redirected ") for line in lines):
+            eligible.append(
+                (epoch if epoch is not None else float("-inf"), order, run_id, lines)
+            )
+    if not eligible:
+        return Verdict(None, ("no active instrumented run matched the time gate",))
+
+    _, _, run_id, lines = max(eligible)
+    reasons: list[str] = []
+    run_match = RUN_ID.fullmatch(run_id)
+    if not run_match or run_epoch(run_id) is None:
+        reasons.append("run id does not contain the required UTC timestamp and PID")
+    elif not any(
+        line == f"RUN_START: bridge starting pid={run_match.group('pid')}"
+        for line in lines
+    ):
+        reasons.append("RUN_START PID does not match the run id")
+
+    required_active = f"ACTIVE: redirected {expected_redirects} Vulkan entry points"
+    if required_active not in lines:
+        reasons.append(f"missing exact activation record: {required_active}")
+    if (
+        "HDR_COMPAT: filter=enabled extension=VK_EXT_hdr_metadata"
+        not in lines
+    ):
+        reasons.append("HDR advertisement filter was not enabled")
+    if not any(
+        line.startswith("MOLTENVK: loaded path=") for line in lines
+    ):
+        reasons.append("the replacement MoltenVK load was not recorded")
+    if not any(
+        line.startswith("GIPA: ")
+        and "name=vkEnumerateDeviceExtensionProperties" in line
+        and "shim=hdr-filter" in line
+        for line in lines
+    ):
+        reasons.append("GIPA did not route device-extension enumeration through the filter")
+    if not any(
+        line.startswith("GIPA: ")
+        and "name=vkCreateDevice" in line
+        and "shim=device-trace" in line
+        for line in lines
+    ):
+        reasons.append("GIPA did not route vkCreateDevice through the trace wrapper")
+
+    filter_lines = [line for line in lines if line.startswith("HDR_FILTER: ")]
+    if not any("query=count" in line and "removed=1" in line for line in filter_lines):
+        reasons.append("no count query proved that exactly one HDR extension was removed")
+    if not any("query=data" in line and "removed=1" in line for line in filter_lines):
+        reasons.append("no data query proved that exactly one HDR extension was removed")
+    if any("removed=1" not in line for line in filter_lines):
+        reasons.append("at least one filtered enumeration did not remove exactly one HDR extension")
+
+    create_records: dict[str, tuple[int, str]] = {}
+    create_extensions: dict[str, dict[int, str]] = {}
+    create_results: dict[str, tuple[int, str]] = {}
+    malformed_create_lines: list[str] = []
+    for line in lines:
+        if line.startswith("CREATE_DEVICE: "):
+            match = CREATE_DEVICE.fullmatch(line)
+            if not match or match.group("call") in create_records:
+                malformed_create_lines.append(line)
+            else:
+                create_records[match.group("call")] = (
+                    int(match.group("count")),
+                    match.group("hdr"),
+                )
+        elif line.startswith("CREATE_DEVICE_EXT: "):
+            match = CREATE_DEVICE_EXT.fullmatch(line)
+            if not match:
+                malformed_create_lines.append(line)
+            else:
+                call_extensions = create_extensions.setdefault(
+                    match.group("call"), {}
+                )
+                index = int(match.group("index"))
+                if index in call_extensions:
+                    malformed_create_lines.append(line)
+                else:
+                    call_extensions[index] = match.group("name")
+        elif line.startswith("CREATE_DEVICE_RESULT: "):
+            match = CREATE_DEVICE_RESULT.fullmatch(line)
+            if not match or match.group("call") in create_results:
+                malformed_create_lines.append(line)
+            else:
+                create_results[match.group("call")] = (
+                    int(match.group("result")),
+                    match.group("device"),
+                )
+
+    if malformed_create_lines:
+        reasons.append("malformed or duplicate vkCreateDevice diagnostic records")
+    if not create_records:
+        reasons.append("vkCreateDevice was not observed")
+    elif any(hdr != "no" for _, hdr in create_records.values()):
+        reasons.append("at least one VkDevice enabled VK_EXT_hdr_metadata")
+
+    if any(
+        name == "VK_EXT_hdr_metadata"
+        for extensions in create_extensions.values()
+        for name in extensions.values()
+    ):
+        reasons.append("the enabled device-extension list contains VK_EXT_hdr_metadata")
+
+    if set(create_records) != set(create_results):
+        reasons.append("vkCreateDevice request/result record counts differ")
+    elif any(
+        result != 0 or device in {"(nil)", "0x0", "0"}
+        for result, device in create_results.values()
+    ):
+        reasons.append("at least one VkDevice creation failed or returned NULL")
+
+    for call_id, (extension_count, _) in create_records.items():
+        extensions = create_extensions.get(call_id, {})
+        if set(extensions) != set(range(extension_count)):
+            reasons.append(
+                f"vkCreateDevice call {call_id} does not contain its exact indexed extension list"
+            )
+    if set(create_extensions) - set(create_records):
+        reasons.append("device-extension records exist without a matching request")
+
+    if any(
+        line.startswith("GDPA: ") and "name=vkSetHdrMetadataEXT" in line
+        for line in lines
+    ):
+        reasons.append("ESO still queried vkSetHdrMetadataEXT after HDR filtering")
+    if any("ERROR:" in line or "FATAL:" in line for line in lines):
+        reasons.append("the selected run contains an error or fatal record")
+
+    return Verdict(run_id, tuple(reasons))
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("log", type=Path)
+    parser.add_argument("--after-epoch", type=float)
+    parser.add_argument("--expected-redirects", type=int, default=17)
+    args = parser.parse_args()
+
+    verdict = evaluate_startup_log(
+        args.log.read_text(encoding="utf-8", errors="replace"),
+        after_epoch=args.after_epoch,
+        expected_redirects=args.expected_redirects,
+    )
+    print(f"startup run: {verdict.run_id or 'none'}")
+    if verdict.passed:
+        print("startup bridge verdict: PASS")
+        return
+    print("startup bridge verdict: FAIL")
+    for reason in verdict.reasons:
+        print(f"- {reason}")
+    raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    main()

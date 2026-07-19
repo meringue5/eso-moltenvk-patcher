@@ -48,6 +48,13 @@ confirmed. The bridge did not record the extension list passed to
 `vkCreateDevice`, and the crash report cannot prove that ESO called the last
 logged null pointer. MoltenVK 1.4.1 performance A/B testing remains blocked.
 
+The Experiment 0004 build now filters only the HDR advertisement and records
+the exact device-extension list. Its shared fake-runtime tests and real
+MoltenVK 1.4.1 non-game probe pass with raw HDR advertisement present, visible
+advertisement absent, HDR disabled, non-null GIPA, and NULL GDPA. This is
+evidence that the compatibility transition works locally; it does not confirm
+the proposed crash cause in ESO.
+
 The Experiment 0003 process ended with `EXC_BAD_INSTRUCTION / SIGILL` in an
 audio teardown thread after otherwise usable gameplay. This is a separate
 shutdown failure from the bridge startup crash.
@@ -67,22 +74,18 @@ depends on Rust yet.
 
 ## Next gate
 
-No user launch or gameplay is requested at the current gate. Agent-owned work
-must happen first, in this order:
+All agent-owned pre-installation gates for the
+[Experiment 0004 plan](experiments/0004-hdr-advertisement-filter-startup.md)
+have passed. The game remains original and unmodified. The next gate is the
+user's explicit approval to install that exact startup-only experiment; the
+current goal and prior approvals do not imply it.
 
-1. Wrap `vkCreateDevice` to record the exact enabled device-extension list.
-2. Filter `VK_EXT_hdr_metadata` from device-extension enumeration so the new
-   runtime presents the same decision path as embedded MoltenVK 1.0.18.
-3. Reproduce the filtered negotiation in a non-game probe, confirm all expected
-   proc results, rebuild from source, and pass static and Rosetta smoke checks.
-4. Prepare a separate startup-only experiment and its evidence collector. Only
-   then request explicit installation approval.
-
-If those checks pass, the sole user action will be a Steam-authenticated launch
-to character selection, a 60-second wait there, and exit: approximately 3-5
-minutes total, with no world entry, Metal HUD, screenshot, or performance
-measurement. The bridge log must prove MoltenVK 1.4.1 activation, HDR filtering,
-the device extension state, and the absence of the earlier unsafe HDR path.
+After an approved install, the sole user action will be a Steam-authenticated
+launch to character selection, a 60-second wait there, and exit: approximately
+3-5 minutes total. There is no world entry, Metal HUD, screenshot, settings
+change, or performance measurement. Evidence collection applies an automatic
+run-scoped verdict, and the bridge is restored immediately regardless of the
+outcome.
 
 Performance investigation is deferred until a startup experiment proves that
 MoltenVK 1.4.1 remains active and stable. Do not repeat either failed
