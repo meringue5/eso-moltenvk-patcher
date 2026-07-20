@@ -25,7 +25,7 @@ MVK="$GAME_MAC/libMoltenVK.teso4m4.dylib"
 MARKER="$GAME_MAC/.teso4m4-enable"
 PIPELINE_CACHE="$HOME/Documents/Elder Scrolls Online/live/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
-MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-11.json}"
+MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-20.json}"
 EXPECTED_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "$MANIFEST")"
 
 if pgrep -x eso >/dev/null 2>&1; then

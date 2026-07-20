@@ -15,8 +15,9 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > reached the world. Enabling SSAO during play then reduced output to changing
 > solid colors without crashing. That exact settings state is preserved, and
 > the active file has been returned to the verified SSAO-disabled baseline.
-> The installed bridge is ready only for the controlled five-minute warm-cache
-> repeat described in the
+> Opening the launcher before the planned repeat installed ESO 12.0.7 and
+> changed the executable fingerprint. The old bridge now detects a stale
+> target and must not be launched. Rebase work is recorded in the
 > [current status](docs/STATUS.md) before using any experimental tooling.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and

@@ -9,7 +9,7 @@ BINK="$GAME_MAC/libBink2Macx64.dylib"
 LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 MVK_ROOT="${MVK_ROOT:-$ROOT/vendor/MoltenVK}"
 MVK="$MVK_ROOT/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib"
-MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-11.json}"
+MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-20.json}"
 BUILD="$ROOT/build"
 
 for file in "$ESO" "$BINK" "$LEGACY_MVK" "$MVK" "$MANIFEST"; do

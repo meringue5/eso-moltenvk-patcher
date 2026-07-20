@@ -336,3 +336,16 @@ enable marker present. The active pipeline-cache size, timestamp, and hash are
 unchanged. No game-bundle file or cache was restored. The checkpoint is now
 safe to advance to the unchanged five-minute, SSAO-disabled warm-cache repeat;
 it is not yet a general gameplay approval.
+
+## Client-update amendment: 2026-07-20
+
+The user opened the Steam-authenticated launcher for the prepared warm-cache
+repeat, but no ESO process was launched. Before the Play action, the launcher
+installed client 12.0.7 and replaced the executable fingerprint. The prepared
+repeat evidence directory is marked invalidated by the update and must not be
+collected or interpreted as a runtime result.
+
+The installed Experiment 0006 proxy still identifies the superseded target and
+will fail closed on the new UUID. Experiment 0006's completed observations and
+warm pipeline cache remain preserved; the next launch moves to Experiment 0007
+after target rebase, clean rebuild, and non-game validation.

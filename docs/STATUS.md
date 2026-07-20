@@ -90,6 +90,21 @@ Transforming that one updated line back to `1` reproduces the backup hash,
 which verifies that no other setting changed. The installed bridge, enable
 marker, and 3,983,422-byte pipeline cache remained unchanged.
 
+The planned warm-cache repeat was interrupted before ESO launched. Opening the
+launcher at approximately 21:02 KST installed launcher-managed client 12.0.7,
+databuild `3281538`. The ESO executable changed to SHA-256
+`82bc04ebc8c486636303d147edb9af6c0727b19c7faf7ce7d00837ac3e8ebf4d`
+and UUID `6599A49F-B1A0-3CBF-9AEF-6D4186A66E0D`. The prepared repeat evidence
+directory is explicitly marked invalidated; it is not a runtime result. No ESO
+process was launched.
+
+The active loader remains the Experiment 0006 proxy, but it still targets the
+superseded executable and will fail closed on the UUID mismatch. The launcher
+expanded the active proxy file from 44,400 to 226,368 bytes; its first 44,400
+bytes remain byte-identical to the prepared proxy. The enable marker and warm
+pipeline cache remain present. This state is preserved pending a clean rebuild,
+not approved for launch.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -105,6 +120,17 @@ an ignored baseline checkpoint. See the
 [Experiment 0003 record](experiments/0003-original-runtime-long-session.md).
 
 ## Active blocker
+
+The immediate blocker is the 12.0.7 client update. Static rebase analysis found
+that the bundled MoltenVK object is byte-identical to the prior object, its
+headers still identify 1.0.18, the link delta remains `0x1a08490`, and the same
+40 external references reach the same 17 wrappers. All 17 patch offsets and
+their 12-byte preconditions are unchanged. The former GIPA/GDPA slots still
+recover 19 and 80 direct query sites respectively, with no unnamed site,
+missing probe candidate, manifest-coverage gap, or old-nonnull/new-null
+regression. Only the executable SHA-256 and UUID differ in the generated
+target header. These are static prerequisites, not a validated installed
+build; restoration, a clean rebuild, and the full non-game gate remain.
 
 Experiment 0004 falsified the device-advertisement-only hypothesis. The bridge
 removed exactly one HDR device extension, and ESO still queried and called the
@@ -158,15 +184,17 @@ depends on Rust yet.
 
 ## Next gate
 
-Preserve the installed Experiment 0006 bridge and its new 3,983,422-byte
-pipeline cache. Do not restore the game bundle merely for normal operation.
+Preserve the 3,983,422-byte warm pipeline cache, invalidated prepared-run
+evidence, and update fingerprints. Once the user has stopped the launcher and
+Steam, restoration is technically necessary to obtain an original-loader clean
+build input. Rebuild against the 12.0.7 target, rerun every non-game validation,
+install the rebased Experiment 0007 bridge, and prepare a fresh evidence start.
 
-The active setting has been restored to `AMBIENT_OCCLUSION_TYPE "0"` with its
-pre-edit file preserved and verified. Prepare automatic evidence collection,
-then repeat the same area for five minutes without any settings change. The run
-will test short gameplay stability and whether the observed stuttering falls
-with a warm cache; the compiler-warning timing makes that plausible but does
-not establish causation.
+Only then repeat the same area for five minutes with the already-restored
+`AMBIENT_OCCLUSION_TYPE "0"` setting and no graphics changes. The run will test
+short gameplay stability and whether the observed stuttering falls with a warm
+cache; the compiler-warning timing makes that plausible but does not establish
+causation.
 
 Only after that unchanged run should a separate instrumented SSAO experiment
 compare clean-start SSAO against a live toggle. No additional MoltenVK control

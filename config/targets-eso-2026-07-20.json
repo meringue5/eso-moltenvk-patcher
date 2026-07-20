@@ -1,0 +1,28 @@
+{
+  "description": "Steam macOS ESO 12.0.7 build analyzed on 2026-07-20",
+  "sha256": "82bc04ebc8c486636303d147edb9af6c0727b19c7faf7ce7d00837ac3e8ebf4d",
+  "uuid": "6599a49f-b1a0-3cbf-9aef-6d4186a66e0d",
+  "proc_addr_slots": {
+    "vkGetInstanceProcAddr": "0x4b3be90",
+    "vkGetDeviceProcAddr": "0x4b3be98"
+  },
+  "targets": [
+    {"symbol": "vkGetPhysicalDeviceProperties", "image_offset": "0x1a14680"},
+    {"symbol": "vkGetPhysicalDeviceMemoryProperties", "image_offset": "0x1a146a0"},
+    {"symbol": "vkGetInstanceProcAddr", "image_offset": "0x1a146b0"},
+    {"symbol": "vkAllocateMemory", "image_offset": "0x1a149f0"},
+    {"symbol": "vkFreeMemory", "image_offset": "0x1a14a20"},
+    {"symbol": "vkMapMemory", "image_offset": "0x1a14a40"},
+    {"symbol": "vkUnmapMemory", "image_offset": "0x1a14a60"},
+    {"symbol": "vkBindBufferMemory", "image_offset": "0x1a14b30"},
+    {"symbol": "vkBindImageMemory", "image_offset": "0x1a14b50"},
+    {"symbol": "vkGetBufferMemoryRequirements", "image_offset": "0x1a14b70"},
+    {"symbol": "vkGetImageMemoryRequirements", "image_offset": "0x1a14b90"},
+    {"symbol": "vkCreateBuffer", "image_offset": "0x1a14e00"},
+    {"symbol": "vkDestroyBuffer", "image_offset": "0x1a14e20"},
+    {"symbol": "vkCreateImage", "image_offset": "0x1a14e80"},
+    {"symbol": "vkDestroyImage", "image_offset": "0x1a14ea0"},
+    {"symbol": "vkEndCommandBuffer", "image_offset": "0x1a152c0"},
+    {"symbol": "vkCmdEndRenderPass", "image_offset": "0x1a155b0"}
+  ]
+}
