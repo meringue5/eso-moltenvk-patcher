@@ -23,13 +23,21 @@ PRISTINE="$GAME_MAC/libBink2Macx64.teso4m4-pristine.dylib"
 ORIGINAL="$GAME_MAC/libBink2Macx64.teso4m4-original.dylib"
 MVK="$GAME_MAC/libMoltenVK.teso4m4.dylib"
 MARKER="$GAME_MAC/.teso4m4-enable"
-PIPELINE_CACHE="$HOME/Documents/Elder Scrolls Online/live/PipelineCache.esopc"
+ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
+PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
 MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-20.json}"
+PRESERVE_CACHE_STATE="${TESO4M4_PRESERVE_CACHE_STATE:-}"
 EXPECTED_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "$MANIFEST")"
 
-if pgrep -x eso >/dev/null 2>&1; then
-  echo "ESO is running. Exit it before installation."
+if pgrep -x eso >/dev/null 2>&1 \
+  || pgrep -f '/ZeniMax Online Studios Launcher' >/dev/null 2>&1 \
+  || pgrep -f '/Steam/Contents/MacOS/steam_osx' >/dev/null 2>&1; then
+  echo "ESO, Steam, or the launcher is running. Exit all three before installation."
+  exit 1
+fi
+if [[ -n "$PRESERVE_CACHE_STATE" && "$PRESERVE_CACHE_STATE" != "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
+  echo "Unsupported TESO4M4_PRESERVE_CACHE_STATE value."
   exit 1
 fi
 actual_sha="$(shasum -a 256 "$ESO" | awk '{print $1}')"
@@ -46,10 +54,17 @@ fi
   echo "Enable marker already exists; restore and re-check status first."
   exit 1
 }
-[[ ! -e "$OLD_PIPELINE_CACHE" ]] || {
-  echo "Old pipeline-cache backup already exists; restore first."
-  exit 1
-}
+if [[ "$PRESERVE_CACHE_STATE" == "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
+  [[ -f "$PIPELINE_CACHE" && -f "$OLD_PIPELINE_CACHE" ]] || {
+    echo "Cache-preserving rebase requires both active and old-backup caches."
+    exit 1
+  }
+else
+  [[ ! -e "$OLD_PIPELINE_CACHE" ]] || {
+    echo "Old pipeline-cache backup already exists; restore first."
+    exit 1
+  }
+fi
 if [[ ! -f "$PRISTINE" ]]; then
   cp -p "$BINK" "$PRISTINE"
 fi
@@ -65,7 +80,12 @@ cp -p "$ROOT/build/libBink2Macx64.dylib" "$BINK.installing"
 mv -f "$BINK.installing" "$BINK"
 
 printf '%s\n' "$MODE" > "$MARKER"
-if [[ -f "$PIPELINE_CACHE" && ! -e "$OLD_PIPELINE_CACHE" ]]; then
+if [[ "$PRESERVE_CACHE_STATE" != "I_ACCEPT_EXISTING_CACHE_STATE" \
+  && -f "$PIPELINE_CACHE" && ! -e "$OLD_PIPELINE_CACHE" ]]; then
   mv "$PIPELINE_CACHE" "$OLD_PIPELINE_CACHE"
 fi
-echo "Installed experimental teso4m4 bridge in $MODE mode."
+if [[ "$PRESERVE_CACHE_STATE" == "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
+  echo "Installed experimental teso4m4 bridge in $MODE mode; preserved both pipeline caches in place."
+else
+  echo "Installed experimental teso4m4 bridge in $MODE mode."
+fi
