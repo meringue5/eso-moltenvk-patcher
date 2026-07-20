@@ -114,6 +114,19 @@ ESO target recognized, bridge target current, and enable marker present. The
 active 3,983,422-byte warm cache, 6,800,792-byte old backup, and SSAO-disabled
 settings are unchanged.
 
+The user then launched Experiment 0007 normally through Steam at 21:24 KST.
+The approximately 47-second run passed the automatic bridge-startup verdict:
+MoltenVK 1.4.1 loaded, all 17 redirects activated, the HDR extension and
+surface filters returned 130 of 131 and 59 of 60 entries respectively, device
+creation succeeded without HDR, teardown was orderly, and no bridge error,
+Metal compiler warning, or new crash report appeared. The user observed the
+same transient hot-pink startup splash, but server maintenance prevented entry
+to character selection and the world. Gameplay rendering and stuttering are
+therefore untested, not failed. The active cache kept its 3,983,422-byte size
+but its content hash changed; this alone does not identify shader compilation
+or prove a warmed world cache. The bridge remains installed and current, SSAO
+remains disabled, and no rollback was performed.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -130,16 +143,18 @@ an ignored baseline checkpoint. See the
 
 ## Active blocker
 
-The 12.0.7 target rebase is complete through installation but has no game
-runtime evidence. Static analysis found that the bundled MoltenVK object is
+The 12.0.7 target rebase now has positive bridge-startup evidence but no lobby
+or world evidence. Static analysis found that the bundled MoltenVK object is
 byte-identical to the prior object, its headers still identify 1.0.18, the link
 delta remains `0x1a08490`, and the same 40 external references reach the same
 17 wrappers. All 17 patch offsets and their 12-byte preconditions are
 unchanged. The former GIPA/GDPA slots still recover 19 and 80 direct query sites
 respectively, with no unnamed site, missing probe candidate,
 manifest-coverage gap, or old-nonnull/new-null regression. Fresh real-Metal
-probes reproduced the expected HDR extension and surface filtering. The next
-blocker is the bounded user-controlled runtime repeat.
+probes reproduced the expected HDR extension and surface filtering, and the
+maintenance-interrupted launch reproduced those filters in ESO. The next
+blocker is the same bounded user-controlled runtime repeat after service
+availability returns.
 
 Experiment 0004 falsified the device-advertisement-only hypothesis. The bridge
 removed exactly one HDR device extension, and ESO still queried and called the
@@ -193,13 +208,13 @@ depends on Rust yet.
 
 ## Next gate
 
-The rebased Experiment 0007 bridge is installed and fresh automatic evidence is
-prepared. Repeat the same area for five minutes with the already-restored
-`AMBIENT_OCCLUSION_TYPE "0"` setting and no graphics changes. If the launcher
-still reports server maintenance, exit without launching ESO; this is an
-availability interruption, not an experiment failure. Otherwise the run tests
-short gameplay stability and whether the observed stuttering falls with a warm
-cache; the compiler-warning timing makes that plausible but does not establish
+The rebased Experiment 0007 bridge is installed and its startup path has passed.
+No user action is required during server maintenance. Once service is
+available, prepare a new automatic-evidence boundary and repeat the same area
+for five minutes with the already-restored `AMBIENT_OCCLUSION_TYPE "0"` setting
+and no graphics changes. That run tests lobby/world rendering, short gameplay
+stability, and whether the observed stuttering changes after the cache rewrite;
+the cache change and earlier compiler-warning timing do not establish
 causation.
 
 Only after that unchanged run should a separate instrumented SSAO experiment

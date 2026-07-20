@@ -154,6 +154,13 @@ descriptor path in the Experiment 0005 corruption. It establishes a first
 short gameplay-capable baseline with ambient occlusion disabled, not extended
 stability or support for every graphics option.
 
+The transient hot-pink frame remained in Experiment 0006 and again during the
+maintenance-interrupted Experiment 0007 launch, both before the game UI. It
+therefore does not track the argument-buffer change or the 12.0.7 target rebase.
+Because Experiment 0006 subsequently rendered character selection and the
+world correctly, the pre-UI frame alone is not evidence of persistent world
+corruption. Its cause remains unresolved.
+
 The later live switch to SSAO coincided with ESO's graphics-device reset and
 reduced output to changing solid colors without a Vulkan error, device loss, or
 process crash. That one setting transition is preserved as an active safety

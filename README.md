@@ -18,8 +18,10 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > Opening the launcher before the planned repeat installed ESO 12.0.7 and
 > changed the executable fingerprint. The bridge has now been statically
 > rebased, rebuilt, validated without the game, and reinstalled for that exact
-> target. It remains ready only for the controlled five-minute repeat in the
-> [current status](docs/STATUS.md) before using any experimental tooling.
+> target. A subsequent launch passed the automatic bridge-startup checks and
+> exited without a crash, but server maintenance prevented character selection
+> or world entry. It remains ready only for the controlled five-minute repeat
+> in the [current status](docs/STATUS.md) after service returns.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
 an experimental method for redirecting ESO's statically linked MoltenVK 1.0.18

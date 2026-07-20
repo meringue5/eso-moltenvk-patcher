@@ -17,10 +17,13 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve the Experiment 0006 run as the first lobby-to-world rendering pass:
   the old flicker disappeared, but an unchanged five-minute interval was not
   completed before the user enabled SSAO.
-- Run the installed 12.0.7 rebase in the same area for five minutes. Use
-  the now-restored `AMBIENT_OCCLUSION_TYPE "0"` baseline, warm pipeline cache,
-  and compiler-warning timing to test, not assume, the shader-compilation
-  explanation for stuttering.
+- Preserve the maintenance-interrupted 12.0.7 launch as a bridge-startup pass,
+  not a gameplay result. It reproduced both HDR filters and exited without a
+  crash, but never reached character selection or the world.
+- After service returns, create a fresh evidence boundary and run the installed
+  12.0.7 rebase in the same area for five minutes. Use the restored
+  `AMBIENT_OCCLUSION_TYPE "0"` baseline and rewritten pipeline cache to test,
+  not assume, the shader-compilation explanation for stuttering.
 - Instrument pipeline creation and the graphics-device reset before a separate
   SSAO experiment. Compare clean-start SSAO with a live SSAO toggle; do not
   change a MoltenVK control in that comparison.
