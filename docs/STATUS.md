@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-07-19
+Last updated: 2026-07-20
 
 ## Safety state
 
@@ -79,6 +79,17 @@ teardown. All 17 ignored evidence files and the post-run settings file are
 checksum-preserved in the Experiment 0006 directory. The bridge remains
 installed; no rollback was performed.
 
+At 20:56 KST on 2026-07-20, after all 17 evidence checksums and the live
+settings and cache fingerprints were reverified, the active settings file was
+backed up and only `AMBIENT_OCCLUSION_TYPE` was changed from `1` to `0`. The
+backup SHA-256 is the preserved post-SSAO hash
+`0ccfd0c6d30257454d495d0c74ba6b584a46609792d357f6499ca64c81690fab`;
+the updated file hash is
+`e71a11c20828ad270c5260b648cd6adb5cd2a7a58be6677acb4a5d5ec3ed49a2`.
+Transforming that one updated line back to `1` reproduces the backup hash,
+which verifies that no other setting changed. The installed bridge, enable
+marker, and 3,983,422-byte pipeline cache remained unchanged.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -120,9 +131,10 @@ coincided with `DeviceWaitIdle`, swapchain recreation, `OnDeviceReset`, and a
 new compiler-warning burst at 23:54:18 KST. No command-buffer error, device
 loss, bridge error, or crash occurred. Current evidence cannot distinguish an
 SSAO shader/render-pass incompatibility from state lost during the live device
-reset or an incorrect new pipeline. The persisted settings value is now
-`AMBIENT_OCCLUSION_TYPE "1"`, so the next launch is gated on restoring it to
-the preserved baseline `0` outside the game UI.
+reset or an incorrect new pipeline. The failing settings state is preserved,
+and the active file now contains the verified baseline
+`AMBIENT_OCCLUSION_TYPE "0"`. The next unresolved boundary is an unchanged
+five-minute world interval; SSAO itself remains excluded from that run.
 
 MoltenVK 1.4.1 performance A/B testing remains blocked until rendering
 correctness and short gameplay stability are established.
@@ -149,12 +161,12 @@ depends on Rust yet.
 Preserve the installed Experiment 0006 bridge and its new 3,983,422-byte
 pipeline cache. Do not restore the game bundle merely for normal operation.
 
-Before another launch, obtain approval to preserve the current settings file
-and change only `AMBIENT_OCCLUSION_TYPE` from `1` back to the verified baseline
-`0`. Then repeat the same area for five minutes without any settings change.
-The run will test short gameplay stability and whether the observed stuttering
-falls with a warm cache; the compiler-warning timing makes that plausible but
-does not establish causation.
+The active setting has been restored to `AMBIENT_OCCLUSION_TYPE "0"` with its
+pre-edit file preserved and verified. Prepare automatic evidence collection,
+then repeat the same area for five minutes without any settings change. The run
+will test short gameplay stability and whether the observed stuttering falls
+with a warm cache; the compiler-warning timing makes that plausible but does
+not establish causation.
 
 Only after that unchanged run should a separate instrumented SSAO experiment
 compare clean-start SSAO against a live toggle. No additional MoltenVK control

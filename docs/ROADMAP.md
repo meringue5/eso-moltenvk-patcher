@@ -17,11 +17,10 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve the Experiment 0006 run as the first lobby-to-world rendering pass:
   the old flicker disappeared, but an unchanged five-minute interval was not
   completed before the user enabled SSAO.
-- Before relaunch, preserve the current settings and restore only
-  `AMBIENT_OCCLUSION_TYPE` from `1` to the verified `0` baseline.
 - Repeat the installed build unchanged in the same area for five minutes. Use
-  the warm pipeline cache and compiler-warning timing to test, not assume, the
-  shader-compilation explanation for stuttering.
+  the now-restored `AMBIENT_OCCLUSION_TYPE "0"` baseline, warm pipeline cache,
+  and compiler-warning timing to test, not assume, the shader-compilation
+  explanation for stuttering.
 - Instrument pipeline creation and the graphics-device reset before a separate
   SSAO experiment. Compare clean-start SSAO with a live SSAO toggle; do not
   change a MoltenVK control in that comparison.

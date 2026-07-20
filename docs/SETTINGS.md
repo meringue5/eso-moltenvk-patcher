@@ -53,14 +53,16 @@ setting subset; neither the raw settings nor the cache belongs in Git.
 
 ## Experiment 0006 SSAO safety amendment
 
-The table above remains the verified baseline, not the active post-run value.
 During Experiment 0006, changing `AMBIENT_OCCLUSION_TYPE` from `0` to SSAO value
 `1` coincided with a live graphics-device reset and left the game presenting
 only changing solid colors. The process did not crash, but usable scene
 rendering did not recover before exit.
 
-ESO persisted value `1` to the active settings file. Do not launch the current
-experimental bridge again until that one setting is deliberately restored to
-`0` outside the game UI or an instrumented SSAO test explicitly requires value
-`1`. This is a one-run compatibility warning, not a claim that SSAO is broken
-on every MoltenVK configuration.
+On 2026-07-20, the exact post-SSAO file was preserved and verified before the
+active value was changed from `1` back to the table's baseline `0`. The backup
+hash is `0ccfd0c6d30257454d495d0c74ba6b584a46609792d357f6499ca64c81690fab`;
+the active file hash after the one-line edit is
+`e71a11c20828ad270c5260b648cd6adb5cd2a7a58be6677acb4a5d5ec3ed49a2`.
+SSAO remains excluded from the next unchanged run. This is a one-run
+compatibility warning, not a claim that SSAO is broken on every MoltenVK
+configuration.

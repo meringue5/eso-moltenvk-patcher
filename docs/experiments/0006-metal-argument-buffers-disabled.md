@@ -312,3 +312,27 @@ start in the failed path. Do not ask the user to relaunch yet.
    pipeline-creation results and the device-reset boundary first, then compare
    clean-start SSAO with a live toggle. Do not change another MoltenVK control
    at the same time.
+
+## Baseline-restoration amendment: 2026-07-20
+
+Before any subsequent launch, all 17 files in the Experiment 0006 evidence
+manifest were reverified. The live settings file still contained exactly one
+supported `AMBIENT_OCCLUSION_TYPE "1"` line and still had SHA-256
+`0ccfd0c6d30257454d495d0c74ba6b584a46609792d357f6499ca64c81690fab`.
+The active pipeline cache was also unchanged at 3,983,422 bytes and SHA-256
+`971293cca9a9ed748a894aa84aa60dc64bae5c590bb47da9dfed780039252d8c`.
+
+With ESO, Steam, and the launcher absent, commit `59d455f`'s fail-closed helper
+created timestamped backup
+`UserSettings.txt.teso4m4-before-ao-1-to-0-20260720T115609Z` and atomically
+changed only that setting to `0`. The backup hash equals the preserved
+post-SSAO hash above. The updated file hash is
+`e71a11c20828ad270c5260b648cd6adb5cd2a7a58be6677acb4a5d5ec3ed49a2`;
+substituting its AO line back to `1` reproduces the backup hash, independently
+confirming that no other settings line changed.
+
+Post-edit status still reports the Experiment 0006 bridge installed and its
+enable marker present. The active pipeline-cache size, timestamp, and hash are
+unchanged. No game-bundle file or cache was restored. The checkpoint is now
+safe to advance to the unchanged five-minute, SSAO-disabled warm-cache repeat;
+it is not yet a general gameplay approval.
