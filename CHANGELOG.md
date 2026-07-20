@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Added a fail-closed local ESO update checker with current-target selection.
+- Added an exact static-profile audit for unchanged-layout target rebases.
+- Recorded patch-site bytes, embedded archive members, Vulkan reference shape,
+  proc-query shape, and replacement-runtime identity in the current manifest.
+- Integrated pre/post update identity checks with experiment evidence handling.
+
 ## 0.1.0 - 2026-07-19
 
 - Documented reproducible FPS degradation and Metal HUD evidence.

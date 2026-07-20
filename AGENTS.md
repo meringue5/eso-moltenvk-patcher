@@ -24,9 +24,12 @@ and evidence preservation take priority over obtaining a quick FPS result.
    - `docs/ARCHITECTURE.md`
 3. Use `docs/experiments/README.md` to find only the experiment records relevant
    to the task. Do not infer current state from an old experiment.
-4. Confirm that the active game loader is original before assuming a clean
+4. Run `scripts/check-update.sh` before preparing evidence or relying on the
+   selected target. An unknown build blocks the experiment; follow
+   `docs/UPDATES.md` and never weaken a failed profile comparison.
+5. Confirm that the active game loader is original before assuming a clean
    baseline. `scripts/status.sh` is the non-destructive status check.
-5. Rebuild from source after bridge changes. Never rely on a stale `build/`
+6. Rebuild from source after bridge changes. Never rely on a stale `build/`
    directory.
 
 ## Documentation ownership

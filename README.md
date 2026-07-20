@@ -67,6 +67,21 @@ TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK ./scripts/install.sh
 ./scripts/restore.sh
 ```
 
+## Update gate
+
+Before preparing an experiment, check whether the launcher has replaced the
+local ESO executable:
+
+```sh
+./scripts/check-update.sh
+```
+
+Exit status `0` means the exact selected target is still present. An unknown or
+historical build exits `3`. If a new build retains the verified binary layout,
+`scripts/rebase-update.sh` can audit and create a new target manifest without
+modifying the game bundle. See the [update runbook](docs/UPDATES.md); no target
+is installed merely because the fast static audit passes.
+
 ## Scope and legal note
 
 This project is unaffiliated with ZeniMax, Bethesda, Valve, Apple, or Khronos.

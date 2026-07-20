@@ -76,6 +76,17 @@ def main() -> None:
         expected = executable[offset : offset + PATCH_SIZE]
         if len(expected) != PATCH_SIZE:
             raise SystemExit(f"patch target outside executable: {target['symbol']}")
+        recorded = target.get("expected_bytes")
+        if manifest.get("schema_version", 1) >= 2:
+            if not isinstance(recorded, str) or len(recorded) != PATCH_SIZE * 2:
+                raise SystemExit(
+                    f"invalid recorded patch bytes: {target['symbol']}"
+                )
+            if recorded.lower() != expected.hex():
+                raise SystemExit(
+                    f"recorded patch bytes mismatch: {target['symbol']}\n"
+                    f"expected: {recorded.lower()}\nactual:   {expected.hex()}"
+                )
         byte_list = ", ".join(f"0x{byte:02x}" for byte in expected)
         lines.append(
             f'    {{"{target["symbol"]}", 0x{offset:x}ULL, {{{byte_list}}}}},'
@@ -87,4 +98,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

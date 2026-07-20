@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="${0:A:h:h}"
+source "$ROOT/scripts/lib-target.sh"
 ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zenimax Online/The Elder Scrolls Online/game_mac/pubplayerclient/eso.app}"
 GAME_MAC="$ESO_APP/Contents/MacOS"
 ESO="$GAME_MAC/eso"
@@ -11,7 +12,7 @@ MARKER="$GAME_MAC/.teso4m4-enable"
 ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
-MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-20.json}"
+MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 PRESERVE_CACHE_STATE="${TESO4M4_PRESERVE_CACHE_STATE:-}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 

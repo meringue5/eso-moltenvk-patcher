@@ -27,6 +27,25 @@ This mechanism was independently verified under Rosetta.
 - Installation preserves the pristine Bink library and old pipeline cache.
 - Unknown game builds fail closed.
 
+## Launcher-update gate
+
+`config/current-target.txt` selects the default manifest used by status,
+build, install, restore, and update tooling. This removes dated manifest names
+from shell scripts and makes a target promotion one explicit pointer change.
+`scripts/check-update.sh` compares both SHA-256 and Mach-O UUID and returns a
+nonzero result for unknown, historical, or internally inconsistent identities.
+
+The schema-v2 current manifest also owns a compact static-layout profile. It
+records both embedded archive-member hashes, the linked MoltenVK object and
+symbol count, exact patch bytes, reference shapes, proc-query routes, and the
+pinned replacement-runtime identity. `scripts/rebase-update.sh` recomputes
+that profile on the updated bundle and emits a new manifest only for an exact
+match. Files are rehashed before promotion to close the launcher-update race.
+
+This mechanism automates the unchanged-layout case; it does not infer new
+offsets or relax a mismatch. It writes repository configuration only. Loader
+restore, build, installation, and runtime validation remain separate gates.
+
 ## Verified coverage for the current target
 
 The current analyzer enumerates old Vulkan text symbols and checks direct calls
@@ -112,6 +131,7 @@ answer that question.
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially
 reduces the obvious public-wrapper mixing risk for this exact executable, but
 does not prove callback, private ABI, extension-negotiation, object-lifetime,
-or surface/swapchain compatibility. Any target update invalidates the coverage
-until fingerprints, offsets, cross-references, extension state, and proc
-behavior are re-established.
+or surface/swapchain compatibility. Any target update invalidates the active
+coverage. The fast update audit can re-establish the static portion only when
+the complete profiled layout is unchanged; non-game probes and the bounded
+runtime gate are still required.

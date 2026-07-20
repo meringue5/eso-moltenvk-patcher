@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="${0:A:h:h}"
+source "$ROOT/scripts/lib-target.sh"
 ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zenimax Online/The Elder Scrolls Online/game_mac/pubplayerclient/eso.app}"
 GAME_MAC="$ESO_APP/Contents/MacOS"
 ESO="$GAME_MAC/eso"
@@ -9,7 +10,7 @@ BINK="$GAME_MAC/libBink2Macx64.dylib"
 LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 MVK_ROOT="${MVK_ROOT:-$ROOT/vendor/MoltenVK}"
 MVK="$MVK_ROOT/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib"
-MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-20.json}"
+MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 BUILD="$ROOT/build"
 
 for file in "$ESO" "$BINK" "$LEGACY_MVK" "$MVK" "$MANIFEST"; do

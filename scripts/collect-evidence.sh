@@ -75,6 +75,10 @@ OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
 } > "$OUTPUT/pipeline-cache-fingerprints.txt"
 
 "$ROOT/scripts/status.sh" > "$OUTPUT/status-after.txt"
+UPDATE_CHECK_EXIT=0
+"$ROOT/scripts/check-update.sh" > "$OUTPUT/update-check-after.txt" 2>&1 \
+  || UPDATE_CHECK_EXIT=$?
+echo "$UPDATE_CHECK_EXIT" > "$OUTPUT/update-check-after-exit-code.txt"
 
 (
   cd "$OUTPUT"

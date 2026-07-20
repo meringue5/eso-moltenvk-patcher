@@ -33,7 +33,11 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P1: keep redirection verifiable
 
-- Re-run wrapper and GIPA/GDPA analysis after every target executable update.
+- Run the automatic update check before every evidence boundary. For an unknown
+  build, use the exact-profile fast rebase only if every archive, patch,
+  reference, proc-route, and replacement-runtime check passes.
+- Treat `MANUAL_ANALYSIS_REQUIRED` as a hard stop; extend the analyzer instead
+  of weakening or bypassing a mismatched profile.
 - Fail closed if any externally referenced old wrapper lacks a new-runtime
   export or any proc query regresses from non-null to null on its actual route.
 - Investigate any newly discovered path that could mix old and new runtime

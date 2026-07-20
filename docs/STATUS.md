@@ -127,6 +127,17 @@ but its content hash changed; this alone does not identify shader compilation
 or prove a warmed world cache. The bridge remains installed and current, SSAO
 remains disabled, and no rollback was performed.
 
+The launcher-update boundary is now automated for future runs. A local checker
+compares executable SHA-256 and UUID against the selected and historical target
+manifests, and evidence preparation fails closed on any mismatch. The current
+12.0.7 manifest has a schema-v2 profile containing both embedded MoltenVK
+object hashes, all 17 exact patch signatures, the 40-reference shape, the
+19-site GIPA and 80-site GDPA query shapes, and the pinned replacement-runtime
+identity. A fast rebase tool may create and select a new manifest only if that
+entire profile remains exact; it never modifies the game bundle. This tooling
+does not change the installed Experiment 0007 runtime verdict or remove the
+remaining lobby/world test gate.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence

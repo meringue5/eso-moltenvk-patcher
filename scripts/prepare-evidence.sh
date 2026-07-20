@@ -11,6 +11,8 @@ ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 SETTINGS="$ESO_LIVE/UserSettings.txt"
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
+UPDATE_CHECK_EXIT=0
+UPDATE_CHECK="$("$ROOT/scripts/check-update.sh" 2>&1)" || UPDATE_CHECK_EXIT=$?
 
 if [[ -e "$OUTPUT" ]]; then
   echo "Evidence directory already exists: $OUTPUT"
@@ -20,11 +22,17 @@ fi
   echo "Missing built bridge artifacts; run scripts/build.sh first."
   exit 1
 }
+if (( UPDATE_CHECK_EXIT != 0 )); then
+  echo "$UPDATE_CHECK"
+  echo "ESO target changed; refusing to prepare stale experiment evidence."
+  exit "$UPDATE_CHECK_EXIT"
+fi
 [[ -z "$(git -C "$ROOT" status --porcelain --untracked-files=normal)" ]] || {
   echo "Source worktree is not clean; refusing to prepare ambiguous evidence."
   exit 1
 }
 mkdir -p "$OUTPUT"
+echo "$UPDATE_CHECK" > "$OUTPUT/update-check-before.txt"
 date -u +%Y-%m-%dT%H:%M:%SZ > "$OUTPUT/started-at-utc.txt"
 date +%s > "$OUTPUT/started-at-epoch.txt"
 git -C "$ROOT" rev-parse HEAD > "$OUTPUT/source-commit.txt"

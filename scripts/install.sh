@@ -10,6 +10,7 @@ if [[ "${TESO4M4_EXPERIMENTAL:-}" != "I_ACCEPT_CRASH_RISK" ]]; then
 fi
 
 ROOT="${0:A:h:h}"
+source "$ROOT/scripts/lib-target.sh"
 MODE="${TESO4M4_MODE:-descriptor-compat}"
 [[ "$MODE" == "descriptor-compat" ]] || {
   echo "Unsupported experiment mode: $MODE"
@@ -26,7 +27,7 @@ MARKER="$GAME_MAC/.teso4m4-enable"
 ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
-MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-20.json}"
+MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 PRESERVE_CACHE_STATE="${TESO4M4_PRESERVE_CACHE_STATE:-}"
 EXPECTED_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "$MANIFEST")"
 

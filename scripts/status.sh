@@ -5,7 +5,8 @@ ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zen
 GAME_MAC="$ESO_APP/Contents/MacOS"
 BINK="$GAME_MAC/libBink2Macx64.dylib"
 ROOT="${0:A:h:h}"
-MANIFEST="${TESO4M4_TARGET_MANIFEST:-$ROOT/config/targets-eso-2026-07-20.json}"
+source "$ROOT/scripts/lib-target.sh"
+MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 EXPECTED_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "$MANIFEST")"
 ACTUAL_SHA="$(shasum -a 256 "$GAME_MAC/eso" | awk '{print $1}')"
 

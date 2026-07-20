@@ -12,6 +12,7 @@ treating every old result as current.
 | What should happen next? | [Roadmap](ROADMAP.md) |
 | What has been established across experiments? | [Findings](FINDINGS.md) |
 | How does the bridge work? | [Architecture](ARCHITECTURE.md) |
+| How is a launcher update checked and rebased? | [Update runbook](UPDATES.md) |
 | What happened in a specific run? | [Experiment index](experiments/README.md) |
 | What do comparable external projects teach us? | [Research index](research/README.md) |
 | Which unscheduled ideas are worth retaining? | [Miscellaneous notes](misc.md) |
