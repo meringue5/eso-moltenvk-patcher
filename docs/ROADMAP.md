@@ -6,10 +6,6 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P0: restore rendering correctness after the startup fix
 
-- Rebase the bridge to launcher-managed ESO 12.0.7. Preserve the interrupted
-  repeat gate, restore only as required for a clean rebuild, validate the new
-  SHA-256 and UUID, and prove the unchanged patch bytes and proc routes again
-  before installation.
 - Experiment 0004 was preserved until restoration became technically necessary
   for the Experiment 0005 clean rebuild; retain its verified evidence, displaced
   marker, and cache state.
@@ -21,7 +17,7 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve the Experiment 0006 run as the first lobby-to-world rendering pass:
   the old flicker disappeared, but an unchanged five-minute interval was not
   completed before the user enabled SSAO.
-- Repeat the rebased build in the same area for five minutes. Use
+- Run the installed 12.0.7 rebase in the same area for five minutes. Use
   the now-restored `AMBIENT_OCCLUSION_TYPE "0"` baseline, warm pipeline cache,
   and compiler-warning timing to test, not assume, the shader-compilation
   explanation for stuttering.

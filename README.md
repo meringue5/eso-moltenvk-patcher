@@ -16,8 +16,9 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > solid colors without crashing. That exact settings state is preserved, and
 > the active file has been returned to the verified SSAO-disabled baseline.
 > Opening the launcher before the planned repeat installed ESO 12.0.7 and
-> changed the executable fingerprint. The old bridge now detects a stale
-> target and must not be launched. Rebase work is recorded in the
+> changed the executable fingerprint. The bridge has now been statically
+> rebased, rebuilt, validated without the game, and reinstalled for that exact
+> target. It remains ready only for the controlled five-minute repeat in the
 > [current status](docs/STATUS.md) before using any experimental tooling.
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
