@@ -7,6 +7,8 @@
 - Recorded patch-site bytes, embedded archive members, Vulkan reference shape,
   proc-query shape, and replacement-runtime identity in the current manifest.
 - Integrated pre/post update identity checks with experiment evidence handling.
+- Added a guarded, reversible `SkipPregameVideos` settings helper.
+- Made settings helpers fail closed when ESO process inspection is unavailable.
 
 ## 0.1.0 - 2026-07-19
 

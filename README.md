@@ -20,8 +20,10 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > rebased, rebuilt, validated without the game, and reinstalled for that exact
 > target. A subsequent launch passed the automatic bridge-startup checks and
 > exited without a crash, but server maintenance prevented character selection
-> or world entry. It remains ready only for the controlled five-minute repeat
-> in the [current status](docs/STATUS.md) after service returns.
+> or world entry. A later short repeat reached Auridon, rendered correctly, and
+> produced no perceptible stuttering or crash. The pre-UI solid-color frame
+> persisted; a one-line pregame-video bypass is now prepared for a bounded
+> startup-only check described in the [current status](docs/STATUS.md).
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
 an experimental method for redirecting ESO's statically linked MoltenVK 1.0.18

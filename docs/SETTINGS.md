@@ -23,6 +23,7 @@ Notable values:
 | `SHADOWS` | `2` | Current checkpoint value |
 | `ANTIALIASING_TYPE` | `0` | Disabled in the current checkpoint |
 | `AMBIENT_OCCLUSION_TYPE` | `0` | Disabled |
+| `SkipPregameVideos` | `1` | Experiment 0008 startup-artifact test; previously `0` |
 | `GOD_RAYS` / `BLOOM` | `0` | Disabled |
 | `VSYNC` | `1` | Enabled |
 | `MinFrameTime.2` | `0.01000000` | 100 FPS interval, not a general performance unlock |
@@ -66,3 +67,19 @@ the active file hash after the one-line edit is
 SSAO remains excluded from the next unchanged run. This is a one-run
 compatibility warning, not a claim that SSAO is broken on every MoltenVK
 configuration.
+
+## Experiment 0008 pregame-video amendment
+
+ESO's interface log records the repeatable solid-color symptom within the
+pre-account-login sequence that begins at `PlayIntroMovies`. The executable
+contains the supported `SkipPregameVideos` key, and the active value during all
+observed solid-color runs was `0`.
+
+On 2026-07-21, a guarded helper preserved the exact settings file and changed
+only `SkipPregameVideos` from `0` to `1`. The pre-change hash is
+`e71a11c20828ad270c5260b648cd6adb5cd2a7a58be6677acb4a5d5ec3ed49a2`;
+the updated hash is
+`f2e2afe947048a20ed07817930f6e442ca96da14a6ab7fe32db16b9363ec44dc`.
+The result is pending a bounded startup-only run. `VIDEO_ENABLED` was not
+disabled because that would broaden the change beyond the identified pregame
+path.

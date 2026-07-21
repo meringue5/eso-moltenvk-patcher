@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 
 ## Safety state
 
@@ -135,8 +135,27 @@ object hashes, all 17 exact patch signatures, the 40-reference shape, the
 19-site GIPA and 80-site GDPA query shapes, and the pinned replacement-runtime
 identity. A fast rebase tool may create and select a new manifest only if that
 entire profile remains exact; it never modifies the game bundle. This tooling
-does not change the installed Experiment 0007 runtime verdict or remove the
-remaining lobby/world test gate.
+does not itself establish runtime rendering or stability.
+
+After service returned on 2026-07-21, the user completed a short Experiment
+0007 world repeat. The automatic bridge verdict passed, no new crash report or
+bridge error appeared, and ESO's interface log reached character selection and
+fully loaded Auridon. The approximately 199-second process contained about 162
+seconds after world load. The user explored a limited area, observed correct
+rendering, and did not perceive stuttering. The active cache kept its
+3,983,422-byte size but changed content hash again; the settings file remained
+byte-identical with ambient occlusion disabled. The originally planned
+five-minute interval was not completed, so extended stability and controlled
+performance remain unproven.
+
+The transient solid-color startup screen persisted. ESO's own interface log
+places it in the pre-UI sequence beginning with `PlayIntroMovies`, followed by
+ZOS video, Havok, and legal splash states. The executable recognizes the
+supported `SkipPregameVideos` key, whose value was `0` in every observed run.
+Experiment 0008 preserved the exact settings file and changed only that value
+to `1`; changing the line back in memory reproduces the original hash. The
+bridge, cache, ambient occlusion, and all other inspected video settings remain
+unchanged.
 
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
@@ -154,8 +173,8 @@ an ignored baseline checkpoint. See the
 
 ## Active blocker
 
-The 12.0.7 target rebase now has positive bridge-startup evidence but no lobby
-or world evidence. Static analysis found that the bundled MoltenVK object is
+The 12.0.7 target rebase now has positive startup, lobby, and short-world
+evidence. Static analysis found that the bundled MoltenVK object is
 byte-identical to the prior object, its headers still identify 1.0.18, the link
 delta remains `0x1a08490`, and the same 40 external references reach the same
 17 wrappers. All 17 patch offsets and their 12-byte preconditions are
@@ -163,9 +182,8 @@ unchanged. The former GIPA/GDPA slots still recover 19 and 80 direct query sites
 respectively, with no unnamed site, missing probe candidate,
 manifest-coverage gap, or old-nonnull/new-null regression. Fresh real-Metal
 probes reproduced the expected HDR extension and surface filtering, and the
-maintenance-interrupted launch reproduced those filters in ESO. The next
-blocker is the same bounded user-controlled runtime repeat after service
-availability returns.
+maintenance-interrupted launch and the later world repeat reproduced those
+filters in ESO. The target rebase itself is no longer the active blocker.
 
 Experiment 0004 falsified the device-advertisement-only hypothesis. The bridge
 removed exactly one HDR device extension, and ESO still queried and called the
@@ -184,8 +202,9 @@ through swapchain, pipeline, draw, present, and orderly teardown calls.
 
 Disabling Metal argument buffers removed the Experiment 0005 persistent
 black/shadow-layer flicker in one single-variable A/B and allowed world entry.
-This strongly implicates the argument-buffer descriptor path, but an unchanged
-five-minute world interval and a repeat run are still missing.
+This strongly implicates the argument-buffer descriptor path. A second short
+world interval has now repeated the rendering pass; an unchanged five-minute
+interval is still missing.
 
 The active rendering blocker is the live SSAO transition. The settings change
 coincided with `DeviceWaitIdle`, swapchain recreation, `OnDeviceReset`, and a
@@ -219,14 +238,16 @@ depends on Rust yet.
 
 ## Next gate
 
-The rebased Experiment 0007 bridge is installed and its startup path has passed.
-No user action is required during server maintenance. Once service is
-available, prepare a new automatic-evidence boundary and repeat the same area
-for five minutes with the already-restored `AMBIENT_OCCLUSION_TYPE "0"` setting
-and no graphics changes. That run tests lobby/world rendering, short gameplay
-stability, and whether the observed stuttering changes after the cache rewrite;
-the cache change and earlier compiler-warning timing do not establish
-causation.
+Experiment 0008 has changed only `SkipPregameVideos` from `0` to `1` with an
+exact backup and inverse-hash check. The next gate is a startup-only run of at
+most 90 seconds through account login or character selection. It tests whether
+bypassing `PlayIntroMovies` removes the transient solid-color screen without a
+new startup or UI failure; no world entry or graphics change is needed.
+
+After that narrow result, the remaining correctness gate is an unchanged
+five-minute Auridon interval with ambient occlusion `0`. The latest short run
+supports the warm-cache stuttering hypothesis but does not establish causation
+or replace a controlled performance A/B.
 
 Only after that unchanged run should a separate instrumented SSAO experiment
 compare clean-start SSAO against a live toggle. No additional MoltenVK control

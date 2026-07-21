@@ -14,6 +14,12 @@ class SetAmbientOcclusionTests(unittest.TestCase):
     def run_script(self, live: Path, value: str) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
         environment["ESO_LIVE"] = str(live)
+        fake_bin = live / "test-bin"
+        fake_bin.mkdir(exist_ok=True)
+        fake_pgrep = fake_bin / "pgrep"
+        fake_pgrep.write_text("#!/bin/sh\nexit 1\n")
+        fake_pgrep.chmod(0o755)
+        environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
         return subprocess.run(
             [str(SCRIPT), value],
             check=False,
@@ -65,6 +71,32 @@ class SetAmbientOcclusionTests(unittest.TestCase):
             unsupported = self.run_script(live, "2")
             self.assertEqual(unsupported.returncode, 2)
             self.assertEqual(settings.read_text(), duplicate)
+
+    def test_rejects_failed_process_inspection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            live = Path(directory)
+            settings = live / "UserSettings.txt"
+            settings.write_text('SET AMBIENT_OCCLUSION_TYPE "1"\n')
+            fake_bin = live / "test-bin"
+            fake_bin.mkdir()
+            fake_pgrep = fake_bin / "pgrep"
+            fake_pgrep.write_text("#!/bin/sh\nexit 3\n")
+            fake_pgrep.chmod(0o755)
+            environment = os.environ.copy()
+            environment["ESO_LIVE"] = str(live)
+            environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
+
+            result = subprocess.run(
+                [str(SCRIPT), "0"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=environment,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(settings.read_text(), 'SET AMBIENT_OCCLUSION_TYPE "1"\n')
+            self.assertEqual(list(live.glob("UserSettings.txt.teso4m4-before-*")), [])
 
 
 if __name__ == "__main__":

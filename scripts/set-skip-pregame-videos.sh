@@ -25,20 +25,20 @@ fi
   exit 1
 }
 
-LINE_COUNT="$(grep -Ec '^SET AMBIENT_OCCLUSION_TYPE "[01]"$' "$SETTINGS" || true)"
+LINE_COUNT="$(grep -Ec '^SET SkipPregameVideos "[01]"$' "$SETTINGS" || true)"
 [[ "$LINE_COUNT" == 1 ]] || {
-  echo "Expected exactly one supported AMBIENT_OCCLUSION_TYPE line; found $LINE_COUNT."
+  echo "Expected exactly one supported SkipPregameVideos line; found $LINE_COUNT."
   exit 1
 }
-OLD_VALUE="$(sed -n 's/^SET AMBIENT_OCCLUSION_TYPE "\([01]\)"$/\1/p' "$SETTINGS")"
+OLD_VALUE="$(sed -n 's/^SET SkipPregameVideos "\([01]\)"$/\1/p' "$SETTINGS")"
 
 if [[ "$OLD_VALUE" == "$NEW_VALUE" ]]; then
-  echo "AMBIENT_OCCLUSION_TYPE is already $NEW_VALUE; no file was changed."
+  echo "SkipPregameVideos is already $NEW_VALUE; no file was changed."
   exit 0
 fi
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-BACKUP="$SETTINGS.teso4m4-before-ao-${OLD_VALUE}-to-${NEW_VALUE}-${STAMP}"
+BACKUP="$SETTINGS.teso4m4-before-skip-pregame-${OLD_VALUE}-to-${NEW_VALUE}-${STAMP}"
 [[ ! -e "$BACKUP" ]] || {
   echo "Backup path already exists: $BACKUP"
   exit 1
@@ -62,8 +62,8 @@ BACKUP_HASH="$(shasum -a 256 "$BACKUP" | awk '{print $1}')"
 }
 
 cp -p "$SETTINGS" "$TEMP"
-sed -i '' -e "s/^SET AMBIENT_OCCLUSION_TYPE \"${OLD_VALUE}\"\$/SET AMBIENT_OCCLUSION_TYPE \"${NEW_VALUE}\"/" "$TEMP"
-NEW_LINE_COUNT="$(grep -Ec "^SET AMBIENT_OCCLUSION_TYPE \"${NEW_VALUE}\"\$" "$TEMP" || true)"
+sed -i '' -e "s/^SET SkipPregameVideos \"${OLD_VALUE}\"\$/SET SkipPregameVideos \"${NEW_VALUE}\"/" "$TEMP"
+NEW_LINE_COUNT="$(grep -Ec "^SET SkipPregameVideos \"${NEW_VALUE}\"\$" "$TEMP" || true)"
 [[ "$NEW_LINE_COUNT" == 1 ]] || {
   echo "Replacement verification failed; original settings remain unchanged."
   exit 1
@@ -73,7 +73,7 @@ mv -f "$TEMP" "$SETTINGS"
 TEMP=""
 NEW_HASH="$(shasum -a 256 "$SETTINGS" | awk '{print $1}')"
 
-echo "AMBIENT_OCCLUSION_TYPE: $OLD_VALUE -> $NEW_VALUE"
+echo "SkipPregameVideos: $OLD_VALUE -> $NEW_VALUE"
 echo "Backup: $BACKUP"
 echo "Backup SHA-256: $BACKUP_HASH"
 echo "Updated SHA-256: $NEW_HASH"

@@ -161,6 +161,20 @@ Because Experiment 0006 subsequently rendered character selection and the
 world correctly, the pre-UI frame alone is not evidence of persistent world
 corruption. Its cause remains unresolved.
 
+The 12.0.7 world repeat added a second short rendering-correct interval. ESO's
+own interface log reached character selection and fully loaded Auridon; the
+user explored for approximately 162 seconds without perceptible stuttering or
+visual corruption. The bridge verdict passed and no crash occurred. This
+supports short gameplay stability with the rewritten cache, but is not the
+planned five-minute interval or a controlled performance comparison.
+
+That same interface log places the solid-color symptom in a startup sequence
+beginning with `PlayIntroMovies`, followed by ZOS video, Havok, and legal splash
+states before account login. The executable recognizes `SkipPregameVideos`, and
+the repeated runs used value `0`. This establishes a narrow setting-based test
+for bypassing the symptom; it does not yet prove which movie or render pass
+produces the color.
+
 The later live switch to SSAO coincided with ESO's graphics-device reset and
 reduced output to changing solid colors without a Vulkan error, device loss, or
 process crash. That one setting transition is preserved as an active safety

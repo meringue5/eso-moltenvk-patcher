@@ -17,13 +17,15 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve the Experiment 0006 run as the first lobby-to-world rendering pass:
   the old flicker disappeared, but an unchanged five-minute interval was not
   completed before the user enabled SSAO.
-- Preserve the maintenance-interrupted 12.0.7 launch as a bridge-startup pass,
-  not a gameplay result. It reproduced both HDR filters and exited without a
-  crash, but never reached character selection or the world.
-- After service returns, create a fresh evidence boundary and run the installed
-  12.0.7 rebase in the same area for five minutes. Use the restored
-  `AMBIENT_OCCLUSION_TYPE "0"` baseline and rewritten pipeline cache to test,
-  not assume, the shader-compilation explanation for stuttering.
+- Preserve the 12.0.7 short world repeat as the target-rebase rendering pass.
+  It reached Auridon for approximately 162 seconds with no perceived
+  stuttering or corruption, but did not complete the planned five minutes.
+- Complete the narrow Experiment 0008 startup-only check with
+  `SkipPregameVideos` set to `1`; distinguish removal of the pre-UI solid-color
+  frame from any persistent world-rendering change.
+- After the startup artifact is classified, run one unchanged five-minute
+  Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
+  to test, not assume, the shader-compilation explanation for stuttering.
 - Instrument pipeline creation and the graphics-device reset before a separate
   SSAO experiment. Compare clean-start SSAO with a live SSAO toggle; do not
   change a MoltenVK control in that comparison.
@@ -46,8 +48,8 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P2: deferred controlled performance experiments
 
-- Do not request performance telemetry until the unchanged five-minute
-  Experiment 0006 repeat establishes short gameplay stability.
+- Do not request performance telemetry until an unchanged five-minute
+  Experiment 0007 interval extends the two short gameplay passes.
 - Before requesting a performance run, establish an automated measurement path
   that does not depend on the currently unavailable Metal HUD or manual image
   capture.
