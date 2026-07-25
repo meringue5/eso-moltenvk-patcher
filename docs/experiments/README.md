@@ -27,7 +27,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0017 | 2026-07-25 | Swapchain Metal texture-cache fix | Failed ESO applicability; FPS restored, resolution reset blacked out | [Run](0017-swapchain-texture-cache-fix.md) |
 | 0018 | 2026-07-26 | Embedded-runtime core feature profile | Failed; exact mask still produced solid output | [Run](0018-legacy-feature-profile.md) |
 | 0019 | 2026-07-26 | Combined performance-safe execution path | Failed reset repair; low-overhead path active without obvious other issue | [Run](0019-performance-safe-path.md) |
-| 0020 | 2026-07-26 | Live-resource descriptor performance | Prepared; non-game descriptor encoding improved 10.1% | [Run](0020-live-resource-performance.md) |
+| 0020 | 2026-07-26 | Live-resource descriptor performance | Installed; non-game descriptor encoding improved 10.1%, ordinary-use validation pending | [Run](0020-live-resource-performance.md) |
 
 ## Recording policy
 

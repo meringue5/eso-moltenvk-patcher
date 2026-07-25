@@ -90,13 +90,14 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Close Experiment 0019 as a negative reset-repair result. Its exact
   low-overhead mode was active, yet the resolution reset still produced solid
   output. Retain it as the current performance checkpoint.
-- Preserve the prepared Experiment 0020 `performance-aggressive` candidate.
+- Preserve the installed Experiment 0020 `performance-aggressive` candidate.
   Its only delta from the installed safe profile is
   `LIVE_CHECK_ALL_RESOURCES=0`; a balanced M4 probe measured a 10.1% reduction
   in descriptor-heavy CPU encoding, and valid-resource reset coverage passes.
-- Complete its install preflight from source commit `ed5b9d3` only after
-  explicit approval. Do not describe the measured encode reduction as an equal
-  FPS increase.
+- Installation from source commit `ed5b9d3` preserved settings and both
+  pipeline caches and reproduced the prepared hashes. Do not describe the
+  measured encode reduction as an equal FPS increase, and do not request
+  another graphics reset for this performance experiment.
 
 ## P1: keep redirection verifiable
 
@@ -121,8 +122,9 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 - Do not request manual performance telemetry while non-game M4 measurements
   can still classify the remaining runtime settings.
-- Establish an automated descriptor-encode measurement path before considering
-  `LIVE_CHECK_ALL_RESOURCES=0`; do not infer a gain from the configuration name.
+- Treat the automated descriptor-encode measurement and Experiment 0020 install
+  as complete. Validate it through ordinary use rather than a dedicated
+  graphics-reset run.
 - Retain Experiment 0003 only as the embedded-runtime settings and warm-cache
   checkpoint; do not attribute its qualitative FPS change to MoltenVK 1.4.1.
 - When correctness is established, define a fixed-zone, fixed-route A/B with a
@@ -136,6 +138,12 @@ are in [Project status](STATUS.md); completed runs belong in the
   failure and the embedded runtime predates that feature.
 - Avoid command-buffer prefilling until reset/reuse behavior is known; it can
   increase memory and create artifacts for incompatible command-buffer usage.
+- Classify shader-source compression next with a non-game M4 probe. Compare
+  `LZ4` against no compression first, measuring retained MSL-source memory,
+  compression/decompression time, and cold and cache-backed pipeline creation
+  latency. It is a memory-pressure candidate, not an assumed shader-execution
+  or FPS optimization. Install it only if measured memory savings outweigh its
+  compilation and cache-load costs.
 
 ## P3: recovery without logout
 

@@ -1,8 +1,8 @@
 # Experiment 0020: live-resource descriptor performance
 
 - Date: 2026-07-26
-- Outcome: **prepared; measured non-game gain, installation not started**
-- Rollback: **Experiment 0019 remains installed; pristine loader checked**
+- Outcome: **installed; measured non-game gain, ordinary-use validation pending**
+- Rollback: **Experiment 0020 is installed; pristine loader and preserved caches remain available**
 
 ## Question
 
@@ -12,9 +12,9 @@ valid descriptor reuse in the existing non-game reset coverage?
 
 ## Scope
 
-This is a performance experiment, not another reset-repair attempt. Experiment
-0019 remains the installed checkpoint. The only additional runtime change in
-the new `performance-aggressive` mode is:
+This is a performance experiment, not another reset-repair attempt. The only
+additional runtime change from Experiment 0019 in the new
+`performance-aggressive` mode is:
 
 ```text
 MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES=0
@@ -127,24 +127,52 @@ MoltenVK:  d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
 
 No Steam, launcher, or ESO process was started for Experiment 0020.
 
-## Installation gate
+## Installation
 
-- Recheck the target fingerprint and stopped processes.
-- Verify the installed Experiment 0019 files, pristine loader, settings, both
-  pipeline caches, and prepared hashes.
-- Receive explicit approval for this game-bundle modification.
-- Preserve both caches and settings, restore the pristine loader, rebuild from
-  that real loader, and require byte-identical artifacts.
-- Install only `performance-aggressive` and verify its exact marker and
-  configuration boundary before any user launch.
+The user explicitly approved Experiment 0020. At approximately 2026-07-26
+01:39 KST, Steam, the launcher, and ESO were all stopped. Pre-install checks
+verified the current ESO 12.0.7 target, the installed Experiment 0019 proxy,
+the pristine loader, official MoltenVK 1.4.1, settings, and both pipeline
+caches.
+
+Experiment 0019 was restored with both cache states preserved. The proxy was
+then rebuilt from the actual pristine loader; the complete source build and
+configuration probes passed, and the rebuilt files reproduced the prepared
+hashes. Installation used only `performance-aggressive`.
+
+Post-install verification reports:
+
+```text
+mode marker:       performance-aggressive
+proxy:             5019d4eb552f89ea59bfda9d38e2f2c98ce36f2490c7c41294750c62ba68acde
+renamed original:  f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927
+MoltenVK 1.4.1:    d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+The installed proxy, renamed original, and MoltenVK file are byte-identical to
+the rebuild. The active cache, old preserved cache, and settings retained their
+pre-install hashes:
+
+```text
+active cache:  867758f370fbff15e04bef5058166b05b9f48856680569586520ef07517ca4e8
+old cache:     72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+settings:      115ca2fde7265ceeed0c1e3d6f337f73a8a2285cdeecef235a75738a2b316531
+```
+
+No Steam, launcher, or ESO process was started by the agent. The ignored
+post-install evidence boundary is
+`artifacts/experiment-0020-20260725T163919Z`.
 
 ## Result
 
-The source candidate has a repeatable non-game descriptor-encode gain and
-passes the available valid-resource correctness coverage. Installation has not
-started.
+The candidate has a repeatable non-game descriptor-encode gain, passes the
+available valid-resource correctness coverage, and is installed with the exact
+intended profile. This does not establish an ESO FPS gain. Ordinary use is the
+remaining validation boundary; no graphics-reset reproduction is requested for
+this performance experiment.
 
 ## Rollback
 
-Experiment 0019 remains installed. The pristine loader, both pipeline caches,
-settings, and all prior evidence remain preserved.
+Experiment 0020 remains installed. The pristine loader, both pipeline caches,
+settings, and all prior evidence remain preserved, so the prior profile can be
+restored without deleting those states if required.

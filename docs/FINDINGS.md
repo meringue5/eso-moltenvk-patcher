@@ -365,3 +365,18 @@ The result does not predict an equal ESO FPS increase. It also does not remove
 the correctness risk: the check intentionally avoids binding destroyed Metal
 resources, and descriptors established before the prior audit's first
 swapchain still lack complete content coverage.
+
+## Shader compression targets retained MSL source, not shader execution
+
+MoltenVK 1.4.1's `MVK_CONFIG_SHADER_COMPRESSION_ALGORITHM` compresses the MSL
+source retained in memory for later pipeline-cache export. The already compiled
+`MTLLibrary`, GPU resources, and shader execution are not compressed.
+
+`MVKShaderLibrary` compresses converted MSL before retaining it and separately
+compiles the uncompressed source. Reconstructing a shader library from cached
+data decompresses the MSL before compilation. MoltenVK records both operations
+as `mslCompress` and `mslDecompress` performance intervals. Compression can
+therefore reduce retained source memory while adding CPU latency to shader
+creation or cache reconstruction; it is not intrinsically an FPS optimization.
+The default is no compression, and the documented fastest candidate is LZ4,
+with the largest compressed representation among the provided algorithms.

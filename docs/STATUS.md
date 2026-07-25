@@ -798,8 +798,18 @@ profile passes the 24-cycle reset composite, Metal pixel validation, ESO-era
 device creation, proc profile, and HDR surface filter. The full build, 80
 Python tests, and static analysis pass.
 
-Experiment 0019 remains installed. Experiment 0020 has not modified the game
-bundle; its measured result, risk boundary, prepared hashes, and installation
-gate are in the
+After explicit approval and confirmation that Steam, the launcher, and ESO were
+stopped, Experiment 0019 was restored with settings and both pipeline caches
+preserved. The proxy was rebuilt from the actual pristine loader and reproduced
+the prepared hashes. Experiment 0020 is now installed with marker
+`performance-aggressive`; the installed proxy, renamed original, and official
+MoltenVK 1.4.1 are byte-identical to the rebuild. The active cache, old cache,
+and settings hashes are unchanged. The ignored post-install evidence boundary
+is `artifacts/experiment-0020-20260725T163919Z`.
+
+The install is verified, but an ESO FPS increase is not claimed. Ordinary use
+is the remaining validation boundary; Experiment 0020 does not request another
+graphics reset. Its measured result, risk boundary, exact hashes, installation,
+and rollback state are in the
 [Experiment 0020 record](experiments/0020-live-resource-performance.md).
 The candidate source identity is commit `ed5b9d3`.
