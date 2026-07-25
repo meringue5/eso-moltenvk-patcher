@@ -1,8 +1,8 @@
 # Experiment 0015: reset-only pipeline-cache bypass
 
 - Date: 2026-07-25
-- Outcome: **planned**
-- Rollback: **not started**
+- Outcome: **running; installed and awaiting the targeted warm-state reset**
+- Rollback: **not performed; restore path checked**
 
 ## Question
 
@@ -78,7 +78,40 @@ No travel, HUD, capture, FPS counter, or second option change is required.
 
 ## Evidence
 
-Pending source validation and installation.
+Source commit `cf0261f` passes 65 Python tests, Python compilation, shell
+syntax, whitespace checks, warnings-as-errors, and Clang static analysis. The
+complete pristine-loader build passed Bink re-export, Rosetta self-patch, HDR,
+lifecycle, reset-resource, render-audit, and all seven effective-configuration
+probes.
+
+The reset smoke probe proves the scope boundary: with bypass enabled, a
+pre-reset pipeline receives its original non-null cache, while an active reset
+pipeline receives `VK_NULL_HANDLE` and emits the required bypass record. The
+render-audit analyzer tests accept exact bypass coverage and reject a pipeline
+count mismatch.
+
+Fresh replacement and embedded-runtime probes reached the Apple M4 and
+reproduced the established HDR, surface-format, device-creation, and 100-name
+proc-address results.
+
+With ESO, Steam, and the launcher stopped, all Experiment 0014 evidence
+checksums were verified. A cache-preserving restore returned the loader to its
+pristine source, a fresh build completed, and the candidate was installed in
+exact `reset-no-pipeline-cache` mode. Built and installed hashes match:
+
+```text
+libBink2Macx64.dylib
+9bd7ca5f227bf7a4c393b064df098a19f2bdd7c5845b739658b17b73c4bb02bc
+
+libMoltenVK.teso4m4.dylib
+d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+The 4,259,071-byte warmed active cache, 6,800,792-byte old backup, and exact
+settings file remain unchanged. Status reports the target and marker current,
+and the quick gate is `READY`. Fresh ignored evidence is prepared under
+`artifacts/experiment-0015-20260725T131534Z`. No agent launched Steam, the
+launcher, or ESO.
 
 ## Result
 
@@ -90,8 +123,8 @@ Pending.
 
 ## Rollback
 
-Not started. The checked pristine loader and both pipeline-cache files remain
-the restore boundary.
+Not performed. The checked pristine loader and both unchanged pipeline-cache
+files remain the restore boundary.
 
 ## Follow-up
 

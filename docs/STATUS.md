@@ -505,8 +505,20 @@ will fail unless bypassed pipeline totals equal every reset graphics pipeline
 and its cache-use counter is zero. Neither on-disk cache is modified by this
 code path.
 
-The initial source gate passes 65 Python tests and the reset smoke probe. That
-probe proves both halves of the scope: a startup pipeline retains its non-null
-cache, while an active reset pipeline receives null and emits the bypass
-record. Full pristine-loader build, static analysis, real-Metal probes, and
-installation remain pending.
+Source commit `cf0261f` passes 65 Python tests, Python compilation, shell
+syntax, whitespace, warnings-as-errors, Clang static analysis, the full
+pristine-loader build, reset/render-audit probes, and all seven effective
+configuration probes. The reset probe proves both halves of the scope: a
+startup pipeline retains its non-null cache, while an active reset pipeline
+receives null and emits the bypass record. Fresh replacement and embedded
+probes both reached the Apple M4.
+
+Experiment 0015 is installed in exact `reset-no-pipeline-cache` mode. Built and
+installed hashes match, the target and marker are current, and the quick gate
+is `READY`. The warmed active cache, old backup, and settings file were
+preserved byte-for-byte. Fresh ignored evidence is prepared under
+`artifacts/experiment-0015-20260725T131534Z`. The next gate targets the
+recovered 60 FPS state: if the known 8 FPS state appears first, exit Steam
+without changing a setting and relaunch once; at ordinary performance, make
+one 2048 x 1280 to 1920 x 1200 resolution change and stop after classifying the
+output.
