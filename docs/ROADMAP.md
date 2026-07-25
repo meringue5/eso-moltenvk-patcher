@@ -66,11 +66,11 @@ are in [Project status](STATUS.md); completed runs belong in the
   797 further acquire/present pairs.
 - Keep Experiment 0017 installed until a source-validated successor requires
   restoration. Do not ask for another run against it.
-- Preserve the completed 1.4.2 classification. Its core features and limits
-  match 1.4.1 under the bridge configuration, its reset-relevant known changes
-  do not match ESO's captured extension/image/query paths, and both versions
-  pass the 24-cycle reset composite. Do not install 1.4.2 without a new
-  differential reason, and preserve its distinct pipeline-cache identity.
+- Preserve the completed 1.4.2 reset-repair classification: it still supplies
+  no proven fix for ESO's solid-output reset. The later official-release review
+  separately recommends adoption as a maintenance upgrade because the exact
+  0020 compatibility and performance gates pass. Preserve its distinct
+  pipeline-cache identity.
 - Preserve the installed source-fixed `legacy-feature-profile` candidate from
   commit `26d26ac`. It exposes the exact embedded 1.0.18 core feature set,
   rejects any prohibited feature at device creation, retains official 1.4.1,
@@ -98,6 +98,14 @@ are in [Project status](STATUS.md); completed runs belong in the
   pipeline caches and reproduced the prepared hashes. Do not describe the
   measured encode reduction as an equal FPS increase, and do not request
   another graphics reset for this performance experiment.
+- Prepare the official MoltenVK 1.4.2 maintenance successor with the exact
+  Experiment 0020 profile. The official archive, complete bridge build,
+  reset/device/HDR gates, and balanced descriptor benchmark have passed. Keep
+  the runtime change separate from shader compression.
+- Before any 1.4.2 installation, add and test a fail-closed cache transition:
+  preserve the active `db445ff2` 1.4.1 cache under a versioned name, leave the
+  pre-1.4.1 backup untouched, and start a separate cache for 1.4.2 UUID
+  `db660224`. Installation still requires explicit approval.
 
 ## P1: keep redirection verifiable
 
@@ -141,8 +149,9 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Classify shader-source compression next with a non-game M4 probe. Compare
   `LZ4` against no compression first, measuring retained MSL-source memory,
   compression/decompression time, and cold and cache-backed pipeline creation
-  latency. It is a memory-pressure candidate, not an assumed shader-execution
-  or FPS optimization. Install it only if measured memory savings outweigh its
+  latency after the 1.4.2 maintenance candidate is prepared. It is a
+  memory-pressure candidate, not an assumed shader-execution or FPS
+  optimization. Install it only if measured memory savings outweigh its
   compilation and cache-load costs.
 
 ## P3: recovery without logout

@@ -18,6 +18,10 @@ do not replace local experiment records or establish the current safety state.
 - [MoltenVK descriptor behavior at the live-reset boundary](moltenvk-descriptor-reset-delta.md)
   (2026-07-25): official 1.0.18/1.4.1 descriptor implementation comparison
   joined to Experiment 0012's reset-resource trace.
+- [MoltenVK 1.4.2 adoption review](moltenvk-1.4.2-adoption-review.md)
+  (2026-07-26): official release identity, ESO fix applicability, exact
+  Experiment 0020 non-game validation, performance comparison, and
+  pipeline-cache transition requirements.
 
 ## Maintenance rules
 

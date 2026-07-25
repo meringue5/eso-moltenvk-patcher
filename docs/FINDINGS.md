@@ -323,6 +323,22 @@ set, exact alternating source extents, recreated render resources, and
 alternating command-buffer/pool resets. A wholesale 1.4.2 upgrade therefore
 has no demonstrated reset-relevant differential at this checkpoint.
 
+That reset-repair conclusion does not imply that remaining on 1.4.1 is the
+better maintenance choice. A later review of the official 1.4.2 release
+verified its archive and universal runtime, exact Experiment 0020
+configuration, complete bridge build, device/proc compatibility, HDR filters,
+and the same 24-cycle reset coverage. Its render-pass subpass-dependency
+barrier correction is below the prior public-state audit and cannot be
+excluded from ESO's full render graph, although it is not proven to repair the
+symptom.
+
+In a balanced descriptor-heavy comparison, 1.4.2 was 2.293% slower than 1.4.1,
+below the established 3% meaningful-change threshold with overlapping process
+medians. The evidence supports 1.4.2 as a maintenance candidate without a
+material measured descriptor-path regression, not as a demonstrated FPS
+improvement or graphics-reset fix. Its different pipeline-cache UUID requires
+a separate cold cache and preservation of the 1.4.1 cache for rollback.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

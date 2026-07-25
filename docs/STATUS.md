@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-07-25
+Last updated: 2026-07-26
 
 ## Safety state
 
@@ -813,3 +813,30 @@ graphics reset. Its measured result, risk boundary, exact hashes, installation,
 and rollback state are in the
 [Experiment 0020 record](experiments/0020-live-resource-performance.md).
 The candidate source identity is commit `ed5b9d3`.
+
+The official MoltenVK 1.4.2 release has now been reconsidered as a maintenance
+upgrade rather than only as a proposed reset repair. Its official macOS archive
+and universal runtime hashes were verified, and that release passed the
+complete shadow build plus the exact Experiment 0020 configuration, all
+24 reset-composite cycles, ESO-era device/proc creation, both HDR filters, and
+Metal pixel checks on the Apple M4.
+
+The release adds no proven repair for ESO's solid-output reset. The cached
+derived swapchain-view fix was already excluded by Experiment 0017, and the
+captured reset-created images do not use the transfer-source combination
+addressed by another Apple Silicon fix. However, the new subpass-dependency
+Metal barrier is below the existing public-state audit and cannot be excluded,
+and 1.4.2 removes several other general correctness defects.
+
+A balanced descriptor-heavy CPU benchmark measured 176.068 ns/draw on 1.4.1
+and 180.105 ns/draw on 1.4.2, a 2.293% difference below the existing 3%
+meaningful-change threshold. This is neither an FPS gain nor a material
+measured regression.
+
+The maintenance recommendation is therefore to prepare official 1.4.2 with
+the unchanged `performance-aggressive` profile. Its distinct pipeline-cache
+UUID requires preserving the active 1.4.1 cache under a versioned name and
+starting a separate cold 1.4.2 cache; the pre-1.4.1 backup must remain
+untouched. No game-bundle modification was made by this review. Full evidence
+and limits are in the
+[MoltenVK 1.4.2 adoption review](research/moltenvk-1.4.2-adoption-review.md).
