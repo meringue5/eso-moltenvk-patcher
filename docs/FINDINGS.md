@@ -322,3 +322,16 @@ also pass a 24-cycle non-game reset composite using a preallocated descriptor
 set, exact alternating source extents, recreated render resources, and
 alternating command-buffer/pool resets. A wholesale 1.4.2 upgrade therefore
 has no demonstrated reset-relevant differential at this checkpoint.
+
+Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
+and validated that device creation enabled those 18 with no prohibited field.
+One loaded-world resolution reset still produced solid-color output while 313
+acquire/present pairs continued. The added core-feature category is therefore
+excluded.
+
+That run also shows that the supposedly bounded lifecycle trace is not bounded
+after ESO's reset. All 313 replacement-generation acquires and presents
+returned `VK_SUBOPTIMAL_KHR`. The wrapper logs every non-success result, so it
+performed per-frame mutex, formatting, and file flush work for 626 records.
+This is a confirmed performance-path defect in the diagnostic bridge, although
+it is not yet established as the cause of rendering corruption.

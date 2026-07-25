@@ -1,7 +1,7 @@
 # Experiment 0018: embedded-runtime core feature profile
 
 - Date: 2026-07-26
-- Outcome: **installed; user repair validation pending**
+- Outcome: **failed; exact embedded feature profile still produced solid output**
 - Rollback: **checked pristine loader available; both pipeline caches preserved**
 
 ## Question
@@ -203,7 +203,22 @@ Post-install verification confirmed:
 - the quick update gate returned `READY`.
 
 The ignored evidence boundary is
-`artifacts/experiment-0018-20260725T154658Z`. User validation has not started.
+`artifacts/experiment-0018-20260725T154658Z`.
+
+The user launched once through Steam, entered the world, changed fullscreen
+resolution once from 1920 x 1200 to 2048 x 1280, and reported solid-color
+output. No repeat was requested. All 48 evidence checksums verify. The exact
+selected run is `20260725T154920.411050000Z-pid85904`; startup passed with two
+36-to-18 feature queries and one device creation enabling exactly 18 features
+with zero prohibited fields. The settings comparison has exact structural
+identity and only the two requested resolution dimensions changed.
+
+Three swapchain generations completed without lifecycle anomalies. Generation
+3 continued for 313 acquire/present pairs before orderly shutdown. Every one
+returned `VK_SUBOPTIMAL_KHR`. Because the observation wrapper logs every
+non-success result, it consequently took its mutexes, formatted, and flushed
+626 hot-path records after the reset instead of stopping after the nominal
+eight-frame prefix.
 
 ## Rollback
 
@@ -214,7 +229,10 @@ without replacing either cache.
 
 ## Follow-up
 
-If this candidate fails with an exact startup profile, the newly enabled core
-feature category is excluded. The remaining single category will be
-ESO-specific use of changed physical-device properties/limits or a MoltenVK
-internal resource/encoder defect not reproduced by the public-state probes.
+The newly enabled core-feature category is excluded. Before returning to
+device-property or internal Metal state analysis, remove the diagnostic
+lifecycle wrappers from the performance path. The observed persistent
+suboptimal result turns their nominally bounded acquire/present logging into
+per-frame mutex, formatting, and file-I/O work. This is a valid performance
+cleanup and a narrow timing counterfactual, not yet a demonstrated rendering
+repair.

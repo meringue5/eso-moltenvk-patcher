@@ -725,3 +725,22 @@ hashes; the target and marker checks pass; and the quick update gate is
 `READY`. The ignored evidence boundary is
 `artifacts/experiment-0018-20260725T154658Z`. The remaining gate is one
 user-controlled normal-performance world entry and one resolution reset.
+
+That gate failed. The exact run
+`20260725T154920.411050000Z-pid85904` passed startup with the 18/18 mask and
+created the device with exactly the embedded feature profile. A single
+1920 x 1200 to 2048 x 1280 change produced solid-color output. All 48 evidence
+checksums verify; only those two settings values changed; no lifecycle anomaly
+occurred; and generation 3 acquired and presented 313 further frames.
+Experiment 0018 therefore excludes the added core-feature category.
+
+The same run exposes a performance-path defect in the bridge. Every generation
+3 acquire and present returned `VK_SUBOPTIMAL_KHR`; the lifecycle wrapper
+classifies that as non-success and therefore emitted and flushed 626 per-frame
+records after the reset. The next source-only candidate is one combined
+`performance-safe` path: remove the failed feature mask and all lifecycle
+wrappers, enable asynchronous queue submission and concurrent compilation,
+while retaining official MoltenVK 1.4.1, both HDR filters, disabled argument
+buffers, live-resource compatibility, MTLHeap, command pooling, and no
+prefill. Do not request a user run until this bundle is fully rebuilt and
+validated.

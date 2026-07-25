@@ -75,6 +75,15 @@ are in [Project status](STATUS.md); completed runs belong in the
   commit `26d26ac`. It exposes the exact embedded 1.0.18 core feature set,
   rejects any prohibited feature at device creation, retains official 1.4.1,
   and adds no hot-path audit.
+- Close Experiment 0018 as a negative result. Its exact 18/18 feature mask
+  still produced solid output after one resolution reset, so do not repeat or
+  subdivide the core-feature experiment.
+- Prepare one combined `performance-safe` successor to reduce user runs:
+  remove the failed feature mask and all lifecycle wrappers, set asynchronous
+  queue submission and maximum concurrent compilation, and retain every
+  established 1.4.1 compatibility setting. Keep live-resource checking
+  enabled; do not fold the aggressive descriptor-semantics change into this
+  bundle.
 - Keep the next user-controlled execution for a prepared repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.
