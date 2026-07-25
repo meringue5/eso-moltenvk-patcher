@@ -616,7 +616,8 @@ can remain valid while an image view writes an earlier `CAMetalDrawable`.
 
 Experiment 0017 is therefore a narrow repair candidate, not a 1.4.2 upgrade.
 Its reproducible source build pins the v1.4.1 source commit, the exact upstream
-fix commit, and the two-file patch hash. A distinct `texture-cache-fix` bridge
-mode retains descriptor compatibility and disables the Experiment 0016
-full-lifetime audit. The game bundle is still unchanged; the final source and
-compatibility gates must pass before requesting new installation approval.
+fix commit, the two-file patch hash, and the v1.4.1 `db445ff` revision embedded
+in MoltenVK's pipeline-cache UUID. A distinct `texture-cache-fix` bridge mode
+retains descriptor compatibility and disables the Experiment 0016 full-lifetime
+audit. The game bundle is still unchanged; the final source and compatibility
+gates must pass before requesting new installation approval.

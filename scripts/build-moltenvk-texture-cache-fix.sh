@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 SOURCE_COMMIT="db445ff2042d9ce348c439ad8451112f354b8d2a"
+SOURCE_SHORT_REVISION="db445ff"
 UPSTREAM_FIX_COMMIT="9a5e233ef08e3a0f58c7b90053385cfb5cacde68"
 PATCH="$ROOT/patches/moltenvk-1.4.1/0001-refresh-swapchain-image-view-texture.patch"
 PATCH_SHA="4d31f4ce6175935e2208061e800c57ddf2c47679ca6d91384768ae7527386686"
@@ -101,14 +102,28 @@ else
 fi
 
 mkdir -p "$BUILD_DIR" "$CPM_CACHE" "$UV_CACHE"
-run_cmake \
-  -S "$SOURCE_DIR" -B "$BUILD_DIR" -G "Unix Makefiles" \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
-  -DCPM_SOURCE_CACHE="$CPM_CACHE"
-run_cmake \
-  --build "$BUILD_DIR" --config Release --parallel "$JOBS"
+(
+  cd "$SOURCE_DIR"
+  run_cmake \
+    -S "$SOURCE_DIR" -B "$BUILD_DIR" -G "Unix Makefiles" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_OSX_ARCHITECTURES=x86_64 \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
+    -DCPM_SOURCE_CACHE="$CPM_CACHE"
+  run_cmake \
+    --build "$BUILD_DIR" --config Release --parallel "$JOBS"
+)
+
+DERIVED_REVISION_HEADER="$BUILD_DIR/MoltenVK/mvkGitRevDerived.h"
+[[ -f "$DERIVED_REVISION_HEADER" ]] || {
+  echo "MoltenVK build did not generate its revision header."
+  exit 1
+}
+grep -Fq "\"$SOURCE_SHORT_REVISION\"" "$DERIVED_REVISION_HEADER" || {
+  echo "MoltenVK embedded an unexpected pipeline-cache revision."
+  sed -n '1,8p' "$DERIVED_REVISION_HEADER"
+  exit 1
+}
 
 BUILT_DYLIB="$BUILD_DIR/MoltenVK/libMoltenVK.dylib"
 [[ -f "$BUILT_DYLIB" ]] || {
@@ -133,6 +148,7 @@ binary_sha="$(shasum -a 256 "$OUTPUT_DYLIB" | awk '{print $1}')"
   echo "Source commit: $SOURCE_COMMIT"
   echo "Upstream fix commit: $UPSTREAM_FIX_COMMIT"
   echo "Patch SHA-256: $PATCH_SHA"
+  echo "Embedded pipeline-cache revision: $SOURCE_SHORT_REVISION"
   echo "Architecture: x86_64"
   echo "Binary SHA-256: $binary_sha"
 } > "$OUTPUT_ROOT/PROVENANCE.txt.installing"

@@ -37,6 +37,10 @@ that commit to the exact 1.4.1 source tag; it is not a wholesale 1.4.2 upgrade.
 - Exact committed patch SHA-256:
   `4d31f4ce6175935e2208061e800c57ddf2c47679ca6d91384768ae7527386686`.
 - Build an x86_64 Release dylib with the v1.4.1 CMake dependency revisions.
+- Run CMake from the MoltenVK source root and require the generated revision
+  header to contain `db445ff`. MoltenVK places this value in its pipeline-cache
+  UUID; allowing CMake to inherit the bridge repository's working directory
+  would spuriously change cache identity on every bridge commit.
 - Keep the established descriptor-compatible runtime configuration: live
   resource checking enabled, Metal argument buffers disabled, MTLHeap
   `where safe`, synchronous submission, command pooling enabled, and command
@@ -128,11 +132,11 @@ immediately repeat it; collect and analyze that run first.
 ## Evidence
 
 The official and patched source-built dylibs both report MoltenVK 1.4.1 and are
-x86_64. The prepared patched runtime after install-name normalization has
-SHA-256:
+x86_64. After install-name normalization, the final prepared runtime with the
+pinned `db445ff` pipeline-cache revision has SHA-256:
 
 ```text
-a40d92ba4fdc5f8ce6945fcccd5d65293906a5e9d15e9cf9acaa02d8f49753db
+9f7cf026c70c572dc4ab8709dc6e5ee60fadd9aba2a0f7b5f4bd5bade492549f
 ```
 
 The differential probe has passed against the official release archive and
