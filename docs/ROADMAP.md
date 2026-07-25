@@ -26,20 +26,24 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve Experiment 0009 as a second live-reset rendering failure. Do not
   change resolution, SSAO, or another reset-triggering graphics option during
   an otherwise unchanged correctness or performance run.
-- Complete Experiment 0010's bounded cold-start run. Its installed bridge
-  instruments swapchain generations, dependent image views/render passes/
-  framebuffers, and the first acquires/presentations without changing Vulkan
-  arguments or results. The clean rebuild, real-Metal probes, cache-preserving
-  restore/reinstall, and evidence preparation have passed.
-- After instrumentation, cold-start the preserved 1920 x 1200 setting before
-  any separate live-reset comparison. A cold pass would distinguish the
-  transition path from an intrinsically unsupported resolution.
+- Preserve Experiment 0010 as a negative swapchain-path result. Its live-reset
+  generation had clean tracked object lifetimes; forcing out-of-date results
+  did not trigger recreation, and eliminating suboptimal presentation through
+  scaling did not correct the image.
+- Run Experiment 0011 with only MTLHeap disabled. The exact gate is one
+  initially valid world followed by one live resolution change and a
+  30-second correctness check.
+- If Experiment 0011 passes, compare steady performance and reset behavior
+  against the MTLHeap-enabled checkpoint before deciding whether global heap
+  disablement is acceptable or a narrower source patch is warranted.
+- If it fails, restore the Experiment 0010 configuration and use
+  reset-window-only tracing of offscreen images/memory, descriptors, pipelines,
+  and command buffers rather than cycling another configuration flag blindly.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.
-- Defer MTLHeap and asynchronous queue-submission experiments. Argument buffers
-  improved the original artifact, and the new SSAO boundary must be isolated
-  first.
+- Defer asynchronous queue-submission experiments until the single-variable
+  MTLHeap reset test is classified.
 
 ## P1: keep redirection verifiable
 

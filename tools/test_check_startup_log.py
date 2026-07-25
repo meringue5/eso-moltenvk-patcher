@@ -105,7 +105,31 @@ class StartupLogTests(unittest.TestCase):
         verdict = evaluate_startup_log(text)
         self.assertFalse(verdict.passed)
         self.assertIn(
-            "descriptor compatibility mode was not enabled",
+            "exactly one supported compatibility mode was not enabled",
+            verdict.reasons,
+        )
+
+    def test_accepts_legacy_allocation_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: legacy allocation enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=0",
+        ).replace("use_mtlheap=1", "use_mtlheap=0")
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
+    def test_rejects_legacy_allocation_with_heap_enabled(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: legacy allocation enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=0",
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "the effective MoltenVK configuration was not verified",
             verdict.reasons,
         )
 

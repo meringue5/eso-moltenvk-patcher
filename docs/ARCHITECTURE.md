@@ -143,6 +143,18 @@ successful `setenv` calls. A separate non-game probe verifies both the clean
 Neither check establishes rendering correctness; only the staged ESO run can
 answer that question.
 
+## Legacy allocation mode
+
+Experiment 0011 adds a distinct `legacy-allocation` marker mode. It retains the
+descriptor-compatible state and sets only `MVK_CONFIG_USE_MTLHEAP=0`. The
+post-load configuration query must report live-resource checking `1`, argument
+buffers `0`, MTLHeap `0`, synchronous submission `1`, command pooling `1`, and
+prefill `0`; otherwise the bridge refuses to patch ESO.
+
+This mode does not replace MoltenVK 1.4.1 or alter Vulkan calls. It isolates
+MoltenVK's Metal-heap resource placement/reuse path while retaining the
+observation-only swapchain lifecycle wrappers.
+
 ## Reset lifecycle trace
 
 Experiment 0010 adds observation-only wrappers to selected device functions

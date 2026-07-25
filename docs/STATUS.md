@@ -309,9 +309,17 @@ artifacts. Both pipeline caches and the exact 1920 x 1200 settings state are
 unchanged. Post-install status is current and enabled, the quick update gate is
 `READY`, and fresh ignored evidence is prepared.
 
-The next gate is now the bounded user-controlled cold start at the preserved
-1920 x 1200 setting for at most three minutes through world entry. Do not open
-the graphics menu or change a setting. This distinguishes an unsupported
-resolution from a broken live transition while collecting the generation
-trace. The unchanged five-minute Auridon interval and performance A/B remain
-downstream of this reset-path gate.
+The Experiment 0010 cold start reached a correctly rendered world. A later live
+reset created and used a third swapchain generation with clean tracked
+image/view/render-pass/framebuffer lifetimes, but output still failed.
+Promoting suboptimal present or acquire results to out-of-date did not make ESO
+recreate the swapchain. Compatible stretch scaling removed every suboptimal
+result while solid-color output persisted. Those result-changing probes were
+removed, and the observation-only checkpoint was rebuilt and reinstalled.
+
+The next gate is Experiment 0011: retain MoltenVK 1.4.1, both HDR filters,
+live-resource checking, disabled argument buffers, synchronous submission,
+command pooling, and lifecycle tracing, while changing only MTLHeap from
+`where safe` to `never`. One live resolution change will determine whether
+Metal-heap allocation/reuse is causal. Performance A/B remains downstream of
+rendering correctness.

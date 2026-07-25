@@ -12,7 +12,7 @@ fi
 ROOT="${0:A:h:h}"
 source "$ROOT/scripts/lib-target.sh"
 MODE="${TESO4M4_MODE:-descriptor-compat}"
-[[ "$MODE" == "descriptor-compat" ]] || {
+[[ "$MODE" == "descriptor-compat" || "$MODE" == "legacy-allocation" ]] || {
   echo "Unsupported experiment mode: $MODE"
   exit 1
 }

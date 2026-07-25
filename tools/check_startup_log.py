@@ -97,18 +97,28 @@ def evaluate_startup_log(
     required_active = f"ACTIVE: redirected {expected_redirects} Vulkan entry points"
     if required_active not in lines:
         reasons.append(f"missing exact activation record: {required_active}")
-    if (
+    descriptor_mode = (
         "MODE: descriptor compatibility enabled live_resources=1 "
         "metal_argument_buffers=0"
-        not in lines
-    ):
-        reasons.append("descriptor compatibility mode was not enabled")
-    if (
+    )
+    legacy_allocation_mode = (
+        "MODE: legacy allocation enabled live_resources=1 "
+        "metal_argument_buffers=0 use_mtlheap=0"
+    )
+    matched_modes = [
+        mode
+        for mode in (descriptor_mode, legacy_allocation_mode)
+        if mode in lines
+    ]
+    if len(matched_modes) != 1:
+        reasons.append("exactly one supported compatibility mode was not enabled")
+    expected_mtlheap = 0 if legacy_allocation_mode in matched_modes else 1
+    expected_configuration = (
         "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
-        "use_mtlheap=1 synchronous_queue_submits=1 command_pooling=1 "
-        "prefill=0"
-        not in lines
-    ):
+        f"use_mtlheap={expected_mtlheap} synchronous_queue_submits=1 "
+        "command_pooling=1 prefill=0"
+    )
+    if expected_configuration not in lines:
         reasons.append("the effective MoltenVK configuration was not verified")
     if (
         "HDR_COMPAT: filter=enabled extension=VK_EXT_hdr_metadata"

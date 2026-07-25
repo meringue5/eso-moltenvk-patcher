@@ -27,8 +27,12 @@ static bool clear_controlled_environment(void) {
 int main(int argc, char** argv) {
     if (argc != 3 ||
         (strcmp(argv[2], "default") != 0 &&
-         strcmp(argv[2], "descriptor-compat") != 0)) {
-        fprintf(stderr, "usage: %s libMoltenVK.dylib default|descriptor-compat\n",
+         strcmp(argv[2], "descriptor-compat") != 0 &&
+         strcmp(argv[2], "legacy-allocation") != 0)) {
+        fprintf(
+            stderr,
+            "usage: %s libMoltenVK.dylib "
+            "default|descriptor-compat|legacy-allocation\n",
                 argv[0]);
         return 2;
     }
@@ -36,10 +40,15 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const bool descriptor_compat = strcmp(argv[2], "descriptor-compat") == 0;
+    const bool legacy_allocation =
+        strcmp(argv[2], "legacy-allocation") == 0;
+    const bool descriptor_compat =
+        strcmp(argv[2], "descriptor-compat") == 0 || legacy_allocation;
     if (descriptor_compat &&
         (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
-         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0)) {
+         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
+         (legacy_allocation &&
+          setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0))) {
         perror("setenv");
         return 1;
     }
@@ -77,11 +86,15 @@ int main(int argc, char** argv) {
     const VkBool32 expected_live = descriptor_compat ? VK_TRUE : VK_FALSE;
     const VkBool32 expected_argument_buffers =
         descriptor_compat ? VK_FALSE : VK_TRUE;
+    const MVKConfigUseMTLHeap expected_mtlheap =
+        legacy_allocation
+            ? MVK_CONFIG_USE_MTLHEAP_NEVER
+            : MVK_CONFIG_USE_MTLHEAP_WHERE_SAFE;
     const bool passed =
         result == VK_SUCCESS && configuration_size == sizeof(configuration) &&
         configuration.liveCheckAllResources == expected_live &&
         configuration.useMetalArgumentBuffers == expected_argument_buffers &&
-        configuration.useMTLHeap == MVK_CONFIG_USE_MTLHEAP_WHERE_SAFE &&
+        configuration.useMTLHeap == expected_mtlheap &&
         configuration.synchronousQueueSubmits == VK_TRUE &&
         configuration.useCommandPooling == VK_TRUE &&
         configuration.prefillMetalCommandBuffers ==

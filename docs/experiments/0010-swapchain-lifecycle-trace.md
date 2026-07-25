@@ -1,7 +1,8 @@
 # Experiment 0010: swapchain lifecycle trace
 
 - Date: 2026-07-25
-- Outcome: **running; instrumented bridge installed, cold-start run pending**
+- Outcome: **failed to identify a swapchain-lifecycle fault; live reset still
+  corrupts rendered content**
 - Rollback: **not performed; restore path rechecked**
 
 ## Question
@@ -159,3 +160,43 @@ plus both pre-existing pipeline caches remain available.
 If the cold start passes, use the trace to design one separately approved,
 single-variable live-reset comparison. Do not ask for a live graphics change
 until the cold-start evidence and generation summary have been collected.
+
+## Run and recovery amendment: 2026-07-25
+
+The user completed multiple Steam-authenticated runs after installation. A
+cold start reached the world and rendered normally. One first run briefly
+showed approximately 8 FPS and an ESO cursor-mode symptom, but the next launch
+did not reproduce either. WindowServer records identify ESO as frontmost and
+receiving keyboard focus, so OS background throttling does not explain that
+one run.
+
+The controlled live graphics reset reproduced the visual failure. The third
+swapchain generation was created at 3420 x 2146, acquired and presented 396
+frames, and reported `VK_SUBOPTIMAL_KHR` throughout. All tracked swapchain
+images, views, render passes, and framebuffers followed a clean lifecycle.
+No mixed-generation framebuffer, live dependent at swapchain destruction,
+device loss, or lifecycle capacity error was recorded.
+
+Three recovery probes were then tested separately and rejected:
+
+1. Promoting the first generation-3 present result from suboptimal to
+   out-of-date stopped subsequent presentation; ESO kept acquiring and did not
+   recreate the swapchain.
+2. Promoting the first generation-3 acquisition result to out-of-date likewise
+   produced no recreation. The last scene remained frozen while audio and
+   input continued.
+3. Adding compatible stretch presentation scaling made generation-3
+   acquisition and presentation return success instead of suboptimal, but the
+   user still saw solid-color output.
+
+These probes establish that the persistent `VK_SUBOPTIMAL_KHR` result was a
+symptom, not the cause of the corrupted output. The final image was already
+invalid before successful presentation. Each result-changing probe was removed,
+the observation-only Experiment 0010 source was rebuilt, and that checkpoint
+was reinstalled. The combined raw bridge log is checksum-preserved in the
+ignored `artifacts/experiment-0010-postmortem-20260725T112500Z` directory.
+
+The remaining boundary is a non-swapchain resource or render-state failure
+during loaded-world recreation. MTLHeap allocation is the first single
+variable because it is active in MoltenVK 1.4.1 on Apple GPUs, absent from the
+embedded 1.0.18 runtime, and directly changes resource placement and reuse.
