@@ -45,14 +45,23 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve Experiment 0014 as the completed bundled audit. Three windows had
   complete mirror coverage and found no stale set rebound, live image overlap,
   tracked layout mismatch, dead attachment, or pipeline/render-pass mismatch.
-- Prepare a reset-only pipeline-cache counterfactual. Keep startup and
-  steady-world pipeline creation unchanged; while the bounded loaded-world
-  reset is active, pass `VK_NULL_HANDLE` as the optional cache to
-  `vkCreateGraphicsPipelines`.
-- If the bypass preserves the recovered 60 FPS state and corrects live reset,
-  retain it as a narrow workaround candidate and then measure reset latency.
-  If solid color persists, stop cache work and instrument descriptor
-  update/bind ordering or Metal object contents.
+- Preserve Experiment 0015 as the negative pipeline-cache result. All 150
+  reset-created graphics pipelines received `VK_NULL_HANDLE`, all 1,648
+  observed reset-created pipeline binds matched their render pass, and solid
+  color still recurred. Do not delete, replace, or further bypass caches as a
+  reset-correctness experiment.
+- Extend descriptor mirroring from process startup rather than first
+  swapchain. Report known and unknown descriptor slots explicitly, because
+  sampled final-pass set 0 binds currently have `last_update_sequence=0`.
+- In the same observation candidate, trace ESO's own
+  `vkResetCommandBuffer`/`vkResetCommandPool`, begin/end generations,
+  descriptor update/bind order, and submitted command-buffer generations.
+  MoltenVK internal command pooling is already excluded; application reuse is
+  not.
+- If full-lifetime descriptor and command-buffer ordering is clean, classify
+  render-pass attachment load/store/clear state and per-subresource
+  barrier/access synchronization. Escalate to Metal object/content capture
+  only after those public Vulkan paths are exhausted.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.

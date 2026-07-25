@@ -522,3 +522,22 @@ recovered 60 FPS state: if the known 8 FPS state appears first, exit Steam
 without changing a setting and relaunch once; at ordinary performance, make
 one 2048 x 1280 to 1920 x 1200 resolution change and stop after classifying the
 output.
+
+The user completed that gate in the recovered 60 FPS state, and persistent
+solid-color output recurred after the single resolution change. The bounded
+audit proved complete cache exclusion: all 150 reset-created graphics
+pipelines were forwarded with `VK_NULL_HANDLE`, zero used a cache, and all
+1,648 observed binds of those pipelines matched their render pass. Eight
+submitted command buffers still completed 484 render passes and 9,655 indexed
+draws without Vulkan failure, state overflow, stale known descriptor rebound,
+live image overlap, tracked layout mismatch, dead attachment, or crash.
+Pipeline-cache corruption is therefore excluded and cache experiments end.
+
+The leading unresolved scope is descriptor state created before the current
+mirror activates. Many sampled final-pass set-index-0 binds are live but have
+`last_update_sequence=0`; the mirror began only at the first successful
+swapchain, so their slot contents are unknown rather than proven clean. The
+next gate is source-only instrumentation that begins descriptor mirroring at
+process startup and joins known/unknown slot coverage to ESO's own command
+buffer reset, record, bind, and submit generations. No user launch is required
+until that instrumentation and its non-game checks are complete.

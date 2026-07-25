@@ -1,7 +1,7 @@
 # Experiment 0015: reset-only pipeline-cache bypass
 
 - Date: 2026-07-25
-- Outcome: **running; installed and awaiting the targeted warm-state reset**
+- Outcome: **failed; complete reset-window cache bypass did not correct rendering**
 - Rollback: **not performed; restore path checked**
 
 ## Question
@@ -115,11 +115,69 @@ launcher, or ESO.
 
 ## Result
 
-Pending.
+The user reached the recovered 60 FPS phase and changed fullscreen resolution
+once from 2048 x 1280 to 1920 x 1200. Persistent solid-color output recurred.
+The run did not crash.
+
+The bounded audit selected run
+`20260725T131840.979642000Z-pid45132` and completed at the eight-presentation
+limit with no Vulkan failure or state-table overflow. It proved the
+counterfactual was complete:
+
+```text
+pipeline-cache-bypass calls=150 pipelines=150
+graphics_pipelines_created_during_audit=150
+graphics_pipelines_with_cache=0
+pipeline_binds_created_during_audit=1648
+pipeline_render_pass_exact=1648
+pipeline_render_pass_different=0
+```
+
+The same corrupt interval submitted eight command buffers, completed 484
+render passes and 9,655 indexed draws, and made 9,655 descriptor-set bind
+calls. The descriptor/image audit again found zero stale set rebound, unknown
+view write, live image overlap, tracked layout mismatch, dead attachment, or
+pipeline/render-pass mismatch. No new crash report appeared and swapchain
+generation 3 presented normally.
+
+The active cache retained its 4,259,071-byte size but changed hash during the
+session. The old backup remained unchanged. Because the reset pipelines did
+not receive the active cache at all, that content change cannot explain their
+creation in this run.
+
+The settings comparison is structurally exact but contains one incidental
+change in addition to the requested resolution change:
+
+```text
+BACKGROUND_FPS_LIMIT: 30 -> 100
+FullscreenWidth: 2048 -> 1920
+FullscreenHeight: 1280 -> 1200
+```
+
+The background limit is an uncontrolled setting change, but it does not weaken
+the direct proof that all reset pipeline-cache arguments were null.
 
 ## Interpretation
 
-Pending.
+The warmed pipeline cache is not the cause of the live-reset solid-color
+failure. This experiment closes the reset-created pipeline-cache hypothesis;
+further cache deletion, replacement, or bypass variants are not justified.
+
+The evidence also exposes a coverage qualification in Experiments 0014 and
+0015. The descriptor mirror began only at the first successful swapchain.
+Many sampled final-pass binds contain a live set at index 0 whose
+`last_update_sequence=0`, while the companion set at index 1 is usually updated
+immediately before the pass. Those zero-sequence sets were allocated or
+updated before mirror activation, so their descriptor contents are unknown.
+The analyzer's prior “complete for observed handle use” wording applies to
+observed handles, not to every bound descriptor slot.
+
+The leading remaining hypothesis is therefore a persistent/static descriptor
+set whose contents predate the audit and cross ESO's live reset incorrectly.
+The next diagnostic must mirror descriptor allocation and updates from process
+startup, distinguish known from unknown slot contents, and join those results
+to command-buffer reset/re-record/submit generations. It should not apply
+another generic MoltenVK configuration toggle.
 
 ## Rollback
 
@@ -128,6 +186,8 @@ files remain the restore boundary.
 
 ## Follow-up
 
-A pass justifies a narrow reset-only workaround candidate and reset-latency
-measurement. A fail ends pipeline-cache work and moves to descriptor ordering
-or Metal-side object/content capture.
+End pipeline-cache work. First extend the descriptor mirror to process startup
+and audit ESO's own command-buffer reset/reuse ordering. If all bound
+descriptor contents and command-buffer generations prove valid, next classify
+attachment load/store and subresource synchronization before escalating to
+Metal object/content capture.

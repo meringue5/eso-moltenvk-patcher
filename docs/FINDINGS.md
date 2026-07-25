@@ -243,3 +243,18 @@ the active pipeline cache and was later bound to the exact matching render
 pass. The active cache grew by 55,314 bytes over the multi-run session. This
 behavioral split makes reset-only pipeline-cache bypass the next narrow
 counterfactual; it does not yet prove cached pipeline corruption.
+
+Experiment 0015 completed that counterfactual. All 150 reset-created graphics
+pipelines were forwarded with `VK_NULL_HANDLE` instead of ESO's cache, zero
+reset pipeline used a cache, and all 1,648 observed binds of those pipelines
+matched the active render pass. Persistent solid-color output still followed
+the live resolution change. The pipeline cache is therefore excluded as the
+cause of the reset-created pipelines' rendering corruption.
+
+The combined audit has one important scope limit. Descriptor mirroring begins
+at the first successful swapchain, and many sampled final-pass descriptor sets
+at set index 0 have no mirrored update (`last_update_sequence=0`). Their
+handles are known and live, but their slot contents may have been established
+before mirroring began. Consequently the zero stale-set result excludes a
+rebound of a *known* destroyed view; it does not yet exclude a persistent
+descriptor set whose contents predate the first swapchain.
