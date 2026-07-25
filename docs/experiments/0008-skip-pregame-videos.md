@@ -68,3 +68,42 @@ occurs. Bridge activation and crash evidence will be collected automatically.
 The exact pre-change file is preserved outside Git. The tested helper supports
 the inverse `1` to `0` transition if restoration becomes necessary; no rollback
 is required merely to preserve an experimental state.
+
+## Launcher-only update boundary: 2026-07-25
+
+Before the pending user startup check, the launcher applied a self-update at
+18:51 KST. The preserved self-update log records 308,741,853 bytes, 114 files,
+134 pieces, and zero repository errors. The installed launcher still reports
+version 7.1.46; its main executable SHA-256 is
+`84488f45546f2b2422fb20f6f4b5fb20d9254047bf96ada2c7327321e3e356fc`.
+
+At 18:51:38 KST, the restarted launcher's completed `Live_Prod` state check
+followed `noUpdateRequired`. All eight recorded local and remote repository IDs
+matched:
+
+| Repository | ID |
+|---|---|
+| `PCPublicClientData` | `10eaab1417c01f916bf36f0beb68c6adf807b528` |
+| `PublicCrashReporterConfig` | `3a2c0dcdc0e8b9857c1b5e94bb4644c251f62ce9` |
+| `DefaultPublicPlatformsConfig` | `7913384caf70b27b3eb0278acad81183998fedd4` |
+| `AppSettingsConfig` | `9d7668163e5968ef741ce0f9c5b79b4c5a0e59cb` |
+| `MacPubPlayerClient` | `5e6eb98c150624a39d24ff95e0b53ba904f6741d` |
+| `shared_vo_soundsets` | `ebe30cc6e934d61eeb847ad5b8076c1e843c4ff2` |
+| `shared_vo_en` | `1e0af9f0ccffd65182f0615725319585066c1680` |
+| `public_depot` | `f0f18bb0272831ebadb49c32073c5b3af9041242` |
+
+No file inside the ESO game bundle had a modification time at or after the
+self-update boundary. The client remains 12.0.7, databuild `3281538`; its
+executable SHA-256 and UUID still match the selected target. The bridge target
+is current, its marker is present, ambient occlusion remains `0`, and the
+settings file still has the exact prepared SHA-256 with
+`SkipPregameVideos "1"`.
+
+The installed and cached launcher bundles both fail strict code-signature
+verification, so that check cannot distinguish this update from the prior
+launcher state and is not used as evidence of corruption or success. The
+launcher's completed repository comparison, exact ESO identity, databuild,
+bundle boundary, and unchanged experiment settings support classification as
+a launcher-only update. No ESO launch occurred, so the Experiment 0008 runtime
+result remains pending. Any evidence prepared before this launch-path boundary
+must be replaced with fresh preflight evidence before the user test.

@@ -31,7 +31,33 @@ checked-in `targets-eso-*.json`, and compares the result with
 prepare a stale experiment. Evidence collection records the post-run result as
 well, so an update during the launcher boundary remains visible.
 
-## 2. Audit the unchanged-layout fast path
+## 2. Classify a launcher-reported update
+
+The executable checker intentionally answers only whether the installed bridge
+still targets the exact ESO binary. A launcher self-update can therefore leave
+that result at `CURRENT`. After the launcher has completed its own state check,
+run:
+
+```sh
+./scripts/check-launcher-state.sh
+```
+
+The command reads the newest local launcher host log without launching an app
+or contacting the network. It accepts only a completed, full-coverage
+`Live_Prod` `stateCheck`, requires the launcher's `noUpdateRequired` path, and
+verifies that every recorded repository has identical local and remote IDs.
+Later two-repository lightweight checks do not replace the last full snapshot.
+`CURRENT_REMOTE` is a point-in-time result from that launcher session, not a
+promise about a future remote update. `UPDATE_OR_ERROR` or `INDETERMINATE`
+blocks a prepared experiment until the event is understood.
+
+When the launcher reports an update but both checks return `CURRENT` and
+`CURRENT_REMOTE`, preserve the self-update and host logs, then compare the game
+databuild stamp and bundle modification boundary. If those are unchanged, the
+event may be recorded as a launcher-only update and does not require an ESO
+target rebase.
+
+## 3. Audit the unchanged-layout fast path
 
 For an unknown local build, choose a new dated manifest name and an accurate
 description:
@@ -63,7 +89,7 @@ On success, the script writes the candidate manifest and updates
 `config/current-target.txt`. It does not restore, patch, or install anything in
 the game bundle. Review and commit both source changes before continuing.
 
-## 3. Rebuild and install through the normal gate
+## 4. Rebuild and install through the normal gate
 
 A successful fast audit establishes only static equivalence. With ESO, Steam,
 and the launcher stopped, the existing guarded sequence still applies:

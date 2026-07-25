@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-07-21
+Last updated: 2026-07-25
 
 ## Safety state
 
@@ -156,6 +156,26 @@ Experiment 0008 preserved the exact settings file and changed only that value
 to `1`; changing the line back in memory reproduces the original hash. The
 bridge, cache, ambient occlusion, and all other inspected video settings remain
 unchanged.
+
+At 18:51 KST on 2026-07-25, the launcher applied a 308,741,853-byte
+self-update. Its post-restart `Live_Prod` check took the
+`noUpdateRequired` path and reported matching local and remote IDs for all
+eight repositories. No ESO game-bundle file crossed that modification-time
+boundary. The game remains client 12.0.7, databuild `3281538`, with the exact
+selected executable hash and UUID; the installed bridge is still current and
+enabled. Experiment 0008's settings hash is unchanged with pregame videos
+skipped and ambient occlusion disabled. This is a launcher-only update, not an
+ESO target rebase, and no user runtime test occurred. The raw launcher logs
+were checksum-preserved outside Git; fresh preflight evidence is required
+before the pending test.
+
+The update tooling now has a second passive checker for this distinction.
+`scripts/check-launcher-state.sh` accepts only a completed, full-coverage
+launcher `Live_Prod` state check, requires its `noUpdateRequired` path, and
+compares every recorded local and remote repository ID. Later lightweight
+checks do not displace the last full snapshot. It neither launches an app nor
+contacts the network. Its result is point-in-time evidence and does not replace
+the exact executable/UUID gate or predict a future remote update.
 
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that

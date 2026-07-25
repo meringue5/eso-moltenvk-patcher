@@ -79,7 +79,16 @@ local ESO executable:
 ```
 
 Exit status `0` means the exact selected target is still present. An unknown or
-historical build exits `3`. If a new build retains the verified binary layout,
+historical build exits `3`. When the launcher reports an update but the ESO
+target remains current, classify its last completed full remote comparison
+with:
+
+```sh
+./scripts/check-launcher-state.sh
+```
+
+This second passive check does not start an app or contact the network. If a
+new ESO build retains the verified binary layout,
 `scripts/rebase-update.sh` can audit and create a new target manifest without
 modifying the game bundle. See the [update runbook](docs/UPDATES.md); no target
 is installed merely because the fast static audit passes.
