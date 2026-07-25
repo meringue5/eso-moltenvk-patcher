@@ -99,14 +99,14 @@ are in [Project status](STATUS.md); completed runs belong in the
   pipeline caches and reproduced the prepared hashes. Do not describe the
   measured encode reduction as an equal FPS increase, and do not request
   another graphics reset for this performance experiment.
-- Install the approved Experiment 0021 official MoltenVK 1.4.2 maintenance
-  successor with the unchanged Experiment 0020 profile after the stopped-
-  process gate. The pinned official archive, complete bridge build,
-  reset/device/HDR gates, balanced descriptor benchmark, and shadow
-  install/restore have passed.
-- Use the tested fail-closed cache transition: preserve the active `db445ff2`
-  1.4.1 cache and exact runtime under versioned names, leave the pre-1.4.1
-  backup untouched, and let 1.4.2 create a separate `db660224` cache.
+- Preserve installed Experiment 0021 as the official MoltenVK 1.4.2
+  maintenance baseline with the unchanged Experiment 0020 profile. The pinned
+  official archive, complete bridge build, reset/device/HDR gates, balanced
+  descriptor benchmark, shadow install/restore, and real post-install checks
+  passed.
+- Retain the versioned `db445ff2` 1.4.1 cache and exact runtime, the untouched
+  pre-1.4.1 backup, and the pristine loader. Let 1.4.2 create its own
+  `db660224` cache on the next ordinary launch.
 - Keep shader compression as the next distinct performance candidate after
   1.4.2 ordinary use; do not silently fold it into the maintenance upgrade.
 

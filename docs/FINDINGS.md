@@ -346,6 +346,13 @@ reported no problem. This supports the profile as the current ordinary-use
 performance checkpoint. It remains insufficient to quantify an ESO FPS gain
 or to reverse the prior loaded-world graphics-reset failures.
 
+Official MoltenVK 1.4.2 was then installed with that profile after its source
+build and complete non-game gates passed. Its separate cache identity is
+enforced operationally: the exact 1.4.1 runtime and `db445ff2` cache are
+preserved under versioned names, the older cache remains untouched, and 1.4.2
+starts without an active cache. This establishes a reversible maintenance
+baseline, not a demonstrated repair for the graphics-reset corruption.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

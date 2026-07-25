@@ -857,8 +857,20 @@ without an active cache.
 
 A fresh shadow source build, 87 tests, static analysis, exact-profile
 configuration checks, 24-cycle M4 Metal reset comparison, device/HDR probes,
-and a complete shadow install/restore all pass. The real game bundle remains
-on Experiment 0020 until Steam and the launcher are stopped. Installation will
-retain the exact `performance-aggressive` profile; shader compression remains
-a separate downstream change. See
+and a complete shadow install/restore all pass.
+
+After Steam, the launcher, and ESO were confirmed stopped, Experiment 0020 was
+restored without changing settings or either cache. The proxy was rebuilt from
+the actual pristine game loader at source commit `79bb444` and reproduced the
+prepared hashes. Experiment 0021 is now installed with official MoltenVK 1.4.2
+and the unchanged `performance-aggressive` marker. Installed runtime and proxy
+hashes match the rebuild.
+
+The 4,259,071-byte 1.4.1 cache and exact 1.4.1 runtime are preserved under
+versioned names; the 6,800,792-byte older cache remains unchanged. The active
+cache is intentionally absent so 1.4.2 starts cold, and the settings hash is
+unchanged. Target, process, cache UUID, and post-install gates all pass. The
+ignored evidence boundary is
+`artifacts/experiment-0021-20260725T170433Z`. Shader compression remains a
+separate downstream change. See
 [Experiment 0021](experiments/0021-moltenvk-1.4.2-maintenance.md).

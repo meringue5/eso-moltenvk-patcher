@@ -1,8 +1,8 @@
 # Experiment 0021: official MoltenVK 1.4.2 maintenance adoption
 
 - Date: 2026-07-26
-- Outcome: **prepared; installation explicitly approved**
-- Rollback: **Experiment 0020 remains installed; 1.4.1 runtime and cache transition are verified in a shadow install**
+- Outcome: **installed; all source, non-game, transition, and post-install gates passed**
+- Rollback: **1.4.1 runtime, its active cache, pristine loader, and older cache remain preserved**
 
 ## Question
 
@@ -97,6 +97,8 @@ The candidate passed:
 Prepared artifact SHA-256 values are:
 
 ```text
+source:
+  79bb444 (Prepare Experiment 0021 MoltenVK 1.4.2)
 proxy:
   5019d4eb552f89ea59bfda9d38e2f2c98ce36f2490c7c41294750c62ba68acde
 renamed original:
@@ -127,3 +129,68 @@ Experiment 0020 be recorded as successful. Before installation:
 
 No additional user graphics-reset test is requested as part of this
 maintenance adoption. Ordinary gameplay can validate the maintenance change.
+
+## Installation
+
+At 2026-07-26 02:05 KST, Steam, the ZeniMax launcher, and ESO were all stopped.
+The current target gate identified exact ESO 12.0.7 SHA-256
+`82bc04ebc8c486636303d147edb9af6c0727b19c7faf7ce7d00837ac3e8ebf4d`.
+Pre-install evidence verified Experiment 0020's loader, exact official 1.4.1
+runtime, settings, active cache, and older cache.
+
+Experiment 0020 was restored with every cache state preserved. The bridge was
+then rebuilt from the actual pristine game loader at source commit `79bb444`;
+the complete build passed and reproduced the shadow-build hashes. The approved
+transition installed official 1.4.2 in unchanged `performance-aggressive`
+mode.
+
+Post-install verification reports:
+
+```text
+mode marker:
+  performance-aggressive
+proxy:
+  5019d4eb552f89ea59bfda9d38e2f2c98ce36f2490c7c41294750c62ba68acde
+renamed original:
+  f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927
+MoltenVK 1.4.2:
+  aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+preserved MoltenVK 1.4.1:
+  d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+The installed proxy, renamed original, and MoltenVK 1.4.2 are byte-identical
+to the source rebuild. Cache and settings state is:
+
+```text
+active 1.4.2 cache:
+  absent (intentional cold start)
+preserved 1.4.1 cache:
+  4,259,071 bytes
+  5869aa929521788681e665e803e5876487a4eb8cede9589f56c48e05087c404b
+  UUID db445ff21a0502090000000100000000
+older cache:
+  6,800,792 bytes
+  72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+settings:
+  2e69c076b1d9f10185175f2a6b0f5f3e14608552ad773e3594008f0de9215ed4
+```
+
+The settings and older-cache hashes did not change. The target gate and
+post-install process gate passed, and the active runtime matches the selected
+target profile. All evidence-boundary checksums verify at
+`artifacts/experiment-0021-20260725T170433Z`.
+
+No Steam, launcher, or ESO process was started by the agent.
+
+## Result
+
+Official MoltenVK 1.4.2 is now the installed maintenance baseline. It retains
+Experiment 0020's established performance profile without adding diagnostic
+hot paths or shader compression, and every prior runtime/cache state required
+for rollback is preserved.
+
+This result proves the requested installation and non-game compatibility
+boundary. It does not claim that 1.4.2 fixes the known loaded-world
+graphics-reset corruption. No dedicated user run is required for Experiment
+0021; the next ordinary game session can serve as maintenance validation.
