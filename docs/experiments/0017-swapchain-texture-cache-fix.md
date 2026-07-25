@@ -1,7 +1,7 @@
 # Experiment 0017: swapchain Metal texture-cache fix
 
 - Date: 2026-07-25
-- Outcome: **prepared; differential non-game probe passed**
+- Outcome: **ready for installation approval; all non-game gates passed**
 - Rollback: **not applicable yet; game bundle unchanged**
 
 ## Question
@@ -146,8 +146,38 @@ changed for Experiment 0017.
 
 ## Result
 
-Pending the final source gate, installation approval, and one user-controlled
-repair validation.
+Source commit `2f14d56` completed a clean bridge rebuild against the checked
+pristine loader without writing the game bundle. The final proxy SHA-256 is:
+
+```text
+422b4398742bc1d7ab4451bf5957467c514420d77c4dfe73756b061ea83f3b0f
+```
+
+The complete warnings-as-errors build, Bink re-export check, Rosetta
+self-patch probe, compatibility smoke tests, lifecycle/reset/audit probes, all
+nine effective MoltenVK configuration modes, 69 Python tests, Python bytecode
+compilation, shell syntax, whitespace checks, and Clang static analysis passed.
+
+The final M4 gates then reconfirmed:
+
+- official 1.4.1: `STALE` after a real drawable texture replacement;
+- exact one-patch candidate: `PASS` after the same replacement;
+- MoltenVK version: `1.4.1`;
+- pipeline-cache UUID prefix: `0DB445FF`;
+- HDR extension filter: 131 raw, 130 visible, exact one removal;
+- surface-format filter: 60 raw, 59 visible, exact one removal;
+- ESO-era device creation and all 100 probed proc routes: expected result.
+
+The original embedded 1.0.18 Vulkan and surface probes also retained their
+recorded baseline. At the final preflight checkpoint, no ESO, Steam, or launcher
+process was found; the selected ESO fingerprint was current; the pristine
+loader existed with SHA-256
+`c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`;
+and both pipeline caches and the settings file existed and were fingerprinted.
+
+The game bundle remains on Experiment 0016. Installation of Experiment 0017
+still requires explicit approval. After installation, one user-controlled
+repair validation remains.
 
 ## Interpretation
 

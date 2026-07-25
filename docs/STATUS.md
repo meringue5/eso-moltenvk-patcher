@@ -619,5 +619,22 @@ Its reproducible source build pins the v1.4.1 source commit, the exact upstream
 fix commit, the two-file patch hash, and the v1.4.1 `db445ff` revision embedded
 in MoltenVK's pipeline-cache UUID. A distinct `texture-cache-fix` bridge mode
 retains descriptor compatibility and disables the Experiment 0016 full-lifetime
-audit. The game bundle is still unchanged; the final source and compatibility
-gates must pass before requesting new installation approval.
+audit.
+
+The final source and compatibility gates now pass from commit `2f14d56`.
+A clean source build reports MoltenVK 1.4.1 and pipeline-cache UUID prefix
+`0DB445FF`; the exact runtime SHA-256 is
+`9f7cf026c70c572dc4ab8709dc6e5ee60fadd9aba2a0f7b5f4bd5bade492549f`
+and the proxy SHA-256 is
+`422b4398742bc1d7ab4451bf5957467c514420d77c4dfe73756b061ea83f3b0f`.
+The differential drawable probe, filtered device/proc probe, filtered
+surface-format probe, embedded-runtime baseline probes, warnings-as-errors
+build, static analysis, and all 69 Python tests pass. The selected ESO
+fingerprint and pristine restore source are current; both caches and settings
+remain preserved. No ESO, Steam, or launcher process was found at the last
+read-only check.
+
+The game bundle is still unchanged for Experiment 0017 and remains on the
+performance-disturbing Experiment 0016 audit. Do not launch it. The only
+remaining gate before installation is new explicit approval for the exact
+one-patch candidate.

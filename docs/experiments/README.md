@@ -24,7 +24,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0014 | 2026-07-25 | Bounded render-graph audit | Diagnostic passed; rendering failed and cache path became leading target | [Run](0014-render-graph-audit.md) |
 | 0015 | 2026-07-25 | Reset-only pipeline-cache bypass | Failed; complete cache bypass did not correct rendering | [Run](0015-reset-pipeline-cache-bypass.md) |
 | 0016 | 2026-07-25 | Full-lifetime reset-state audit | Inconclusive; three reset windows overflowed and the audit degraded performance | [Run](0016-full-lifetime-reset-audit.md) |
-| 0017 | 2026-07-25 | Swapchain Metal texture-cache fix | Prepared; official 1.4.1 reproduces STALE and the one-patch backport passes | [Run](0017-swapchain-texture-cache-fix.md) |
+| 0017 | 2026-07-25 | Swapchain Metal texture-cache fix | Ready for install approval; official 1.4.1 is STALE and the one-patch backport passes | [Run](0017-swapchain-texture-cache-fix.md) |
 
 ## Recording policy
 
