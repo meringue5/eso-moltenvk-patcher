@@ -41,6 +41,7 @@ typedef enum {
     TESO4M4_MODE_RESET_RESOURCE_TRACE,
     TESO4M4_MODE_NO_COMMAND_POOLING,
     TESO4M4_MODE_RENDER_AUDIT,
+    TESO4M4_MODE_RESET_NO_PIPELINE_CACHE,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -199,6 +200,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     }
     if (strcmp(mode, "render-audit") == 0) {
         return TESO4M4_MODE_RENDER_AUDIT;
+    }
+    if (strcmp(mode, "reset-no-pipeline-cache") == 0) {
+        return TESO4M4_MODE_RESET_NO_PIPELINE_CACHE;
     }
     return TESO4M4_MODE_DISABLED;
 }
@@ -396,7 +400,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_reset_trace_enabled =
         mode == TESO4M4_MODE_RESET_RESOURCE_TRACE ||
         mode == TESO4M4_MODE_NO_COMMAND_POOLING ||
-        mode == TESO4M4_MODE_RENDER_AUDIT;
+        mode == TESO4M4_MODE_RENDER_AUDIT ||
+        mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE;
+    teso4m4_reset_trace_set_pipeline_cache_bypass(
+        mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE);
     if (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -422,6 +429,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     } else if (mode == TESO4M4_MODE_RENDER_AUDIT) {
         log_message(
             "MODE: render audit enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
+    } else if (mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE) {
+        log_message(
+            "MODE: reset pipeline cache bypass enabled live_resources=1 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
     } else {
         log_message(

@@ -70,6 +70,11 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
     counter_lines = [
         line for line in lines if line.startswith("RENDER_AUDIT_COUNT:")
     ]
+    bypass_lines = [
+        line
+        for line in lines
+        if line.startswith("RESET_PIPELINE_CACHE_BYPASS:")
+    ]
     anomalies: list[str] = []
     if len(begins) != 1:
         anomalies.append(f"expected one audit begin, found {len(begins)}")
@@ -164,6 +169,33 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
         f"created={created} bound_reset_created={rebound} "
         f"compatible-or-different-renderpass-binds={different}"
     )
+    bypass_pipelines = sum(
+        number(fields(line), "pipelines", 0) for line in bypass_lines
+    )
+    findings.append(
+        "pipeline-cache-bypass: "
+        f"calls={len(bypass_lines)} pipelines={bypass_pipelines}"
+    )
+    bypass_mode = any(
+        line.startswith("MODE: reset pipeline cache bypass enabled")
+        for line in lines
+    )
+    if bypass_mode:
+        created = counters.get("graphics_pipelines_created", -1)
+        cached = counters.get("graphics_pipelines_with_cache", -1)
+        if not bypass_lines:
+            anomalies.append(
+                "reset pipeline-cache bypass mode recorded no bypass"
+            )
+        if bypass_pipelines != created:
+            anomalies.append(
+                "pipeline-cache bypass count mismatch: "
+                f"bypassed={bypass_pipelines} created={created}"
+            )
+        if cached != 0:
+            anomalies.append(
+                f"{cached} reset graphics pipelines still used a cache"
+            )
     transfer = total(
         "copy_image_calls", "blit_image_calls", "resolve_image_calls"
     )

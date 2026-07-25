@@ -249,6 +249,22 @@ queue execution order across command buffers. A mismatch therefore identifies
 a chain for focused inspection; it is not automatically classified as a
 Vulkan violation.
 
+## Reset-only pipeline-cache bypass
+
+Experiment 0015 adds an explicitly selected mode above the same bounded audit.
+Before the trace begins, pipeline creation is forwarded unchanged. While the
+loaded-world reset window is active, a non-null optional cache passed to
+`vkCreateGraphicsPipelines` is replaced with `VK_NULL_HANDLE`; all pipeline
+create infos, allocation callbacks, output handles, and results remain
+unchanged.
+
+Each changed call emits the original cache handle, forwarded null handle,
+pipeline count, and result. The audit receives the forwarded cache value, so
+its aggregate must report zero reset pipelines created with a cache. The coded
+analyzer also requires the sum of bypass records to equal the reset graphics
+pipeline count. The mode does not modify either on-disk cache file and does not
+disable cache use during startup or steady-world rendering.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

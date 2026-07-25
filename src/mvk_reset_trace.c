@@ -168,6 +168,7 @@ static Teso4m4ResetTraceLogFunction g_logger;
 static pthread_mutex_t g_state_lock = PTHREAD_MUTEX_INITIALIZER;
 static atomic_bool g_active;
 static atomic_bool g_complete;
+static atomic_bool g_pipeline_cache_bypass;
 static atomic_uint_fast64_t g_counters[kCounterCount];
 static atomic_uint_fast64_t g_failures;
 static atomic_uint_fast64_t g_detail_count;
@@ -803,10 +804,17 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_graphics_pipelines(
     if (!g_next_create_graphics_pipelines) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    const bool bypass_cache =
+        trace_active() &&
+        atomic_load_explicit(
+            &g_pipeline_cache_bypass, memory_order_relaxed) &&
+        cache != VK_NULL_HANDLE;
+    const VkPipelineCache forwarded_cache =
+        bypass_cache ? VK_NULL_HANDLE : cache;
     VkResult result = g_next_create_graphics_pipelines(
-        device, cache, count, create_infos, allocator, pipelines);
+        device, forwarded_cache, count, create_infos, allocator, pipelines);
     teso4m4_render_audit_create_graphics_pipelines(
-        cache, count, create_infos, pipelines);
+        forwarded_cache, count, create_infos, pipelines);
     count_add(kCreateGraphicsPipelines, count);
     record_result("vkCreateGraphicsPipelines", result);
     if (detail_slot()) {
@@ -814,6 +822,12 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_graphics_pipelines(
             "RESET_RESOURCE_DETAIL: operation=create_graphics_pipelines "
             "requested=%u nonnull=%u result=%d",
             count, count_nonnull_pipelines(count, pipelines), result);
+    }
+    if (bypass_cache) {
+        trace_log(
+            "RESET_PIPELINE_CACHE_BYPASS: requested_cache=%p forwarded_cache=%p"
+            " pipelines=%u result=%d",
+            (void*)cache, (void*)forwarded_cache, count, result);
     }
     return result;
 }
@@ -1150,6 +1164,8 @@ void teso4m4_reset_trace_reset(void) {
     g_reset_swapchain = VK_NULL_HANDLE;
     atomic_store_explicit(&g_active, false, memory_order_relaxed);
     atomic_store_explicit(&g_complete, false, memory_order_relaxed);
+    atomic_store_explicit(
+        &g_pipeline_cache_bypass, false, memory_order_relaxed);
     for (size_t index = 0; index < kCounterCount; ++index) {
         atomic_store_explicit(&g_counters[index], 0, memory_order_relaxed);
     }
@@ -1165,6 +1181,11 @@ void teso4m4_reset_trace_set_logger(
     g_logger = logger;
     teso4m4_render_audit_set_logger(logger);
     pthread_mutex_unlock(&g_state_lock);
+}
+
+void teso4m4_reset_trace_set_pipeline_cache_bypass(bool enabled) {
+    atomic_store_explicit(
+        &g_pipeline_cache_bypass, enabled, memory_order_release);
 }
 
 #define INTERCEPT(function_name, next_name, wrapper_name, FunctionType)     \

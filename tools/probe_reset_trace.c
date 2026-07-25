@@ -13,6 +13,7 @@
 static char g_log[32768];
 static size_t g_log_length;
 static uintptr_t g_next_handle = 0x100;
+static VkPipelineCache g_last_graphics_cache;
 
 static void test_log(const char* message) {
     const int written = snprintf(
@@ -91,7 +92,7 @@ static VkResult VKAPI_CALL fake_create_graphics_pipelines(
     const VkAllocationCallbacks* allocator,
     VkPipeline* pipelines) {
     (void)device;
-    (void)cache;
+    g_last_graphics_cache = cache;
     (void)infos;
     (void)allocator;
     for (uint32_t index = 0; index < count; ++index) {
@@ -153,6 +154,7 @@ int main(void) {
     teso4m4_lifecycle_set_logger(&test_log);
     teso4m4_reset_trace_reset();
     teso4m4_reset_trace_set_logger(&test_log);
+    teso4m4_reset_trace_set_pipeline_cache_bypass(true);
 
     PFN_vkDeviceWaitIdle wait = (PFN_vkDeviceWaitIdle)
         chain_intercepts(
@@ -184,6 +186,22 @@ int main(void) {
     PFN_vkCmdDraw draw = (PFN_vkCmdDraw)
         chain_intercepts(
             "vkCmdDraw", (PFN_vkVoidFunction)&fake_cmd_draw);
+
+    const VkPipelineCache startup_cache =
+        HANDLE(VkPipelineCache, 0x443);
+    const VkGraphicsPipelineCreateInfo startup_graphics_info = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    };
+    VkPipeline startup_pipeline = VK_NULL_HANDLE;
+    if (!check(
+            create_graphics(
+                HANDLE(VkDevice, 0x1), startup_cache, 1,
+                &startup_graphics_info, NULL, &startup_pipeline) ==
+                VK_SUCCESS &&
+                g_last_graphics_cache == startup_cache,
+            "pipeline cache bypass must remain inactive before reset")) {
+        return 1;
+    }
 
     enum { kInactiveBenchmarkIterations = 100000 };
     VkCommandBuffer benchmark_buffer = HANDLE(VkCommandBuffer, 0x300);
@@ -257,7 +275,8 @@ int main(void) {
             "image binding") ||
         !check(
             create_graphics(
-                device, VK_NULL_HANDLE, 2, &graphics_info, NULL, pipelines) ==
+                device, HANDLE(VkPipelineCache, 0x444), 2,
+                &graphics_info, NULL, pipelines) ==
                 VK_SUCCESS,
             "pipeline creation")) {
         return 1;
@@ -322,7 +341,11 @@ int main(void) {
                 strstr(g_log, "name=submitted_command_buffers value=2") !=
                     NULL &&
                 strstr(g_log, "name=cmd_draw value=1") != NULL,
-            "resource and command counts must be exact")) {
+            "resource and command counts must be exact") ||
+        !check(
+            g_last_graphics_cache == VK_NULL_HANDLE &&
+                strstr(g_log, "RESET_PIPELINE_CACHE_BYPASS:") != NULL,
+            "active reset pipeline creation must bypass a non-null cache")) {
         return 1;
     }
 

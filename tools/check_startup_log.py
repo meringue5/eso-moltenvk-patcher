@@ -117,6 +117,10 @@ def evaluate_startup_log(
         "MODE: render audit enabled live_resources=1 "
         "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1"
     )
+    reset_no_pipeline_cache_mode = (
+        "MODE: reset pipeline cache bypass enabled live_resources=1 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1"
+    )
     matched_modes = [
         mode
         for mode in (
@@ -125,6 +129,7 @@ def evaluate_startup_log(
             reset_resource_trace_mode,
             no_command_pooling_mode,
             render_audit_mode,
+            reset_no_pipeline_cache_mode,
         )
         if mode in lines
     ]

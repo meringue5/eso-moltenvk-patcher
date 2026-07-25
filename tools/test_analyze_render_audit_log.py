@@ -72,6 +72,53 @@ class RenderAuditLogTests(unittest.TestCase):
         self.assertEqual(results[0].run_id, RUN)
         self.assertTrue(results[1].run_id.endswith("pid50001"))
 
+    def test_validates_reset_pipeline_cache_bypass_mode(self) -> None:
+        text = "\n".join(
+            (
+                record(
+                    "MODE: reset pipeline cache bypass enabled "
+                    "live_resources=1 metal_argument_buffers=0 "
+                    "use_mtlheap=1 command_pooling=1"
+                ),
+                good_log(
+                    {
+                        "graphics_pipelines_created": 3,
+                        "graphics_pipelines_created_during_audit": 3,
+                    }
+                ),
+                record(
+                    "RESET_PIPELINE_CACHE_BYPASS: requested_cache=0x1 "
+                    "forwarded_cache=0x0 pipelines=3 result=0"
+                ),
+            )
+        )
+        result = analyze(text)
+        self.assertFalse(result.anomalies)
+        self.assertIn(
+            "pipeline-cache-bypass: calls=1 pipelines=3",
+            result.findings,
+        )
+
+    def test_rejects_incomplete_pipeline_cache_bypass(self) -> None:
+        text = "\n".join(
+            (
+                record(
+                    "MODE: reset pipeline cache bypass enabled "
+                    "live_resources=1 metal_argument_buffers=0 "
+                    "use_mtlheap=1 command_pooling=1"
+                ),
+                good_log({"graphics_pipelines_created": 3}),
+                record(
+                    "RESET_PIPELINE_CACHE_BYPASS: requested_cache=0x1 "
+                    "forwarded_cache=0x0 pipelines=2 result=0"
+                ),
+            )
+        )
+        result = analyze(text)
+        self.assertTrue(
+            any("count mismatch" in item for item in result.anomalies)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

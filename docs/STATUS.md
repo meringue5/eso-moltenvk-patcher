@@ -496,3 +496,17 @@ multi-run session, while the old backup was unchanged. Combined with the
 8 FPS/reset-correct versus restarted 60 FPS/reset-fail split, this makes a
 reset-only null pipeline-cache counterfactual the next gate. It is a targeted
 Vulkan-permitted call change, not another MoltenVK configuration toggle.
+
+Experiment 0015's source candidate now selects a distinct
+`reset-no-pipeline-cache` mode. Before the bounded loaded-world reset, pipeline
+creation forwards ESO's cache unchanged. During the reset window only, a
+non-null cache argument is forwarded as `VK_NULL_HANDLE` and logged. The audit
+will fail unless bypassed pipeline totals equal every reset graphics pipeline
+and its cache-use counter is zero. Neither on-disk cache is modified by this
+code path.
+
+The initial source gate passes 65 Python tests and the reset smoke probe. That
+probe proves both halves of the scope: a startup pipeline retains its non-null
+cache, while an active reset pipeline receives null and emits the bypass
+record. Full pristine-loader build, static analysis, real-Metal probes, and
+installation remain pending.
