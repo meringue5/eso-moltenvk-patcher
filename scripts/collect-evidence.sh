@@ -114,6 +114,13 @@ python3 "$ROOT/tools/analyze_reset_bindings.py" \
   || RESET_BINDING_ANALYSIS_EXIT=$?
 echo "$RESET_BINDING_ANALYSIS_EXIT" \
   > "$OUTPUT/reset-binding-events-exit-code.txt"
+RENDER_AUDIT_ANALYSIS_EXIT=0
+python3 "$ROOT/tools/analyze_render_audit_log.py" \
+  "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" \
+  > "$OUTPUT/render-audit-events.txt" 2>&1 \
+  || RENDER_AUDIT_ANALYSIS_EXIT=$?
+echo "$RENDER_AUDIT_ANALYSIS_EXIT" \
+  > "$OUTPUT/render-audit-events-exit-code.txt"
 
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"

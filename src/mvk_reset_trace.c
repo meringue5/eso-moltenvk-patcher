@@ -1,4 +1,5 @@
 #include "mvk_reset_trace.h"
+#include "mvk_render_audit.h"
 
 #include <inttypes.h>
 #include <pthread.h>
@@ -158,6 +159,10 @@ static PFN_vkCmdDraw g_next_cmd_draw;
 static PFN_vkCmdDrawIndexed g_next_cmd_draw_indexed;
 static PFN_vkCmdDispatch g_next_cmd_dispatch;
 static PFN_vkCmdEndRenderPass g_next_cmd_end_render_pass;
+static PFN_vkCmdPipelineBarrier g_next_cmd_pipeline_barrier;
+static PFN_vkCmdCopyImage g_next_cmd_copy_image;
+static PFN_vkCmdBlitImage g_next_cmd_blit_image;
+static PFN_vkCmdResolveImage g_next_cmd_resolve_image;
 
 static Teso4m4ResetTraceLogFunction g_logger;
 static pthread_mutex_t g_state_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -219,6 +224,7 @@ static void begin_trace(uint64_t wait_count, uint64_t swapchain_count) {
     g_reset_swapchain = VK_NULL_HANDLE;
     g_reset_present_count = 0;
     atomic_store_explicit(&g_active, true, memory_order_release);
+    teso4m4_render_audit_begin();
     trace_log(
         "RESET_RESOURCE_TRACE_BEGIN: wait=%" PRIu64
         " established_swapchains=%" PRIu64 " detail_limit=%u present_limit=%u",
@@ -233,6 +239,7 @@ static void finish_trace(const char* reason) {
         return;
     }
     atomic_store_explicit(&g_active, false, memory_order_release);
+    teso4m4_render_audit_finish(reason);
     trace_log(
         "RESET_RESOURCE_TRACE_SUMMARY: reason=%s reset_presents=%u "
         "failures=%" PRIuFAST64 " details=%" PRIuFAST64,
@@ -277,6 +284,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_swapchain(
     pthread_mutex_lock(&g_state_lock);
     if (result == VK_SUCCESS && swapchain && *swapchain != VK_NULL_HANDLE) {
         ++g_swapchain_count;
+        if (g_swapchain_count == 1) {
+            teso4m4_render_audit_enable_mirror();
+        }
         if (trace_active() && g_reset_swapchain == VK_NULL_HANDLE) {
             g_reset_swapchain = *swapchain;
             trace_log(
@@ -459,6 +469,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_image(
     }
     VkResult result =
         g_next_create_image(device, create_info, allocator, image);
+    if (result == VK_SUCCESS && image && *image != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_image(create_info, *image);
+    }
     count_add(kCreateImage, 1);
     record_result("vkCreateImage", result);
     if (detail_slot()) {
@@ -488,6 +501,7 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_image(
     if (!g_next_destroy_image) {
         return;
     }
+    teso4m4_render_audit_destroy_image(image);
     g_next_destroy_image(device, image, allocator);
     count_add(kDestroyImage, 1);
 }
@@ -502,6 +516,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_bind_image_memory(
     }
     VkResult result =
         g_next_bind_image_memory(device, image, memory, offset);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_bind_image(image, memory, offset);
+    }
     count_add(kBindImageMemory, 1);
     record_result("vkBindImageMemory", result);
     if (detail_slot()) {
@@ -521,6 +538,9 @@ static VKAPI_ATTR void VKAPI_CALL traced_get_image_memory_requirements(
         return;
     }
     g_next_get_image_memory_requirements(device, image, requirements);
+    if (requirements) {
+        teso4m4_render_audit_image_requirements(image, requirements);
+    }
     count_add(kGetImageMemoryRequirements, 1);
     if (detail_slot()) {
         trace_log(
@@ -559,30 +579,113 @@ static VKAPI_ATTR void VKAPI_CALL traced_get_image_memory_requirements(
         count_add(counter_name, 1);                                         \
     }
 
-DEFINE_CREATE_WRAPPER(
-    create_image_view, CreateImageView, VkImageViewCreateInfo, VkImageView,
-    g_next_create_image_view, kCreateImageView)
-DEFINE_DESTROY_WRAPPER(
-    destroy_image_view, VkImageView, g_next_destroy_image_view,
-    kDestroyImageView)
-DEFINE_CREATE_WRAPPER(
-    create_render_pass, CreateRenderPass, VkRenderPassCreateInfo, VkRenderPass,
-    g_next_create_render_pass, kCreateRenderPass)
-DEFINE_DESTROY_WRAPPER(
-    destroy_render_pass, VkRenderPass, g_next_destroy_render_pass,
-    kDestroyRenderPass)
-DEFINE_CREATE_WRAPPER(
-    create_framebuffer, CreateFramebuffer, VkFramebufferCreateInfo,
-    VkFramebuffer, g_next_create_framebuffer, kCreateFramebuffer)
-DEFINE_DESTROY_WRAPPER(
-    destroy_framebuffer, VkFramebuffer, g_next_destroy_framebuffer,
-    kDestroyFramebuffer)
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_image_view(
+    VkDevice device,
+    const VkImageViewCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkImageView* view) {
+    if (!g_next_create_image_view) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result =
+        g_next_create_image_view(device, create_info, allocator, view);
+    if (result == VK_SUCCESS && view && *view != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_image_view(create_info, *view);
+    }
+    count_add(kCreateImageView, 1);
+    record_result("vkCreateImageView", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_image_view(
+    VkDevice device,
+    VkImageView view,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_image_view) {
+        return;
+    }
+    teso4m4_render_audit_destroy_image_view(view);
+    g_next_destroy_image_view(device, view, allocator);
+    count_add(kDestroyImageView, 1);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_render_pass(
+    VkDevice device,
+    const VkRenderPassCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkRenderPass* render_pass) {
+    if (!g_next_create_render_pass) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_render_pass(
+        device, create_info, allocator, render_pass);
+    if (result == VK_SUCCESS && render_pass &&
+        *render_pass != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_render_pass(
+            create_info, *render_pass);
+    }
+    count_add(kCreateRenderPass, 1);
+    record_result("vkCreateRenderPass", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_render_pass(
+    VkDevice device,
+    VkRenderPass render_pass,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_render_pass) {
+        return;
+    }
+    teso4m4_render_audit_destroy_render_pass(render_pass);
+    g_next_destroy_render_pass(device, render_pass, allocator);
+    count_add(kDestroyRenderPass, 1);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_framebuffer(
+    VkDevice device,
+    const VkFramebufferCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkFramebuffer* framebuffer) {
+    if (!g_next_create_framebuffer) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_framebuffer(
+        device, create_info, allocator, framebuffer);
+    if (result == VK_SUCCESS && framebuffer &&
+        *framebuffer != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_framebuffer(
+            create_info, *framebuffer);
+    }
+    count_add(kCreateFramebuffer, 1);
+    record_result("vkCreateFramebuffer", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_framebuffer(
+    VkDevice device,
+    VkFramebuffer framebuffer,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_framebuffer) {
+        return;
+    }
+    teso4m4_render_audit_destroy_framebuffer(framebuffer);
+    g_next_destroy_framebuffer(device, framebuffer, allocator);
+    count_add(kDestroyFramebuffer, 1);
+}
 DEFINE_CREATE_WRAPPER(
     create_descriptor_pool, CreateDescriptorPool, VkDescriptorPoolCreateInfo,
     VkDescriptorPool, g_next_create_descriptor_pool, kCreateDescriptorPool)
-DEFINE_DESTROY_WRAPPER(
-    destroy_descriptor_pool, VkDescriptorPool, g_next_destroy_descriptor_pool,
-    kDestroyDescriptorPool)
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_descriptor_pool(
+    VkDevice device,
+    VkDescriptorPool pool,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_descriptor_pool) {
+        return;
+    }
+    teso4m4_render_audit_destroy_descriptor_pool(pool);
+    g_next_destroy_descriptor_pool(device, pool, allocator);
+    count_add(kDestroyDescriptorPool, 1);
+}
 DEFINE_CREATE_WRAPPER(
     create_descriptor_set_layout, CreateDescriptorSetLayout,
     VkDescriptorSetLayoutCreateInfo, VkDescriptorSetLayout,
@@ -596,8 +699,17 @@ DEFINE_CREATE_WRAPPER(
 DEFINE_DESTROY_WRAPPER(
     destroy_pipeline_layout, VkPipelineLayout, g_next_destroy_pipeline_layout,
     kDestroyPipelineLayout)
-DEFINE_DESTROY_WRAPPER(
-    destroy_pipeline, VkPipeline, g_next_destroy_pipeline, kDestroyPipeline)
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_pipeline(
+    VkDevice device,
+    VkPipeline pipeline,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_pipeline) {
+        return;
+    }
+    teso4m4_render_audit_destroy_pipeline(pipeline);
+    g_next_destroy_pipeline(device, pipeline, allocator);
+    count_add(kDestroyPipeline, 1);
+}
 
 static VKAPI_ATTR VkResult VKAPI_CALL traced_reset_descriptor_pool(
     VkDevice device,
@@ -607,6 +719,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_reset_descriptor_pool(
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     VkResult result = g_next_reset_descriptor_pool(device, pool, flags);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_reset_descriptor_pool(pool);
+    }
     count_add(kResetDescriptorPool, 1);
     record_result("vkResetDescriptorPool", result);
     return result;
@@ -621,6 +736,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_allocate_descriptor_sets(
     }
     VkResult result =
         g_next_allocate_descriptor_sets(device, allocate_info, sets);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_allocate_descriptor_sets(
+            allocate_info, sets);
+    }
     count_add(
         kAllocateDescriptorSets,
         allocate_info ? allocate_info->descriptorSetCount : 0);
@@ -638,6 +757,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_free_descriptor_sets(
     }
     VkResult result =
         g_next_free_descriptor_sets(device, pool, count, sets);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_free_descriptor_sets(pool, count, sets);
+    }
     count_add(kFreeDescriptorSets, count);
     record_result("vkFreeDescriptorSets", result);
     return result;
@@ -654,6 +776,8 @@ static VKAPI_ATTR void VKAPI_CALL traced_update_descriptor_sets(
     }
     g_next_update_descriptor_sets(
         device, write_count, writes, copy_count, copies);
+    teso4m4_render_audit_update_descriptor_sets(
+        write_count, writes, copy_count, copies);
     count_add(kUpdateDescriptorWrites, write_count);
     count_add(kUpdateDescriptorCopies, copy_count);
 }
@@ -681,6 +805,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_graphics_pipelines(
     }
     VkResult result = g_next_create_graphics_pipelines(
         device, cache, count, create_infos, allocator, pipelines);
+    teso4m4_render_audit_create_graphics_pipelines(
+        cache, count, create_infos, pipelines);
     count_add(kCreateGraphicsPipelines, count);
     record_result("vkCreateGraphicsPipelines", result);
     if (detail_slot()) {
@@ -800,6 +926,7 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_begin_render_pass(
         return;
     }
     g_next_cmd_begin_render_pass(buffer, begin_info, contents);
+    teso4m4_render_audit_cmd_begin_render_pass(buffer, begin_info);
     count_add(kCmdBeginRenderPass, 1);
 }
 
@@ -811,6 +938,8 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_bind_pipeline(
         return;
     }
     g_next_cmd_bind_pipeline(buffer, bind_point, pipeline);
+    teso4m4_render_audit_cmd_bind_pipeline(
+        buffer, bind_point, pipeline);
     count_add(kCmdBindPipeline, 1);
 }
 
@@ -829,6 +958,8 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_bind_descriptor_sets(
     g_next_cmd_bind_descriptor_sets(
         buffer, bind_point, layout, first_set, set_count, sets,
         dynamic_offset_count, dynamic_offsets);
+    teso4m4_render_audit_cmd_bind_descriptor_sets(
+        buffer, bind_point, first_set, set_count, sets);
     count_add(kCmdBindDescriptorSets, 1);
 }
 
@@ -881,7 +1012,83 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_end_render_pass(
         return;
     }
     g_next_cmd_end_render_pass(buffer);
+    teso4m4_render_audit_cmd_end_render_pass(buffer);
     count_add(kCmdEndRenderPass, 1);
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_pipeline_barrier(
+    VkCommandBuffer buffer,
+    VkPipelineStageFlags source_stage_mask,
+    VkPipelineStageFlags destination_stage_mask,
+    VkDependencyFlags dependency_flags,
+    uint32_t memory_barrier_count,
+    const VkMemoryBarrier* memory_barriers,
+    uint32_t buffer_memory_barrier_count,
+    const VkBufferMemoryBarrier* buffer_memory_barriers,
+    uint32_t image_memory_barrier_count,
+    const VkImageMemoryBarrier* image_memory_barriers) {
+    if (!g_next_cmd_pipeline_barrier) {
+        return;
+    }
+    g_next_cmd_pipeline_barrier(
+        buffer, source_stage_mask, destination_stage_mask, dependency_flags,
+        memory_barrier_count, memory_barriers, buffer_memory_barrier_count,
+        buffer_memory_barriers, image_memory_barrier_count,
+        image_memory_barriers);
+    teso4m4_render_audit_cmd_pipeline_barrier(
+        buffer, image_memory_barrier_count, image_memory_barriers);
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_copy_image(
+    VkCommandBuffer buffer,
+    VkImage source_image,
+    VkImageLayout source_layout,
+    VkImage destination_image,
+    VkImageLayout destination_layout,
+    uint32_t region_count,
+    const VkImageCopy* regions) {
+    if (!g_next_cmd_copy_image) {
+        return;
+    }
+    g_next_cmd_copy_image(
+        buffer, source_image, source_layout, destination_image,
+        destination_layout, region_count, regions);
+    teso4m4_render_audit_cmd_copy_image();
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_blit_image(
+    VkCommandBuffer buffer,
+    VkImage source_image,
+    VkImageLayout source_layout,
+    VkImage destination_image,
+    VkImageLayout destination_layout,
+    uint32_t region_count,
+    const VkImageBlit* regions,
+    VkFilter filter) {
+    if (!g_next_cmd_blit_image) {
+        return;
+    }
+    g_next_cmd_blit_image(
+        buffer, source_image, source_layout, destination_image,
+        destination_layout, region_count, regions, filter);
+    teso4m4_render_audit_cmd_blit_image();
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_resolve_image(
+    VkCommandBuffer buffer,
+    VkImage source_image,
+    VkImageLayout source_layout,
+    VkImage destination_image,
+    VkImageLayout destination_layout,
+    uint32_t region_count,
+    const VkImageResolve* regions) {
+    if (!g_next_cmd_resolve_image) {
+        return;
+    }
+    g_next_cmd_resolve_image(
+        buffer, source_image, source_layout, destination_image,
+        destination_layout, region_count, regions);
+    teso4m4_render_audit_cmd_resolve_image();
 }
 
 void teso4m4_reset_trace_reset(void) {
@@ -932,6 +1139,10 @@ void teso4m4_reset_trace_reset(void) {
     g_next_cmd_draw_indexed = NULL;
     g_next_cmd_dispatch = NULL;
     g_next_cmd_end_render_pass = NULL;
+    g_next_cmd_pipeline_barrier = NULL;
+    g_next_cmd_copy_image = NULL;
+    g_next_cmd_blit_image = NULL;
+    g_next_cmd_resolve_image = NULL;
     g_logger = NULL;
     g_wait_count = 0;
     g_swapchain_count = 0;
@@ -944,6 +1155,7 @@ void teso4m4_reset_trace_reset(void) {
     }
     atomic_store_explicit(&g_failures, 0, memory_order_relaxed);
     atomic_store_explicit(&g_detail_count, 0, memory_order_relaxed);
+    teso4m4_render_audit_reset();
     pthread_mutex_unlock(&g_state_lock);
 }
 
@@ -951,6 +1163,7 @@ void teso4m4_reset_trace_set_logger(
     Teso4m4ResetTraceLogFunction logger) {
     pthread_mutex_lock(&g_state_lock);
     g_logger = logger;
+    teso4m4_render_audit_set_logger(logger);
     pthread_mutex_unlock(&g_state_lock);
 }
 
@@ -1110,6 +1323,18 @@ PFN_vkVoidFunction teso4m4_reset_trace_intercept(
     INTERCEPT(
         "vkCmdEndRenderPass", g_next_cmd_end_render_pass,
         traced_cmd_end_render_pass, PFN_vkCmdEndRenderPass)
+    INTERCEPT(
+        "vkCmdPipelineBarrier", g_next_cmd_pipeline_barrier,
+        traced_cmd_pipeline_barrier, PFN_vkCmdPipelineBarrier)
+    INTERCEPT(
+        "vkCmdCopyImage", g_next_cmd_copy_image,
+        traced_cmd_copy_image, PFN_vkCmdCopyImage)
+    INTERCEPT(
+        "vkCmdBlitImage", g_next_cmd_blit_image,
+        traced_cmd_blit_image, PFN_vkCmdBlitImage)
+    INTERCEPT(
+        "vkCmdResolveImage", g_next_cmd_resolve_image,
+        traced_cmd_resolve_image, PFN_vkCmdResolveImage)
     pthread_mutex_unlock(&g_state_lock);
     return returned;
 }

@@ -211,6 +211,44 @@ are created, bound, recorded, and submitted. It cannot by itself inspect Metal
 resource contents or prove that a successful Vulkan operation produced correct
 pixels.
 
+## Bounded render-graph audit
+
+Experiment 0014 composes a fixed-capacity state mirror with the existing
+eight-presentation window. Low-frequency image, image-view, render-pass,
+framebuffer, pipeline, and descriptor-set lifetimes are retained from startup.
+Image descriptor contents begin mirroring at the first successful swapchain,
+before the loaded-world reset under test.
+
+Descriptor sets and slots use open-addressed handle hashes. Destroying an
+image view marks every mirrored slot that references it; binding a set then
+reports its stale slot count and last update sequence without rescanning the
+whole slot table. Descriptor-pool reset/free invalidation is batched. The
+mirror allocates no memory in Vulkan wrappers and exposes any fixed-table
+overflow as an analyzer failure.
+
+The bounded active window additionally records:
+
+- live `VkImage` memory ranges and undeclared overlap;
+- reuse of overlapping ranges after an image was destroyed, with the old
+  destruction sequence retained;
+- image barrier old/new layouts;
+- framebuffer image views joined to render-pass initial/final layouts;
+- reset-created pipeline cache, render pass, subpass, and later binds;
+- image copy, blit, and resolve call counts.
+
+For each of the first 128 bounded render passes, the audit emits the tail state:
+the last graphics pipeline and last descriptor-set batch seen before
+`vkCmdEndRenderPass`, together with each mirrored set's last update sequence
+and stale count. This samples the composite-facing end of a pass rather than
+letting thousands of per-draw binds consume the log budget.
+
+All wrappers forward the original call first where its arguments must remain
+valid, preserve the original result, and make no Vulkan state correction.
+Layout state is observed in API command-recording order, which can differ from
+queue execution order across command buffers. A mismatch therefore identifies
+a chain for focused inspection; it is not automatically classified as a
+Vulkan violation.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

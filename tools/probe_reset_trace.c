@@ -341,6 +341,10 @@ int main(void) {
         "vkDestroyImage",
         "vkEndCommandBuffer",
         "vkCmdEndRenderPass",
+        "vkCmdPipelineBarrier",
+        "vkCmdCopyImage",
+        "vkCmdBlitImage",
+        "vkCmdResolveImage",
     };
     for (size_t index = 0;
          index < sizeof(static_resource_targets) /

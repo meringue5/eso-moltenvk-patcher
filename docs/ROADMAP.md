@@ -42,15 +42,17 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve Experiment 0013 as the negative command-pooling result. Disabling
   MoltenVK internal command pooling did not repair the reset; do not run
   another generic MoltenVK configuration A/B.
-- Add always-on, non-logging mirrors for descriptor writes/copies, descriptor
-  set allocation/reset/free, and image-view creation/destruction. During the
-  bounded reset window, report descriptor entries that name destroyed or
-  unknown views and identify the sets bound by each submitted command buffer.
-- In the same bounded window, trace `vkCmdPipelineBarrier`, render-pass
-  attachment image views and layouts, and image copy/blit/resolve operations.
-  Correlate the final composite chain before asking for another user run.
-- Prepare the next runtime candidate only when the trace can distinguish a
-  targeted descriptor-lifetime repair from a targeted layout/barrier repair.
+- Complete Experiment 0014's single bundled render-graph audit. Its coded
+  candidate mirrors descriptor/image-view state and, in the same bounded
+  window, correlates live image-memory ranges, `vkCmdPipelineBarrier`,
+  render-pass attachments, reset-created pipelines, and image
+  copy/blit/resolve calls.
+- Accept the audit only if its fixed-capacity mirrors do not overflow. Treat
+  layout mismatches recorded in API command-recording order as leads requiring
+  sequence correlation, not standalone proof of an invalid executed layout.
+- Use the one run to choose a targeted descriptor-lifetime repair, a targeted
+  layout/barrier repair, or deeper Metal-side capture. Do not split these five
+  observations into five game runs.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.

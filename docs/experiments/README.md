@@ -21,6 +21,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0011 | 2026-07-25 | MTLHeap disabled during live reset | Failed; solid-color reset corruption persisted | [Run](0011-mtlheap-disabled-live-reset.md) |
 | 0012 | 2026-07-25 | Bounded reset-resource trace | Failed rendering; localized to descriptor/resource state | [Run](0012-reset-resource-trace.md) |
 | 0013 | 2026-07-25 | Command pooling disabled during live reset | Failed; solid-color corruption persisted | [Run](0013-command-pooling-disabled.md) |
+| 0014 | 2026-07-25 | Bounded render-graph audit | Planned; bundles five fault categories into one reset run | [Run](0014-render-graph-audit.md) |
 
 ## Recording policy
 

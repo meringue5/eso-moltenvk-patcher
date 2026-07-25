@@ -443,3 +443,21 @@ causes. Stop generic configuration toggles. Before another user run, implement
 handle-level descriptor/image-view lifetime tracking plus barrier and
 attachment-layout tracing, and use that evidence to prepare a repair
 counterfactual rather than another blind setting A/B.
+
+Experiment 0014 now bundles the five remaining categories into one
+observation-only render-graph audit candidate. A descriptor/image-view mirror
+starts at the first swapchain; the existing eight-presentation reset window
+then joins stale descriptor binds, live image-memory overlap, destroyed-range
+memory reuse, image barriers, render-pass attachment layouts, reset-created
+pipeline linkage, and image copy/blit/resolve calls by sequence. The first 128
+passes retain their tail pipeline and descriptor-set state so per-draw binds
+cannot consume the useful log budget. Fixed-table overflow fails the analyzer
+instead of silently reducing coverage. Command pooling returns to its 1.4.1
+default.
+
+The initial non-game gate passes 61 Python tests, the existing reset wrapper
+probe, and the new render-audit probe. The repeated hashed descriptor update
+path measured 33 nanoseconds per call in the x86_64 probe on this machine,
+well below its 10-microsecond rejection threshold. Full pristine-loader build,
+static analysis, real-Metal probes, installation, and the single
+user-controlled reset remain pending.

@@ -14,7 +14,8 @@ source "$ROOT/scripts/lib-target.sh"
 MODE="${TESO4M4_MODE:-descriptor-compat}"
 [[ "$MODE" == "descriptor-compat" || "$MODE" == "legacy-allocation" \
   || "$MODE" == "reset-resource-trace" \
-  || "$MODE" == "no-command-pooling" ]] || {
+  || "$MODE" == "no-command-pooling" \
+  || "$MODE" == "render-audit" ]] || {
   echo "Unsupported experiment mode: $MODE"
   exit 1
 }
