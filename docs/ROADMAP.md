@@ -94,9 +94,9 @@ are in [Project status](STATUS.md); completed runs belong in the
   Its only delta from the installed safe profile is
   `LIVE_CHECK_ALL_RESOURCES=0`; a balanced M4 probe measured a 10.1% reduction
   in descriptor-heavy CPU encoding, and valid-resource reset coverage passes.
-- Commit its source identity and complete the install gate only after explicit
-  approval. Do not describe the measured encode reduction as an equal FPS
-  increase.
+- Complete its install preflight from source commit `ed5b9d3` only after
+  explicit approval. Do not describe the measured encode reduction as an equal
+  FPS increase.
 
 ## P1: keep redirection verifiable
 

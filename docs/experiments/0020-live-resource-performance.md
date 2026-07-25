@@ -120,6 +120,7 @@ configuration is verified.
 - Prepared artifact SHA-256:
 
 ```text
+source:    ed5b9d3 (Prepare Experiment 0020 descriptor performance)
 proxy:     5019d4eb552f89ea59bfda9d38e2f2c98ce36f2490c7c41294750c62ba68acde
 MoltenVK:  d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
 ```
@@ -128,7 +129,6 @@ No Steam, launcher, or ESO process was started for Experiment 0020.
 
 ## Installation gate
 
-- Commit and record the exact source identity.
 - Recheck the target fingerprint and stopped processes.
 - Verify the installed Experiment 0019 files, pristine loader, settings, both
   pipeline caches, and prepared hashes.

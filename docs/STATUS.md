@@ -802,3 +802,4 @@ Experiment 0019 remains installed. Experiment 0020 has not modified the game
 bundle; its measured result, risk boundary, prepared hashes, and installation
 gate are in the
 [Experiment 0020 record](experiments/0020-live-resource-performance.md).
+The candidate source identity is commit `ed5b9d3`.
