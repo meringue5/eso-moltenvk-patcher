@@ -1,9 +1,11 @@
 #include "mvk_lifecycle.h"
 
 #include <stdbool.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #define HANDLE(type, value) ((type)(uintptr_t)(value))
 
@@ -164,6 +166,15 @@ static bool check(bool condition, const char* message) {
     return condition;
 }
 
+static uint64_t monotonic_nanoseconds(void) {
+    struct timespec value = {0};
+    if (clock_gettime(CLOCK_MONOTONIC, &value) != 0) {
+        return 0;
+    }
+    return (uint64_t)value.tv_sec * 1000000000ULL +
+           (uint64_t)value.tv_nsec;
+}
+
 int main(void) {
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&test_log);
@@ -290,6 +301,33 @@ int main(void) {
         return 1;
     }
 
+    enum { kBenchmarkIterations = 100000 };
+    const uint64_t benchmark_start = monotonic_nanoseconds();
+    for (unsigned int iteration = 0;
+         iteration < kBenchmarkIterations;
+         ++iteration) {
+        if (acquire(
+                device, first, 0, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                &image_index) != VK_SUCCESS ||
+            present(queue, &present_info) != VK_SUCCESS) {
+            fprintf(stderr, "Lifecycle probe benchmark forwarding failed\n");
+            return 1;
+        }
+    }
+    const uint64_t benchmark_end = monotonic_nanoseconds();
+    if (!check(
+            benchmark_start != 0 && benchmark_end > benchmark_start,
+            "benchmark clock must advance")) {
+        return 1;
+    }
+    const uint64_t pair_nanoseconds =
+        (benchmark_end - benchmark_start) / kBenchmarkIterations;
+    if (!check(
+            pair_nanoseconds < 50000,
+            "steady acquire/present wrapper pair must remain below 50 us")) {
+        return 1;
+    }
+
     create_info.oldSwapchain = first;
     create_info.imageExtent = (VkExtent2D){1920, 1200};
     VkSwapchainKHR second = VK_NULL_HANDLE;
@@ -322,6 +360,8 @@ int main(void) {
         return 1;
     }
 
-    puts("Lifecycle trace smoke: yes");
+    printf(
+        "Lifecycle trace smoke: yes steady_pair_ns=%" PRIu64 "\n",
+        pair_nanoseconds);
     return 0;
 }
