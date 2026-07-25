@@ -352,5 +352,14 @@ until the post-generation-2 device wait, closes after eight replacement
 presentations, caps detail logs, and preserves all arguments and results. Its
 chained smoke probe, analyzer tests, complete temporary pristine-loader build,
 four effective-configuration probes, and fresh real-Metal compatibility probes
-passed. The failed Experiment 0011 bridge remains installed; Experiment 0012
-has not modified the bundle. Explicit installation approval is the next gate.
+passed. At that validation checkpoint the failed Experiment 0011 bridge
+remained installed and Experiment 0012 had not modified the bundle.
+
+The user approved Experiment 0012 installation. A cache-preserving restore,
+second full source build, installation in `reset-resource-trace` mode, artifact
+hash comparison, target/status check, and quick update gate all passed. MTLHeap
+is restored to `where safe`; settings and both pipeline caches are unchanged.
+Fresh ignored evidence is prepared. The next gate is one user-controlled world
+entry and one fullscreen-resolution change; the eight-presentation trace bound
+is only a diagnostic capture window, not a recurrence of the resolved one-run
+8 FPS symptom.

@@ -1,9 +1,9 @@
 # Experiment 0012: bounded reset-resource trace
 
 - Date: 2026-07-25
-- Outcome: **planned; source and non-game validation passed, installation
-  approval pending**
-- Rollback: **not performed; failed Experiment 0011 checkpoint installed**
+- Outcome: **running; reset-resource trace installed, user reproduction
+  pending**
+- Rollback: **not performed; restore path rechecked before installation**
 
 ## Question
 
@@ -31,6 +31,8 @@ identify the failing object.
 The trace arms only on the first successful `vkDeviceWaitIdle` after two
 swapchains have been established. This matches the observed live-reset
 boundary. It ends after eight presentations on the replacement swapchain.
+The eight-presentation bound is a log-volume limit and is unrelated to the
+earlier one-run 8 FPS symptom, which did not reproduce on the next launch.
 
 During that bounded window it counts:
 
@@ -63,10 +65,17 @@ Before requesting a run:
 
 ## User action
 
-Not yet requested. If installation is approved and every non-game gate passes,
-the only user action will be the same one-change reproduction: enter the world,
-change fullscreen resolution once, and stop on correct rendering or persistent
-corruption. No HUD, capture, FPS report, or exploratory play will be required.
+The installation gate passed. Perform one Steam-authenticated run:
+
+1. enter the existing character's world and confirm initial rendering;
+2. change fullscreen resolution once from the current 2048 x 1280 to any other
+   available value and apply it;
+3. stop immediately after correct rendering is visible or persistent
+   corruption appears.
+
+Do not change ambient occlusion or another setting. No HUD, capture, FPS report,
+travel, or exploratory play is required. Report only the initial and
+post-resolution-change visual state.
 
 ## Result
 
@@ -98,6 +107,25 @@ libMoltenVK.teso4m4.dylib
 d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
 ```
 
-The ESO target remains current. Experiment 0011 is still installed and no
-restore or Experiment 0012 installation has occurred. Explicit approval for
-that bundle modification is the remaining gate.
+The user explicitly approved installation. Experiment 0011's evidence was
+already checksum-preserved. A cache-preserving restore returned only the loader
+to pristine state, after which commit `a1714da` was rebuilt again against the
+real bundle and passed the complete build gate. Experiment 0012 was installed
+in `reset-resource-trace` mode.
+
+Installed and built hashes match the prepared values above. The marker contains
+exactly `reset-resource-trace`, the target is current, and the quick update gate
+is `READY`. Both pipeline caches and user settings were preserved.
+
+Fresh evidence is prepared under the ignored
+`artifacts/experiment-0012-20260725T115444Z` directory. The active settings
+SHA-256 is
+`f2ea9f42d300a123744ff1ee9b4266ad8f4963653cded75ad5e984c184bdcc5f`
+with ambient occlusion `1`, pregame skipping `1`, and the fullscreen resolution
+left by Experiment 0011 at 2048 x 1280. The 4,190,143-byte active cache has
+SHA-256
+`58e3474cc67d240ad06d27e79316fcac0203d7c9b81e3f0d6072765f2d8d6679`;
+the old cache remains unchanged.
+
+No agent launched Steam, the launcher, or ESO. The user-controlled reproduction
+is the remaining result gate.
