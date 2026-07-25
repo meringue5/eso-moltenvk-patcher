@@ -85,9 +85,9 @@ are in [Project status](STATUS.md); completed runs belong in the
   established 1.4.1 compatibility setting. Keep live-resource checking
   enabled; do not fold the aggressive descriptor-semantics change into this
   bundle.
-- Complete Experiment 0019's install preflight from recorded source commit
-  `ffcf3e5`. Do not subdivide the bundle into additional user runs.
-- Keep the next user-controlled execution for a prepared repair validation:
+- Experiment 0019 is installed from recorded source commit `ffcf3e5`; do not
+  subdivide the bundle into additional user runs.
+- Use the next user-controlled execution for its prepared repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.
 - Only after the reset boundary is classified, run one unchanged five-minute

@@ -1,8 +1,8 @@
 # Experiment 0019: combined performance-safe execution path
 
 - Date: 2026-07-26
-- Outcome: **prepared; installation not started**
-- Rollback: **Experiment 0018 remains installed; pristine loader checked**
+- Outcome: **installed; one user reset validation pending**
+- Rollback: **Experiment 0019 installed; pristine loader and both caches checked**
 
 ## Question
 
@@ -128,6 +128,32 @@ No Steam, launcher, or ESO process was started.
   that real loader, and require byte-identical artifacts.
 - Install only `performance-safe` and prepare the ignored evidence boundary.
 
+## Installation
+
+At approximately 2026-07-26 01:16 KST, after explicit user approval, the
+installed Experiment 0018 proxy was restored to the checked pristine loader
+while preserving both pipeline caches. ESO, Steam, and the launcher were
+stopped. The target remained ESO 12.0.7, databuild 3281538, with executable
+SHA-256 `82bc04ebc8c486636303d147edb9af6c0727b19c7faf7ce7d00837ac3e8ebf4d`.
+
+The bridge was rebuilt from that real loader. The rebuilt proxy, renamed
+original, and official MoltenVK 1.4.1 reproduced their prepared hashes.
+Installation in `performance-safe` mode then passed automatic verification:
+
+- marker content is exactly `performance-safe`;
+- installed proxy and MoltenVK are byte-identical to the rebuilt artifacts;
+- installed proxy SHA-256 is
+  `bd6d745bd3ee218146f2ea2936d91f10cd3e55e5d42e64f95667f4d5741c287b`;
+- installed MoltenVK SHA-256 is
+  `d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398`;
+- pristine loader SHA-256 remains
+  `c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`;
+- both pipeline-cache hashes and the settings hash are unchanged;
+- ESO, Steam, and the launcher remained stopped.
+
+The ignored evidence boundary is
+`artifacts/experiment-0019-20260725T161733Z`.
+
 ## User procedure
 
 One repair validation only:
@@ -150,9 +176,11 @@ repeat the run.
 
 ## Result
 
-Source candidate prepared. Installation and user validation have not started.
+The exact candidate is installed. User validation has not started.
 
 ## Rollback
 
-Experiment 0018 remains installed. The pristine loader, both pipeline caches,
-settings, and all prior evidence remain preserved.
+Experiment 0019 is installed. The pristine loader, both pipeline caches,
+settings, displaced Experiment 0018 marker, and all prior evidence remain
+preserved. The checked restore path can return to the pristine loader without
+replacing either cache.

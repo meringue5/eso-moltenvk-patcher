@@ -755,5 +755,15 @@ pass. The M4 reset composite also passes all 24 cycles with the combined
 submission and compilation settings. Prepared hashes and the remaining
 installation gate are recorded in the
 [Experiment 0019 record](experiments/0019-performance-safe-path.md). No game
-bundle file has been changed for 0019. The candidate source identity is commit
-`ffcf3e5`.
+bundle file had been changed at that preparation stage. The candidate source
+identity is commit `ffcf3e5`.
+
+After explicit approval, Experiment 0018 was restored to the pristine loader
+with both pipeline caches preserved. The proxy was rebuilt from that real
+loader and reproduced the prepared hashes. Experiment 0019 is now installed
+with marker `performance-safe`; the installed proxy and official MoltenVK 1.4.1
+are byte-identical to the build. The target fingerprint, pristine loader, both
+pipeline-cache hashes, and settings hash passed post-install verification.
+ESO, Steam, and the launcher remained stopped. The ignored evidence boundary is
+`artifacts/experiment-0019-20260725T161733Z`. The only remaining gate is one
+user-controlled world entry and one fullscreen-resolution reset.
