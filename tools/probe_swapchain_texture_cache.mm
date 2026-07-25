@@ -11,6 +11,10 @@
 
 #include <vulkan/vulkan.h>
 
+#ifndef TESO4M4_PROBE_IDENTITY_VIEW
+#define TESO4M4_PROBE_IDENTITY_VIEW 0
+#endif
+
 extern "C" void VKAPI_CALL vkGetMTLTextureMVK(
     VkImage image, id<MTLTexture>* mtl_texture);
 
@@ -350,17 +354,27 @@ int main(void) {
         }
 
         for (uint32_t index = 0; index < swapchain_image_count; ++index) {
+#if TESO4M4_PROBE_IDENTITY_VIEW
+            const VkComponentMapping components = {
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+            };
+#else
+            const VkComponentMapping components = {
+                VK_COMPONENT_SWIZZLE_B,
+                VK_COMPONENT_SWIZZLE_G,
+                VK_COMPONENT_SWIZZLE_R,
+                VK_COMPONENT_SWIZZLE_A,
+            };
+#endif
             const VkImageViewCreateInfo image_view_info = {
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
                 .image = images[index],
                 .viewType = VK_IMAGE_VIEW_TYPE_2D,
                 .format = surface_format.format,
-                .components = {
-                    VK_COMPONENT_SWIZZLE_B,
-                    VK_COMPONENT_SWIZZLE_G,
-                    VK_COMPONENT_SWIZZLE_R,
-                    VK_COMPONENT_SWIZZLE_A,
-                },
+                .components = components,
                 .subresourceRange = {
                     VK_IMAGE_ASPECT_COLOR_BIT,
                     0,
@@ -625,13 +639,24 @@ int main(void) {
         }
         if (stale_detected) {
             printf(
-                "swapchain texture-cache probe: STALE "
+                "swapchain texture-cache probe: STALE view=%s "
                 "replacement_events=%u\n",
+#if TESO4M4_PROBE_IDENTITY_VIEW
+                "identity",
+#else
+                "swizzled",
+#endif
                 replacement_events);
             return 3;
         }
         printf(
-            "swapchain texture-cache probe: PASS replacement_events=%u\n",
+            "swapchain texture-cache probe: PASS view=%s "
+            "replacement_events=%u\n",
+#if TESO4M4_PROBE_IDENTITY_VIEW
+            "identity",
+#else
+            "swizzled",
+#endif
             replacement_events);
         return 0;
     }

@@ -259,7 +259,7 @@ before mirroring began. Consequently the zero stale-set result excludes a
 rebound of a *known* destroyed view; it does not yet exclude a persistent
 descriptor set whose contents predate the first swapchain.
 
-## MoltenVK 1.4.1 swapchain image-view cache defect
+## MoltenVK 1.4.1 swapchain image-view cache defect and ESO boundary
 
 A focused non-game M4 probe now reproduces an internal MoltenVK 1.4.1 failure
 that the public Vulkan audits could not observe. The probe renders a changing
@@ -273,6 +273,20 @@ The exact v1.4.1 source with only upstream commit `9a5e233` backported passed
 the same drawable-replacement probe and wrote every expected current-frame
 pixel. The upstream change invalidates and recreates a cached image-view Metal
 texture when its base, parent/root texture, or IOSurface identity changes. This
-establishes the mechanism and the narrow repair independently of ESO. The
-final ESO reset test is still required to establish that this mechanism is the
-game's observed solid-color or frozen-frame defect.
+establishes the mechanism and the narrow repair independently of ESO.
+
+Experiment 0017 established the missing applicability boundary. Every captured
+ESO swapchain view used identity component mappings, the swapchain format, and
+the complete remaining color subresource range. MoltenVK therefore uses the
+presentable image's current base texture directly and does not create the
+cached derived texture changed by `9a5e233`. An added identity-view probe
+confirms that official 1.4.1 and the backport both write the replacement
+drawable correctly on that path.
+
+The user run then entered the world at restored performance and blacked out
+after one 2048 x 1280 to 1920 x 1200 reset. Cursor, input, and sound remained
+responsive, no Vulkan or lifecycle failure appeared, and the replacement
+swapchain continued for 797 acquire/present pairs. The backport is thus a valid
+upstream repair but not the repair for ESO's reset corruption. The restored
+performance separately supports Experiment 0016's audit implementation as the
+source of its severe low-FPS state.

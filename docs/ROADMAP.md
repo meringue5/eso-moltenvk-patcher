@@ -58,14 +58,24 @@ are in [Project status](STATUS.md); completed runs belong in the
   full-array lookups, and 131,072-slot destruction scans plausibly caused the
   observed 8 FPS and gradual 30-to-8 FPS decline. Quantify that failure with a
   loaded-state non-game benchmark.
-- Preserve the Experiment 0017 differential result. The non-game
-  drawable-replacement probe returned `STALE` against official 1.4.1 and
-  `PASS` against the exact one-patch backport. Do not adopt all of 1.4.2 as
-  one undifferentiated change.
-- Experiment 0017's exact one-patch candidate is installed after all source,
-  compatibility, target, process, cache/settings-preservation, restore, and
-  post-install gates passed. Do not ask for another diagnostic game run.
-- Keep the remaining user-controlled execution for final repair validation:
+- Preserve Experiment 0017 as a negative ESO-applicability result. Its
+  swizzled-view probe remains valid, but every captured ESO swapchain view was
+  an identity/full-range view that bypasses the patched cache branch.
+  Normal FPS returned after removing the full-lifetime audit, yet one
+  resolution reset produced black output with live cursor, input, sound, and
+  797 further acquire/present pairs.
+- Keep Experiment 0017 installed until a source-validated successor requires
+  restoration. Do not ask for another run against it.
+- Statically classify every MoltenVK 1.4.2 change against ESO's Vulkan 1.0
+  extension set and observed call paths. Exercise the remaining applicable
+  memoryless-attachment, render-pass dependency/resolve encoder, and
+  visibility-query paths with focused non-game probes before selecting any
+  successor. A full-version candidate must also account for its different
+  pipeline-cache UUID without deleting either preserved cache.
+- Do not describe 1.4.2 as a fix merely because it contains the failed
+  `9a5e233` patch. Require a reset-relevant differential result or a narrowly
+  instrumented counterfactual first.
+- Keep the next user-controlled execution for a prepared repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.
 - Only after the reset boundary is classified, run one unchanged five-minute

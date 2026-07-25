@@ -1,7 +1,7 @@
 # Experiment 0017: swapchain Metal texture-cache fix
 
 - Date: 2026-07-25
-- Outcome: **installed; awaiting one user-controlled repair validation**
+- Outcome: **failed; normal FPS restored but live resolution reset blacked out**
 - Rollback: **checked pristine loader available; not performed**
 
 ## Question
@@ -193,22 +193,67 @@ confirmed:
 - ESO, Steam, and the launcher still stopped.
 
 The ignored evidence boundary is
-`artifacts/experiment-0017-20260725T145409Z`. One user-controlled repair
-validation remains.
+`artifacts/experiment-0017-20260725T145409Z`.
+
+The user then launched once through the normal Steam path. The exact selected
+run is `20260725T145545.144942000Z-pid69302`. Performance had recovered from
+the Experiment 0016 low-FPS state. Changing fullscreen resolution from
+2048 x 1280 to 1920 x 1200 produced a full black-out. The macOS cursor remained
+visible, and keyboard and mouse input still caused expected game-audio
+responses. The user exited without another run.
+
+Collection and analysis completed successfully:
+
+- all 51 evidence-file checksums verify;
+- the startup verdict passed in exact `texture-cache-fix` mode;
+- no crash report, Vulkan failure, lifecycle anomaly, or device loss appeared;
+- `UserSettings.txt` retained exact structure and changed only
+  `FullscreenWidth` and `FullscreenHeight`;
+- the terminal reset completed `DeviceWaitIdle`, swapchain creation, and
+  `OnDeviceReset`;
+- replacement generation 3 acquired and presented 797 frames before orderly
+  destruction;
+- both generation-3 swapchain image views were 2D, used format 44, identity
+  component mappings, color aspect, and the complete remaining mip/layer
+  ranges.
+
+The continuously returned `VK_SUBOPTIMAL_KHR` result is not promoted to a new
+cause. Experiment 0010 already forced out-of-date results without inducing
+recreation and separately eliminated suboptimal presentation through scaling
+without correcting the corrupt output.
+
+The non-game probe now has an explicit identity-view arm matching the captured
+ESO view. After a real drawable texture replacement:
+
+- official 1.4.1 with the swizzled derived view still returns `STALE`;
+- the one-patch candidate with the swizzled derived view returns `PASS`;
+- official 1.4.1 with the identity view returns `PASS`;
+- the one-patch candidate with the identity view returns `PASS`.
+
+MoltenVK's `MVKImageViewPlane` sets `_useMTLTextureView` to false when the view
+format, texture type, complete subresource range, and swizzle are identical to
+the underlying image. In that case `getMTLTexture()` directly fetches the
+presentable image's current drawable texture. Upstream commit `9a5e233` only
+invalidates the cached object inside the `_useMTLTextureView` branch.
 
 ## Interpretation
 
-The non-game result confirms the internal MoltenVK 1.4.1 failure mechanism that
-the public Vulkan audit could not see. It explains continued acquire, command
-submission, and presentation together with stale or undefined visible output.
-ESO applicability will be corroborated by the cold swapchain image-view
-records and the final rendering result; it is not being inferred solely from
-the similarity of symptoms.
+The original non-game result remains a valid MoltenVK 1.4.1 defect and the
+backport remains its valid repair. The ESO run disproves applicability to this
+failure: ESO's direct identity swapchain views never enter the cached derived
+view branch changed by `9a5e233`, and rendering still blacked out.
+
+Experiment 0017 therefore closes as a failed ESO repair, not an inconclusive
+test. It excludes this specific MoltenVK internal cache path. The restored FPS
+also supports the prior conclusion that Experiment 0016's full-lifetime audit,
+not the ordinary 1.4.1 bridge configuration, caused the severe progressive
+performance degradation.
 
 ## Rollback
 
 Experiment 0017 is installed. The checked pristine Bink loader remains the
 restore source, the Experiment 0016 marker was displaced under its timestamped
-name, and no cache or setting was deleted or replaced. Do not restore before
-collecting the approved repair-validation result unless the startup gate
-fails.
+name, and no cache or setting was deleted or replaced. No rollback was
+performed after the failed run. Preserve this checkpoint until a fully
+validated successor requires a clean source rebuild; do not request another
+user run against Experiment 0017.

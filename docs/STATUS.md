@@ -647,3 +647,40 @@ and the launcher stopped. The ignored evidence boundary is
 `artifacts/experiment-0017-20260725T145409Z`. The heavy Experiment 0016 audit
 is no longer active. The remaining gate is one user-controlled,
 normal-performance world entry and one resolution reset.
+
+The user completed that gate in run
+`20260725T145545.144942000Z-pid69302`. FPS was restored, confirming that the
+Experiment 0016 audit was the source of the severe progressive slowdown. A
+single 2048 x 1280 to 1920 x 1200 change nevertheless produced full black
+output. The macOS cursor remained visible and keyboard/mouse input continued
+to produce game-audio responses. No second run was requested.
+
+All 51 evidence checksums verify. Startup passed in exact
+`texture-cache-fix` mode; the two settings dimensions were the only
+`UserSettings.txt` changes; no crash, Vulkan failure, device loss, or
+swapchain-lifecycle anomaly occurred. Replacement generation 3 acquired and
+presented 797 frames before orderly destruction.
+
+Most importantly, every captured ESO swapchain image view was a 2D,
+format-identical, identity-swizzle, full-range color view. MoltenVK sets
+`_useMTLTextureView=false` for that case and fetches the current drawable
+texture directly. The `9a5e233` repair executes only for a cached derived
+Metal texture view. The non-game probe now proves the boundary automatically:
+official 1.4.1 and the patch both pass the identity-view arm, while only the
+swizzled arm distinguishes official `STALE` from patched `PASS`.
+
+Experiment 0017 therefore failed as an ESO repair and excludes this exact
+internal texture-view cache path. Its valid upstream bug reproduction is
+retained. The bridge remains installed and recoverable, and both caches remain
+preserved. Do not repeat Experiment 0017.
+
+The active work is source-only classification of the remaining MoltenVK 1.4.2
+changes plus focused non-game reset probes. ESO enabled only
+`VK_KHR_swapchain`, `VK_KHR_maintenance1`, and `VK_EXT_debug_marker`;
+argument buffers remain disabled; antialiasing is disabled. Descriptor
+alignment/indexing, external-memory, private primitive-restart, and the
+observed-not-1x1 swapchain fix are therefore not leading paths. Before another
+game-bundle change, isolate the remaining memoryless-attachment,
+render-pass dependency/resolve encoder, and visibility-query changes and
+account for the 1.4.2 pipeline-cache UUID transition without deleting either
+cache.
