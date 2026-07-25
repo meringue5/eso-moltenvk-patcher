@@ -8,15 +8,23 @@ GAME_MAC="$ESO_APP/Contents/MacOS"
 ESO="$GAME_MAC/eso"
 BINK="$GAME_MAC/libBink2Macx64.dylib"
 LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
-MVK_ROOT="${MVK_ROOT:-$ROOT/vendor/MoltenVK}"
+MVK_ROOT="${MVK_ROOT:-$ROOT/vendor/MoltenVK-1.4.2-official}"
 MVK_INCLUDE_ROOT="${MVK_INCLUDE_ROOT:-$MVK_ROOT}"
 MVK="$MVK_ROOT/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib"
 MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 BUILD="$ROOT/build"
+EXPECTED_MVK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["analysis"]["replacement_runtime"]["sha256"])' "$MANIFEST")"
 
 for file in "$ESO" "$BINK" "$LEGACY_MVK" "$MVK" "$MANIFEST"; do
   [[ -f "$file" ]] || { echo "Missing required file: $file"; exit 1; }
 done
+ACTUAL_MVK_SHA="$(shasum -a 256 "$MVK" | awk '{print $1}')"
+[[ "$ACTUAL_MVK_SHA" == "$EXPECTED_MVK_SHA" ]] || {
+  echo "Replacement MoltenVK does not match the selected target profile."
+  echo "Expected: $EXPECTED_MVK_SHA"
+  echo "Actual:   $ACTUAL_MVK_SHA"
+  exit 1
+}
 if otool -L "$BINK" | grep -q 'teso4m4-original'; then
   echo "Active Bink is already a teso4m4 proxy. Restore before rebuilding."
   exit 1

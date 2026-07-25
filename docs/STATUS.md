@@ -840,3 +840,25 @@ starting a separate cold 1.4.2 cache; the pre-1.4.1 backup must remain
 untouched. No game-bundle modification was made by this review. Full evidence
 and limits are in the
 [MoltenVK 1.4.2 adoption review](research/moltenvk-1.4.2-adoption-review.md).
+
+Experiment 0020's ordinary-use validation is now complete. The exact startup
+run passed, reached the loaded-world interface state, produced no crash report,
+and the user reported no problem. The user-directed outcome is **succeeded**.
+This validates ordinary use of the installed profile; it is not a controlled
+FPS measurement and does not supersede the known graphics-reset failure.
+
+The user explicitly approved official MoltenVK 1.4.2 adoption as Experiment
+0021. The fetch, build, and selected target now pin the official archive
+`f95765a6...` and universal runtime `aef00b13...`. A new fail-closed cache
+identity tool validates the complete Vulkan cache header, and the installer
+requires the exact 1.4.1 runtime and UUID before preserving them under
+versioned names. It leaves the older cache backup untouched and starts 1.4.2
+without an active cache.
+
+A fresh shadow source build, 87 tests, static analysis, exact-profile
+configuration checks, 24-cycle M4 Metal reset comparison, device/HDR probes,
+and a complete shadow install/restore all pass. The real game bundle remains
+on Experiment 0020 until Steam and the launcher are stopped. Installation will
+retain the exact `performance-aggressive` profile; shader compression remains
+a separate downstream change. See
+[Experiment 0021](experiments/0021-moltenvk-1.4.2-maintenance.md).

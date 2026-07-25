@@ -8,7 +8,7 @@ ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zen
 ESO="$ESO_APP/Contents/MacOS/eso"
 GAME_ROOT="${ESO_APP:h:h:h}"
 ARCHIVE="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
-NEW_RUNTIME="${MVK_ROOT:-$ROOT/vendor/MoltenVK}/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib"
+NEW_RUNTIME="${MVK_ROOT:-$ROOT/vendor/MoltenVK-1.4.2-official}/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib"
 OUTPUT="${1:-}"
 DESCRIPTION="${2:-}"
 

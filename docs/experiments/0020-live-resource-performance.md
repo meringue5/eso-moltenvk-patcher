@@ -1,7 +1,7 @@
 # Experiment 0020: live-resource descriptor performance
 
 - Date: 2026-07-26
-- Outcome: **installed; measured non-game gain, ordinary-use validation pending**
+- Outcome: **succeeded for ordinary use; measured non-game descriptor-path gain**
 - Rollback: **Experiment 0020 is installed; pristine loader and preserved caches remain available**
 
 ## Question
@@ -166,10 +166,29 @@ post-install evidence boundary is
 ## Result
 
 The candidate has a repeatable non-game descriptor-encode gain, passes the
-available valid-resource correctness coverage, and is installed with the exact
-intended profile. This does not establish an ESO FPS gain. Ordinary use is the
-remaining validation boundary; no graphics-reset reproduction is requested for
-this performance experiment.
+available valid-resource correctness coverage, and was installed with the
+exact intended profile.
+
+The user subsequently completed an ordinary ESO session and reported no
+problem. The exact bridge run was
+`20260725T164527.280909000Z-pid96376`. Its startup gate passed, the interface
+log reached `Systems Loaded And Not Waiting For Teleport`, and no crash report
+was produced. Two short startup resets completed without a Vulkan failure. The
+only structural settings change was resolution from 1920 x 1200 to
+2048 x 1280.
+
+The post-session active pipeline cache is 4,259,071 bytes with SHA-256
+`5869aa929521788681e665e803e5876487a4eb8cede9589f56c48e05087c404b`;
+its Vulkan cache UUID is
+`db445ff21a0502090000000100000000`. The current settings SHA-256 is
+`2e69c076b1d9f10185175f2a6b0f5f3e14608552ad773e3594008f0de9215ed4`.
+All files listed in the evidence boundary's `SHA256SUMS` verify. The ignored
+evidence boundary remains
+`artifacts/experiment-0020-20260725T163919Z`.
+
+This closes the requested ordinary-use validation as **succeeded**. It does not
+establish a controlled ESO FPS gain, nor does it claim that the known
+loaded-world graphics-reset corruption is repaired.
 
 ## Rollback
 

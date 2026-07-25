@@ -90,7 +90,8 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Close Experiment 0019 as a negative reset-repair result. Its exact
   low-overhead mode was active, yet the resolution reset still produced solid
   output. Retain it as the current performance checkpoint.
-- Preserve the installed Experiment 0020 `performance-aggressive` candidate.
+- Preserve Experiment 0020 as a successful ordinary-use
+  `performance-aggressive` checkpoint.
   Its only delta from the installed safe profile is
   `LIVE_CHECK_ALL_RESOURCES=0`; a balanced M4 probe measured a 10.1% reduction
   in descriptor-heavy CPU encoding, and valid-resource reset coverage passes.
@@ -98,14 +99,16 @@ are in [Project status](STATUS.md); completed runs belong in the
   pipeline caches and reproduced the prepared hashes. Do not describe the
   measured encode reduction as an equal FPS increase, and do not request
   another graphics reset for this performance experiment.
-- Prepare the official MoltenVK 1.4.2 maintenance successor with the exact
-  Experiment 0020 profile. The official archive, complete bridge build,
-  reset/device/HDR gates, and balanced descriptor benchmark have passed. Keep
-  the runtime change separate from shader compression.
-- Before any 1.4.2 installation, add and test a fail-closed cache transition:
-  preserve the active `db445ff2` 1.4.1 cache under a versioned name, leave the
-  pre-1.4.1 backup untouched, and start a separate cache for 1.4.2 UUID
-  `db660224`. Installation still requires explicit approval.
+- Install the approved Experiment 0021 official MoltenVK 1.4.2 maintenance
+  successor with the unchanged Experiment 0020 profile after the stopped-
+  process gate. The pinned official archive, complete bridge build,
+  reset/device/HDR gates, balanced descriptor benchmark, and shadow
+  install/restore have passed.
+- Use the tested fail-closed cache transition: preserve the active `db445ff2`
+  1.4.1 cache and exact runtime under versioned names, leave the pre-1.4.1
+  backup untouched, and let 1.4.2 create a separate `db660224` cache.
+- Keep shader compression as the next distinct performance candidate after
+  1.4.2 ordinary use; do not silently fold it into the maintenance upgrade.
 
 ## P1: keep redirection verifiable
 

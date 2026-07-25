@@ -12,6 +12,7 @@ MARKER="$GAME_MAC/.teso4m4-enable"
 ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
+MVK_141_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-mvk-1.4.1-backup"
 MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 PRESERVE_CACHE_STATE="${TESO4M4_PRESERVE_CACHE_STATE:-}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -31,8 +32,12 @@ if [[ -n "$PRESERVE_CACHE_STATE" && "$PRESERVE_CACHE_STATE" != "I_ACCEPT_EXISTIN
   exit 1
 fi
 if [[ "$PRESERVE_CACHE_STATE" == "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
-  [[ -f "$PIPELINE_CACHE" && -f "$OLD_PIPELINE_CACHE" ]] || {
-    echo "Cache-preserving rebase requires both active and old-backup caches."
+  [[ -f "$OLD_PIPELINE_CACHE" ]] || {
+    echo "Cache-preserving restore requires the old-backup cache."
+    exit 1
+  }
+  [[ -f "$PIPELINE_CACHE" || -f "$MVK_141_PIPELINE_CACHE" ]] || {
+    echo "Cache-preserving restore requires an active or versioned 1.4.1 cache."
     exit 1
   }
 fi
@@ -43,7 +48,7 @@ if [[ -f "$MARKER" ]]; then
   mv "$MARKER" "$MARKER.disabled-$STAMP"
 fi
 if [[ "$PRESERVE_CACHE_STATE" == "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
-  echo "Restored the pristine ESO loader; preserved both pipeline caches in place."
+  echo "Restored the pristine ESO loader; preserved all pipeline-cache states in place."
 else
   if [[ -f "$PIPELINE_CACHE" && -f "$OLD_PIPELINE_CACHE" ]]; then
     mv "$PIPELINE_CACHE" "${PIPELINE_CACHE}.teso4m4-new-$STAMP"

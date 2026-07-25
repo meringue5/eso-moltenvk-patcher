@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 OFFICIAL_ROOT="${MVK_OFFICIAL_ROOT:-$ROOT/vendor/MoltenVK}"
-CANDIDATE_ROOT="${MVK_CANDIDATE_ROOT:-$ROOT/vendor/MoltenVK-1.4.2}"
+CANDIDATE_ROOT="${MVK_CANDIDATE_ROOT:-$ROOT/vendor/MoltenVK-1.4.2-official}"
 HEADER_ROOT="${MVK_HEADER_ROOT:-$OFFICIAL_ROOT}"
 SOURCE="$ROOT/tools/probe_reset_composite.mm"
 VERTEX_ASM="$ROOT/tools/shaders/reset_composite.vert.spvasm"
@@ -73,4 +73,4 @@ MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION="$CONCURRENT_COMPILATION" \
 
 echo "Reset composite differential probe: PASS"
 echo "Official MoltenVK 1.4.1: PASS"
-echo "Candidate runtime: PASS"
+echo "Official MoltenVK 1.4.2: PASS"

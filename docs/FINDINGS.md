@@ -339,6 +339,13 @@ material measured descriptor-path regression, not as a demonstrated FPS
 improvement or graphics-reset fix. Its different pipeline-cache UUID requires
 a separate cold cache and preservation of the 1.4.1 cache for rollback.
 
+Experiment 0020 subsequently passed an ordinary ESO session with its exact
+`performance-aggressive` profile. Startup verification passed, the interface
+reached its loaded-world state, no crash report was produced, and the user
+reported no problem. This supports the profile as the current ordinary-use
+performance checkpoint. It remains insufficient to quantify an ESO FPS gain
+or to reverse the prior loaded-world graphics-reset failures.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313
