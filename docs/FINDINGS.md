@@ -335,3 +335,15 @@ returned `VK_SUBOPTIMAL_KHR`. The wrapper logs every non-success result, so it
 performed per-frame mutex, formatting, and file flush work for 626 records.
 This is a confirmed performance-path defect in the diagnostic bridge, although
 it is not yet established as the cause of rendering corruption.
+
+Experiment 0019 removed that defect from the execution path. Its exact user run
+returned MoltenVK's original function pointers for all twelve lifecycle
+functions and emitted no lifecycle event; only 114 startup and proc-routing
+records were written for the complete process. The exact configuration also
+used asynchronous queue submission and maximum concurrent compilation.
+
+One 2048 x 1280 to 1920 x 1200 reset still produced solid-color output, with no
+Vulkan error or crash. Those performance-path changes are therefore excluded
+as a repair for the reset corruption. The user observed no obvious other issue,
+but the run did not collect controlled timing data and cannot quantify a
+performance gain.

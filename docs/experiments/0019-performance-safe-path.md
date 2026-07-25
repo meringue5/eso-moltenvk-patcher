@@ -1,7 +1,7 @@
 # Experiment 0019: combined performance-safe execution path
 
 - Date: 2026-07-26
-- Outcome: **installed; one user reset validation pending**
+- Outcome: **failed reset repair; performance path operational**
 - Rollback: **Experiment 0019 installed; pristine loader and both caches checked**
 
 ## Question
@@ -176,7 +176,34 @@ repeat the run.
 
 ## Result
 
-The exact candidate is installed. User validation has not started.
+The exact user-controlled run was
+`20260725T162124.599998000Z-pid90854`. Startup validation passed with the
+expected `performance-safe` marker and exact effective configuration:
+live-resource checking `1`, argument buffers `0`, MTLHeap `1`, asynchronous
+submission, command pooling `1`, no prefill, and maximum concurrent
+compilation `1`.
+
+All twelve lifecycle functions returned MoltenVK's original function pointer.
+The complete run emitted 114 startup/proc-routing records and no lifecycle
+hot-path record. No Vulkan failure or crash was captured. All 48 evidence
+checksums verify.
+
+The requested reset changed only `FullscreenWidth` and `FullscreenHeight`,
+from 2048 x 1280 to 1920 x 1200. The ESO log contains three reset events and no
+error marker; the last reset is the terminal resolution change. The user
+reported that rendering became a solid color again. Other behavior and
+performance showed no obvious problem, but no controlled performance
+measurement was requested or performed.
+
+The combined removal of lifecycle overhead, asynchronous submission, and
+concurrent compilation therefore does not repair the loaded-world solid-output
+failure. Because the user prioritized fewer executions, this result does not
+attribute performance behavior to an individual member of the bundle. It does
+establish that the intended low-overhead path was active for the full run.
+
+The active pipeline cache changed during normal execution. The original old
+cache backup remains byte-identical. Settings have exact structural identity
+apart from the two requested resolution values. No repeat was requested.
 
 ## Rollback
 

@@ -767,3 +767,19 @@ pipeline-cache hashes, and settings hash passed post-install verification.
 ESO, Steam, and the launcher remained stopped. The ignored evidence boundary is
 `artifacts/experiment-0019-20260725T161733Z`. The only remaining gate is one
 user-controlled world entry and one fullscreen-resolution reset.
+
+That gate failed for rendering correctness. Exact run
+`20260725T162124.599998000Z-pid90854` passed the startup checker with the
+intended configuration and direct MoltenVK routing for all twelve former
+lifecycle wrappers. It emitted no lifecycle hot-path record, reported no
+Vulkan failure or crash, and changed only the requested resolution from
+2048 x 1280 to 1920 x 1200. The user nevertheless observed solid-color output.
+All 48 evidence checksums verify. The user reported no obvious other problem
+with the performance build, but this was not a controlled performance
+measurement.
+
+Experiment 0019 therefore closes asynchronous submission, concurrent
+compilation, and diagnostic hot-path removal as a reset repair. Keep the
+installed `performance-safe` configuration as the current low-overhead
+MoltenVK 1.4.1 checkpoint. Continue performance work independently; do not
+request another game execution merely to subdivide the failed repair bundle.

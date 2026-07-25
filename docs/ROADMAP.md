@@ -87,14 +87,13 @@ are in [Project status](STATUS.md); completed runs belong in the
   bundle.
 - Experiment 0019 is installed from recorded source commit `ffcf3e5`; do not
   subdivide the bundle into additional user runs.
-- Use the next user-controlled execution for its prepared repair validation:
-  one normal-performance world entry and one graphics reset, with no additional
-  diagnostic-only run first.
-- Only after the reset boundary is classified, run one unchanged five-minute
-  Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
-  to test, not assume, the shader-compilation explanation for stuttering.
-- Defer asynchronous queue-submission experiments until the reset resource
-  trace is classified.
+- Close Experiment 0019 as a negative reset-repair result. Its exact
+  low-overhead mode was active, yet the resolution reset still produced solid
+  output. Retain it as the current performance checkpoint.
+- Continue performance work without another game run: statically bound the
+  remaining `LIVE_CHECK_ALL_RESOURCES=0` candidate, measure its real
+  descriptor-encode effect with a non-game M4 probe, and reject it if the gain
+  is negligible or correctness coverage is incomplete.
 
 ## P1: keep redirection verifiable
 
@@ -117,18 +116,18 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P2: deferred controlled performance experiments
 
-- Do not request performance telemetry until an unchanged five-minute
-  Experiment 0007 interval extends the two short gameplay passes.
-- Before requesting a performance run, establish an automated measurement path
-  that does not depend on the currently unavailable Metal HUD or manual image
-  capture.
+- Do not request manual performance telemetry while non-game M4 measurements
+  can still classify the remaining runtime settings.
+- Establish an automated descriptor-encode measurement path before considering
+  `LIVE_CHECK_ALL_RESOURCES=0`; do not infer a gain from the configuration name.
 - Retain Experiment 0003 only as the embedded-runtime settings and warm-cache
   checkpoint; do not attribute its qualitative FPS change to MoltenVK 1.4.1.
 - When correctness is established, define a fixed-zone, fixed-route A/B with a
   maximum duration, event-based stop condition, exact metrics, and pass/fail
   criteria before asking the user to play.
-- Compare MoltenVK defaults against live-resource compatibility mode.
-- Evaluate asynchronous queue submission only after correctness is established.
+- Compare MoltenVK defaults against live-resource compatibility mode in the
+  non-game probe first. Experiment 0019 already verified asynchronous queue
+  submission in ESO without an obvious non-rendering regression.
 - Keep command pooling at its 1.4.1 default. Metal argument buffers now require
   a correctness A/B because Experiment 0005 exposed a descriptor-like visual
   failure and the embedded runtime predates that feature.

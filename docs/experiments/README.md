@@ -26,7 +26,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0016 | 2026-07-25 | Full-lifetime reset-state audit | Inconclusive; three reset windows overflowed and the audit degraded performance | [Run](0016-full-lifetime-reset-audit.md) |
 | 0017 | 2026-07-25 | Swapchain Metal texture-cache fix | Failed ESO applicability; FPS restored, resolution reset blacked out | [Run](0017-swapchain-texture-cache-fix.md) |
 | 0018 | 2026-07-26 | Embedded-runtime core feature profile | Failed; exact mask still produced solid output | [Run](0018-legacy-feature-profile.md) |
-| 0019 | 2026-07-26 | Combined performance-safe execution path | Installed; one user reset validation pending | [Run](0019-performance-safe-path.md) |
+| 0019 | 2026-07-26 | Combined performance-safe execution path | Failed reset repair; low-overhead path active without obvious other issue | [Run](0019-performance-safe-path.md) |
 
 ## Recording policy
 
