@@ -173,6 +173,16 @@ class StartupLogTests(unittest.TestCase):
         verdict = evaluate_startup_log(text)
         self.assertTrue(verdict.passed, verdict.reasons)
 
+    def test_accepts_full_lifetime_audit_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: full lifetime audit enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1",
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
     def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
         text = good_log().replace(
             "MODE: descriptor compatibility enabled live_resources=1 "

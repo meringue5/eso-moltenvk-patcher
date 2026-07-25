@@ -265,6 +265,39 @@ analyzer also requires the sum of bypass records to equal the reset graphics
 pipeline count. The mode does not modify either on-disk cache file and does not
 disable cache use during startup or steady-world rendering.
 
+## Full-lifetime reset-state audit
+
+Experiment 0016 selects `full-lifetime-audit` and removes the pipeline-cache
+counterfactual. The descriptor mirror is enabled at process sequence 1 rather
+than at the first swapchain. Descriptor-set layout records retain binding
+types, array sizes, and immutable samplers; set slots retain image view,
+sampler, buffer, buffer view, range, and image-layout contents. Bound sets
+report known and unknown slot totals. A zero update sequence is explicitly
+`content=unknown`, never a clean descriptor result.
+
+The same fixed-capacity mirror records command-buffer ownership and generation
+across allocation, free, explicit reset, pool reset, begin, end, record, and
+submit. Each bounded submit reports its queue ordinal and the command
+generation's reset/begin/end/bind/update sequences. Descriptor contents changed
+after recording are reported separately rather than silently folded into the
+record-time state.
+
+Render-pass records retain color, resolve, input, depth/stencil, and preserve
+roles; first and last subpass use; load/store and stencil operations; and
+whether a required clear value was supplied. Image barriers expand into
+aspect/mip/layer records with their stage and access masks. Transitions are
+retained on the recording command generation and applied to the subresource
+mirror only when that generation is submitted, so layout comparisons follow
+queue execution order instead of global API recording order.
+
+Semaphore records join swapchain acquisition, queue waits/signals, and present
+waits. Fence records join creation flags, submit, reset, and wait results.
+These tables, descriptor-slot samples, barrier samples, command-submit samples,
+and render-pass tails are all bounded. Wrappers allocate no dynamic memory and
+ordinary hot paths do not write one log record per call. Any overflow, missing
+layout, unknown bound slot/resource, invalid command generation, or unknown
+synchronization edge makes the coded result inconclusive.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

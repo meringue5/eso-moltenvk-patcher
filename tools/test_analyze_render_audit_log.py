@@ -20,7 +20,8 @@ def good_log(overrides: dict[str, int] | None = None) -> str:
     lines = [
         record(
             "RENDER_AUDIT_BEGIN: mirror=enabled sample_limit=64 "
-            "anomaly_limit=64 slot_capacity=131072"
+            "anomaly_limit=64 slot_capacity=131072 "
+            "mirror_start_sequence=1"
         ),
         record(
             "RENDER_AUDIT_SUMMARY: reason=present-limit complete=yes "
@@ -117,6 +118,36 @@ class RenderAuditLogTests(unittest.TestCase):
         result = analyze(text)
         self.assertTrue(
             any("count mismatch" in item for item in result.anomalies)
+        )
+
+    def test_accepts_complete_full_lifetime_audit(self) -> None:
+        text = "\n".join(
+            (
+                record(
+                    "MODE: full lifetime audit enabled "
+                    "live_resources=1 metal_argument_buffers=0 "
+                    "use_mtlheap=1 command_pooling=1"
+                ),
+                good_log({"descriptor_known_slots_bound": 4}),
+            )
+        )
+        result = analyze(text)
+        self.assertFalse(result.anomalies)
+
+    def test_rejects_unknown_full_lifetime_descriptor_slots(self) -> None:
+        text = "\n".join(
+            (
+                record(
+                    "MODE: full lifetime audit enabled "
+                    "live_resources=1 metal_argument_buffers=0 "
+                    "use_mtlheap=1 command_pooling=1"
+                ),
+                good_log({"descriptor_unknown_slots_bound": 2}),
+            )
+        )
+        result = analyze(text)
+        self.assertTrue(
+            any("unknown bound slots" in item for item in result.anomalies)
         )
 
 

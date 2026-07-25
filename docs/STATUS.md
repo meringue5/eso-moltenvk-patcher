@@ -541,3 +541,18 @@ next gate is source-only instrumentation that begins descriptor mirroring at
 process startup and joins known/unknown slot coverage to ESO's own command
 buffer reset, record, bind, and submit generations. No user launch is required
 until that instrumentation and its non-game checks are complete.
+
+Experiment 0016 now implements that source-only gate as one integrated
+`full-lifetime-audit` candidate. Descriptor layout and slot contents begin at
+process sequence 1 and include image views, samplers, buffers, buffer views,
+immutable samplers, copies, frees, and pool resets. The same bounded window
+records ESO command-buffer generations; render-pass load/store/clear and
+attachment roles; aspect/mip/layer transitions with stage/access masks applied
+in queue-submit order; and acquire/submit/present semaphore plus fence order.
+Fixed-table overflow and unknown coverage are analyzer failures.
+
+Focused non-game probes pass, including both command reset paths and a complete
+acquire-submit-present chain. The installed Experiment 0015 bridge has not yet
+been restored, so the required pristine-loader source rebuild, complete
+non-game gate, installation, and evidence preparation remain ahead of any user
+launch.

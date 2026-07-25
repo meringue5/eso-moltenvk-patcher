@@ -50,6 +50,8 @@ int main(void) {
     const VkCommandBuffer command_buffer =
         HANDLE(VkCommandBuffer, 0x600);
     const VkDeviceMemory memory = HANDLE(VkDeviceMemory, 0x700);
+    const VkBuffer buffer = HANDLE(VkBuffer, 0x701);
+    const VkSampler sampler = HANDLE(VkSampler, 0x702);
 
     teso4m4_render_audit_reset();
     teso4m4_render_audit_set_logger(&test_log);
@@ -84,9 +86,45 @@ int main(void) {
         .image = first_image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
         .format = VK_FORMAT_R8G8B8A8_UNORM,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .levelCount = 1,
+            .layerCount = 1,
+        },
     };
     teso4m4_render_audit_create_image_view(&view_info, view);
+    teso4m4_render_audit_create_buffer(buffer);
+    teso4m4_render_audit_create_sampler(sampler);
 
+    const VkDescriptorSetLayoutBinding layout_bindings[] = {
+        {
+            .binding = 2,
+            .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
+        {
+            .binding = 3,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        },
+        {
+            .binding = 4,
+            .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = &sampler,
+        },
+    };
+    const VkDescriptorSetLayoutCreateInfo set_layout_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount =
+            sizeof(layout_bindings) / sizeof(layout_bindings[0]),
+        .pBindings = layout_bindings,
+    };
+    teso4m4_render_audit_create_descriptor_set_layout(
+        &set_layout_info, set_layout);
     VkDescriptorSetAllocateInfo allocate_info = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool = pool,
@@ -98,20 +136,36 @@ int main(void) {
         .imageView = view,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
-    VkWriteDescriptorSet write = {
-        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .dstSet = set,
-        .dstBinding = 2,
-        .descriptorCount = 1,
-        .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-        .pImageInfo = &descriptor_image,
+    const VkDescriptorBufferInfo descriptor_buffer = {
+        .buffer = buffer,
+        .offset = 16,
+        .range = 64,
     };
-    teso4m4_render_audit_update_descriptor_sets(1, &write, 0, NULL);
+    VkWriteDescriptorSet writes[] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = set,
+            .dstBinding = 2,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            .pImageInfo = &descriptor_image,
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = set,
+            .dstBinding = 3,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo = &descriptor_buffer,
+        },
+    };
+    teso4m4_render_audit_update_descriptor_sets(
+        sizeof(writes) / sizeof(writes[0]), writes, 0, NULL);
     enum { kUpdateBenchmarkIterations = 100000 };
     const uint64_t update_start = monotonic_nanoseconds();
     for (uint32_t index = 0; index < kUpdateBenchmarkIterations; ++index) {
         teso4m4_render_audit_update_descriptor_sets(
-            1, &write, 0, NULL);
+            1, &writes[0], 0, NULL);
     }
     const uint64_t update_end = monotonic_nanoseconds();
     const uint64_t update_nanoseconds =
@@ -150,8 +204,18 @@ int main(void) {
         &framebuffer_info, framebuffer);
 
     teso4m4_render_audit_begin();
+    const VkCommandBufferAllocateInfo command_allocate_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = HANDLE(VkCommandPool, 0x601),
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    teso4m4_render_audit_allocate_command_buffers(
+        &command_allocate_info, &command_buffer);
+    teso4m4_render_audit_begin_command_buffer(command_buffer);
     teso4m4_render_audit_bind_image(second_image, memory, 2048);
     teso4m4_render_audit_destroy_image_view(view);
+    teso4m4_render_audit_destroy_buffer(buffer);
     teso4m4_render_audit_destroy_image(first_image);
     teso4m4_render_audit_bind_image(second_image, memory, 2048);
     teso4m4_render_audit_cmd_bind_descriptor_sets(
@@ -187,7 +251,58 @@ int main(void) {
         },
     };
     teso4m4_render_audit_cmd_pipeline_barrier(
-        command_buffer, 1, &barrier);
+        command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 1, &barrier);
+    teso4m4_render_audit_end_command_buffer(command_buffer);
+    const VkSemaphore wait_semaphore =
+        HANDLE(VkSemaphore, 0x800);
+    const VkSemaphore signal_semaphore =
+        HANDLE(VkSemaphore, 0x801);
+    const VkFence fence = HANDLE(VkFence, 0x802);
+    teso4m4_render_audit_create_semaphore(wait_semaphore);
+    teso4m4_render_audit_create_semaphore(signal_semaphore);
+    teso4m4_render_audit_create_fence(fence, 0);
+    teso4m4_render_audit_acquire_next_image(
+        wait_semaphore, VK_NULL_HANDLE, VK_SUCCESS);
+    const VkPipelineStageFlags wait_stage =
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    const VkSubmitInfo submit = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &wait_semaphore,
+        .pWaitDstStageMask = &wait_stage,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command_buffer,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &signal_semaphore,
+    };
+    teso4m4_render_audit_queue_submit(
+        HANDLE(VkQueue, 0x803), 1, &submit, fence);
+    const VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &signal_semaphore,
+    };
+    teso4m4_render_audit_queue_present(
+        HANDLE(VkQueue, 0x803), &present_info, VK_SUCCESS);
+    teso4m4_render_audit_reset_command_buffer(command_buffer);
+    teso4m4_render_audit_begin_command_buffer(command_buffer);
+    teso4m4_render_audit_end_command_buffer(command_buffer);
+    const VkSubmitInfo generation_submit = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command_buffer,
+    };
+    teso4m4_render_audit_queue_submit(
+        HANDLE(VkQueue, 0x803), 1, &generation_submit,
+        VK_NULL_HANDLE);
+    teso4m4_render_audit_reset_command_pool(
+        command_allocate_info.commandPool);
+    teso4m4_render_audit_begin_command_buffer(command_buffer);
+    teso4m4_render_audit_end_command_buffer(command_buffer);
+    teso4m4_render_audit_queue_submit(
+        HANDLE(VkQueue, 0x803), 1, &generation_submit,
+        VK_NULL_HANDLE);
     teso4m4_render_audit_cmd_copy_image();
     teso4m4_render_audit_cmd_blit_image();
     teso4m4_render_audit_cmd_resolve_image();
@@ -205,6 +320,30 @@ int main(void) {
                "render-pass and barrier layout mismatches must be counted") ||
         !check(strstr(g_log, "name=pipeline_render_pass_exact value=1") != NULL,
                "pipeline/render-pass linkage must be exact") ||
+        !check(strstr(g_log, "name=descriptor_known_slots_bound value=3") !=
+                   NULL,
+               "bound descriptor slot content must be known") ||
+        !check(
+            strstr(
+                g_log,
+                "name=descriptor_resources_destroyed_while_referenced value=1")
+                != NULL,
+            "destroyed descriptor buffer must be tracked") ||
+        !check(strstr(g_log, "name=command_buffer_submits value=3") != NULL &&
+                   strstr(
+                       g_log,
+                       "name=command_buffer_submit_invalid_generation value=0")
+                       != NULL &&
+                   strstr(g_log, "name=command_buffer_resets value=1") !=
+                       NULL &&
+                   strstr(g_log, "name=command_pool_resets value=1") != NULL,
+               "command generations must remain valid across both reset paths") ||
+        !check(strstr(g_log, "name=submit_wait_semaphores value=1") != NULL &&
+                   strstr(g_log, "name=unknown_semaphore_waits value=0") !=
+                       NULL,
+               "acquire-submit-present semaphore order must be known") ||
+        !check(strstr(g_log, "name=subresource_barriers value=1") != NULL,
+               "barrier must expand to one tracked subresource") ||
         !check(strstr(g_log, "name=copy_image_calls value=1") != NULL &&
                    strstr(g_log, "name=blit_image_calls value=1") != NULL &&
                    strstr(g_log, "name=resolve_image_calls value=1") != NULL,

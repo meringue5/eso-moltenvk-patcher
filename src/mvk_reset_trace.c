@@ -121,6 +121,8 @@ static PFN_vkMapMemory g_next_map_memory;
 static PFN_vkUnmapMemory g_next_unmap_memory;
 static PFN_vkCreateBuffer g_next_create_buffer;
 static PFN_vkDestroyBuffer g_next_destroy_buffer;
+static PFN_vkCreateBufferView g_next_create_buffer_view;
+static PFN_vkDestroyBufferView g_next_destroy_buffer_view;
 static PFN_vkBindBufferMemory g_next_bind_buffer_memory;
 static PFN_vkGetBufferMemoryRequirements
     g_next_get_buffer_memory_requirements;
@@ -130,6 +132,8 @@ static PFN_vkBindImageMemory g_next_bind_image_memory;
 static PFN_vkGetImageMemoryRequirements g_next_get_image_memory_requirements;
 static PFN_vkCreateImageView g_next_create_image_view;
 static PFN_vkDestroyImageView g_next_destroy_image_view;
+static PFN_vkCreateSampler g_next_create_sampler;
+static PFN_vkDestroySampler g_next_destroy_sampler;
 static PFN_vkCreateRenderPass g_next_create_render_pass;
 static PFN_vkDestroyRenderPass g_next_destroy_render_pass;
 static PFN_vkCreateFramebuffer g_next_create_framebuffer;
@@ -149,9 +153,18 @@ static PFN_vkCreateComputePipelines g_next_create_compute_pipelines;
 static PFN_vkDestroyPipeline g_next_destroy_pipeline;
 static PFN_vkAllocateCommandBuffers g_next_allocate_command_buffers;
 static PFN_vkFreeCommandBuffers g_next_free_command_buffers;
+static PFN_vkResetCommandBuffer g_next_reset_command_buffer;
+static PFN_vkResetCommandPool g_next_reset_command_pool;
 static PFN_vkBeginCommandBuffer g_next_begin_command_buffer;
 static PFN_vkEndCommandBuffer g_next_end_command_buffer;
 static PFN_vkQueueSubmit g_next_queue_submit;
+static PFN_vkAcquireNextImageKHR g_next_acquire_next_image;
+static PFN_vkCreateSemaphore g_next_create_semaphore;
+static PFN_vkDestroySemaphore g_next_destroy_semaphore;
+static PFN_vkCreateFence g_next_create_fence;
+static PFN_vkDestroyFence g_next_destroy_fence;
+static PFN_vkResetFences g_next_reset_fences;
+static PFN_vkWaitForFences g_next_wait_for_fences;
 static PFN_vkCmdBeginRenderPass g_next_cmd_begin_render_pass;
 static PFN_vkCmdBindPipeline g_next_cmd_bind_pipeline;
 static PFN_vkCmdBindDescriptorSets g_next_cmd_bind_descriptor_sets;
@@ -169,6 +182,7 @@ static pthread_mutex_t g_state_lock = PTHREAD_MUTEX_INITIALIZER;
 static atomic_bool g_active;
 static atomic_bool g_complete;
 static atomic_bool g_pipeline_cache_bypass;
+static atomic_bool g_full_lifetime_audit;
 static atomic_uint_fast64_t g_counters[kCounterCount];
 static atomic_uint_fast64_t g_failures;
 static atomic_uint_fast64_t g_detail_count;
@@ -310,6 +324,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     VkResult result = g_next_queue_present(queue, present_info);
+    teso4m4_render_audit_queue_present(queue, present_info, result);
     bool finish = false;
     if (trace_active() && present_info) {
         pthread_mutex_lock(&g_state_lock);
@@ -401,6 +416,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_buffer(
     }
     VkResult result =
         g_next_create_buffer(device, create_info, allocator, buffer);
+    if (result == VK_SUCCESS && buffer && *buffer != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_buffer(*buffer);
+    }
     count_add(kCreateBuffer, 1);
     record_result("vkCreateBuffer", result);
     if (detail_slot()) {
@@ -422,8 +440,35 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_buffer(
     if (!g_next_destroy_buffer) {
         return;
     }
+    teso4m4_render_audit_destroy_buffer(buffer);
     g_next_destroy_buffer(device, buffer, allocator);
     count_add(kDestroyBuffer, 1);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_buffer_view(
+    VkDevice device, const VkBufferViewCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator, VkBufferView* buffer_view) {
+    if (!g_next_create_buffer_view) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_buffer_view(
+        device, create_info, allocator, buffer_view);
+    if (result == VK_SUCCESS && buffer_view &&
+        *buffer_view != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_buffer_view(*buffer_view);
+    }
+    record_result("vkCreateBufferView", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_buffer_view(
+    VkDevice device, VkBufferView buffer_view,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_buffer_view) {
+        return;
+    }
+    teso4m4_render_audit_destroy_buffer_view(buffer_view);
+    g_next_destroy_buffer_view(device, buffer_view, allocator);
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL traced_bind_buffer_memory(
@@ -610,6 +655,32 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_image_view(
     count_add(kDestroyImageView, 1);
 }
 
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_sampler(
+    VkDevice device, const VkSamplerCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator, VkSampler* sampler) {
+    if (!g_next_create_sampler) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_sampler(
+        device, create_info, allocator, sampler);
+    if (result == VK_SUCCESS && sampler &&
+        *sampler != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_sampler(*sampler);
+    }
+    record_result("vkCreateSampler", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_sampler(
+    VkDevice device, VkSampler sampler,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_sampler) {
+        return;
+    }
+    teso4m4_render_audit_destroy_sampler(sampler);
+    g_next_destroy_sampler(device, sampler, allocator);
+}
+
 static VKAPI_ATTR VkResult VKAPI_CALL traced_create_render_pass(
     VkDevice device,
     const VkRenderPassCreateInfo* create_info,
@@ -687,13 +758,37 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_descriptor_pool(
     g_next_destroy_descriptor_pool(device, pool, allocator);
     count_add(kDestroyDescriptorPool, 1);
 }
-DEFINE_CREATE_WRAPPER(
-    create_descriptor_set_layout, CreateDescriptorSetLayout,
-    VkDescriptorSetLayoutCreateInfo, VkDescriptorSetLayout,
-    g_next_create_descriptor_set_layout, kCreateDescriptorSetLayout)
-DEFINE_DESTROY_WRAPPER(
-    destroy_descriptor_set_layout, VkDescriptorSetLayout,
-    g_next_destroy_descriptor_set_layout, kDestroyDescriptorSetLayout)
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_descriptor_set_layout(
+    VkDevice device,
+    const VkDescriptorSetLayoutCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkDescriptorSetLayout* layout) {
+    if (!g_next_create_descriptor_set_layout) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_descriptor_set_layout(
+        device, create_info, allocator, layout);
+    if (result == VK_SUCCESS && layout &&
+        *layout != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_descriptor_set_layout(
+            create_info, *layout);
+    }
+    count_add(kCreateDescriptorSetLayout, 1);
+    record_result("vkCreateDescriptorSetLayout", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_descriptor_set_layout(
+    VkDevice device,
+    VkDescriptorSetLayout layout,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_descriptor_set_layout) {
+        return;
+    }
+    teso4m4_render_audit_destroy_descriptor_set_layout(layout);
+    g_next_destroy_descriptor_set_layout(device, layout, allocator);
+    count_add(kDestroyDescriptorSetLayout, 1);
+}
 DEFINE_CREATE_WRAPPER(
     create_pipeline_layout, CreatePipelineLayout, VkPipelineLayoutCreateInfo,
     VkPipelineLayout, g_next_create_pipeline_layout, kCreatePipelineLayout)
@@ -864,6 +959,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_allocate_command_buffers(
     }
     VkResult result =
         g_next_allocate_command_buffers(device, allocate_info, buffers);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_allocate_command_buffers(
+            allocate_info, buffers);
+    }
     count_add(
         kAllocateCommandBuffers,
         allocate_info ? allocate_info->commandBufferCount : 0);
@@ -879,8 +978,36 @@ static VKAPI_ATTR void VKAPI_CALL traced_free_command_buffers(
     if (!g_next_free_command_buffers) {
         return;
     }
+    teso4m4_render_audit_free_command_buffers(pool, count, buffers);
     g_next_free_command_buffers(device, pool, count, buffers);
     count_add(kFreeCommandBuffers, count);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_reset_command_buffer(
+    VkCommandBuffer buffer, VkCommandBufferResetFlags flags) {
+    if (!g_next_reset_command_buffer) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_reset_command_buffer(buffer, flags);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_reset_command_buffer(buffer);
+    }
+    record_result("vkResetCommandBuffer", result);
+    return result;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_reset_command_pool(
+    VkDevice device, VkCommandPool pool,
+    VkCommandPoolResetFlags flags) {
+    if (!g_next_reset_command_pool) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_reset_command_pool(device, pool, flags);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_reset_command_pool(pool);
+    }
+    record_result("vkResetCommandPool", result);
+    return result;
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL traced_begin_command_buffer(
@@ -890,6 +1017,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_begin_command_buffer(
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     VkResult result = g_next_begin_command_buffer(buffer, begin_info);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_begin_command_buffer(buffer);
+    }
     count_add(kBeginCommandBuffer, 1);
     record_result("vkBeginCommandBuffer", result);
     return result;
@@ -901,6 +1031,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_end_command_buffer(
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     VkResult result = g_next_end_command_buffer(buffer);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_end_command_buffer(buffer);
+    }
     count_add(kEndCommandBuffer, 1);
     record_result("vkEndCommandBuffer", result);
     return result;
@@ -916,6 +1049,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_submit(
     }
     VkResult result =
         g_next_queue_submit(queue, submit_count, submits, fence);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_queue_submit(
+            queue, submit_count, submits, fence);
+    }
     uint64_t command_buffers = 0;
     for (uint32_t index = 0; submits && index < submit_count; ++index) {
         command_buffers += submits[index].commandBufferCount;
@@ -929,6 +1066,98 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_submit(
             "command_buffers=%" PRIu64 " result=%d",
             submit_count, command_buffers, result);
     }
+    return result;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_acquire_next_image(
+    VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout,
+    VkSemaphore semaphore, VkFence fence, uint32_t* image_index) {
+    if (!g_next_acquire_next_image) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_acquire_next_image(
+        device, swapchain, timeout, semaphore, fence, image_index);
+    teso4m4_render_audit_acquire_next_image(semaphore, fence, result);
+    record_result("vkAcquireNextImageKHR", result);
+    return result;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_semaphore(
+    VkDevice device, const VkSemaphoreCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator, VkSemaphore* semaphore) {
+    if (!g_next_create_semaphore) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_semaphore(
+        device, create_info, allocator, semaphore);
+    if (result == VK_SUCCESS && semaphore &&
+        *semaphore != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_semaphore(*semaphore);
+    }
+    record_result("vkCreateSemaphore", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_semaphore(
+    VkDevice device, VkSemaphore semaphore,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_semaphore) {
+        return;
+    }
+    teso4m4_render_audit_destroy_semaphore(semaphore);
+    g_next_destroy_semaphore(device, semaphore, allocator);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_fence(
+    VkDevice device, const VkFenceCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator, VkFence* fence) {
+    if (!g_next_create_fence) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result =
+        g_next_create_fence(device, create_info, allocator, fence);
+    if (result == VK_SUCCESS && fence && *fence != VK_NULL_HANDLE) {
+        teso4m4_render_audit_create_fence(
+            *fence, create_info ? create_info->flags : 0);
+    }
+    record_result("vkCreateFence", result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_fence(
+    VkDevice device, VkFence fence,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_fence) {
+        return;
+    }
+    teso4m4_render_audit_destroy_fence(fence);
+    g_next_destroy_fence(device, fence, allocator);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_reset_fences(
+    VkDevice device, uint32_t fence_count, const VkFence* fences) {
+    if (!g_next_reset_fences) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_reset_fences(device, fence_count, fences);
+    if (result == VK_SUCCESS) {
+        teso4m4_render_audit_reset_fences(fence_count, fences);
+    }
+    record_result("vkResetFences", result);
+    return result;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_wait_for_fences(
+    VkDevice device, uint32_t fence_count, const VkFence* fences,
+    VkBool32 wait_all, uint64_t timeout) {
+    if (!g_next_wait_for_fences) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_wait_for_fences(
+        device, fence_count, fences, wait_all, timeout);
+    teso4m4_render_audit_wait_for_fences(
+        fence_count, fences, result);
+    record_result("vkWaitForFences", result);
     return result;
 }
 
@@ -1050,7 +1279,8 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_pipeline_barrier(
         buffer_memory_barriers, image_memory_barrier_count,
         image_memory_barriers);
     teso4m4_render_audit_cmd_pipeline_barrier(
-        buffer, image_memory_barrier_count, image_memory_barriers);
+        buffer, source_stage_mask, destination_stage_mask,
+        image_memory_barrier_count, image_memory_barriers);
 }
 
 static VKAPI_ATTR void VKAPI_CALL traced_cmd_copy_image(
@@ -1116,6 +1346,8 @@ void teso4m4_reset_trace_reset(void) {
     g_next_unmap_memory = NULL;
     g_next_create_buffer = NULL;
     g_next_destroy_buffer = NULL;
+    g_next_create_buffer_view = NULL;
+    g_next_destroy_buffer_view = NULL;
     g_next_bind_buffer_memory = NULL;
     g_next_get_buffer_memory_requirements = NULL;
     g_next_create_image = NULL;
@@ -1124,6 +1356,8 @@ void teso4m4_reset_trace_reset(void) {
     g_next_get_image_memory_requirements = NULL;
     g_next_create_image_view = NULL;
     g_next_destroy_image_view = NULL;
+    g_next_create_sampler = NULL;
+    g_next_destroy_sampler = NULL;
     g_next_create_render_pass = NULL;
     g_next_destroy_render_pass = NULL;
     g_next_create_framebuffer = NULL;
@@ -1143,9 +1377,18 @@ void teso4m4_reset_trace_reset(void) {
     g_next_destroy_pipeline = NULL;
     g_next_allocate_command_buffers = NULL;
     g_next_free_command_buffers = NULL;
+    g_next_reset_command_buffer = NULL;
+    g_next_reset_command_pool = NULL;
     g_next_begin_command_buffer = NULL;
     g_next_end_command_buffer = NULL;
     g_next_queue_submit = NULL;
+    g_next_acquire_next_image = NULL;
+    g_next_create_semaphore = NULL;
+    g_next_destroy_semaphore = NULL;
+    g_next_create_fence = NULL;
+    g_next_destroy_fence = NULL;
+    g_next_reset_fences = NULL;
+    g_next_wait_for_fences = NULL;
     g_next_cmd_begin_render_pass = NULL;
     g_next_cmd_bind_pipeline = NULL;
     g_next_cmd_bind_descriptor_sets = NULL;
@@ -1166,6 +1409,8 @@ void teso4m4_reset_trace_reset(void) {
     atomic_store_explicit(&g_complete, false, memory_order_relaxed);
     atomic_store_explicit(
         &g_pipeline_cache_bypass, false, memory_order_relaxed);
+    atomic_store_explicit(
+        &g_full_lifetime_audit, false, memory_order_relaxed);
     for (size_t index = 0; index < kCounterCount; ++index) {
         atomic_store_explicit(&g_counters[index], 0, memory_order_relaxed);
     }
@@ -1186,6 +1431,14 @@ void teso4m4_reset_trace_set_logger(
 void teso4m4_reset_trace_set_pipeline_cache_bypass(bool enabled) {
     atomic_store_explicit(
         &g_pipeline_cache_bypass, enabled, memory_order_release);
+}
+
+void teso4m4_reset_trace_set_full_lifetime_audit(bool enabled) {
+    atomic_store_explicit(
+        &g_full_lifetime_audit, enabled, memory_order_release);
+    if (enabled) {
+        teso4m4_render_audit_enable_mirror();
+    }
 }
 
 #define INTERCEPT(function_name, next_name, wrapper_name, FunctionType)     \
@@ -1231,6 +1484,12 @@ PFN_vkVoidFunction teso4m4_reset_trace_intercept(
         "vkDestroyBuffer", g_next_destroy_buffer,
         traced_destroy_buffer, PFN_vkDestroyBuffer)
     INTERCEPT(
+        "vkCreateBufferView", g_next_create_buffer_view,
+        traced_create_buffer_view, PFN_vkCreateBufferView)
+    INTERCEPT(
+        "vkDestroyBufferView", g_next_destroy_buffer_view,
+        traced_destroy_buffer_view, PFN_vkDestroyBufferView)
+    INTERCEPT(
         "vkBindBufferMemory", g_next_bind_buffer_memory,
         traced_bind_buffer_memory, PFN_vkBindBufferMemory)
     INTERCEPT(
@@ -1256,6 +1515,12 @@ PFN_vkVoidFunction teso4m4_reset_trace_intercept(
     INTERCEPT(
         "vkDestroyImageView", g_next_destroy_image_view,
         traced_destroy_image_view, PFN_vkDestroyImageView)
+    INTERCEPT(
+        "vkCreateSampler", g_next_create_sampler,
+        traced_create_sampler, PFN_vkCreateSampler)
+    INTERCEPT(
+        "vkDestroySampler", g_next_destroy_sampler,
+        traced_destroy_sampler, PFN_vkDestroySampler)
     INTERCEPT(
         "vkCreateRenderPass", g_next_create_render_pass,
         traced_create_render_pass, PFN_vkCreateRenderPass)
@@ -1315,6 +1580,12 @@ PFN_vkVoidFunction teso4m4_reset_trace_intercept(
         "vkFreeCommandBuffers", g_next_free_command_buffers,
         traced_free_command_buffers, PFN_vkFreeCommandBuffers)
     INTERCEPT(
+        "vkResetCommandBuffer", g_next_reset_command_buffer,
+        traced_reset_command_buffer, PFN_vkResetCommandBuffer)
+    INTERCEPT(
+        "vkResetCommandPool", g_next_reset_command_pool,
+        traced_reset_command_pool, PFN_vkResetCommandPool)
+    INTERCEPT(
         "vkBeginCommandBuffer", g_next_begin_command_buffer,
         traced_begin_command_buffer, PFN_vkBeginCommandBuffer)
     INTERCEPT(
@@ -1323,6 +1594,27 @@ PFN_vkVoidFunction teso4m4_reset_trace_intercept(
     INTERCEPT(
         "vkQueueSubmit", g_next_queue_submit,
         traced_queue_submit, PFN_vkQueueSubmit)
+    INTERCEPT(
+        "vkAcquireNextImageKHR", g_next_acquire_next_image,
+        traced_acquire_next_image, PFN_vkAcquireNextImageKHR)
+    INTERCEPT(
+        "vkCreateSemaphore", g_next_create_semaphore,
+        traced_create_semaphore, PFN_vkCreateSemaphore)
+    INTERCEPT(
+        "vkDestroySemaphore", g_next_destroy_semaphore,
+        traced_destroy_semaphore, PFN_vkDestroySemaphore)
+    INTERCEPT(
+        "vkCreateFence", g_next_create_fence,
+        traced_create_fence, PFN_vkCreateFence)
+    INTERCEPT(
+        "vkDestroyFence", g_next_destroy_fence,
+        traced_destroy_fence, PFN_vkDestroyFence)
+    INTERCEPT(
+        "vkResetFences", g_next_reset_fences,
+        traced_reset_fences, PFN_vkResetFences)
+    INTERCEPT(
+        "vkWaitForFences", g_next_wait_for_fences,
+        traced_wait_for_fences, PFN_vkWaitForFences)
     INTERCEPT(
         "vkCmdBeginRenderPass", g_next_cmd_begin_render_pass,
         traced_cmd_begin_render_pass, PFN_vkCmdBeginRenderPass)

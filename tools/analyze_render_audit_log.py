@@ -19,9 +19,16 @@ EXPECTED_COUNTERS = {
     "descriptor_unknown_views_written",
     "descriptor_dead_views_written",
     "descriptor_views_destroyed_while_referenced",
+    "descriptor_resources_destroyed_while_referenced",
+    "descriptor_dead_resources_written",
+    "descriptor_unknown_resources_written",
     "descriptor_set_bind_calls",
     "descriptor_sets_bound",
     "descriptor_unknown_sets_bound",
+    "descriptor_known_slots_bound",
+    "descriptor_unknown_slots_bound",
+    "descriptor_unknown_layout_sets_bound",
+    "descriptor_zero_update_sets_bound",
     "descriptor_stale_sets_bound",
     "descriptor_stale_slots_bound",
     "image_binds",
@@ -30,9 +37,17 @@ EXPECTED_COUNTERS = {
     "image_undeclared_overlaps",
     "pipeline_barrier_calls",
     "image_barriers",
+    "subresource_barriers",
+    "barrier_stage_access_samples",
     "layout_mismatches",
     "render_pass_begins",
     "attachment_samples",
+    "attachment_load_clear",
+    "attachment_load_load",
+    "attachment_load_dont_care",
+    "attachment_store_store",
+    "attachment_store_dont_care",
+    "attachment_missing_clear_values",
     "unknown_attachment_views",
     "dead_attachment_views",
     "pipeline_binds",
@@ -43,6 +58,21 @@ EXPECTED_COUNTERS = {
     "graphics_pipelines_created",
     "graphics_pipelines_created_during_audit",
     "graphics_pipelines_with_cache",
+    "command_buffer_resets",
+    "command_pool_resets",
+    "command_buffer_begins",
+    "command_buffer_ends",
+    "command_buffer_submits",
+    "command_buffer_submit_invalid_generation",
+    "descriptor_updates_after_record",
+    "queue_submits",
+    "submit_wait_semaphores",
+    "submit_signal_semaphores",
+    "unknown_semaphore_waits",
+    "fence_submits",
+    "fence_resets",
+    "fence_waits",
+    "fence_waits_without_submit",
     "copy_image_calls",
     "blit_image_calls",
     "resolve_image_calls",
@@ -107,6 +137,16 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
         anomalies.append(
             f"state mirror overflowed {counters['state_overflows']} time(s)"
         )
+    full_lifetime_mode = any(
+        line.startswith("MODE: full lifetime audit enabled")
+        for line in lines
+    )
+    if full_lifetime_mode and len(begins) == 1:
+        mirror_start = number(fields(begins[0]), "mirror_start_sequence", -1)
+        if mirror_start != 1:
+            anomalies.append(
+                "full-lifetime descriptor mirror did not start at sequence 1"
+            )
 
     def total(*names: str) -> int:
         return sum(counters.get(name, 0) for name in names)
@@ -115,6 +155,8 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
     stale = total(
         "descriptor_dead_views_written",
         "descriptor_views_destroyed_while_referenced",
+        "descriptor_resources_destroyed_while_referenced",
+        "descriptor_dead_resources_written",
         "descriptor_stale_sets_bound",
         "descriptor_stale_slots_bound",
     )
@@ -128,7 +170,10 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
     )
     unknown = total(
         "descriptor_unknown_views_written",
+        "descriptor_unknown_resources_written",
         "descriptor_unknown_sets_bound",
+        "descriptor_unknown_slots_bound",
+        "descriptor_unknown_layout_sets_bound",
         "unknown_attachment_views",
     )
     findings.append(
@@ -139,6 +184,28 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
             else "complete for observed handle use"
         )
     )
+    if full_lifetime_mode and unknown:
+        anomalies.append(
+            f"full-lifetime mirror has {unknown} unknown descriptor/"
+            "attachment events"
+        )
+    zero_update = counters.get("descriptor_zero_update_sets_bound", 0)
+    known_slots = counters.get("descriptor_known_slots_bound", 0)
+    unknown_slots = counters.get("descriptor_unknown_slots_bound", 0)
+    findings.append(
+        "descriptor-slot-coverage: "
+        f"known={known_slots} unknown={unknown_slots} "
+        f"zero-update-set-binds={zero_update}"
+    )
+    if full_lifetime_mode and unknown_slots:
+        anomalies.append(
+            f"full-lifetime descriptor coverage has {unknown_slots} "
+            "unknown bound slots"
+        )
+    if full_lifetime_mode and counters.get(
+        "descriptor_unknown_layout_sets_bound", 0
+    ):
+        anomalies.append("bound descriptor sets have unknown layouts")
     overlap = counters.get("image_undeclared_overlaps", 0)
     dead_reuse = counters.get("image_dead_range_reuses", 0)
     findings.append(
@@ -159,6 +226,35 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
             else "no tracked layout mismatch observed"
         )
     )
+    findings.append(
+        "subresource-synchronization: "
+        f"barriers={counters.get('subresource_barriers', 0)} "
+        f"stage-access-samples="
+        f"{counters.get('barrier_stage_access_samples', 0)}"
+    )
+    findings.append(
+        "command-buffer-generation: "
+        f"begins={counters.get('command_buffer_begins', 0)} "
+        f"ends={counters.get('command_buffer_ends', 0)} "
+        f"resets={counters.get('command_buffer_resets', 0)} "
+        f"pool-resets={counters.get('command_pool_resets', 0)} "
+        f"submits={counters.get('command_buffer_submits', 0)} "
+        f"invalid={counters.get('command_buffer_submit_invalid_generation', 0)}"
+    )
+    if counters.get("command_buffer_submit_invalid_generation", 0):
+        anomalies.append("a submitted command buffer generation was invalid")
+    findings.append(
+        "queue-synchronization: "
+        f"submits={counters.get('queue_submits', 0)} "
+        f"waits={counters.get('submit_wait_semaphores', 0)} "
+        f"signals={counters.get('submit_signal_semaphores', 0)} "
+        f"unknown-waits={counters.get('unknown_semaphore_waits', 0)} "
+        f"fence-submits={counters.get('fence_submits', 0)}"
+    )
+    if full_lifetime_mode and counters.get("unknown_semaphore_waits", 0):
+        anomalies.append("queue synchronization has unknown semaphore waits")
+    if counters.get("attachment_missing_clear_values", 0):
+        anomalies.append("render pass CLEAR attachment lacked a clear value")
     created = counters.get(
         "graphics_pipelines_created_during_audit", 0
     )

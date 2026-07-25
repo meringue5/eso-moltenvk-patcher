@@ -23,6 +23,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0013 | 2026-07-25 | Command pooling disabled during live reset | Failed; solid-color corruption persisted | [Run](0013-command-pooling-disabled.md) |
 | 0014 | 2026-07-25 | Bounded render-graph audit | Diagnostic passed; rendering failed and cache path became leading target | [Run](0014-render-graph-audit.md) |
 | 0015 | 2026-07-25 | Reset-only pipeline-cache bypass | Failed; complete cache bypass did not correct rendering | [Run](0015-reset-pipeline-cache-bypass.md) |
+| 0016 | 2026-07-25 | Full-lifetime reset-state audit | Planned; source candidate passes focused non-game probes | [Run](0016-full-lifetime-reset-audit.md) |
 
 ## Recording policy
 

@@ -155,6 +155,7 @@ int main(void) {
     teso4m4_reset_trace_reset();
     teso4m4_reset_trace_set_logger(&test_log);
     teso4m4_reset_trace_set_pipeline_cache_bypass(true);
+    teso4m4_reset_trace_set_full_lifetime_audit(true);
 
     PFN_vkDeviceWaitIdle wait = (PFN_vkDeviceWaitIdle)
         chain_intercepts(
@@ -322,6 +323,12 @@ int main(void) {
     }
 
     if (!check(
+            strstr(
+                g_log,
+                "RENDER_AUDIT_BEGIN: mirror=enabled") != NULL &&
+                strstr(g_log, "mirror_start_sequence=1") != NULL,
+            "descriptor mirror must start at process sequence 1") ||
+        !check(
             strstr(g_log, "RESET_RESOURCE_TRACE_BEGIN:") != NULL,
             "trace must arm after two swapchains") ||
         !check(
@@ -362,7 +369,20 @@ int main(void) {
         "vkDestroyBuffer",
         "vkCreateImage",
         "vkDestroyImage",
+        "vkCreateBufferView",
+        "vkDestroyBufferView",
+        "vkCreateSampler",
+        "vkDestroySampler",
         "vkEndCommandBuffer",
+        "vkResetCommandBuffer",
+        "vkResetCommandPool",
+        "vkAcquireNextImageKHR",
+        "vkCreateSemaphore",
+        "vkDestroySemaphore",
+        "vkCreateFence",
+        "vkDestroyFence",
+        "vkResetFences",
+        "vkWaitForFences",
         "vkCmdEndRenderPass",
         "vkCmdPipelineBarrier",
         "vkCmdCopyImage",

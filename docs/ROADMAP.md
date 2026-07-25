@@ -50,18 +50,18 @@ are in [Project status](STATUS.md); completed runs belong in the
   observed reset-created pipeline binds matched their render pass, and solid
   color still recurred. Do not delete, replace, or further bypass caches as a
   reset-correctness experiment.
-- Extend descriptor mirroring from process startup rather than first
-  swapchain. Report known and unknown descriptor slots explicitly, because
-  sampled final-pass set 0 binds currently have `last_update_sequence=0`.
-- In the same observation candidate, trace ESO's own
-  `vkResetCommandBuffer`/`vkResetCommandPool`, begin/end generations,
-  descriptor update/bind order, and submitted command-buffer generations.
-  MoltenVK internal command pooling is already excluded; application reuse is
-  not.
-- If full-lifetime descriptor and command-buffer ordering is clean, classify
-  render-pass attachment load/store/clear state and per-subresource
-  barrier/access synchronization. Escalate to Metal object/content capture
-  only after those public Vulkan paths are exhausted.
+- Complete Experiment 0016 as one joined observation candidate. It starts the
+  descriptor mirror at process sequence 1 and combines layout/slot contents,
+  ESO command-buffer generations, attachment load/store/clear and roles,
+  aspect/mip/layer transitions, stage/access masks, queue ordering,
+  semaphores, and fences.
+- Treat any fixed-table overflow, unknown bound slot/layout/resource, missing
+  command generation, or unknown synchronization edge as inconclusive rather
+  than clean coverage.
+- If that joined public-state audit is complete and clean while rendering
+  fails, move directly to MoltenVK Metal texture/resource lifetime or
+  render-encoder reset instrumentation. Do not add another generic
+  configuration A/B.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.
