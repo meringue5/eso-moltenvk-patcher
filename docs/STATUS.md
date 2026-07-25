@@ -455,9 +455,21 @@ cannot consume the useful log budget. Fixed-table overflow fails the analyzer
 instead of silently reducing coverage. Command pooling returns to its 1.4.1
 default.
 
-The initial non-game gate passes 61 Python tests, the existing reset wrapper
-probe, and the new render-audit probe. The repeated hashed descriptor update
-path measured 33 nanoseconds per call in the x86_64 probe on this machine,
-well below its 10-microsecond rejection threshold. Full pristine-loader build,
-static analysis, real-Metal probes, installation, and the single
-user-controlled reset remain pending.
+Source commit `28d9bce` passes 61 Python tests, Python compilation, shell
+syntax, whitespace, warnings-as-errors, Clang static analysis, the complete
+pristine-loader build, reset and render-audit probes, and all six effective
+configuration probes. The repeated hashed descriptor update path measured
+33 nanoseconds per call in the x86_64 probe, well below its 10-microsecond
+rejection threshold. Fresh replacement and embedded-runtime probes both
+reached the Apple M4 and reproduced their expected HDR, surface-format, device,
+and proc-address differences.
+
+Experiment 0014 is installed in exact `render-audit` mode. Built and installed
+proxy hashes match, the replacement MoltenVK hash is unchanged, the target and
+marker are current, and the quick gate is `READY`. Command pooling is verified
+back at `1`; settings and both pipeline caches were preserved. Fresh ignored
+evidence is prepared under
+`artifacts/experiment-0014-20260725T125558Z`. The next gate is one
+user-controlled world entry and one fullscreen-resolution change, stopping as
+soon as correct output, solid color, a frozen last frame, or a crash is known.
+No HUD, capture, travel, FPS measurement, or second setting change is needed.

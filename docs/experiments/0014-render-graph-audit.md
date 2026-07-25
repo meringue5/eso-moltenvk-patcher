@@ -1,8 +1,8 @@
 # Experiment 0014: bounded render-graph audit
 
 - Date: 2026-07-25
-- Outcome: **planned**
-- Rollback: **not started; restore path checked**
+- Outcome: **running; installed and awaiting one user-controlled reset**
+- Rollback: **not performed; restore path checked**
 
 ## Question
 
@@ -99,7 +99,41 @@ described as a fix.
 
 ## Evidence
 
-Pending build, installation, and user-controlled run.
+Source commit `28d9bce` passes 61 Python tests, Python compilation, shell
+syntax, whitespace checks, warnings-as-errors, and Clang static analysis. The
+complete pristine-loader build passed Bink re-export, Rosetta self-patch, HDR,
+lifecycle, reset-resource, render-audit, and all six effective-configuration
+probes. The render-audit probe reproduced stale descriptor, live image overlap,
+destroyed-range reuse, two layout mismatches, exact pipeline/render-pass
+linkage, and all three image transfer paths. Its 100,000-iteration descriptor
+mirror benchmark measured 33 nanoseconds per update.
+
+Fresh real-Metal probes reached the Apple M4. MoltenVK 1.4.1 retained its HDR
+advertisement, 60 surface formats including the ESO HDR pair, successful
+device creation, and the expected 100-name proc comparison. Embedded MoltenVK
+1.0.18 retained no HDR advertisement and its three non-HDR formats.
+
+With ESO, Steam, and the launcher confirmed stopped, the prior bridge was
+restored using the checked pristine loader while both pipeline caches remained
+in place. A fresh build from the committed source was installed in
+`render-audit` mode. Built and installed hashes match:
+
+```text
+libBink2Macx64.dylib
+a6d3fdd4068de41ccaa88029564d0b98f1e14564e9881e3bf641f29636245304
+
+libMoltenVK.teso4m4.dylib
+d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+The marker contains exactly `render-audit`; status reports the bridge target
+current and enabled; the quick update gate is `READY`. Command pooling is back
+at the 1.4.1 default in this mode. The exact settings file and both pipeline
+caches were preserved.
+
+Fresh ignored evidence is prepared under
+`artifacts/experiment-0014-20260725T125558Z`. No agent launched Steam, the
+launcher, or ESO.
 
 ## Result
 
@@ -111,8 +145,8 @@ Pending.
 
 ## Rollback
 
-Not performed. Installation will retain a checked pristine-loader restore path
-and preserve both pipeline caches in place.
+Not performed. The checked pristine-loader restore path remains available and
+both pipeline caches were preserved in place.
 
 ## Follow-up
 
