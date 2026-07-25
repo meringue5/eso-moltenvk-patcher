@@ -402,7 +402,15 @@ game bundle were not changed during this preparation. A second full build from
 that committed state reproduced the prepared proxy and replacement-runtime
 hashes.
 
-The next gate is explicit approval for the Experiment 0013 bundle
-modification. After approval, perform a cache-preserving restore, rebuild from
-the committed source, install the new mode, verify hashes and the update gate,
-and prepare evidence before asking for exactly one live resolution change.
+The user explicitly authorized immediate Experiment 0013 installation. Exact
+process checks found ESO, Steam, and the launcher stopped. A cache-preserving
+restore, real-bundle rebuild from commit `31b2c65`, installation in
+`no-command-pooling` mode, installed/built hash comparison, exact marker check,
+status check, and quick update gate all passed. Both pipeline caches, the exact
+1920 x 1200 settings file, ambient occlusion `1`, and pregame-video setting `1`
+were preserved.
+
+Fresh ignored evidence is prepared under
+`artifacts/experiment-0013-20260725T121340Z`. The next gate is one
+user-controlled world entry and one fullscreen-resolution change. No other
+setting, travel, HUD, capture, or performance report is required.

@@ -1,8 +1,8 @@
 # Experiment 0013: command pooling disabled during live reset
 
 - Date: 2026-07-25
-- Outcome: **source and non-game gates passed; installation not authorized**
-- Rollback: **not applicable; bundle not modified**
+- Outcome: **running; installed, user reproduction pending**
+- Rollback: **not performed; restore path checked before installation**
 
 ## Question
 
@@ -47,8 +47,7 @@ command/resource state. It may reduce CPU performance.
 
 ## User action
 
-Not yet authorized. If the non-game gate passes and installation is approved,
-one Steam-authenticated run will:
+Installation is complete. One Steam-authenticated run will:
 
 1. enter the existing character's world and confirm initial rendering;
 2. change fullscreen resolution once from 1920 x 1200 to any other available
@@ -101,6 +100,34 @@ These hashes were reproduced by a second complete build from committed source
 against a temporary app structure pointing at the pristine loader. No
 game-bundle file was changed.
 
-The Experiment 0012 bridge remains installed. No agent launched Steam, the
-launcher, or ESO, and no game-bundle file was modified while preparing this
-candidate.
+At the source-validation checkpoint, the Experiment 0012 bridge remained
+installed. No agent launched Steam, the launcher, or ESO, and no game-bundle
+file was modified while preparing the candidate.
+
+## Installation
+
+The user directed that prepared experiments be installed without another
+installation question, explicitly authorizing Experiment 0013 in this turn.
+The target and content were current, the worktree was clean, and exact process
+checks found ESO, Steam, and the launcher stopped.
+
+A cache-preserving restore returned the loader to the pristine source without
+moving either pipeline cache. Commit `31b2c65` was then rebuilt against the real
+bundle, passed the complete build gate again, and was installed in
+`no-command-pooling` mode. Installed and built hashes match:
+
+```text
+libBink2Macx64.dylib
+3a0865f9a43c6629f71859a64e96eff24a18c9847dc59c42f14b965e2fb5cda3
+
+libMoltenVK.teso4m4.dylib
+d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+The marker contains exactly `no-command-pooling`, the target is current, and
+the quick gate is `READY`. Fresh evidence is prepared under the ignored
+`artifacts/experiment-0013-20260725T121340Z` directory.
+
+The exact 1920 x 1200 settings file, ambient occlusion `1`, pregame-video
+setting `1`, 4,203,757-byte active cache, and 6,800,792-byte old cache were
+preserved. No agent launched Steam, the launcher, or ESO.
