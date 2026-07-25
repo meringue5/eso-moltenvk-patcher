@@ -159,7 +159,11 @@ d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
 Post-install status reports the bridge target current and marker present; the
 marker contains `full-lifetime-audit` and the quick gate is `READY`. The active
 4,259,071-byte cache and 6,800,792-byte old backup retain their pre-restore
-hashes. No agent launched Steam, the launcher, or ESO.
+hashes. The authoritative ignored collection directory is
+`artifacts/experiment-0016-20260725T135200Z`; the earlier
+`artifacts/experiment-0016-20260725T135008Z` preparation is preserved but is
+superseded because it predates this final documentation commit. No agent
+launched Steam, the launcher, or ESO.
 
 ## Result
 

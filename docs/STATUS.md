@@ -551,12 +551,6 @@ attachment roles; aspect/mip/layer transitions with stage/access masks applied
 in queue-submit order; and acquire/submit/present semaphore plus fence order.
 Fixed-table overflow and unknown coverage are analyzer failures.
 
-Focused non-game probes pass, including both command reset paths and a complete
-acquire-submit-present chain. The installed Experiment 0015 bridge has not yet
-been restored, so the required pristine-loader source rebuild, complete
-non-game gate, installation, and evidence preparation remain ahead of any user
-launch.
-
 That gate is now complete from source commit `7db8803`. All 48 Experiment 0015
 evidence checksums were reverified, and a cache-preserving restore produced the
 exact original-loader baseline. The full build, 68 Python tests, warnings as
@@ -566,6 +560,7 @@ configuration probes, and fresh replacement/embedded Apple M4 probes passed.
 Experiment 0016 is installed in exact `full-lifetime-audit` mode. Built and
 installed proxy and MoltenVK files are byte-identical, the target and marker
 are current, the quick gate is `READY`, and both pipeline caches retain their
-pre-restore hashes and sizes. The remaining pre-user gate is to commit this
-installation record and prepare fresh ignored evidence. No agent launched
-Steam, the launcher, or ESO.
+pre-restore hashes and sizes. The installation record is committed and the
+authoritative ignored collection directory is
+`artifacts/experiment-0016-20260725T135200Z`. All agent-controlled pre-user
+gates are complete. No agent launched Steam, the launcher, or ESO.
