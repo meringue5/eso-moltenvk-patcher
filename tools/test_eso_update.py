@@ -15,6 +15,7 @@ import uuid
 
 from eso_update import (
     SCHEMA_VERSION,
+    client_build_identity,
     command_check,
     command_select,
     compare_analysis,
@@ -122,6 +123,54 @@ class UpdateToolTests(unittest.TestCase):
             with redirect_stdout(io.StringIO()):
                 self.assertEqual(command_check(args), 3)
 
+    def test_check_detects_content_update_with_same_executable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifests = root / "config"
+            manifests.mkdir()
+            identifier = uuid.uuid4()
+            data = synthetic_macho(identifier, b"current")
+            executable = root / "eso"
+            executable.write_bytes(data)
+            stamp = root / "databuild.stamp"
+            stamp.write_text(
+                "4000.win.3281538.live.3281538\r\n"
+                "2026/07/18:02:53:52\r\n12.0.7",
+                encoding="ascii",
+            )
+            manifest = manifest_for(data, identifier)
+            manifest["client_build"] = {
+                "version": "12.0.7",
+                "databuild": "3281538",
+            }
+            current = manifests / "targets-eso-current.json"
+            current.write_text(json.dumps(manifest))
+            args = argparse.Namespace(
+                exe=executable,
+                manifest_dir=manifests,
+                current_manifest=current,
+                databuild_stamp=stamp,
+            )
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(command_check(args), 0)
+
+            stamp.write_text(
+                "4000.win.3282000.live.3282000\r\n"
+                "2026/07/25:10:00:00\r\n12.0.8",
+                encoding="ascii",
+            )
+            output = io.StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(command_check(args), 3)
+            self.assertIn("CONTENT_UPDATE", output.getvalue())
+
+    def test_client_build_identity_rejects_malformed_stamp(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            stamp = Path(directory) / "databuild.stamp"
+            stamp.write_text("not-a-stamp", encoding="ascii")
+            with self.assertRaises(ValueError):
+                client_build_identity(stamp)
+
     def test_select_requires_profiled_exact_local_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / "config"
@@ -144,6 +193,39 @@ class UpdateToolTests(unittest.TestCase):
             self.assertEqual(pointer.read_text(), "targets-eso-new.json\n")
 
             executable.write_bytes(synthetic_macho(uuid.uuid4()))
+            with self.assertRaises(ValueError):
+                command_select(args)
+
+    def test_select_rejects_client_build_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "config"
+            config.mkdir()
+            identifier = uuid.uuid4()
+            data = synthetic_macho(identifier)
+            executable = root / "eso"
+            executable.write_bytes(data)
+            candidate = config / "targets-eso-new.json"
+            value = manifest_for(data, identifier)
+            value["schema_version"] = SCHEMA_VERSION
+            value["analysis"] = {"profile": "synthetic"}
+            value["client_build"] = {
+                "version": "12.0.7",
+                "databuild": "3281538",
+            }
+            candidate.write_text(json.dumps(value))
+            stamp = root / "databuild.stamp"
+            stamp.write_text(
+                "4000.win.3282000.live.3282000\r\n"
+                "2026/07/25:10:00:00\r\n12.0.8",
+                encoding="ascii",
+            )
+            args = argparse.Namespace(
+                exe=executable,
+                candidate=candidate,
+                pointer=config / "current-target.txt",
+                databuild_stamp=stamp,
+            )
             with self.assertRaises(ValueError):
                 command_select(args)
 

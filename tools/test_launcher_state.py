@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import argparse
 from contextlib import redirect_stdout
+from datetime import datetime
 import io
 from pathlib import Path
 import tempfile
 import unittest
 
-from launcher_state import command_check, latest_live_snapshot
+from launcher_state import (
+    command_check,
+    latest_live_snapshot,
+    snapshot_age_seconds,
+)
 
 
 def repository(name: str, local: str, remote: str) -> str:
@@ -73,7 +78,11 @@ class LauncherStateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "host.developer.example.log"
             log.write_text(text, encoding="utf-8")
-            args = argparse.Namespace(log=log, log_dir=None)
+            args = argparse.Namespace(
+                log=log,
+                log_dir=None,
+                max_age_seconds=None,
+            )
             output = io.StringIO()
             with redirect_stdout(output):
                 self.assertEqual(command_check(args), 3)
@@ -113,6 +122,16 @@ class LauncherStateTests(unittest.TestCase):
         self.assertIsNotNone(snapshot)
         assert snapshot is not None
         self.assertEqual(len(snapshot.repositories), 8)
+
+    def test_snapshot_age_is_machine_checkable(self) -> None:
+        snapshot = latest_live_snapshot(completed_snapshot())
+        self.assertIsNotNone(snapshot)
+        assert snapshot is not None
+        age = snapshot_age_seconds(
+            snapshot,
+            now=datetime(2026, 7, 25, 18, 52, 38),
+        )
+        self.assertEqual(age, 60)
 
 
 if __name__ == "__main__":

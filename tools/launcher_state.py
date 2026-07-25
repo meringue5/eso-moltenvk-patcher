@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 import re
 
@@ -123,6 +124,14 @@ def newest_host_log(log_dir: Path) -> Path:
     return max(candidates, key=lambda path: path.stat().st_mtime_ns)
 
 
+def snapshot_age_seconds(
+    snapshot: LiveSnapshot,
+    now: datetime | None = None,
+) -> float:
+    checked_at = datetime.strptime(snapshot.timestamp, "%m/%d/%Y %H:%M:%S")
+    return ((now or datetime.now()) - checked_at).total_seconds()
+
+
 def command_check(args: argparse.Namespace) -> int:
     log = args.log or newest_host_log(args.log_dir)
     try:
@@ -137,19 +146,29 @@ def command_check(args: argparse.Namespace) -> int:
         print("Reason: no completed Live_Prod repository snapshot")
         return 3
 
-    state = "CURRENT_REMOTE" if snapshot.current else "UPDATE_OR_ERROR"
+    age = snapshot_age_seconds(snapshot)
+    stale = args.max_age_seconds is not None and (
+        age < -300 or age > args.max_age_seconds
+    )
+    if stale:
+        state = "STALE"
+    else:
+        state = "CURRENT_REMOTE" if snapshot.current else "UPDATE_OR_ERROR"
     print(f"Launcher Live_Prod state: {state}")
     print(f"State check time: {snapshot.timestamp}")
+    print(f"State check age seconds: {round(age)}")
     print(f"Repository count: {len(snapshot.repositories)}")
     print(f"Launcher log: {log.name}")
     for item in snapshot.repositories:
         relation = "MATCH" if item.local == item.remote else "MISMATCH"
-        print(f"Repository {item.name}: {relation}")
+        print(f"Repository {item.name}: {relation} id={item.local}")
     if not snapshot.no_update_required:
         print("Launcher verdict: no completed noUpdateRequired path")
     else:
         print("Launcher verdict: noUpdateRequired")
-    return 0 if snapshot.current else 3
+    if stale:
+        print(f"Reason: full snapshot exceeds {args.max_age_seconds} seconds")
+    return 0 if snapshot.current and not stale else 3
 
 
 def parser() -> argparse.ArgumentParser:
@@ -158,6 +177,7 @@ def parser() -> argparse.ArgumentParser:
     check = subcommands.add_parser("check")
     check.add_argument("--log", type=Path)
     check.add_argument("--log-dir", type=Path)
+    check.add_argument("--max-age-seconds", type=int)
     check.set_defaults(function=command_check)
     return value
 

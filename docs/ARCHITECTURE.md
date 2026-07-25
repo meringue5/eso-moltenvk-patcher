@@ -32,8 +32,16 @@ This mechanism was independently verified under Rosetta.
 `config/current-target.txt` selects the default manifest used by status,
 build, install, restore, and update tooling. This removes dated manifest names
 from shell scripts and makes a target promotion one explicit pointer change.
-`scripts/check-update.sh` compares both SHA-256 and Mach-O UUID and returns a
-nonzero result for unknown, historical, or internally inconsistent identities.
+`scripts/check-update.sh` compares SHA-256, Mach-O UUID, client version, and
+databuild and returns a nonzero result for unknown, historical, content-updated,
+or internally inconsistent identities.
+
+`scripts/quick-update-check.sh` combines that identity with a fresh, completed
+launcher `Live_Prod` repository comparison and the installed bridge
+target/marker. Routine `READY` checks end there; `STOP` selects the slower
+component diagnosis. Evidence preparation and collection save the exact
+component results, repository IDs, settings hashes, and controlled setting
+values automatically.
 
 The schema-v2 current manifest also owns a compact static-layout profile. It
 records both embedded archive-member hashes, the linked MoltenVK object and

@@ -14,6 +14,7 @@ from collections import Counter, defaultdict
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from typing import Any
@@ -58,6 +59,25 @@ def load_manifest(path: Path) -> dict[str, Any]:
         if key not in manifest:
             raise ValueError(f"target manifest lacks {key}: {path}")
     return manifest
+
+
+def client_build_identity(path: Path) -> dict[str, str]:
+    try:
+        lines = path.read_text(encoding="ascii").splitlines()
+    except (OSError, UnicodeDecodeError) as error:
+        raise ValueError(f"cannot read client databuild stamp {path}: {error}") from error
+    if len(lines) < 3:
+        raise ValueError(f"invalid client databuild stamp: {path}")
+    prefix = lines[0].split(".")
+    try:
+        live_index = prefix.index("live")
+        databuild = prefix[live_index + 1]
+    except (ValueError, IndexError) as error:
+        raise ValueError(f"invalid client databuild identity: {path}") from error
+    version = lines[2].strip()
+    if not databuild.isdigit() or not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        raise ValueError(f"invalid client build values: {path}")
+    return {"version": version, "databuild": databuild}
 
 
 def executable_identity(path: Path) -> tuple[str, str]:
@@ -393,10 +413,25 @@ def command_check(args: argparse.Namespace) -> int:
         if manifest["sha256"] == actual_sha:
             matches.append((path, manifest))
     current = load_manifest(args.current_manifest)
-    if current["sha256"] == actual_sha and str(uuid.UUID(current["uuid"])) == actual_uuid:
+    stamp = getattr(args, "databuild_stamp", None)
+    actual_client = client_build_identity(stamp) if stamp else None
+    expected_client = current.get("client_build")
+    content_current = expected_client is None or actual_client == expected_client
+    if (
+        current["sha256"] == actual_sha
+        and str(uuid.UUID(current["uuid"])) == actual_uuid
+        and content_current
+    ):
         state = "CURRENT"
         match = args.current_manifest
         code = 0
+    elif (
+        current["sha256"] == actual_sha
+        and str(uuid.UUID(current["uuid"])) == actual_uuid
+    ):
+        state = "CONTENT_UPDATE"
+        match = args.current_manifest
+        code = 3
     elif matches:
         valid = [
             path
@@ -413,6 +448,13 @@ def command_check(args: argparse.Namespace) -> int:
     print(f"ESO update status: {state}")
     print(f"ESO SHA-256: {actual_sha}")
     print(f"ESO UUID: {actual_uuid}")
+    if actual_client is not None:
+        print(f"ESO client version: {actual_client['version']}")
+        print(f"ESO databuild: {actual_client['databuild']}")
+        print(
+            "ESO content status: "
+            + ("CURRENT" if content_current else "UNKNOWN_UPDATE")
+        )
     print(f"Current target: {args.current_manifest.name}")
     if match:
         print(f"Matched target: {match.name}")
@@ -438,6 +480,8 @@ def command_profile(args: argparse.Namespace) -> int:
 
 def command_audit(args: argparse.Namespace) -> int:
     reference = load_manifest(args.reference)
+    stamp = getattr(args, "databuild_stamp", None)
+    client_before = client_build_identity(stamp) if stamp else None
     candidate, failures = audit_manifest(
         args.exe,
         args.archive,
@@ -445,6 +489,10 @@ def command_audit(args: argparse.Namespace) -> int:
         args.new_runtime,
         args.description,
     )
+    if stamp and client_build_identity(stamp) != client_before:
+        failures.append("client databuild stamp changed while the audit was running")
+    if candidate is not None and client_before is not None:
+        candidate["client_build"] = client_before
     if failures:
         print("ESO update audit: MANUAL_ANALYSIS_REQUIRED")
         for failure in failures:
@@ -473,6 +521,9 @@ def command_select(args: argparse.Namespace) -> int:
         raise ValueError("candidate lacks the schema-v2 update profile")
     if candidate["sha256"] != actual_sha or str(uuid.UUID(candidate["uuid"])) != actual_uuid:
         raise ValueError("candidate does not identify the local executable")
+    stamp = getattr(args, "databuild_stamp", None)
+    if stamp and candidate.get("client_build") != client_build_identity(stamp):
+        raise ValueError("candidate does not identify the local client build")
     temporary = args.pointer.with_name(args.pointer.name + ".writing")
     temporary.write_text(candidate_path.name + "\n", encoding="ascii")
     temporary.replace(args.pointer)
@@ -489,6 +540,7 @@ def parser() -> argparse.ArgumentParser:
     check.add_argument("--exe", required=True, type=Path)
     check.add_argument("--manifest-dir", required=True, type=Path)
     check.add_argument("--current-manifest", required=True, type=Path)
+    check.add_argument("--databuild-stamp", type=Path)
     check.set_defaults(function=command_check)
 
     profile = commands.add_parser("profile")
@@ -508,6 +560,7 @@ def parser() -> argparse.ArgumentParser:
     audit.add_argument("--new-runtime", required=True, type=Path)
     audit.add_argument("--description", required=True)
     audit.add_argument("--output", required=True, type=Path)
+    audit.add_argument("--databuild-stamp", type=Path)
     audit.add_argument("--force", action="store_true")
     audit.set_defaults(function=command_audit)
 
@@ -515,6 +568,7 @@ def parser() -> argparse.ArgumentParser:
     select.add_argument("--exe", required=True, type=Path)
     select.add_argument("--candidate", required=True, type=Path)
     select.add_argument("--pointer", required=True, type=Path)
+    select.add_argument("--databuild-stamp", type=Path)
     select.set_defaults(function=command_select)
     return root
 

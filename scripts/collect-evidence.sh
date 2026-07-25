@@ -9,6 +9,7 @@ fi
 ROOT="${0:A:h:h}"
 OUTPUT="$1"
 ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
+SETTINGS="$ESO_LIVE/UserSettings.txt"
 START_EPOCH_FILE="$OUTPUT/started-at-epoch.txt"
 START_UTC_FILE="$OUTPUT/started-at-utc.txt"
 [[ -d "$OUTPUT" ]] || { echo "Missing evidence directory: $OUTPUT"; exit 1; }
@@ -79,6 +80,26 @@ UPDATE_CHECK_EXIT=0
 "$ROOT/scripts/check-update.sh" > "$OUTPUT/update-check-after.txt" 2>&1 \
   || UPDATE_CHECK_EXIT=$?
 echo "$UPDATE_CHECK_EXIT" > "$OUTPUT/update-check-after-exit-code.txt"
+QUICK_CHECK_EXIT=0
+"$ROOT/scripts/quick-update-check.sh" \
+  > "$OUTPUT/quick-update-check-after.txt" 2>&1 || QUICK_CHECK_EXIT=$?
+echo "$QUICK_CHECK_EXIT" > "$OUTPUT/quick-update-check-after-exit-code.txt"
+LAUNCHER_CHECK_EXIT=0
+"$ROOT/scripts/check-launcher-state.sh" \
+  --max-age-seconds "${TESO4M4_LAUNCHER_MAX_AGE_SECONDS:-3600}" \
+  > "$OUTPUT/launcher-state-after.txt" 2>&1 || LAUNCHER_CHECK_EXIT=$?
+echo "$LAUNCHER_CHECK_EXIT" > "$OUTPUT/launcher-state-after-exit-code.txt"
+
+{
+  if [[ -f "$SETTINGS" ]]; then
+    stat -f 'bytes=%z modified_epoch=%m' "$SETTINGS"
+    shasum -a 256 "$SETTINGS"
+    grep -E '^SET (AMBIENT_OCCLUSION_TYPE|SkipPregameVideos) "[01]"$' \
+      "$SETTINGS" || true
+  else
+    echo "settings absent"
+  fi
+} > "$OUTPUT/settings-after.txt"
 
 (
   cd "$OUTPUT"

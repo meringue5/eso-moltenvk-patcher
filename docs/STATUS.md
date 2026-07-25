@@ -177,6 +177,22 @@ checks do not displace the last full snapshot. It neither launches an app nor
 contacts the network. Its result is point-in-time evidence and does not replace
 the exact executable/UUID gate or predict a future remote update.
 
+Routine checks now use `scripts/quick-update-check.sh`, which combines the
+exact ESO identity and client build, the last full launcher repository
+comparison, and the installed bridge target/marker into one `READY` or `STOP`
+result. The complete gate measured approximately 0.15–0.16 seconds on five warm
+runs on this checkpoint. It rejects a full launcher snapshot older than one
+hour by default. Evidence preparation and collection invoke the same coded
+gate and preserve repository IDs plus the relevant setting hashes and values.
+A `READY` result ends routine analysis; only `STOP` or contradictory local
+evidence opens the slower forensic or rebase path.
+
+The slower exact-layout audit now profiles the client version/databuild as
+well, checks that stamp for an in-flight update race, and verifies it again
+before target selection. A real local audit reproduced the full static profile
+and client build in 53.8 seconds without modifying the game bundle. This path
+is reserved for `STOP`; it is not part of the 0.15–0.16-second routine gate.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence

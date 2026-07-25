@@ -2,6 +2,10 @@
   "description": "Steam macOS ESO 12.0.7 build analyzed on 2026-07-20",
   "sha256": "82bc04ebc8c486636303d147edb9af6c0727b19c7faf7ce7d00837ac3e8ebf4d",
   "uuid": "6599a49f-b1a0-3cbf-9aef-6d4186a66e0d",
+  "client_build": {
+    "version": "12.0.7",
+    "databuild": "3281538"
+  },
   "proc_addr_slots": {
     "vkGetInstanceProcAddr": "0x4b3be90",
     "vkGetDeviceProcAddr": "0x4b3be98"

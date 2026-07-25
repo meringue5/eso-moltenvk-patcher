@@ -13,6 +13,9 @@ PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
 UPDATE_CHECK_EXIT=0
 UPDATE_CHECK="$("$ROOT/scripts/check-update.sh" 2>&1)" || UPDATE_CHECK_EXIT=$?
+QUICK_CHECK_EXIT=0
+QUICK_CHECK="$("$ROOT/scripts/quick-update-check.sh" 2>&1)" \
+  || QUICK_CHECK_EXIT=$?
 
 if [[ -e "$OUTPUT" ]]; then
   echo "Evidence directory already exists: $OUTPUT"
@@ -27,12 +30,21 @@ if (( UPDATE_CHECK_EXIT != 0 )); then
   echo "ESO target changed; refusing to prepare stale experiment evidence."
   exit "$UPDATE_CHECK_EXIT"
 fi
+if (( QUICK_CHECK_EXIT != 0 )); then
+  echo "$QUICK_CHECK"
+  echo "Quick update gate stopped; refusing to prepare ambiguous evidence."
+  exit "$QUICK_CHECK_EXIT"
+fi
 [[ -z "$(git -C "$ROOT" status --porcelain --untracked-files=normal)" ]] || {
   echo "Source worktree is not clean; refusing to prepare ambiguous evidence."
   exit 1
 }
 mkdir -p "$OUTPUT"
 echo "$UPDATE_CHECK" > "$OUTPUT/update-check-before.txt"
+echo "$QUICK_CHECK" > "$OUTPUT/quick-update-check-before.txt"
+"$ROOT/scripts/check-launcher-state.sh" \
+  --max-age-seconds "${TESO4M4_LAUNCHER_MAX_AGE_SECONDS:-3600}" \
+  > "$OUTPUT/launcher-state-before.txt"
 date -u +%Y-%m-%dT%H:%M:%SZ > "$OUTPUT/started-at-utc.txt"
 date +%s > "$OUTPUT/started-at-epoch.txt"
 git -C "$ROOT" rev-parse HEAD > "$OUTPUT/source-commit.txt"
@@ -49,7 +61,8 @@ fi
   if [[ -f "$SETTINGS" ]]; then
     stat -f 'bytes=%z modified_epoch=%m' "$SETTINGS"
     shasum -a 256 "$SETTINGS"
-    grep -E '^SET AMBIENT_OCCLUSION_TYPE "[01]"$' "$SETTINGS" || true
+    grep -E '^SET (AMBIENT_OCCLUSION_TYPE|SkipPregameVideos) "[01]"$' \
+      "$SETTINGS" || true
   else
     echo "settings absent"
   fi

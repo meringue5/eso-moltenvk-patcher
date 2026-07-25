@@ -35,9 +35,11 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P1: keep redirection verifiable
 
-- Run the automatic update check before every evidence boundary. For an unknown
-  build, use the exact-profile fast rebase only if every archive, patch,
-  reference, proc-route, and replacement-runtime check passes.
+- Run the single quick update gate before every evidence boundary. A `READY`
+  result ends routine update analysis; only a `STOP` result enters component
+  diagnosis. For an unknown build, use the exact-profile fast rebase only if
+  every archive, patch, reference, proc-route, and replacement-runtime check
+  passes.
 - When the launcher itself updates but the ESO executable remains current, use
   the completed `Live_Prod` repository comparison to distinguish a
   launcher-only event from a pending or content update. Preserve the raw logs
