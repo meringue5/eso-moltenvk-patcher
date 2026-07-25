@@ -345,3 +345,12 @@ The next gate is not another configuration flag. Prepare observation-only,
 reset-window-bounded tracing for offscreen images and memory, descriptors,
 pipelines, command buffers, and queue submissions. Installation of that
 candidate remains a separate experiment gate.
+
+Experiment 0012's source and non-game gates now pass from commit `a1714da`.
+The tracer covers both direct patch targets and GDPA results, remains inactive
+until the post-generation-2 device wait, closes after eight replacement
+presentations, caps detail logs, and preserves all arguments and results. Its
+chained smoke probe, analyzer tests, complete temporary pristine-loader build,
+four effective-configuration probes, and fresh real-Metal compatibility probes
+passed. The failed Experiment 0011 bridge remains installed; Experiment 0012
+has not modified the bundle. Explicit installation approval is the next gate.

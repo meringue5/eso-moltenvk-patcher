@@ -1,7 +1,8 @@
 # Experiment 0012: bounded reset-resource trace
 
 - Date: 2026-07-25
-- Outcome: **planned; source candidate under non-game validation**
+- Outcome: **planned; source and non-game validation passed, installation
+  approval pending**
 - Rollback: **not performed; failed Experiment 0011 checkpoint installed**
 
 ## Question
@@ -69,4 +70,34 @@ corruption. No HUD, capture, FPS report, or exploratory play will be required.
 
 ## Result
 
-Pending.
+Source commit `a1714da` passed 51 Python tests, Python compilation, shell
+syntax, whitespace checks, warnings-as-errors, and Clang static analysis. The
+chained lifecycle/reset probe passed and measured the inactive high-frequency
+draw wrapper at 4 ns per call, below its 1 microsecond safety ceiling. The probe
+also verifies that every resource-related direct patch target is intercepted,
+that suboptimal presentation is forwarded unchanged, and that the bounded
+counter summary is complete.
+
+A clean full build used a temporary app structure pointing at the pristine
+loader, so no installed game-bundle file was changed. It passed Bink re-export,
+Rosetta self-patch, HDR, lifecycle, reset-resource, and all four configuration
+probes. `reset-resource-trace` reports MTLHeap `1` with the other established
+compatibility values unchanged.
+
+Fresh legacy and replacement-runtime probes reached the real M4 Metal device.
+The candidate hid the HDR extension, removed the one exact HDR surface pair,
+created the non-HDR device, and preserved the discrete descriptor path.
+
+Prepared artifact hashes are:
+
+```text
+libBink2Macx64.dylib
+c4f7110a1d1e7c1f6e10df643fc4698d4fcc73e95ce8717f0a54b2cd772a11f9
+
+libMoltenVK.teso4m4.dylib
+d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+The ESO target remains current. Experiment 0011 is still installed and no
+restore or Experiment 0012 installation has occurred. Explicit approval for
+that bundle modification is the remaining gate.
