@@ -1,8 +1,8 @@
 # Experiment 0018: embedded-runtime core feature profile
 
 - Date: 2026-07-26
-- Outcome: **prepared; installation not started**
-- Rollback: **Experiment 0017 remains installed; pristine loader checked**
+- Outcome: **installed; user repair validation pending**
+- Rollback: **checked pristine loader available; both pipeline caches preserved**
 
 ## Question
 
@@ -184,14 +184,33 @@ do not immediately run again; analyze the collected run first.
 
 ## Result
 
-The source candidate is fixed at commit `26d26ac`. Installation and user
-validation have not started.
+The source candidate is fixed at commit `26d26ac`. At approximately
+2026-07-26 00:46 KST, after explicit user approval, Experiment 0017 was
+restored to the checked pristine loader with both pipeline caches preserved.
+The active loader then matched the pristine source, the marker was absent, and
+the ESO 12.0.7 target fingerprint remained current.
+
+The bridge was rebuilt from that real original loader. Its proxy and official
+MoltenVK 1.4.1 hashes exactly reproduced the prepared values. Installation in
+`legacy-feature-profile` mode preserved both caches and `UserSettings.txt`.
+Post-install verification confirmed:
+
+- ESO, Steam, and the launcher remained stopped;
+- target SHA-256, UUID, client version, and databuild were current;
+- the installed proxy and runtime were byte-identical to the built artifacts;
+- the marker contained exactly `legacy-feature-profile`;
+- both pipeline-cache hashes and the settings hash were unchanged;
+- the quick update gate returned `READY`.
+
+The ignored evidence boundary is
+`artifacts/experiment-0018-20260725T154658Z`. User validation has not started.
 
 ## Rollback
 
-Experiment 0017 remains installed. The pristine Bink loader, both pipeline
-caches, settings, and prior evidence remain present. No game-bundle file was
-modified while preparing Experiment 0018.
+Experiment 0018 is installed. The pristine Bink loader, both pipeline caches,
+settings, displaced Experiment 0017 marker, and prior evidence remain present.
+The checked restore path can return the active proxy to the pristine loader
+without replacing either cache.
 
 ## Follow-up
 

@@ -717,5 +717,11 @@ non-game M4 gate without touching the installed Experiment 0017 bundle.
 Prepared official-1.4.1 proxy and runtime hashes are recorded in the
 [Experiment 0018 record](experiments/0018-legacy-feature-profile.md). All
 static checks pass and source commit `26d26ac` fixes the candidate identity.
-A new explicit approval is required before restoring or modifying the game
-bundle. No additional user launch is requested against Experiment 0017.
+After explicit approval, Experiment 0017 was restored and Experiment 0018 was
+rebuilt from the real pristine loader and installed in exact
+`legacy-feature-profile` mode. Both pipeline caches and `UserSettings.txt`
+retain their pre-install hashes; the installed artifacts match the prepared
+hashes; the target and marker checks pass; and the quick update gate is
+`READY`. The ignored evidence boundary is
+`artifacts/experiment-0018-20260725T154658Z`. The remaining gate is one
+user-controlled normal-performance world entry and one resolution reset.
