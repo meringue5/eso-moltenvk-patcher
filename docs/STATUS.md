@@ -414,3 +414,32 @@ Fresh ignored evidence is prepared under
 `artifacts/experiment-0013-20260725T121340Z`. The next gate is one
 user-controlled world entry and one fullscreen-resolution change. No other
 setting, travel, HUD, capture, or performance report is required.
+
+That user-controlled run failed rendering correctness. The exact settings
+change was 1920 x 1200 to 2048 x 1280, and persistent solid-color output
+recurred with command pooling verified at `0`. Generation 3 acquired and
+presented 262 frames. The bounded trace submitted 9,671 indexed draws and
+descriptor-set binds, created all tracked resources successfully, and recorded
+no Vulkan failure. No crash report or focus loss occurred. Experiment 0013
+therefore excludes MoltenVK internal command pooling as the primary cause.
+
+The leading fault region is now the connection between recreated offscreen
+images and the final composite pass. Ranked hypotheses are:
+
+1. a final-pass descriptor retains a destroyed image view or is skipped by
+   MoltenVK 1.4.1's live-resource check;
+2. a descriptor update/rebind or application command-buffer ordering pattern
+   tolerated by 1.0.18 is not reflected by 1.4.1's descriptor state tracker;
+3. an old/new offscreen-image lifetime or synchronization hazard survives
+   `vkDeviceWaitIdle` when ESO reuses existing `VkDeviceMemory`;
+4. an image barrier, attachment layout, or load/store transition leaves the
+   final composite source undefined;
+5. a reset-created pipeline or pipeline-cache key is incompatible with the new
+   render-target dimensions.
+
+Swapchain lifecycle, presentation result/scaling, HDR, focus, MTLHeap,
+argument-buffer enablement, and MoltenVK command pooling are not leading
+causes. Stop generic configuration toggles. Before another user run, implement
+handle-level descriptor/image-view lifetime tracking plus barrier and
+attachment-layout tracing, and use that evidence to prepare a repair
+counterfactual rather than another blind setting A/B.

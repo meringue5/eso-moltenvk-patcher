@@ -216,3 +216,12 @@ MoltenVK 1.0.18 instead stores Metal resource objects when descriptors are
 updated and has no equivalent tracker. This independently supported version
 delta and the local reset counts make descriptor/resource state the leading
 region, but do not yet identify a specific invalid descriptor.
+
+Experiment 0013 changed only MoltenVK internal command pooling from enabled to
+disabled and verified the effective value inside ESO. Persistent solid-color
+output still followed a 1920 x 1200 to 2048 x 1280 reset. The replacement
+swapchain then acquired and presented 262 frames; its first eight contained
+9,671 indexed draws and descriptor-set binds with no Vulkan failure.
+MoltenVK's internal command-memory pool is therefore not the primary cause.
+This result does not exclude ESO's reuse of already allocated Vulkan command
+buffers or descriptor sets.

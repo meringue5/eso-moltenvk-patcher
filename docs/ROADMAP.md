@@ -39,10 +39,18 @@ are in [Project status](STATUS.md); completed runs belong in the
   Submitted drawing and resource creation continued without Vulkan failures;
   captured image bindings were aligned and non-overlapping, while descriptor
   and image-view churn dominated the reset boundary.
-- Test command pooling disabled as the next single-variable descriptor/resource
-  state counterfactual. Keep MTLHeap enabled and every established
-  compatibility control unchanged. Treat any pass as diagnostic until its CPU
-  cost is measured.
+- Preserve Experiment 0013 as the negative command-pooling result. Disabling
+  MoltenVK internal command pooling did not repair the reset; do not run
+  another generic MoltenVK configuration A/B.
+- Add always-on, non-logging mirrors for descriptor writes/copies, descriptor
+  set allocation/reset/free, and image-view creation/destruction. During the
+  bounded reset window, report descriptor entries that name destroyed or
+  unknown views and identify the sets bound by each submitted command buffer.
+- In the same bounded window, trace `vkCmdPipelineBarrier`, render-pass
+  attachment image views and layouts, and image copy/blit/resolve operations.
+  Correlate the final composite chain before asking for another user run.
+- Prepare the next runtime candidate only when the trace can distinguish a
+  targeted descriptor-lifetime repair from a targeted layout/barrier repair.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.

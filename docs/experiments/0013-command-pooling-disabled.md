@@ -1,7 +1,7 @@
 # Experiment 0013: command pooling disabled during live reset
 
 - Date: 2026-07-25
-- Outcome: **running; installed, user reproduction pending**
+- Outcome: **failed; solid-color live-reset corruption persisted**
 - Rollback: **not performed; restore path checked before installation**
 
 ## Question
@@ -131,3 +131,46 @@ the quick gate is `READY`. Fresh evidence is prepared under the ignored
 The exact 1920 x 1200 settings file, ambient occlusion `1`, pregame-video
 setting `1`, 4,203,757-byte active cache, and 6,800,792-byte old cache were
 preserved. No agent launched Steam, the launcher, or ESO.
+
+## Runtime result
+
+The user entered the world with initially correct rendering and changed
+fullscreen resolution once from 1920 x 1200 to 2048 x 1280. Persistent
+solid-color output recurred. The settings diff is structurally exact and
+contains only those two dimension changes.
+
+The bridge proved the intended effective configuration, including command
+pooling `0`, and the automatic startup verdict passed. No crash report, Vulkan
+failure record, device-loss marker, focus loss, or reset error was observed.
+All evidence checksums pass.
+
+Replacement swapchain generation 3 acquired and presented 262 frames. Its
+first eight frames contained eight submitted command buffers, 484 balanced
+render passes, 1,565 pipeline binds, 9,671 descriptor-set binds, and 9,671
+indexed draws. The reset successfully created 151 graphics pipelines, 53
+images, 55 image views, 35 buffers, 50 render passes, and 50 framebuffers.
+
+No Vulkan device memory or command buffer was allocated, freed, mapped, or
+unmapped in the bounded window. Fifteen complete captured image bindings were
+aligned and non-overlapping. The reset made 131,851
+`vkUpdateDescriptorSets` calls. The active pipeline-cache size remained
+4,203,757 bytes but its content hash changed; the old cache remained
+byte-identical.
+
+## Interpretation
+
+Disabling MoltenVK internal command pooling does not repair the failure.
+MoltenVK command-resource reuse is therefore excluded as a primary cause.
+This does not exclude ESO re-recording or resubmitting its already allocated
+Vulkan command buffers.
+
+Together with Experiments 0010 through 0012, the result places the leading
+fault after successful offscreen resource creation and before or within the
+final composite pass. The strongest specific hypothesis is that a descriptor
+used by that pass still names a destroyed image view, fails MoltenVK 1.4.1's
+live-resource check, or is not rebound after the reset. The next source work
+must track descriptor contents and image-view lifetimes by handle and correlate
+them with command-buffer binds. It must also trace image barriers and render
+pass attachment layouts to distinguish a stale descriptor from an undefined
+image-layout transition. No further generic configuration experiment is
+justified first.
