@@ -39,6 +39,7 @@ typedef enum {
     TESO4M4_MODE_DESCRIPTOR_COMPAT,
     TESO4M4_MODE_LEGACY_ALLOCATION,
     TESO4M4_MODE_RESET_RESOURCE_TRACE,
+    TESO4M4_MODE_NO_COMMAND_POOLING,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -192,6 +193,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     if (strcmp(mode, "reset-resource-trace") == 0) {
         return TESO4M4_MODE_RESET_RESOURCE_TRACE;
     }
+    if (strcmp(mode, "no-command-pooling") == 0) {
+        return TESO4M4_MODE_NO_COMMAND_POOLING;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -231,11 +235,13 @@ static bool verify_moltenvk_configuration(
         mode == TESO4M4_MODE_LEGACY_ALLOCATION
             ? MVK_CONFIG_USE_MTLHEAP_NEVER
             : MVK_CONFIG_USE_MTLHEAP_WHERE_SAFE;
+    const VkBool32 expected_command_pooling =
+        mode == TESO4M4_MODE_NO_COMMAND_POOLING ? VK_FALSE : VK_TRUE;
     if (configuration.liveCheckAllResources != VK_TRUE ||
         configuration.useMetalArgumentBuffers != VK_FALSE ||
         configuration.useMTLHeap != expected_mtlheap ||
         configuration.synchronousQueueSubmits != VK_TRUE ||
-        configuration.useCommandPooling != VK_TRUE ||
+        configuration.useCommandPooling != expected_command_pooling ||
         configuration.prefillMetalCommandBuffers !=
             MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS_STYLE_NO_PREFILL) {
         log_message("ERROR: MoltenVK configuration differs from selected mode");
@@ -383,11 +389,15 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message("SKIP: enable marker absent");
         return;
     }
-    g_reset_trace_enabled = mode == TESO4M4_MODE_RESET_RESOURCE_TRACE;
+    g_reset_trace_enabled =
+        mode == TESO4M4_MODE_RESET_RESOURCE_TRACE ||
+        mode == TESO4M4_MODE_NO_COMMAND_POOLING;
     if (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
-         setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0)) {
+         setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0) ||
+        (mode == TESO4M4_MODE_NO_COMMAND_POOLING &&
+         setenv("MVK_CONFIG_USE_COMMAND_POOLING", "0", 1) != 0)) {
         log_message("ERROR: could not set selected compatibility mode: %s",
                     strerror(errno));
         return;
@@ -400,6 +410,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message(
             "MODE: reset resource trace enabled live_resources=1 "
             "metal_argument_buffers=0 use_mtlheap=1");
+    } else if (mode == TESO4M4_MODE_NO_COMMAND_POOLING) {
+        log_message(
+            "MODE: command pooling disabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=0");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "

@@ -29,11 +29,13 @@ int main(int argc, char** argv) {
         (strcmp(argv[2], "default") != 0 &&
          strcmp(argv[2], "descriptor-compat") != 0 &&
          strcmp(argv[2], "legacy-allocation") != 0 &&
-         strcmp(argv[2], "reset-resource-trace") != 0)) {
+         strcmp(argv[2], "reset-resource-trace") != 0 &&
+         strcmp(argv[2], "no-command-pooling") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
-            "default|descriptor-compat|legacy-allocation|reset-resource-trace\n",
+            "default|descriptor-compat|legacy-allocation|reset-resource-trace|"
+            "no-command-pooling\n",
                 argv[0]);
         return 2;
     }
@@ -46,12 +48,17 @@ int main(int argc, char** argv) {
     const bool descriptor_compat =
         strcmp(argv[2], "descriptor-compat") == 0 ||
         strcmp(argv[2], "reset-resource-trace") == 0 ||
+        strcmp(argv[2], "no-command-pooling") == 0 ||
         legacy_allocation;
+    const bool no_command_pooling =
+        strcmp(argv[2], "no-command-pooling") == 0;
     if (descriptor_compat &&
         (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
          (legacy_allocation &&
-          setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0))) {
+          setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0) ||
+         (no_command_pooling &&
+          setenv("MVK_CONFIG_USE_COMMAND_POOLING", "0", 1) != 0))) {
         perror("setenv");
         return 1;
     }
@@ -99,7 +106,8 @@ int main(int argc, char** argv) {
         configuration.useMetalArgumentBuffers == expected_argument_buffers &&
         configuration.useMTLHeap == expected_mtlheap &&
         configuration.synchronousQueueSubmits == VK_TRUE &&
-        configuration.useCommandPooling == VK_TRUE &&
+        configuration.useCommandPooling ==
+            (no_command_pooling ? VK_FALSE : VK_TRUE) &&
         configuration.prefillMetalCommandBuffers ==
             MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS_STYLE_NO_PREFILL;
     printf("MoltenVK configuration probe: %s\n", passed ? "PASS" : "FAIL");

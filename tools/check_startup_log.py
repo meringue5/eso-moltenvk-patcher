@@ -109,22 +109,30 @@ def evaluate_startup_log(
         "MODE: reset resource trace enabled live_resources=1 "
         "metal_argument_buffers=0 use_mtlheap=1"
     )
+    no_command_pooling_mode = (
+        "MODE: command pooling disabled live_resources=1 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=0"
+    )
     matched_modes = [
         mode
         for mode in (
             descriptor_mode,
             legacy_allocation_mode,
             reset_resource_trace_mode,
+            no_command_pooling_mode,
         )
         if mode in lines
     ]
     if len(matched_modes) != 1:
         reasons.append("exactly one supported compatibility mode was not enabled")
     expected_mtlheap = 0 if legacy_allocation_mode in matched_modes else 1
+    expected_command_pooling = (
+        0 if no_command_pooling_mode in matched_modes else 1
+    )
     expected_configuration = (
         "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
         f"use_mtlheap={expected_mtlheap} synchronous_queue_submits=1 "
-        "command_pooling=1 prefill=0"
+        f"command_pooling={expected_command_pooling} prefill=0"
     )
     if expected_configuration not in lines:
         reasons.append("the effective MoltenVK configuration was not verified")

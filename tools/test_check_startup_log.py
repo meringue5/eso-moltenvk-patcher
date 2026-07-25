@@ -143,6 +143,30 @@ class StartupLogTests(unittest.TestCase):
         verdict = evaluate_startup_log(text)
         self.assertTrue(verdict.passed, verdict.reasons)
 
+    def test_accepts_no_command_pooling_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: command pooling disabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=0",
+        ).replace("command_pooling=1", "command_pooling=0")
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
+    def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: command pooling disabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=0",
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "the effective MoltenVK configuration was not verified",
+            verdict.reasons,
+        )
+
     def test_time_gate_rejects_stale_run(self) -> None:
         cutoff = run_epoch(RUN)
         assert cutoff is not None

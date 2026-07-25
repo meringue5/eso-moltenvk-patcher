@@ -155,6 +155,22 @@ This mode does not replace MoltenVK 1.4.1 or alter Vulkan calls. It isolates
 MoltenVK's Metal-heap resource placement/reuse path while retaining the
 observation-only swapchain lifecycle wrappers.
 
+## No-command-pooling mode
+
+Experiment 0013 adds a fail-closed `no-command-pooling` marker mode. It retains
+the complete Experiment 0012 compatibility and bounded reset-resource trace,
+keeps MTLHeap at `where safe`, and sets only
+`MVK_CONFIG_USE_COMMAND_POOLING=0`. The post-load query must report command
+pooling `0` with live-resource checking `1`, argument buffers `0`, MTLHeap `1`,
+synchronous submission `1`, and prefill `0`; otherwise the bridge refuses to
+patch ESO.
+
+This is a correctness counterfactual for MoltenVK's reuse of internal command
+objects. It does not change Vulkan calls, ESO's command-pool API objects, or
+the replacement runtime version. Disabling pooling can add CPU allocation
+overhead and is not treated as a performance configuration unless rendering
+first passes.
+
 ## Reset lifecycle trace
 
 Experiment 0010 adds observation-only wrappers to selected device functions
