@@ -30,20 +30,19 @@ are in [Project status](STATUS.md); completed runs belong in the
   generation had clean tracked object lifetimes; forcing out-of-date results
   did not trigger recreation, and eliminating suboptimal presentation through
   scaling did not correct the image.
-- Run Experiment 0011 with only MTLHeap disabled. The exact gate is one
-  initially valid world followed by one live resolution change and a
-  30-second correctness check.
-- If Experiment 0011 passes, compare steady performance and reset behavior
-  against the MTLHeap-enabled checkpoint before deciding whether global heap
-  disablement is acceptable or a narrower source patch is warranted.
-- If it fails, restore the Experiment 0010 configuration and use
-  reset-window-only tracing of offscreen images/memory, descriptors, pipelines,
-  and command buffers rather than cycling another configuration flag blindly.
+- Preserve Experiment 0011 as a negative MTLHeap result. The ESO process
+  verified heap mode `0`, and a single live resolution change still produced
+  solid-color output while presentation continued.
+- Restore MTLHeap to `where safe` in the next candidate. Do not give up its
+  resource-allocation benefit for a workaround that failed.
+- Add reset-window-only tracing of offscreen images/memory, descriptors,
+  pipelines, command buffers, and queue submissions. Keep Vulkan inputs and
+  results observation-only and cap detailed records to avoid log flooding.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.
-- Defer asynchronous queue-submission experiments until the single-variable
-  MTLHeap reset test is classified.
+- Defer asynchronous queue-submission experiments until the reset resource
+  trace is classified.
 
 ## P1: keep redirection verifiable
 

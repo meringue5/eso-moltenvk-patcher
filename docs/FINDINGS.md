@@ -183,3 +183,12 @@ events crossed `DeviceWaitIdle`, swapchain recreation, and `OnDeviceReset`
 after the world had loaded. The resolution-only trigger strengthens the common
 live reset/resource-recreation path over an SSAO-specific shader explanation,
 but does not identify the incorrect resource owner or lifecycle operation.
+
+Experiment 0011 changed only MoltenVK's effective MTLHeap mode from `where
+safe` to `never`. The ESO process verified MTLHeap `0`, then reproduced
+persistent solid-color output after changing fullscreen resolution from
+1920 x 1200 to 2048 x 1280. Its third swapchain generation acquired and
+presented 382 frames with clean tracked swapchain-dependent lifetimes, no
+device loss, and no process crash. MTLHeap allocation is therefore not the
+cause of the observed live-reset corruption and should not be disabled as a
+workaround for it.

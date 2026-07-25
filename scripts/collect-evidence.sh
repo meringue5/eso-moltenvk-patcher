@@ -144,6 +144,18 @@ echo "$LAUNCHER_CHECK_EXIT" > "$OUTPUT/launcher-state-after-exit-code.txt"
     echo "settings absent"
   fi
 } > "$OUTPUT/settings-after.txt"
+SETTINGS_DIFF_EXIT=0
+if [[ -f "$OUTPUT/UserSettings-before.txt" \
+  && -f "$OUTPUT/UserSettings-after.txt" ]]; then
+  python3 "$ROOT/tools/settings_diff.py" \
+    "$OUTPUT/UserSettings-before.txt" "$OUTPUT/UserSettings-after.txt" \
+    > "$OUTPUT/settings-diff.txt" 2>&1 || SETTINGS_DIFF_EXIT=$?
+else
+  echo "Before/after settings pair is unavailable." \
+    > "$OUTPUT/settings-diff.txt"
+  SETTINGS_DIFF_EXIT=2
+fi
+echo "$SETTINGS_DIFF_EXIT" > "$OUTPUT/settings-diff-exit-code.txt"
 
 (
   cd "$OUTPUT"

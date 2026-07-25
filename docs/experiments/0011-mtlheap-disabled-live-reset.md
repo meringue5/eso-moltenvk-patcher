@@ -1,7 +1,8 @@
 # Experiment 0011: MTLHeap disabled during live reset
 
 - Date: 2026-07-25
-- Outcome: **running; legacy-allocation bridge installed, user test pending**
+- Outcome: **failed; MTLHeap disabled but live reset still produced solid-color
+  output**
 - Rollback: **not performed; restore path checked before installation**
 
 ## Question
@@ -122,5 +123,51 @@ rendering pass/fail.
 
 ## Result
 
-Installation and evidence preparation passed. The user-controlled live-reset
-result is pending.
+The user launched through Steam, reached the world, and changed fullscreen
+resolution once. The display became persistent solid color immediately after
+the change. The process did not crash.
+
+Run `20260725T111738.719260000Z-pid33237` passed the automatic bridge verdict.
+The ESO process itself reported the exact effective configuration:
+
+```text
+live_resources=1 metal_argument_buffers=0 use_mtlheap=0
+synchronous_queue_submits=1 command_pooling=1 prefill=0
+```
+
+The settings comparison has exact structural identity and only two changed
+values:
+
+```text
+FullscreenWidth  1920 -> 2048
+FullscreenHeight 1200 -> 1280
+```
+
+ESO recorded two startup resets and one terminal live reset. The live reset
+began with a 14.874 ms device wait, recreated the swapchain in 0.076 ms, and
+completed `OnDeviceReset` in 0.262 ms. The bridge observed three generations:
+
+| Generation | Extent | Images | Views | Framebuffers | Acquires | Presents |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | 3420x2148 | 2 | 2/2 | 2/2 | 1 | 1 |
+| 2 | 3420x2146 | 2 | 2/2 | 2/2 | 8 | 8 |
+| 3 | 3420x2146 | 2 | 2/2 | 2/2 | 382 | 382 |
+
+All 382 generation-3 acquisitions and presentations returned
+`VK_SUBOPTIMAL_KHR`. There was no lifecycle anomaly, bridge error, device loss,
+new crash report, or OS focus loss. The active cache retained its size and
+changed content; the old backup remained byte-identical. All 38 evidence files
+pass the ignored directory's checksum manifest.
+
+## Interpretation
+
+The MTLHeap hypothesis is falsified for this failure. Disabling Metal-heap
+allocation does not repair ESO's loaded-world reset path, so MTLHeap must not
+be traded away as a workaround for this defect.
+
+Together with Experiment 0010, the result excludes the tested swapchain result,
+presentation scaling, and MTLHeap allocation paths. The invalid content is
+created or composed before a functioning presentation. The next candidate must
+observe the reset window's non-swapchain images and memory bindings,
+descriptors, pipelines, command buffers, and queue submissions without changing
+their inputs or results.

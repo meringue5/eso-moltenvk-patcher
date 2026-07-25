@@ -331,3 +331,17 @@ non-game and real-Metal gates passed. Installed artifact hashes match the
 build, both pipeline caches and user settings were preserved, the bridge target
 is current, and the quick update gate is `READY`. Fresh ignored evidence is
 prepared. No ESO, Steam, or launcher process was started by the agent.
+
+The user-controlled Experiment 0011 run failed rendering correctness. ESO
+verified MTLHeap `0`, and the settings changed only from 1920 x 1200 to
+2048 x 1280. The terminal live reset completed without an API error, then
+generation 3 acquired and presented 382 frames while the user saw persistent
+solid-color output. Tracked swapchain resource lifetimes were clean; no bridge
+error, device loss, focus loss, crash, or new report occurred. MTLHeap is
+therefore excluded as the cause of this failure and must return to `where safe`
+in the next candidate.
+
+The next gate is not another configuration flag. Prepare observation-only,
+reset-window-bounded tracing for offscreen images and memory, descriptors,
+pipelines, command buffers, and queue submissions. Installation of that
+candidate remains a separate experiment gate.
