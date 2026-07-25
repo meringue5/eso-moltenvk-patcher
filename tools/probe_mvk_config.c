@@ -37,14 +37,15 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "full-lifetime-audit") != 0 &&
          strcmp(argv[2], "texture-cache-fix") != 0 &&
          strcmp(argv[2], "legacy-feature-profile") != 0 &&
-         strcmp(argv[2], "performance-safe") != 0)) {
+         strcmp(argv[2], "performance-safe") != 0 &&
+         strcmp(argv[2], "performance-aggressive") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
             "default|descriptor-compat|legacy-allocation|reset-resource-trace|"
             "no-command-pooling|render-audit|reset-no-pipeline-cache|"
             "full-lifetime-audit|texture-cache-fix|legacy-feature-profile|"
-            "performance-safe\n",
+            "performance-safe|performance-aggressive\n",
                 argv[0]);
         return 2;
     }
@@ -64,19 +65,26 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "texture-cache-fix") == 0 ||
         strcmp(argv[2], "legacy-feature-profile") == 0 ||
         strcmp(argv[2], "performance-safe") == 0 ||
+        strcmp(argv[2], "performance-aggressive") == 0 ||
         legacy_allocation;
     const bool no_command_pooling =
         strcmp(argv[2], "no-command-pooling") == 0;
     const bool performance_safe =
         strcmp(argv[2], "performance-safe") == 0;
+    const bool performance_aggressive =
+        strcmp(argv[2], "performance-aggressive") == 0;
+    const bool performance_mode =
+        performance_safe || performance_aggressive;
     if (descriptor_compat &&
-        (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
+        (setenv(
+             "MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES",
+             performance_aggressive ? "0" : "1", 1) != 0 ||
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
          (legacy_allocation &&
           setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0) ||
          (no_command_pooling &&
           setenv("MVK_CONFIG_USE_COMMAND_POOLING", "0", 1) != 0) ||
-         (performance_safe &&
+         (performance_mode &&
           (setenv("MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS", "0", 1) != 0 ||
            setenv(
                "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
@@ -117,7 +125,10 @@ int main(int argc, char** argv) {
         configuration.prefillMetalCommandBuffers,
         configuration.shouldMaximizeConcurrentCompilation);
 
-    const VkBool32 expected_live = descriptor_compat ? VK_TRUE : VK_FALSE;
+    const VkBool32 expected_live =
+        descriptor_compat && !performance_aggressive
+            ? VK_TRUE
+            : VK_FALSE;
     const VkBool32 expected_argument_buffers =
         descriptor_compat ? VK_FALSE : VK_TRUE;
     const MVKConfigUseMTLHeap expected_mtlheap =
@@ -130,13 +141,13 @@ int main(int argc, char** argv) {
         configuration.useMetalArgumentBuffers == expected_argument_buffers &&
         configuration.useMTLHeap == expected_mtlheap &&
         configuration.synchronousQueueSubmits ==
-            (performance_safe ? VK_FALSE : VK_TRUE) &&
+            (performance_mode ? VK_FALSE : VK_TRUE) &&
         configuration.useCommandPooling ==
             (no_command_pooling ? VK_FALSE : VK_TRUE) &&
         configuration.prefillMetalCommandBuffers ==
             MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS_STYLE_NO_PREFILL &&
         configuration.shouldMaximizeConcurrentCompilation ==
-            (performance_safe ? VK_TRUE : VK_FALSE);
+            (performance_mode ? VK_TRUE : VK_FALSE);
     printf("MoltenVK configuration probe: %s\n", passed ? "PASS" : "FAIL");
     dlclose(library);
     return passed ? 0 : 1;

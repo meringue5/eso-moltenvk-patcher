@@ -90,10 +90,13 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Close Experiment 0019 as a negative reset-repair result. Its exact
   low-overhead mode was active, yet the resolution reset still produced solid
   output. Retain it as the current performance checkpoint.
-- Continue performance work without another game run: statically bound the
-  remaining `LIVE_CHECK_ALL_RESOURCES=0` candidate, measure its real
-  descriptor-encode effect with a non-game M4 probe, and reject it if the gain
-  is negligible or correctness coverage is incomplete.
+- Preserve the prepared Experiment 0020 `performance-aggressive` candidate.
+  Its only delta from the installed safe profile is
+  `LIVE_CHECK_ALL_RESOURCES=0`; a balanced M4 probe measured a 10.1% reduction
+  in descriptor-heavy CPU encoding, and valid-resource reset coverage passes.
+- Commit its source identity and complete the install gate only after explicit
+  approval. Do not describe the measured encode reduction as an equal FPS
+  increase.
 
 ## P1: keep redirection verifiable
 

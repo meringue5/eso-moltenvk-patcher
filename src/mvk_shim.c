@@ -47,6 +47,7 @@ typedef enum {
     TESO4M4_MODE_TEXTURE_CACHE_FIX,
     TESO4M4_MODE_LEGACY_FEATURE_PROFILE,
     TESO4M4_MODE_PERFORMANCE_SAFE,
+    TESO4M4_MODE_PERFORMANCE_AGGRESSIVE,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -226,6 +227,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     if (strcmp(mode, "performance-safe") == 0) {
         return TESO4M4_MODE_PERFORMANCE_SAFE;
     }
+    if (strcmp(mode, "performance-aggressive") == 0) {
+        return TESO4M4_MODE_PERFORMANCE_AGGRESSIVE;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -268,11 +272,18 @@ static bool verify_moltenvk_configuration(
             : MVK_CONFIG_USE_MTLHEAP_WHERE_SAFE;
     const VkBool32 expected_command_pooling =
         mode == TESO4M4_MODE_NO_COMMAND_POOLING ? VK_FALSE : VK_TRUE;
+    const bool performance_mode =
+        mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
+        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE;
+    const VkBool32 expected_live_resources =
+        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE
+            ? VK_FALSE
+            : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
-        mode == TESO4M4_MODE_PERFORMANCE_SAFE ? VK_FALSE : VK_TRUE;
+        performance_mode ? VK_FALSE : VK_TRUE;
     const VkBool32 expected_concurrent_compilation =
-        mode == TESO4M4_MODE_PERFORMANCE_SAFE ? VK_TRUE : VK_FALSE;
-    if (configuration.liveCheckAllResources != VK_TRUE ||
+        performance_mode ? VK_TRUE : VK_FALSE;
+    if (configuration.liveCheckAllResources != expected_live_resources ||
         configuration.useMetalArgumentBuffers != VK_FALSE ||
         configuration.useMTLHeap != expected_mtlheap ||
         configuration.synchronousQueueSubmits != expected_synchronous_submits ||
@@ -443,19 +454,25 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT;
     g_legacy_feature_profile_enabled =
         mode == TESO4M4_MODE_LEGACY_FEATURE_PROFILE;
+    const bool performance_mode =
+        mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
+        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE;
     teso4m4_lifecycle_set_enabled(
-        mode != TESO4M4_MODE_PERFORMANCE_SAFE);
+        !performance_mode);
     teso4m4_reset_trace_set_pipeline_cache_bypass(
         mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE);
     teso4m4_reset_trace_set_full_lifetime_audit(
         mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT);
-    if (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
+    if (setenv(
+            "MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES",
+            mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ? "0" : "1",
+            1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
          setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0) ||
         (mode == TESO4M4_MODE_NO_COMMAND_POOLING &&
          setenv("MVK_CONFIG_USE_COMMAND_POOLING", "0", 1) != 0) ||
-        (mode == TESO4M4_MODE_PERFORMANCE_SAFE &&
+        (performance_mode &&
          (setenv("MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS", "0", 1) != 0 ||
           setenv(
               "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
@@ -499,6 +516,12 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     } else if (mode == TESO4M4_MODE_PERFORMANCE_SAFE) {
         log_message(
             "MODE: performance safe enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "lifecycle_trace=0");
+    } else if (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE) {
+        log_message(
+            "MODE: performance aggressive enabled live_resources=0 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
             "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
             "lifecycle_trace=0");

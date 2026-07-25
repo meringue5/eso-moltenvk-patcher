@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
@@ -17,6 +18,7 @@ extern "C" void VKAPI_CALL vkGetMTLTextureMVK(
 static const VkFormat kFormat = VK_FORMAT_B8G8R8A8_UNORM;
 static const VkExtent2D kOutputExtent = {342, 214};
 static const uint32_t kCycleCount = 24;
+static const uint32_t kBenchmarkSampleCount = 7;
 
 typedef struct {
     VkImage image;
@@ -32,6 +34,15 @@ static bool vk_ok(VkResult result, const char* operation) {
     }
     fprintf(stderr, "%s failed: %d\n", operation, result);
     return false;
+}
+
+static uint64_t monotonic_nanoseconds(void) {
+    struct timespec now = {};
+    if (clock_gettime(CLOCK_MONOTONIC_RAW, &now) != 0) {
+        return 0;
+    }
+    return (uint64_t)now.tv_sec * 1000000000ull +
+           (uint64_t)now.tv_nsec;
 }
 
 static uint8_t to_unorm8(float value) {
@@ -307,7 +318,7 @@ static VkShaderModule create_spirv_module(
 
 static VkPipeline create_pipeline(
     VkDevice device, VkPipelineLayout layout, VkRenderPass render_pass,
-    VkShaderModule vertex, VkShaderModule fragment) {
+    VkShaderModule vertex, VkShaderModule fragment, VkExtent2D extent) {
     const VkPipelineShaderStageCreateInfo stages[] = {
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -334,12 +345,12 @@ static VkPipeline create_pipeline(
     const VkViewport viewport = {
         .x = 0,
         .y = 0,
-        .width = (float)kOutputExtent.width,
-        .height = (float)kOutputExtent.height,
+        .width = (float)extent.width,
+        .height = (float)extent.height,
         .minDepth = 0,
         .maxDepth = 1,
     };
-    const VkRect2D scissor = {{0, 0}, kOutputExtent};
+    const VkRect2D scissor = {{0, 0}, extent};
     const VkPipelineViewportStateCreateInfo viewport_state = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .viewportCount = 1,
@@ -393,6 +404,191 @@ static VkPipeline create_pipeline(
     return pipeline;
 }
 
+static bool run_descriptor_benchmark(
+    VkPhysicalDevice physical_device,
+    VkDevice device,
+    VkQueue queue,
+    VkCommandBuffer command,
+    VkFence fence,
+    RenderTarget* output,
+    VkPipelineLayout pipeline_layout,
+    VkDescriptorSet descriptor_sets[2],
+    VkSampler sampler,
+    VkShaderModule vertex,
+    VkShaderModule fragment,
+    uint32_t draw_count) {
+    const VkExtent2D extent = {1, 1};
+    const float red_values[2] = {0.2f, 0.8f};
+    RenderTarget sources[2] = {};
+    VkDescriptorImageInfo image_infos[2] = {};
+    VkWriteDescriptorSet writes[2] = {};
+
+    for (uint32_t index = 0; index < 2; ++index) {
+        if (!create_target(
+                physical_device, device, extent,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                    VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true,
+                &sources[index])) {
+            return false;
+        }
+        image_infos[index] = {
+            .sampler = sampler,
+            .imageView = sources[index].view,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+        writes[index] = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = descriptor_sets[index],
+            .dstBinding = 0,
+            .descriptorCount = 1,
+            .descriptorType =
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &image_infos[index],
+        };
+    }
+    vkUpdateDescriptorSets(device, 2, writes, 0, NULL);
+
+    VkPipeline pipeline = create_pipeline(
+        device, pipeline_layout, output->render_pass,
+        vertex, fragment, extent);
+    if (!pipeline) {
+        return false;
+    }
+
+    const VkCommandBufferBeginInfo begin = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    };
+    if (!vk_ok(
+            vkBeginCommandBuffer(command, &begin),
+            "vkBeginCommandBuffer(benchmark)")) {
+        return false;
+    }
+    for (uint32_t index = 0; index < 2; ++index) {
+        const VkClearValue source_clear = {
+            .color = {{red_values[index], 0.25f, 0.75f, 1.0f}},
+        };
+        const VkRenderPassBeginInfo source_pass = {
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .renderPass = sources[index].render_pass,
+            .framebuffer = sources[index].framebuffer,
+            .renderArea = {{0, 0}, extent},
+            .clearValueCount = 1,
+            .pClearValues = &source_clear,
+        };
+        vkCmdBeginRenderPass(
+            command, &source_pass, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdEndRenderPass(command);
+    }
+    const VkClearValue output_clear = {
+        .color = {{0, 0, 0, 1}},
+    };
+    const VkRenderPassBeginInfo output_pass = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = output->render_pass,
+        .framebuffer = output->framebuffer,
+        .renderArea = {{0, 0}, extent},
+        .clearValueCount = 1,
+        .pClearValues = &output_clear,
+    };
+    vkCmdBeginRenderPass(
+        command, &output_pass, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(
+        command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    for (uint32_t draw = 0; draw < draw_count; ++draw) {
+        const VkDescriptorSet descriptor_set =
+            descriptor_sets[draw & 1u];
+        vkCmdBindDescriptorSets(
+            command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipeline_layout, 0, 1, &descriptor_set, 0, NULL);
+        vkCmdDraw(command, 3, 1, 0, 0);
+    }
+    vkCmdEndRenderPass(command);
+    if (!vk_ok(
+            vkEndCommandBuffer(command),
+            "vkEndCommandBuffer(benchmark)")) {
+        return false;
+    }
+
+    const VkSubmitInfo submit = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command,
+    };
+    if (!vk_ok(
+            vkQueueSubmit(queue, 1, &submit, fence),
+            "vkQueueSubmit(benchmark warmup)") ||
+        !vk_ok(
+            vkWaitForFences(
+                device, 1, &fence, VK_TRUE, UINT64_MAX),
+            "vkWaitForFences(benchmark warmup)") ||
+        !vk_ok(
+            vkResetFences(device, 1, &fence),
+            "vkResetFences(benchmark warmup)")) {
+        return false;
+    }
+
+    for (uint32_t sample = 0;
+         sample < kBenchmarkSampleCount;
+         ++sample) {
+        const uint64_t submit_start = monotonic_nanoseconds();
+        if (!submit_start ||
+            !vk_ok(
+                vkQueueSubmit(queue, 1, &submit, fence),
+                "vkQueueSubmit(benchmark)")) {
+            return false;
+        }
+        const uint64_t submit_end = monotonic_nanoseconds();
+        if (!vk_ok(
+                vkWaitForFences(
+                    device, 1, &fence, VK_TRUE, UINT64_MAX),
+                "vkWaitForFences(benchmark)")) {
+            return false;
+        }
+        const uint64_t wait_end = monotonic_nanoseconds();
+        if (!submit_end || !wait_end ||
+            !vk_ok(
+                vkResetFences(device, 1, &fence),
+                "vkResetFences(benchmark)")) {
+            return false;
+        }
+        printf(
+            "descriptor benchmark sample=%u draws=%u "
+            "submit_ns=%llu wait_ns=%llu\n",
+            sample, draw_count,
+            (unsigned long long)(submit_end - submit_start),
+            (unsigned long long)(wait_end - submit_end));
+    }
+
+    id<MTLTexture> output_texture = nil;
+    vkGetMTLTextureMVK(output->image, &output_texture);
+    uint8_t pixel[4] = {};
+    const float expected_red =
+        red_values[(draw_count - 1u) & 1u];
+    const bool matches =
+        read_first_pixel(output_texture, pixel) &&
+        pixel_matches(pixel, expected_red);
+    printf(
+        "descriptor benchmark pixel=%u,%u,%u,%u "
+        "expected-red=%u match=%s\n",
+        pixel[0], pixel[1], pixel[2], pixel[3],
+        to_unorm8(expected_red), matches ? "yes" : "NO");
+    if (!matches ||
+        !vk_ok(vkDeviceWaitIdle(device), "vkDeviceWaitIdle(benchmark)")) {
+        return false;
+    }
+
+    vkDestroyPipeline(device, pipeline, NULL);
+    for (uint32_t index = 0; index < 2; ++index) {
+        destroy_target(device, &sources[index]);
+    }
+    printf(
+        "descriptor benchmark: PASS draws=%u samples=%u "
+        "alternating_resources=yes\n",
+        draw_count, kBenchmarkSampleCount);
+    return true;
+}
+
 int main(int argc, char** argv) {
     @autoreleasepool {
         if (argc != 3) {
@@ -400,6 +596,25 @@ int main(int argc, char** argv) {
                 stderr, "usage: %s vertex.spv fragment.spv\n", argv[0]);
             return 2;
         }
+        uint32_t benchmark_draws = 0;
+        const char* benchmark_value =
+            getenv("TESO4M4_DESCRIPTOR_BENCHMARK_DRAWS");
+        if (benchmark_value) {
+            char* end = NULL;
+            const unsigned long parsed =
+                strtoul(benchmark_value, &end, 10);
+            if (!benchmark_value[0] || !end || *end ||
+                parsed < 2 || parsed > 100000) {
+                fprintf(
+                    stderr,
+                    "TESO4M4_DESCRIPTOR_BENCHMARK_DRAWS must be 2..100000\n");
+                return 2;
+            }
+            benchmark_draws = (uint32_t)parsed;
+        }
+        const bool benchmark_mode = benchmark_draws != 0;
+        const VkExtent2D output_extent =
+            benchmark_mode ? VkExtent2D{1, 1} : kOutputExtent;
         const VkApplicationInfo application_info = {
             .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pApplicationName = "teso4m4 reset composite probe",
@@ -479,7 +694,7 @@ int main(int argc, char** argv) {
 
         RenderTarget output = {};
         if (!create_target(
-                physical_device, device, kOutputExtent,
+                physical_device, device, output_extent,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, false, &output)) {
@@ -520,11 +735,11 @@ int main(int argc, char** argv) {
         }
         const VkDescriptorPoolSize pool_size = {
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
+            .descriptorCount = benchmark_mode ? 2u : 1u,
         };
         const VkDescriptorPoolCreateInfo pool_info = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = 1,
+            .maxSets = benchmark_mode ? 2u : 1u,
             .poolSizeCount = 1,
             .pPoolSizes = &pool_size,
         };
@@ -535,16 +750,25 @@ int main(int argc, char** argv) {
                 "vkCreateDescriptorPool")) {
             return 1;
         }
+        const VkDescriptorSetLayout set_layouts[2] = {
+            set_layout,
+            set_layout,
+        };
+        const uint32_t descriptor_set_count =
+            benchmark_mode ? 2u : 1u;
         const VkDescriptorSetAllocateInfo set_info = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .descriptorPool = descriptor_pool,
-            .descriptorSetCount = 1,
-            .pSetLayouts = &set_layout,
+            .descriptorSetCount = descriptor_set_count,
+            .pSetLayouts = set_layouts,
         };
-        VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
+        VkDescriptorSet descriptor_sets[2] = {
+            VK_NULL_HANDLE,
+            VK_NULL_HANDLE,
+        };
         if (!vk_ok(
                 vkAllocateDescriptorSets(
-                    device, &set_info, &descriptor_set),
+                    device, &set_info, descriptor_sets),
                 "vkAllocateDescriptorSets")) {
             return 1;
         }
@@ -610,7 +834,15 @@ int main(int argc, char** argv) {
         }
 
         uint32_t passed_cycles = 0;
-        for (uint32_t cycle = 0; cycle < kCycleCount; ++cycle) {
+        if (benchmark_mode) {
+            if (!run_descriptor_benchmark(
+                    physical_device, device, queue, command, fence,
+                    &output, pipeline_layout, descriptor_sets, sampler,
+                    vertex, fragment, benchmark_draws)) {
+                return 1;
+            }
+        } else {
+            for (uint32_t cycle = 0; cycle < kCycleCount; ++cycle) {
             const VkExtent2D source_extent =
                 (cycle & 1u) ? VkExtent2D{1920, 1200}
                              : VkExtent2D{2048, 1280};
@@ -635,7 +867,7 @@ int main(int argc, char** argv) {
             };
             const VkWriteDescriptorSet write = {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptor_set,
+                .dstSet = descriptor_sets[0],
                 .dstBinding = 0,
                 .descriptorCount = 1,
                 .descriptorType =
@@ -646,7 +878,7 @@ int main(int argc, char** argv) {
 
             VkPipeline pipeline = create_pipeline(
                 device, pipeline_layout, output.render_pass,
-                vertex, fragment);
+                vertex, fragment, output_extent);
             if (!pipeline) {
                 return 1;
             }
@@ -692,7 +924,7 @@ int main(int argc, char** argv) {
                 .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                 .renderPass = output.render_pass,
                 .framebuffer = output.framebuffer,
-                .renderArea = {{0, 0}, kOutputExtent},
+                .renderArea = {{0, 0}, output_extent},
                 .clearValueCount = 1,
                 .pClearValues = &output_clear,
             };
@@ -702,7 +934,7 @@ int main(int argc, char** argv) {
                 command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
             vkCmdBindDescriptorSets(
                 command, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipeline_layout, 0, 1, &descriptor_set, 0, NULL);
+                pipeline_layout, 0, 1, &descriptor_sets[0], 0, NULL);
             vkCmdDraw(command, 3, 1, 0, 0);
             vkCmdEndRenderPass(command);
             if (!vk_ok(
@@ -752,6 +984,7 @@ int main(int argc, char** argv) {
             }
             vkDestroyPipeline(device, pipeline, NULL);
             destroy_target(device, &source);
+            }
         }
 
         vkDeviceWaitIdle(device);
@@ -767,10 +1000,16 @@ int main(int argc, char** argv) {
         vkDestroyDevice(device, NULL);
         vkDestroyInstance(instance, NULL);
 
-        printf(
-            "reset composite probe: PASS cycles=%u "
-            "descriptor_set=full-lifetime command_reuse=yes\n",
-            passed_cycles);
+        if (benchmark_mode) {
+            printf(
+                "descriptor encode probe: PASS draws=%u samples=%u\n",
+                benchmark_draws, kBenchmarkSampleCount);
+        } else {
+            printf(
+                "reset composite probe: PASS cycles=%u "
+                "descriptor_set=full-lifetime command_reuse=yes\n",
+                passed_cycles);
+        }
         return 0;
     }
 }

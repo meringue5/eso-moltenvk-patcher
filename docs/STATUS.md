@@ -783,3 +783,22 @@ compilation, and diagnostic hot-path removal as a reset repair. Keep the
 installed `performance-safe` configuration as the current low-overhead
 MoltenVK 1.4.1 checkpoint. Continue performance work independently; do not
 request another game execution merely to subdivide the failed repair bundle.
+
+Experiment 0020 now implements the remaining `performance-aggressive`
+derivative, changing only live-resource checking from `1` to `0`. MoltenVK
+1.4.1 source analysis confirms that the safe setting performs a locked live-map
+lookup when changed textures, buffers, and samplers are encoded with argument
+buffers disabled.
+
+A balanced non-game M4 probe measured 21 samples per setting over 20,000
+alternating-resource draws. Median synchronous CPU submit encoding fell from
+195.833 to 176.090 ns per draw, a 10.082% reduction in that descriptor-heavy
+interval. This is not an ESO FPS claim. The exact aggressive asynchronous
+profile passes the 24-cycle reset composite, Metal pixel validation, ESO-era
+device creation, proc profile, and HDR surface filter. The full build, 80
+Python tests, and static analysis pass.
+
+Experiment 0019 remains installed. Experiment 0020 has not modified the game
+bundle; its measured result, risk boundary, prepared hashes, and installation
+gate are in the
+[Experiment 0020 record](experiments/0020-live-resource-performance.md).

@@ -181,6 +181,17 @@ not disable live-resource checking. It combines performance-path changes to
 minimize scarce user executions; it is not a single-variable attribution
 experiment.
 
+Experiment 0020 adds `performance-aggressive` as an exact derivative of this
+mode. It changes only `MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES` from `1` to `0`.
+The same direct lifecycle routing and asynchronous/concurrent settings remain.
+The post-load configuration query requires live-resource checking to be
+disabled; a safe-mode value or any other mismatch stops before patching ESO.
+
+This removes MoltenVK's per-changed-resource `MVKLiveList::isLive()` locked
+lookup from the argument-buffer-disabled descriptor encode path. It also
+removes the protection that skips a destroyed Metal resource still referenced
+by a descriptor, so the mode remains distinct and explicitly aggressive.
+
 ## Legacy allocation mode
 
 Experiment 0011 adds a distinct `legacy-allocation` marker mode. It retains the

@@ -296,6 +296,68 @@ class StartupLogTests(unittest.TestCase):
             verdict.reasons,
         )
 
+    def test_accepts_performance_aggressive_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: performance aggressive enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "lifecycle_trace=0",
+        ).replace(
+            "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=1 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "MOLTENVK_CONFIG: live_resources=0 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=0 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=1",
+        )
+        text += "\n" + "\n".join(
+            record(
+                f"GDPA: device=0x2 name={name} result=0x8 "
+                "returned=0x8 shim=none"
+            )
+            for name in (
+                "vkDeviceWaitIdle",
+                "vkCreateSwapchainKHR",
+                "vkDestroySwapchainKHR",
+                "vkGetSwapchainImagesKHR",
+                "vkCreateImageView",
+                "vkDestroyImageView",
+                "vkCreateRenderPass",
+                "vkDestroyRenderPass",
+                "vkCreateFramebuffer",
+                "vkDestroyFramebuffer",
+                "vkAcquireNextImageKHR",
+                "vkQueuePresentKHR",
+            )
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
+    def test_rejects_performance_aggressive_live_check(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: performance aggressive enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "lifecycle_trace=0",
+        ).replace(
+            "synchronous_queue_submits=1 command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "synchronous_queue_submits=0 command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=1",
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "the effective MoltenVK configuration was not verified",
+            verdict.reasons,
+        )
+
     def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
         text = good_log().replace(
             "MODE: descriptor compatibility enabled live_resources=1 "

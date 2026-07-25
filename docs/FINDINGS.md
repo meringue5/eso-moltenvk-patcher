@@ -347,3 +347,21 @@ Vulkan error or crash. Those performance-path changes are therefore excluded
 as a repair for the reset corruption. The user observed no obvious other issue,
 but the run did not collect controlled timing data and cannot quantify a
 performance gain.
+
+## Live-resource checking has a measured descriptor-encode cost
+
+MoltenVK 1.4.1 source shows that, with argument buffers disabled,
+`LIVE_CHECK_ALL_RESOURCES=1` selects live-checking bind operations for every
+descriptor binding. A changed texture, buffer, or sampler performs a hashed
+`MVKLiveList::isLive()` lookup under an `os_unfair_lock`.
+
+An M4 Rosetta probe timed the actual Vulkan-to-Metal submit encoding path with
+20,000 draws alternating two valid texture descriptors. Across three balanced
+processes and 21 samples per setting, the aggregate median fell from 195.833 to
+176.090 ns per draw when the check was disabled, a 10.082% reduction in that
+descriptor-heavy CPU interval. All final Metal pixels were correct.
+
+The result does not predict an equal ESO FPS increase. It also does not remove
+the correctness risk: the check intentionally avoids binding destroyed Metal
+resources, and descriptors established before the prior audit's first
+swapchain still lack complete content coverage.

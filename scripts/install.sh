@@ -20,7 +20,8 @@ MODE="${TESO4M4_MODE:-descriptor-compat}"
   || "$MODE" == "full-lifetime-audit" \
   || "$MODE" == "texture-cache-fix" \
   || "$MODE" == "legacy-feature-profile" \
-  || "$MODE" == "performance-safe" ]] || {
+  || "$MODE" == "performance-safe" \
+  || "$MODE" == "performance-aggressive" ]] || {
   echo "Unsupported experiment mode: $MODE"
   exit 1
 }
