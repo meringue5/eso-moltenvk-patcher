@@ -31,6 +31,17 @@ python3 "$ROOT/tools/check_startup_log.py" \
   "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" \
   > "$OUTPUT/startup-verdict.txt" 2>&1 || VERDICT_EXIT=$?
 echo "$VERDICT_EXIT" > "$OUTPUT/startup-verdict-exit-code.txt"
+if (( VERDICT_EXIT != 0 )) \
+  && grep -Fq -- "- no active instrumented run matched the time gate" \
+    "$OUTPUT/startup-verdict.txt"; then
+  RETROSPECTIVE_EXIT=0
+  python3 "$ROOT/tools/check_startup_log.py" \
+    "$OUTPUT/bridge-log-after.txt" \
+    > "$OUTPUT/startup-verdict-retrospective.txt" 2>&1 \
+    || RETROSPECTIVE_EXIT=$?
+  echo "$RETROSPECTIVE_EXIT" \
+    > "$OUTPUT/startup-verdict-retrospective-exit-code.txt"
+fi
 
 REPORT_COUNT=0
 for DIRECTORY in "$HOME/Library/Logs/DiagnosticReports" "/Library/Logs/DiagnosticReports"; do
@@ -57,6 +68,12 @@ for LOG_NAME in client interface; do
     cp -p "$SOURCE_LOG" "$OUTPUT/eso-$LOG_NAME.log"
   fi
 done
+RESET_ANALYSIS_EXIT=0
+if [[ -f "$OUTPUT/eso-client.log" ]]; then
+  python3 "$ROOT/tools/analyze_reset_log.py" "$OUTPUT/eso-client.log" \
+    > "$OUTPUT/reset-events.txt" 2>&1 || RESET_ANALYSIS_EXIT=$?
+fi
+echo "$RESET_ANALYSIS_EXIT" > "$OUTPUT/reset-events-exit-code.txt"
 
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
@@ -92,6 +109,7 @@ echo "$LAUNCHER_CHECK_EXIT" > "$OUTPUT/launcher-state-after-exit-code.txt"
 
 {
   if [[ -f "$SETTINGS" ]]; then
+    cp -p "$SETTINGS" "$OUTPUT/UserSettings-after.txt"
     stat -f 'bytes=%z modified_epoch=%m' "$SETTINGS"
     shasum -a 256 "$SETTINGS"
     grep -E '^SET (AMBIENT_OCCLUSION_TYPE|SkipPregameVideos) "[01]"$' \

@@ -193,6 +193,26 @@ before target selection. A real local audit reproduced the full static profile
 and client build in 53.8 seconds without modifying the game bundle. This path
 is reserved for `STOP`; it is not part of the 0.15–0.16-second routine gate.
 
+The user then launched at 19:07 KST on 2026-07-25 through the normal Steam
+path. Experiment 0008's video bypass took effect: the interface log began at
+`AccountLogin` with no logged pregame-video or logo states, but the transient
+hot-pink frame still appeared. Startup, character selection, and Auridon
+otherwise rendered correctly. The run predates its final evidence-preparation
+timestamp by about two minutes, so the authoritative time-gated verdict
+correctly has no eligible run. A separately labelled retrospective verdict
+selects the exact 19:07 run and passes all 17 redirects, MoltenVK 1.4.1
+descriptor compatibility, HDR-extension and surface-format filtering, and
+HDR-disabled device creation.
+
+During that same run, lowering fullscreen resolution from 2048 x 1280 to
+1920 x 1200 produced persistent solid-color output. The client log places
+`DeviceWaitIdle`, swapchain recreation, and `OnDeviceReset` immediately before
+the symptom, with no device-loss marker, bridge error, new `.ips` report, or
+process crash. Exact before/after settings, logs, caches, and a 35-file checksum
+manifest are preserved under the ignored Experiment 0008 evidence directory.
+The active lower resolution is preserved and has not been cold-start
+validated; no rollback was technically necessary.
+
 Experiment 0002 was explicitly approved, installed from source commit
 `7a235dc`, run by the user, collected, and rolled back. Immediately after that
 rollback, the then-active loader byte-matched the pristine backup. Raw evidence
@@ -242,15 +262,15 @@ This strongly implicates the argument-buffer descriptor path. A second short
 world interval has now repeated the rendering pass; an unchanged five-minute
 interval is still missing.
 
-The active rendering blocker is the live SSAO transition. The settings change
-coincided with `DeviceWaitIdle`, swapchain recreation, `OnDeviceReset`, and a
-new compiler-warning burst at 23:54:18 KST. No command-buffer error, device
-loss, bridge error, or crash occurred. Current evidence cannot distinguish an
-SSAO shader/render-pass incompatibility from state lost during the live device
-reset or an incorrect new pipeline. The failing settings state is preserved,
-and the active file now contains the verified baseline
-`AMBIENT_OCCLUSION_TYPE "0"`. The next unresolved boundary is an unchanged
-five-minute world interval; SSAO itself remains excluded from that run.
+The active rendering blocker is now the loaded-world live reset path rather
+than SSAO alone. Experiment 0009 lowered fullscreen resolution from
+2048 x 1280 to 1920 x 1200 with ambient occlusion still disabled. The display
+immediately became persistent solid colors after `DeviceWaitIdle`, swapchain
+recreation, and `OnDeviceReset`, matching the high-level Experiment 0006 SSAO
+sequence. No current-run bridge error, device loss, HDR setter lookup, new
+`.ips` report, or process-level crash appeared. The resolution-only trigger
+strongly shifts the working hypothesis toward reset/resource recreation, but
+does not identify the failing resource or owner.
 
 MoltenVK 1.4.1 performance A/B testing remains blocked until rendering
 correctness and short gameplay stability are established.
@@ -274,17 +294,12 @@ depends on Rust yet.
 
 ## Next gate
 
-Experiment 0008 has changed only `SkipPregameVideos` from `0` to `1` with an
-exact backup and inverse-hash check. The next gate is a startup-only run of at
-most 90 seconds through account login or character selection. It tests whether
-bypassing `PlayIntroMovies` removes the transient solid-color screen without a
-new startup or UI failure; no world entry or graphics change is needed.
+No user test is requested yet. The next gate is agent-side instrumentation of
+swapchain and dependent-resource lifecycle calls around `OnDeviceReset`,
+including create/destroy results and the first presentations after recreation.
 
-After that narrow result, the remaining correctness gate is an unchanged
-five-minute Auridon interval with ambient occlusion `0`. The latest short run
-supports the warm-cache stuttering hypothesis but does not establish causation
-or replace a controlled performance A/B.
-
-Only after that unchanged run should a separate instrumented SSAO experiment
-compare clean-start SSAO against a live toggle. No additional MoltenVK control
-should change in that comparison.
+After that instrumentation is statically verified and separately approved for
+installation, a cold start at the preserved 1920 x 1200 setting can distinguish
+an unsupported resolution from a broken live transition. Do not change a
+graphics option during that run. The unchanged five-minute Auridon interval and
+performance A/B remain downstream of this reset-path gate.

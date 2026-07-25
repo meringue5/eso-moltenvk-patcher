@@ -20,15 +20,21 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve the 12.0.7 short world repeat as the target-rebase rendering pass.
   It reached Auridon for approximately 162 seconds with no perceived
   stuttering or corruption, but did not complete the planned five minutes.
-- Complete the narrow Experiment 0008 startup-only check with
-  `SkipPregameVideos` set to `1`; distinguish removal of the pre-UI solid-color
-  frame from any persistent world-rendering change.
-- After the startup artifact is classified, run one unchanged five-minute
+- Preserve Experiment 0008 as the failed startup-artifact hypothesis: the
+  setting skipped every logged video/logo state but the hot-pink frame
+  persisted before account login.
+- Preserve Experiment 0009 as a second live-reset rendering failure. Do not
+  change resolution, SSAO, or another reset-triggering graphics option during
+  an otherwise unchanged correctness or performance run.
+- Instrument swapchain and dependent-resource lifecycle calls around the
+  graphics-device reset before another user run. Record create/destroy results
+  and the first presentations after recreation.
+- After instrumentation, cold-start the preserved 1920 x 1200 setting before
+  any separate live-reset comparison. A cold pass would distinguish the
+  transition path from an intrinsically unsupported resolution.
+- Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.
-- Instrument pipeline creation and the graphics-device reset before a separate
-  SSAO experiment. Compare clean-start SSAO with a live SSAO toggle; do not
-  change a MoltenVK control in that comparison.
 - Defer MTLHeap and asynchronous queue-submission experiments. Argument buffers
   improved the original artifact, and the new SSAO boundary must be isolated
   first.

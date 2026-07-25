@@ -112,6 +112,15 @@ checker groups records by that identity, applies the experiment preparation
 time as a lower bound, and fails closed on missing filter evidence, HDR enable,
 an HDR device-proc query, or bridge errors.
 
+Evidence collection keeps that time-gated verdict authoritative. If and only if
+no run matches the preparation boundary, it also emits a clearly separate
+retrospective verdict for post-mortem attribution; a failed eligible run is
+never replaced by an older pass. It also preserves the full before/after
+settings files in the ignored evidence directory and extracts
+`DeviceWaitIdle -> fpCreateSwapchainKHR -> OnDeviceReset` summaries. The
+settings comparison tool requires exact line structure and key identity before
+reporting value changes.
+
 The real MoltenVK 1.4.1 non-game probes report raw HDR device advertisement,
 filtered visible absence, HDR disabled at device creation, non-null GIPA, NULL
 GDPA, and exact surface-format removal from 60 raw to 59 visible entries. That

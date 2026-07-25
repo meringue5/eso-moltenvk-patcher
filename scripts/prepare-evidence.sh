@@ -59,6 +59,7 @@ if [[ -f /tmp/teso4m4.log ]]; then
 fi
 {
   if [[ -f "$SETTINGS" ]]; then
+    cp -p "$SETTINGS" "$OUTPUT/UserSettings-before.txt"
     stat -f 'bytes=%z modified_epoch=%m' "$SETTINGS"
     shasum -a 256 "$SETTINGS"
     grep -E '^SET (AMBIENT_OCCLUSION_TYPE|SkipPregameVideos) "[01]"$' \

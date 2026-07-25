@@ -1,7 +1,7 @@
 # Experiment 0008: skip pregame videos
 
 - Date: 2026-07-21
-- Outcome: **running; one-line setting installed, startup verification pending**
+- Outcome: **failed hypothesis; video states skipped, hot-pink frame persisted**
 - Rollback: **not performed; exact pre-change file preserved**
 
 ## Question
@@ -107,3 +107,38 @@ bundle boundary, and unchanged experiment settings support classification as
 a launcher-only update. No ESO launch occurred, so the Experiment 0008 runtime
 result remains pending. Any evidence prepared before this launch-path boundary
 must be replaced with fresh preflight evidence before the user test.
+
+## Result: 2026-07-25
+
+The user launched through the normal Steam path with
+`SkipPregameVideos "1"`. The transient hot-pink frame still appeared, but
+account login, character selection, and subsequent world rendering were usable.
+The narrow hypothesis therefore failed.
+
+ESO's interface log begins at `AccountLogin` and contains no
+`PlayIntroMovies`, `ShowZOSVideo`, Havok, or legal-splash state. The setting
+did bypass the identified pregame-video state sequence; the visual artifact
+persisted outside that sequence. This narrows it to output before or during
+initial swapchain/UI presentation rather than a logged logo-video state.
+
+The user continued beyond the requested startup-only boundary and entered
+Auridon. That later live resolution change is a materially different
+observation and is recorded separately as Experiment 0009.
+
+The process began at 19:07:04 KST, about two minutes before the final evidence
+directory was prepared at 19:09:07. The primary time-gated startup verdict
+therefore correctly found no eligible run. A retrospective check selected the
+exact latest run `20260725T100704.573951000Z-pid18714` and passed: MoltenVK
+1.4.1 loaded in descriptor-compatibility mode, all 17 redirects activated, the
+HDR extension filter returned 130 of 131 entries, the surface filter returned
+59 of 60 entries, and device creation omitted HDR. No new `.ips` report or
+current-run bridge error appeared.
+
+The 35-file ignored evidence checksum manifest has SHA-256
+`7927aee697a09bf9f8e3ed32c80024d46272024d7db713d8a1215edc396d89ad`.
+The exact settings before the later resolution change were reconstructed from
+the preserved pre-video backup plus the verified one-line video change; its
+SHA-256 exactly matches the recorded baseline
+`f2e2afe947048a20ed07817930f6e442ca96da14a6ab7fe32db16b9363ec44dc`.
+No rollback was performed because restoring the video state is not technically
+required for the next analysis.

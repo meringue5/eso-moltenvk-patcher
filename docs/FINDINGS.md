@@ -168,15 +168,18 @@ visual corruption. The bridge verdict passed and no crash occurred. This
 supports short gameplay stability with the rewritten cache, but is not the
 planned five-minute interval or a controlled performance comparison.
 
-That same interface log places the solid-color symptom in a startup sequence
-beginning with `PlayIntroMovies`, followed by ZOS video, Havok, and legal splash
-states before account login. The executable recognizes `SkipPregameVideos`, and
-the repeated runs used value `0`. This establishes a narrow setting-based test
-for bypassing the symptom; it does not yet prove which movie or render pass
-produces the color.
+Experiment 0008 set `SkipPregameVideos` to `1`. ESO's interface log then began
+directly at `AccountLogin` with no `PlayIntroMovies`, ZOS video, Havok, or legal
+splash state, proving that the setting bypassed the logged video sequence. The
+user still observed the same transient hot-pink frame. The artifact therefore
+occurs outside those logged video states, likely before or during initial
+swapchain/UI presentation; it remains non-fatal in the tested configuration.
 
 The later live switch to SSAO coincided with ESO's graphics-device reset and
 reduced output to changing solid colors without a Vulkan error, device loss, or
-process crash. That one setting transition is preserved as an active safety
-boundary in the Experiment 0006 record; it is not yet repeatable enough to
-assign a specific MoltenVK subsystem as its cause.
+process crash. Experiment 0009 independently reached the same solid-color class
+after lowering fullscreen resolution from 2048 x 1280 to 1920 x 1200. Both
+events crossed `DeviceWaitIdle`, swapchain recreation, and `OnDeviceReset`
+after the world had loaded. The resolution-only trigger strengthens the common
+live reset/resource-recreation path over an SSAO-specific shader explanation,
+but does not identify the incorrect resource owner or lifecycle operation.

@@ -22,8 +22,11 @@ of **The Elder Scrolls Online** on Apple Silicon.
 > exited without a crash, but server maintenance prevented character selection
 > or world entry. A later short repeat reached Auridon, rendered correctly, and
 > produced no perceptible stuttering or crash. The pre-UI solid-color frame
-> persisted; a one-line pregame-video bypass is now prepared for a bounded
-> startup-only check described in the [current status](docs/STATUS.md).
+> persisted. A one-line pregame-video bypass skipped the logged logo/video
+> states but did not remove that frame. A later live resolution change produced
+> the same solid-color corruption seen after the earlier SSAO toggle, moving the
+> active blocker to ESO's loaded-world device-reset path. See the
+> [current status](docs/STATUS.md).
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
 an experimental method for redirecting ESO's statically linked MoltenVK 1.0.18

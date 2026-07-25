@@ -15,7 +15,8 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0005 | 2026-07-19 | Exact HDR surface-format filter | Succeeded at startup; failed rendering correctness | [Run](0005-hdr-surface-format-filter-startup.md) |
 | 0006 | 2026-07-19 | Metal argument buffers disabled | Baseline lobby/world rendering passed; live SSAO toggle failed | [Run](0006-metal-argument-buffers-disabled.md) |
 | 0007 | 2026-07-20 | ESO 12.0.7 target rebase | Succeeded at rebase and short world rendering; extended stability incomplete | [Run](0007-eso-12.0.7-target-rebase.md) |
-| 0008 | 2026-07-21 | Skip pregame videos | Running; one-line setting installed, startup verification pending | [Run](0008-skip-pregame-videos.md) |
+| 0008 | 2026-07-21 | Skip pregame videos | Failed hypothesis; videos skipped but hot-pink frame persisted | [Run](0008-skip-pregame-videos.md) |
+| 0009 | 2026-07-25 | Live resolution reset | Failed rendering correctness; solid-color output after reset | [Run](0009-live-resolution-reset.md) |
 
 ## Recording policy
 

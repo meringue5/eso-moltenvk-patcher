@@ -23,7 +23,7 @@ Notable values:
 | `SHADOWS` | `2` | Current checkpoint value |
 | `ANTIALIASING_TYPE` | `0` | Disabled in the current checkpoint |
 | `AMBIENT_OCCLUSION_TYPE` | `0` | Disabled |
-| `SkipPregameVideos` | `1` | Experiment 0008 startup-artifact test; previously `0` |
+| `SkipPregameVideos` | `1` | Skips logged video states; does not remove hot-pink startup frame |
 | `GOD_RAYS` / `BLOOM` | `0` | Disabled |
 | `VSYNC` | `1` | Enabled |
 | `MinFrameTime.2` | `0.01000000` | 100 FPS interval, not a general performance unlock |
@@ -80,6 +80,19 @@ only `SkipPregameVideos` from `0` to `1`. The pre-change hash is
 `e71a11c20828ad270c5260b648cd6adb5cd2a7a58be6677acb4a5d5ec3ed49a2`;
 the updated hash is
 `f2e2afe947048a20ed07817930f6e442ca96da14a6ab7fe32db16b9363ec44dc`.
-The result is pending a bounded startup-only run. `VIDEO_ENABLED` was not
-disabled because that would broaden the change beyond the identified pregame
-path.
+On 2026-07-25, the interface log began directly at `AccountLogin` and omitted
+the identified video/logo states, but the user still observed the hot-pink
+frame. The setting works as a video bypass and is not a fix for the artifact.
+`VIDEO_ENABLED` remains unchanged.
+
+## Experiment 0009 live-resolution safety amendment
+
+Changing the loaded-world fullscreen resolution from 2048 x 1280 to
+1920 x 1200 immediately preceded a persistent solid-color display. The client
+recorded `DeviceWaitIdle`, swapchain recreation, and `OnDeviceReset`, matching
+the high-level sequence seen after the Experiment 0006 SSAO toggle.
+
+The lower resolution remains in the active file and has not yet been validated
+from a cold start. Until reset instrumentation is ready, do not change
+resolution, ambient occlusion, or other reset-triggering graphics options
+during a correctness or performance run.
