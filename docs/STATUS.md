@@ -716,7 +716,6 @@ The source candidate has completed a clean shadow-bundle rebuild and the full
 non-game M4 gate without touching the installed Experiment 0017 bundle.
 Prepared official-1.4.1 proxy and runtime hashes are recorded in the
 [Experiment 0018 record](experiments/0018-legacy-feature-profile.md). All
-static checks pass; only the committed source identity remains before the
-installation preflight. A new explicit approval is required before restoring
-or modifying the game bundle. No additional user launch is requested against
-Experiment 0017.
+static checks pass and source commit `26d26ac` fixes the candidate identity.
+A new explicit approval is required before restoring or modifying the game
+bundle. No additional user launch is requested against Experiment 0017.

@@ -71,8 +71,8 @@ are in [Project status](STATUS.md); completed runs belong in the
   do not match ESO's captured extension/image/query paths, and both versions
   pass the 24-cycle reset composite. Do not install 1.4.2 without a new
   differential reason, and preserve its distinct pipeline-cache identity.
-- Commit Experiment 0018's source identity, then install only the prepared
-  `legacy-feature-profile` candidate after explicit approval. It must expose
+- Install only the source-fixed `legacy-feature-profile` candidate from
+  commit `26d26ac` after explicit approval. It must expose
   the exact embedded 1.0.18 core feature set, reject any prohibited feature at
   device creation, retain official 1.4.1, and add no hot-path audit.
 - Keep the next user-controlled execution for a prepared repair validation:

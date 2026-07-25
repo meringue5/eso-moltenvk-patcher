@@ -145,9 +145,9 @@ was started.
 
 ## Preflight
 
-- Commit the exact source candidate and record its commit.
-- Run Python tests and compilation, all shell syntax checks, whitespace checks,
-  warnings-as-errors compilation, and Clang static analysis.
+- Exact source candidate committed as `26d26ac`.
+- Python tests and compilation, all shell syntax checks, whitespace checks,
+  warnings-as-errors compilation, and Clang static analysis passed.
 - Re-run `scripts/check-update.sh` and require the selected ESO fingerprint.
 - Confirm ESO, Steam, and the launcher are stopped.
 - Recheck the current Experiment 0017 install, pristine restore source, target
@@ -184,7 +184,8 @@ do not immediately run again; analyze the collected run first.
 
 ## Result
 
-Installation and user validation have not started.
+The source candidate is fixed at commit `26d26ac`. Installation and user
+validation have not started.
 
 ## Rollback
 
