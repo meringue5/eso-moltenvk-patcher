@@ -294,12 +294,20 @@ depends on Rust yet.
 
 ## Next gate
 
-No user test is requested yet. The next gate is agent-side instrumentation of
-swapchain and dependent-resource lifecycle calls around `OnDeviceReset`,
-including create/destroy results and the first presentations after recreation.
+Experiment 0010's observation-only source candidate is now statically verified.
+It traces device waits; swapchain generations; their images, image views,
+render passes, and framebuffers; and the first eight acquires/presentations per
+generation. Its forwarding smoke probe passes, all 42 Python tests pass, and
+Clang reports no warning or static-analyzer finding. It does not change the
+17-entry redirect set, compatibility filters, Vulkan inputs, or results.
 
-After that instrumentation is statically verified and separately approved for
-installation, a cold start at the preserved 1920 x 1200 setting can distinguish
-an unsupported resolution from a broken live transition. Do not change a
-graphics option during that run. The unchanged five-minute Auridon interval and
-performance A/B remain downstream of this reset-path gate.
+The next gate is explicit approval for a cache-preserving technical restore,
+full source rebuild, evidence preparation, and installation. No user game test
+is requested before that installation completes.
+
+After installation, the bounded test is a cold start at the preserved
+1920 x 1200 setting for at most three minutes through world entry, with no
+graphics-menu access or setting change. This distinguishes an unsupported
+resolution from a broken live transition while collecting the generation trace.
+The unchanged five-minute Auridon interval and performance A/B remain
+downstream of this reset-path gate.

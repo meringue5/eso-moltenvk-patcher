@@ -1,0 +1,19 @@
+#pragma once
+
+#include <vulkan/vulkan.h>
+
+#if defined(__GNUC__)
+#define TESO4M4_LIFECYCLE_HIDDEN __attribute__((visibility("hidden")))
+#else
+#define TESO4M4_LIFECYCLE_HIDDEN
+#endif
+
+typedef void (*Teso4m4LifecycleLogFunction)(const char* message);
+
+TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_reset(void);
+TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_logger(
+    Teso4m4LifecycleLogFunction logger);
+TESO4M4_LIFECYCLE_HIDDEN PFN_vkVoidFunction
+teso4m4_lifecycle_intercept(
+    const char* name,
+    PFN_vkVoidFunction next_function);

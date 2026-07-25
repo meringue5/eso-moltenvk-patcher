@@ -74,6 +74,13 @@ if [[ -f "$OUTPUT/eso-client.log" ]]; then
     > "$OUTPUT/reset-events.txt" 2>&1 || RESET_ANALYSIS_EXIT=$?
 fi
 echo "$RESET_ANALYSIS_EXIT" > "$OUTPUT/reset-events-exit-code.txt"
+LIFECYCLE_ANALYSIS_EXIT=0
+python3 "$ROOT/tools/analyze_lifecycle_log.py" \
+  "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" \
+  > "$OUTPUT/lifecycle-events.txt" 2>&1 \
+  || LIFECYCLE_ANALYSIS_EXIT=$?
+echo "$LIFECYCLE_ANALYSIS_EXIT" \
+  > "$OUTPUT/lifecycle-events-exit-code.txt"
 
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"

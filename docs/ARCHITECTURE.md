@@ -143,6 +143,27 @@ successful `setenv` calls. A separate non-game probe verifies both the clean
 Neither check establishes rendering correctness; only the staged ESO run can
 answer that question.
 
+## Reset lifecycle trace
+
+Experiment 0010 adds observation-only wrappers to selected device functions
+returned through GDPA. The static 17-entry redirect set, Vulkan arguments,
+results, HDR filters, and effective MoltenVK configuration remain unchanged.
+The wrappers assign a generation to every successful swapchain creation and
+connect enumerated swapchain images to tracked image views, render passes, and
+framebuffers.
+
+The trace records `vkDeviceWaitIdle`, replacement extent and old-swapchain
+identity, dependent resource creation/destruction, and the first eight image
+acquires and presentations for each generation. Non-success acquire/present
+results are always recorded. Destroying a generation while one of its tracked
+image views or framebuffers remains live is emitted as an analyzer anomaly.
+
+Tracking has fixed capacities and fails visibly with `LIFECYCLE_ERROR` rather
+than silently claiming complete coverage. The wrappers use a mutex around
+tracking state and do not retain pointers to caller-owned create structures.
+The coded post-run analyzer selects only a run after the evidence-preparation
+boundary.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

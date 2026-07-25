@@ -17,6 +17,7 @@
 #include <MoltenVK/mvk_private_api.h>
 
 #include "mvk_compat.h"
+#include "mvk_lifecycle.h"
 
 typedef struct {
     const char* symbol;
@@ -70,10 +71,14 @@ static PFN_vkVoidFunction VKAPI_CALL traced_get_device_proc_addr(
         return NULL;
     }
     PFN_vkVoidFunction result = g_next_get_device_proc_addr(device, name);
-    log_message("GDPA: device=%p name=%s result=%p%s", (void*)device,
-                name ? name : "(null)", (void*)result,
-                result ? "" : " [NULL]");
-    return result;
+    PFN_vkVoidFunction returned =
+        teso4m4_lifecycle_intercept(name, result);
+    log_message(
+        "GDPA: device=%p name=%s result=%p returned=%p shim=%s%s",
+        (void*)device, name ? name : "(null)", (void*)result,
+        (void*)returned, returned != result ? "lifecycle-trace" : "none",
+        result ? "" : " [NULL]");
+    return returned;
 }
 
 static PFN_vkVoidFunction VKAPI_CALL traced_get_instance_proc_addr(
@@ -330,6 +335,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     setvbuf(g_log, NULL, _IOLBF, 0);
     teso4m4_compat_reset();
     teso4m4_compat_set_logger(&compat_log_message);
+    teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_logger(&compat_log_message);
     log_message("RUN_START: bridge starting pid=%ld", (long)getpid());
 
     char directory[4096];
