@@ -85,8 +85,8 @@ are in [Project status](STATUS.md); completed runs belong in the
   established 1.4.1 compatibility setting. Keep live-resource checking
   enabled; do not fold the aggressive descriptor-semantics change into this
   bundle.
-- Commit the prepared Experiment 0019 source identity, then complete its
-  install preflight. Do not subdivide the bundle into additional user runs.
+- Complete Experiment 0019's install preflight from recorded source commit
+  `ffcf3e5`. Do not subdivide the bundle into additional user runs.
 - Keep the next user-controlled execution for a prepared repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.

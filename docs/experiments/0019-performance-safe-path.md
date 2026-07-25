@@ -111,6 +111,7 @@ warnings-as-errors compilation, and Clang static analysis pass. Prepared
 artifacts have SHA-256:
 
 ```text
+source:    ffcf3e5 (Prepare Experiment 0019 performance path)
 proxy:     bd6d745bd3ee218146f2ea2936d91f10cd3e55e5d42e64f95667f4d5741c287b
 MoltenVK:  d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
 ```
@@ -119,7 +120,6 @@ No Steam, launcher, or ESO process was started.
 
 ## Installation gate
 
-- Commit and record the exact source identity.
 - Recheck the target fingerprint and all stopped processes.
 - Verify the active Experiment 0018 install, pristine loader, settings, both
   pipeline caches, and candidate hashes.

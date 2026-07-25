@@ -755,4 +755,5 @@ pass. The M4 reset composite also passes all 24 cycles with the combined
 submission and compilation settings. Prepared hashes and the remaining
 installation gate are recorded in the
 [Experiment 0019 record](experiments/0019-performance-safe-path.md). No game
-bundle file has been changed for 0019.
+bundle file has been changed for 0019. The candidate source identity is commit
+`ffcf3e5`.
