@@ -1,8 +1,8 @@
 # Experiment 0017: swapchain Metal texture-cache fix
 
 - Date: 2026-07-25
-- Outcome: **ready for installation approval; all non-game gates passed**
-- Rollback: **not applicable yet; game bundle unchanged**
+- Outcome: **installed; awaiting one user-controlled repair validation**
+- Rollback: **checked pristine loader available; not performed**
 
 ## Question
 
@@ -175,9 +175,26 @@ loader existed with SHA-256
 `c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`;
 and both pipeline caches and the settings file existed and were fingerprinted.
 
-The game bundle remains on Experiment 0016. Installation of Experiment 0017
-still requires explicit approval. After installation, one user-controlled
-repair validation remains.
+At approximately 2026-07-25 23:53 KST, after explicit user approval, the
+Experiment 0016 bridge was restored with both pipeline caches preserved. The
+post-restore gate required the exact ESO fingerprint, original loader, absent
+marker, unchanged settings and cache hashes, and the checked pristine loader.
+
+The bridge was then rebuilt from source against that real original loader and
+reproduced the prepared proxy and MoltenVK hashes exactly. Installation in
+`texture-cache-fix` mode preserved both pipeline caches. Post-install checks
+confirmed:
+
+- exact ESO 12.0.7 fingerprint and UUID;
+- bridge target current and marker exactly `texture-cache-fix`;
+- installed proxy and MoltenVK byte-identical to the built candidates;
+- both pipeline caches and `UserSettings.txt` unchanged;
+- quick update gate `READY`;
+- ESO, Steam, and the launcher still stopped.
+
+The ignored evidence boundary is
+`artifacts/experiment-0017-20260725T145409Z`. One user-controlled repair
+validation remains.
 
 ## Interpretation
 
@@ -190,6 +207,8 @@ the similarity of symptoms.
 
 ## Rollback
 
-No Experiment 0017 game-bundle modification has occurred. Experiment 0016
-remains installed, and its checked pristine loader remains the restore source.
-Do not launch the installed performance-disturbing audit again.
+Experiment 0017 is installed. The checked pristine Bink loader remains the
+restore source, the Experiment 0016 marker was displaced under its timestamped
+name, and no cache or setting was deleted or replaced. Do not restore before
+collecting the approved repair-validation result unless the startup gate
+fails.

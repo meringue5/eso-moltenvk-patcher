@@ -62,10 +62,9 @@ are in [Project status](STATUS.md); completed runs belong in the
   drawable-replacement probe returned `STALE` against official 1.4.1 and
   `PASS` against the exact one-patch backport. Do not adopt all of 1.4.2 as
   one undifferentiated change.
-- Experiment 0017's source, static-analysis, compatibility, target, process,
-  cache/settings-preservation, and restore-path gates are complete. Request
-  explicit approval for the exact one-patch installation; do not ask for
-  another diagnostic game run.
+- Experiment 0017's exact one-patch candidate is installed after all source,
+  compatibility, target, process, cache/settings-preservation, restore, and
+  post-install gates passed. Do not ask for another diagnostic game run.
 - Keep the remaining user-controlled execution for final repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.

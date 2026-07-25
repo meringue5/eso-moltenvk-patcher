@@ -634,7 +634,16 @@ fingerprint and pristine restore source are current; both caches and settings
 remain preserved. No ESO, Steam, or launcher process was found at the last
 read-only check.
 
-The game bundle is still unchanged for Experiment 0017 and remains on the
-performance-disturbing Experiment 0016 audit. Do not launch it. The only
-remaining gate before installation is new explicit approval for the exact
-one-patch candidate.
+The user explicitly approved the exact one-patch candidate. At approximately
+2026-07-25 23:53 KST, Experiment 0016 was restored with both caches preserved;
+the original-loader and target gates passed; the bridge was rebuilt against
+the real original loader; and Experiment 0017 was installed in exact
+`texture-cache-fix` mode.
+
+Post-install checks report the target current, marker present, installed proxy
+and MoltenVK byte-identical to the prepared candidates, both pipeline caches
+and `UserSettings.txt` unchanged, quick update gate `READY`, and ESO, Steam,
+and the launcher stopped. The ignored evidence boundary is
+`artifacts/experiment-0017-20260725T145409Z`. The heavy Experiment 0016 audit
+is no longer active. The remaining gate is one user-controlled,
+normal-performance world entry and one resolution reset.
