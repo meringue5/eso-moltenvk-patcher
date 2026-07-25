@@ -391,14 +391,16 @@ whether pooled command/resource state survives ESO's live reset incorrectly.
 It is a correctness test with a possible CPU-performance cost, not a proposed
 final performance configuration.
 
-Experiment 0013's source candidate now passes 56 Python tests, Python
+Experiment 0013's source commit `ecec1cf` now passes 56 Python tests, Python
 compilation, shell syntax, whitespace, warnings-as-errors, Clang static
 analysis, the complete pristine-loader build, all five effective-configuration
 probes, and fresh legacy/replacement real-Metal probes. Its distinct
 `no-command-pooling` mode reports command pooling `0` while preserving
 live-resource checking `1`, argument buffers `0`, MTLHeap `1`, synchronous
 submission `1`, and prefill `0`. The installed Experiment 0012 bridge and the
-game bundle were not changed during this preparation.
+game bundle were not changed during this preparation. A second full build from
+that committed state reproduced the prepared proxy and replacement-runtime
+hashes.
 
 The next gate is explicit approval for the Experiment 0013 bundle
 modification. After approval, perform a cache-preserving restore, rebuild from

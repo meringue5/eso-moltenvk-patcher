@@ -70,10 +70,10 @@ into descriptor contents and lifetimes.
 
 ## Validation result
 
-The source candidate adds the distinct `no-command-pooling` marker, enables the
-existing bounded trace in that mode, and refuses to patch unless the queried
-MoltenVK configuration reports command pooling `0` with every other controlled
-value unchanged.
+Source commit `ecec1cf` adds the distinct `no-command-pooling` marker, enables
+the existing bounded trace in that mode, and refuses to patch unless the
+queried MoltenVK configuration reports command pooling `0` with every other
+controlled value unchanged.
 
 Fifty-six Python tests, Python compilation, shell syntax, whitespace checks,
 warnings-as-errors, and Clang static analysis passed. The complete temporary
@@ -97,8 +97,9 @@ The prepared proxy currently has SHA-256
 `3a0865f9a43c6629f71859a64e96eff24a18c9847dc59c42f14b965e2fb5cda3`;
 the replacement MoltenVK remains
 `d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398`.
-These hashes are pre-install preparation evidence and will be regenerated from
-the committed source before any bundle modification.
+These hashes were reproduced by a second complete build from committed source
+against a temporary app structure pointing at the pristine loader. No
+game-bundle file was changed.
 
 The Experiment 0012 bridge remains installed. No agent launched Steam, the
 launcher, or ESO, and no game-bundle file was modified while preparing this
