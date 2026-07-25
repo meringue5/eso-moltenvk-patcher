@@ -107,6 +107,13 @@ python3 "$ROOT/tools/analyze_reset_resource_log.py" \
   || RESET_RESOURCE_ANALYSIS_EXIT=$?
 echo "$RESET_RESOURCE_ANALYSIS_EXIT" \
   > "$OUTPUT/reset-resource-events-exit-code.txt"
+RESET_BINDING_ANALYSIS_EXIT=0
+python3 "$ROOT/tools/analyze_reset_bindings.py" \
+  "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" \
+  > "$OUTPUT/reset-binding-events.txt" 2>&1 \
+  || RESET_BINDING_ANALYSIS_EXIT=$?
+echo "$RESET_BINDING_ANALYSIS_EXIT" \
+  > "$OUTPUT/reset-binding-events-exit-code.txt"
 
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"

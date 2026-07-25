@@ -1,8 +1,8 @@
 # Experiment 0012: bounded reset-resource trace
 
 - Date: 2026-07-25
-- Outcome: **running; reset-resource trace installed, user reproduction
-  pending**
+- Outcome: **failed rendering correctness; trace localized the failure beyond
+  swapchain and memory binding**
 - Rollback: **not performed; restore path rechecked before installation**
 
 ## Question
@@ -127,5 +127,56 @@ SHA-256
 `58e3474cc67d240ad06d27e79316fcac0203d7c9b81e3f0d6072765f2d8d6679`;
 the old cache remains unchanged.
 
-No agent launched Steam, the launcher, or ESO. The user-controlled reproduction
-is the remaining result gate.
+No agent launched Steam, the launcher, or ESO.
+
+The user entered a correctly rendered world and changed fullscreen resolution
+once from 2048 x 1280 to 1920 x 1200. Persistent solid-color output recurred.
+The settings diff is structurally exact and contains only those width and
+height changes. The bridge startup verdict passed, no crash report was created,
+and ESO's three reset sequences contained no error marker.
+
+The bounded trace completed after eight presentations on replacement
+swapchain generation 3 with zero Vulkan failure records. During those eight
+frames ESO submitted eight command buffers containing 484 balanced render
+passes, 2,232 pipeline binds, 7,699 descriptor-set binds, and 7,699 indexed
+draws. It created 119 graphics pipelines, 65 images, 67 image views, 53
+buffers, 50 render passes, and 50 framebuffers. The trace also observed 456
+descriptor-set allocations and 93,707 calls to `vkUpdateDescriptorSets`.
+
+There was no `VkDeviceMemory` allocation, free, map, or unmap in the bounded
+window. All 65 images and 53 buffers were instead bound successfully into
+existing allocations. A coded follow-up reconstructed the 15 complete image
+bindings present within the 48-detail cap: all offsets met their reported
+128-byte alignment, no two captured new-image ranges overlapped, and the final
+create record alone was truncated by the detail cap. The generated result was
+added to the evidence manifest, and all 43 checksums pass.
+
+The active pipeline cache grew from 4,190,143 to 4,203,757 bytes and changed
+hash. The old preserved cache remained byte-identical. The installed
+Experiment 0012 bridge remains active; rollback was not required for evidence
+preservation.
+
+## Interpretation
+
+Confirmed observations exclude a stopped renderer, an unsubmitted replacement
+swapchain, an exposed Vulkan failure, new memory-allocation failure, simple
+misalignment, and overlap among the captured new image bindings. Rendering
+work continues at high volume while the presented content is wrong.
+
+The strongest remaining region is the descriptor/resource-state transition.
+MoltenVK 1.4.1's official source states that its new descriptor implementation
+is less forgiving of destroyed descriptor targets. The enabled live-resource
+compatibility mode turns each relevant binding into a liveness check and skips
+a non-null texture or buffer that is no longer live. MoltenVK 1.0.18 instead
+materializes Metal texture and buffer objects into its descriptor binding at
+update time and has neither that state tracker nor the compatibility switch.
+Together with 77 destroyed image views, 67 replacements, and 93,707 descriptor
+updates during the failed boundary, this supports a descriptor-state
+compatibility hypothesis. It does not yet prove which descriptor was wrong.
+
+The next single-variable counterfactual is to retain all established
+compatibility controls and disable MoltenVK command pooling. No command buffer
+was allocated or freed in the failed reset window even though eight were
+submitted, so forcing command objects to be allocated and destroyed instead of
+reused directly tests stale pooled resource state. It may increase CPU
+overhead and is a correctness experiment, not a performance recommendation.

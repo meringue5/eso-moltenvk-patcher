@@ -35,9 +35,14 @@ are in [Project status](STATUS.md); completed runs belong in the
   solid-color output while presentation continued.
 - Restore MTLHeap to `where safe` in the next candidate. Do not give up its
   resource-allocation benefit for a workaround that failed.
-- Add reset-window-only tracing of offscreen images/memory, descriptors,
-  pipelines, command buffers, and queue submissions. Keep Vulkan inputs and
-  results observation-only and cap detailed records to avoid log flooding.
+- Preserve Experiment 0012 as the completed reset-resource classification.
+  Submitted drawing and resource creation continued without Vulkan failures;
+  captured image bindings were aligned and non-overlapping, while descriptor
+  and image-view churn dominated the reset boundary.
+- Test command pooling disabled as the next single-variable descriptor/resource
+  state counterfactual. Keep MTLHeap enabled and every established
+  compatibility control unchanged. Treat any pass as diagnostic until its CPU
+  cost is measured.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.

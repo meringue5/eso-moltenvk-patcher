@@ -192,3 +192,27 @@ presented 382 frames with clean tracked swapchain-dependent lifetimes, no
 device loss, and no process crash. MTLHeap allocation is therefore not the
 cause of the observed live-reset corruption and should not be disabled as a
 workaround for it.
+
+Experiment 0012 proved that the corrupt post-reset output is still backed by
+substantial submitted rendering work. Its first eight replacement-swapchain
+frames contained eight submitted command buffers, 484 balanced render passes,
+7,699 indexed draws, 7,699 descriptor-set binds, and no recorded Vulkan
+failure. The same bounded interval created 65 images, 67 image views, 53
+buffers, and 119 graphics pipelines successfully. This rules out command
+starvation and a general resource-creation failure.
+
+Those new images and buffers reused existing `VkDeviceMemory`; no allocation,
+free, map, or unmap occurred in the bounded window. The 15 complete image
+bindings captured by the detail cap were aligned and non-overlapping. This
+rules out simple offset misalignment and overlap among that captured subset,
+not all old-versus-new aliases.
+
+The reset also destroyed 77 image views, created 67, allocated 456 descriptor
+sets, and made 93,707 `vkUpdateDescriptorSets` calls in eight frames.
+MoltenVK 1.4.1's official source and release notes identify a new descriptor
+state/set implementation and show that the enabled live-resource compatibility
+mode skips non-live descriptor targets at Metal binding time. Embedded
+MoltenVK 1.0.18 instead stores Metal resource objects when descriptors are
+updated and has no equivalent tracker. This independently supported version
+delta and the local reset counts make descriptor/resource state the leading
+region, but do not yet identify a specific invalid descriptor.

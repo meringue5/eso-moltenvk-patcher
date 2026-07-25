@@ -359,7 +359,34 @@ The user approved Experiment 0012 installation. A cache-preserving restore,
 second full source build, installation in `reset-resource-trace` mode, artifact
 hash comparison, target/status check, and quick update gate all passed. MTLHeap
 is restored to `where safe`; settings and both pipeline caches are unchanged.
-Fresh ignored evidence is prepared. The next gate is one user-controlled world
-entry and one fullscreen-resolution change; the eight-presentation trace bound
-is only a diagnostic capture window, not a recurrence of the resolved one-run
-8 FPS symptom.
+Fresh ignored evidence was prepared. The user-controlled resolution change
+from 2048 x 1280 to 1920 x 1200 again produced persistent solid-color output.
+The eight-presentation trace bound is only a diagnostic capture window, not a
+recurrence of the resolved one-run 8 FPS symptom.
+
+The bounded trace completed with no Vulkan failure while eight command buffers,
+484 balanced render passes, 7,699 indexed draws, and 7,699 descriptor-set binds
+were submitted. It successfully created 119 graphics pipelines, 65 images, 67
+image views, 53 buffers, 50 render passes, and 50 framebuffers. The renderer
+therefore continued producing work; this is not a command-starvation or
+swapchain-presentation failure.
+
+No device memory was allocated, freed, mapped, or unmapped in the trace
+window. All new buffers and images reused existing allocations. A coded
+post-analysis found the 15 complete captured image bindings aligned and
+non-overlapping. The reset destroyed 77 image views, created 67, allocated 456
+descriptor sets, and invoked `vkUpdateDescriptorSets` 93,707 times. Official
+1.4.1 source confirms that the enabled live-check mode skips a descriptor
+target when its Metal resource is no longer live, while 1.0.18 uses the older
+direct Metal-resource binding model. Descriptor/resource state is now the
+leading compatibility boundary, although a specific broken descriptor is not
+yet proven.
+
+The next gate is a single-variable command-pooling counterfactual. Retain
+MTLHeap, disabled argument buffers, both HDR filters, live checking,
+synchronous submission, and the reset trace; set only
+`MVK_CONFIG_USE_COMMAND_POOLING=0`. Experiment 0012 submitted eight command
+buffers without allocating or freeing one in the reset window, so this tests
+whether pooled command/resource state survives ESO's live reset incorrectly.
+It is a correctness test with a possible CPU-performance cost, not a proposed
+final performance configuration.

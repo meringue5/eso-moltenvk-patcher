@@ -15,6 +15,9 @@ do not replace local experiment records or establish the current safety state.
 - [MoltenVK SSAO and stuttering post-mortem context](moltenvk-ssao-stutter-postmortem.md)
   (2026-07-19): pipeline-cache guidance, adjacent depth/render-pass precedent,
   and the limits of interpreting Experiment 0006's SSAO transition.
+- [MoltenVK descriptor behavior at the live-reset boundary](moltenvk-descriptor-reset-delta.md)
+  (2026-07-25): official 1.0.18/1.4.1 descriptor implementation comparison
+  joined to Experiment 0012's reset-resource trace.
 
 ## Maintenance rules
 

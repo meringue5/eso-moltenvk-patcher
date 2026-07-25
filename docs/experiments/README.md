@@ -19,7 +19,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0009 | 2026-07-25 | Live resolution reset | Failed rendering correctness; solid-color output after reset | [Run](0009-live-resolution-reset.md) |
 | 0010 | 2026-07-25 | Swapchain lifecycle trace | No swapchain fault found; reset corruption persisted | [Run](0010-swapchain-lifecycle-trace.md) |
 | 0011 | 2026-07-25 | MTLHeap disabled during live reset | Failed; solid-color reset corruption persisted | [Run](0011-mtlheap-disabled-live-reset.md) |
-| 0012 | 2026-07-25 | Bounded reset-resource trace | Running; installed, reproduction pending | [Run](0012-reset-resource-trace.md) |
+| 0012 | 2026-07-25 | Bounded reset-resource trace | Failed rendering; localized to descriptor/resource state | [Run](0012-reset-resource-trace.md) |
 
 ## Recording policy
 
