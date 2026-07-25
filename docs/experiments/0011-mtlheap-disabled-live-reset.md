@@ -1,8 +1,8 @@
 # Experiment 0011: MTLHeap disabled during live reset
 
 - Date: 2026-07-25
-- Outcome: **planned**
-- Rollback: **not performed; Experiment 0010 checkpoint currently installed**
+- Outcome: **running; legacy-allocation bridge installed, user test pending**
+- Rollback: **not performed; restore path checked before installation**
 
 ## Question
 
@@ -60,9 +60,52 @@ Before installation:
 
 No agent launches Steam, the launcher, or ESO.
 
+## Installation checkpoint
+
+Source commit `a354d9e` passed 46 Python tests, Python compilation, shell syntax,
+whitespace checks, Clang warnings-as-errors, and Clang static analysis. The
+clean rebuild passed Bink re-export, Rosetta self-patch, HDR filter, lifecycle
+forwarding, and all three independent MoltenVK configuration probes:
+
+| Mode | Live resources | Argument buffers | MTLHeap | Sync submit | Command pooling | Prefill |
+|---|---:|---:|---:|---:|---:|---:|
+| default | 0 | 1 | 1 | 1 | 1 | 0 |
+| `descriptor-compat` | 1 | 0 | 1 | 1 | 1 | 0 |
+| `legacy-allocation` | 1 | 0 | 0 | 1 | 1 | 0 |
+
+Fresh legacy and replacement-runtime probes reached the real M4 Metal device.
+The 1.4.1 candidate hid the HDR device extension, removed the one exact HDR
+surface pair, created a non-HDR device, and reported the intended discrete
+descriptor-binding path. No game process was launched.
+
+The pristine loader was restored only as a clean-build prerequisite, with both
+pipeline caches preserved. Installation then completed in
+`legacy-allocation` mode. The installed and built hashes match:
+
+```text
+libBink2Macx64.dylib
+9aaf37b0b60575de0ad0535e343f24462e4f8dca2823f04960f34395b23569eb
+
+libMoltenVK.teso4m4.dylib
+d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+Post-install status reports the recognized ESO target, current bridge, and
+present marker containing exactly `legacy-allocation`. The quick update gate is
+`READY`. Evidence is prepared under the ignored
+`artifacts/experiment-0011-20260725T111616Z` directory.
+
+The active user settings SHA-256 is
+`f579755ad6da18be3e52a33481a16d30e64a21881db0b459d00f63e5197b395f`;
+ambient occlusion is currently `1` and pregame video skipping is `1`. The
+4,190,143-byte active pipeline cache has SHA-256
+`ed509d7c359e883115bc7db8aa85fccf494cbee061e8b77cb6de118974b37db9`.
+The old 6,800,792-byte backup remains unchanged at SHA-256
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+
 ## Exact user action
 
-Pending successful installation:
+The installation gate passed. Perform exactly one user-controlled run:
 
 1. Launch through Steam and enter the existing character's world.
 2. Confirm the initial world is rendering normally.
@@ -79,4 +122,5 @@ rendering pass/fail.
 
 ## Result
 
-Pending.
+Installation and evidence preparation passed. The user-controlled live-reset
+result is pending.

@@ -323,3 +323,11 @@ command pooling, and lifecycle tracing, while changing only MTLHeap from
 `where safe` to `never`. One live resolution change will determine whether
 Metal-heap allocation/reuse is causal. Performance A/B remains downstream of
 rendering correctness.
+
+Experiment 0011 is now installed from source commit `a354d9e` in the distinct
+`legacy-allocation` marker mode. Default, descriptor-compatible, and
+legacy-allocation probes reported MTLHeap `1`, `1`, and `0` respectively; all
+non-game and real-Metal gates passed. Installed artifact hashes match the
+build, both pipeline caches and user settings were preserved, the bridge target
+is current, and the quick update gate is `READY`. Fresh ignored evidence is
+prepared. No ESO, Steam, or launcher process was started by the agent.
