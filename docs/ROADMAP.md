@@ -66,15 +66,15 @@ are in [Project status](STATUS.md); completed runs belong in the
   797 further acquire/present pairs.
 - Keep Experiment 0017 installed until a source-validated successor requires
   restoration. Do not ask for another run against it.
-- Statically classify every MoltenVK 1.4.2 change against ESO's Vulkan 1.0
-  extension set and observed call paths. Exercise the remaining applicable
-  memoryless-attachment, render-pass dependency/resolve encoder, and
-  visibility-query paths with focused non-game probes before selecting any
-  successor. A full-version candidate must also account for its different
-  pipeline-cache UUID without deleting either preserved cache.
-- Do not describe 1.4.2 as a fix merely because it contains the failed
-  `9a5e233` patch. Require a reset-relevant differential result or a narrowly
-  instrumented counterfactual first.
+- Preserve the completed 1.4.2 classification. Its core features and limits
+  match 1.4.1 under the bridge configuration, its reset-relevant known changes
+  do not match ESO's captured extension/image/query paths, and both versions
+  pass the 24-cycle reset composite. Do not install 1.4.2 without a new
+  differential reason, and preserve its distinct pipeline-cache identity.
+- Commit Experiment 0018's source identity, then install only the prepared
+  `legacy-feature-profile` candidate after explicit approval. It must expose
+  the exact embedded 1.0.18 core feature set, reject any prohibited feature at
+  device creation, retain official 1.4.1, and add no hot-path audit.
 - Keep the next user-controlled execution for a prepared repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.

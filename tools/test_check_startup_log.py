@@ -193,6 +193,46 @@ class StartupLogTests(unittest.TestCase):
         verdict = evaluate_startup_log(text)
         self.assertTrue(verdict.passed, verdict.reasons)
 
+    def test_accepts_legacy_feature_profile_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: legacy feature profile enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1",
+        )
+        text += "\n" + record(
+            "GIPA: instance=0x1 name=vkGetPhysicalDeviceFeatures "
+            "raw=0x8 returned=0x9 shim=legacy-feature-profile"
+        )
+        text += "\n" + record(
+            "LEGACY_FEATURE_PROFILE: physical=0x1 raw_enabled=36 "
+            "visible_enabled=18 masked=18 expected_masked=18"
+        )
+        text += "\n" + record(
+            "CREATE_DEVICE_FEATURE_PROFILE: call=1 enabled=18 "
+            "prohibited_enabled=0 expected_prohibited=0"
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
+    def test_rejects_incomplete_legacy_feature_profile_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: legacy feature profile enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1",
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "the legacy physical-device feature mask was not exact",
+            verdict.reasons,
+        )
+        self.assertIn(
+            "vkCreateDevice legacy feature-profile validation is incomplete",
+            verdict.reasons,
+        )
+
     def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
         text = good_log().replace(
             "MODE: descriptor compatibility enabled live_resources=1 "

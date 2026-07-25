@@ -290,3 +290,35 @@ swapchain continued for 797 acquire/present pairs. The backport is thus a valid
 upstream repair but not the repair for ESO's reset corruption. The restored
 performance separately supports Experiment 0016's audit implementation as the
 source of its severe low-FPS state.
+
+## Core feature enablement differs from the embedded runtime
+
+Complete Apple M4 device-profile probes show that embedded MoltenVK 1.0.18
+reports 18 enabled Vulkan 1.0 core features while official 1.4.1 reports 36.
+The 18 additions include robust buffer access, tessellation, sample-rate
+shading, multi-viewport, dynamic descriptor indexing, storage-image
+without-format access, 64-bit shader integers, resource minimum LOD, and
+inherited queries.
+
+Static analysis of ESO 12.0.7 makes this difference operational rather than
+merely advertised. ESO first requires ten features that are true in both
+runtimes. After selecting the device, it queries the complete feature
+structure again and passes that structure unchanged as
+`VkDeviceCreateInfo.pEnabledFeatures`. The bridge therefore creates a device
+with all 36 replacement-runtime features enabled, whereas the embedded path
+created one with 18.
+
+An automated non-game M4 counterfactual clears only the 18 additions. Every
+one of the resulting 55 feature values exactly matches embedded 1.0.18, and
+real MoltenVK 1.4.1 accepts ESO's extension set and creates the device. This
+does not yet prove which added feature causes the loaded-world reset failure;
+it establishes the exact, narrow compatibility boundary used by Experiment
+0018.
+
+MoltenVK 1.4.2 does not change this core profile. With Metal argument buffers
+disabled, its core features, limits, and sparse properties are identical to
+1.4.1; only API/driver version and pipeline-cache UUID differ. Both versions
+also pass a 24-cycle non-game reset composite using a preallocated descriptor
+set, exact alternating source extents, recreated render resources, and
+alternating command-buffer/pool resets. A wholesale 1.4.2 upgrade therefore
+has no demonstrated reset-relevant differential at this checkpoint.

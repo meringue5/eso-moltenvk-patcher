@@ -1,5 +1,6 @@
 #define VK_USE_PLATFORM_MACOS_MVK 1
 #include <dlfcn.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,6 +130,235 @@ static void probe_compat_log(const char* message) {
     printf("compat %s\n", message);
 }
 
+static void report_physical_device_profile(
+    VkPhysicalDevice physical_device,
+    PFN_vkGetPhysicalDeviceFeatures get_features,
+    PFN_vkGetPhysicalDeviceProperties get_properties) {
+    VkPhysicalDeviceFeatures features = {0};
+    VkPhysicalDeviceProperties properties = {0};
+    get_features(physical_device, &features);
+    get_properties(physical_device, &properties);
+
+#define REPORT_FEATURE(name) \
+    printf("profile feature." #name "=%u\n", features.name)
+    REPORT_FEATURE(robustBufferAccess);
+    REPORT_FEATURE(fullDrawIndexUint32);
+    REPORT_FEATURE(imageCubeArray);
+    REPORT_FEATURE(independentBlend);
+    REPORT_FEATURE(geometryShader);
+    REPORT_FEATURE(tessellationShader);
+    REPORT_FEATURE(sampleRateShading);
+    REPORT_FEATURE(dualSrcBlend);
+    REPORT_FEATURE(logicOp);
+    REPORT_FEATURE(multiDrawIndirect);
+    REPORT_FEATURE(drawIndirectFirstInstance);
+    REPORT_FEATURE(depthClamp);
+    REPORT_FEATURE(depthBiasClamp);
+    REPORT_FEATURE(fillModeNonSolid);
+    REPORT_FEATURE(depthBounds);
+    REPORT_FEATURE(wideLines);
+    REPORT_FEATURE(largePoints);
+    REPORT_FEATURE(alphaToOne);
+    REPORT_FEATURE(multiViewport);
+    REPORT_FEATURE(samplerAnisotropy);
+    REPORT_FEATURE(textureCompressionETC2);
+    REPORT_FEATURE(textureCompressionASTC_LDR);
+    REPORT_FEATURE(textureCompressionBC);
+    REPORT_FEATURE(occlusionQueryPrecise);
+    REPORT_FEATURE(pipelineStatisticsQuery);
+    REPORT_FEATURE(vertexPipelineStoresAndAtomics);
+    REPORT_FEATURE(fragmentStoresAndAtomics);
+    REPORT_FEATURE(shaderTessellationAndGeometryPointSize);
+    REPORT_FEATURE(shaderImageGatherExtended);
+    REPORT_FEATURE(shaderStorageImageExtendedFormats);
+    REPORT_FEATURE(shaderStorageImageMultisample);
+    REPORT_FEATURE(shaderStorageImageReadWithoutFormat);
+    REPORT_FEATURE(shaderStorageImageWriteWithoutFormat);
+    REPORT_FEATURE(shaderUniformBufferArrayDynamicIndexing);
+    REPORT_FEATURE(shaderSampledImageArrayDynamicIndexing);
+    REPORT_FEATURE(shaderStorageBufferArrayDynamicIndexing);
+    REPORT_FEATURE(shaderStorageImageArrayDynamicIndexing);
+    REPORT_FEATURE(shaderClipDistance);
+    REPORT_FEATURE(shaderCullDistance);
+    REPORT_FEATURE(shaderFloat64);
+    REPORT_FEATURE(shaderInt64);
+    REPORT_FEATURE(shaderInt16);
+    REPORT_FEATURE(shaderResourceResidency);
+    REPORT_FEATURE(shaderResourceMinLod);
+    REPORT_FEATURE(sparseBinding);
+    REPORT_FEATURE(sparseResidencyBuffer);
+    REPORT_FEATURE(sparseResidencyImage2D);
+    REPORT_FEATURE(sparseResidencyImage3D);
+    REPORT_FEATURE(sparseResidency2Samples);
+    REPORT_FEATURE(sparseResidency4Samples);
+    REPORT_FEATURE(sparseResidency8Samples);
+    REPORT_FEATURE(sparseResidency16Samples);
+    REPORT_FEATURE(sparseResidencyAliased);
+    REPORT_FEATURE(variableMultisampleRate);
+    REPORT_FEATURE(inheritedQueries);
+#undef REPORT_FEATURE
+
+    printf("profile property.apiVersion=%u\n", properties.apiVersion);
+    printf("profile property.driverVersion=%u\n", properties.driverVersion);
+    printf("profile property.vendorID=%u\n", properties.vendorID);
+    printf("profile property.deviceID=%u\n", properties.deviceID);
+    printf("profile property.deviceType=%u\n", properties.deviceType);
+    printf("profile property.deviceName=%s\n", properties.deviceName);
+    printf("profile property.pipelineCacheUUID=");
+    for (size_t index = 0; index < VK_UUID_SIZE; ++index) {
+        printf("%02x", properties.pipelineCacheUUID[index]);
+    }
+    printf("\n");
+
+#define REPORT_LIMIT_U32(name) \
+    printf("profile limit." #name "=%u\n", properties.limits.name)
+#define REPORT_LIMIT_I32(name) \
+    printf("profile limit." #name "=%d\n", properties.limits.name)
+#define REPORT_LIMIT_U64(name) \
+    printf("profile limit." #name "=%" PRIu64 "\n", \
+           (uint64_t)properties.limits.name)
+#define REPORT_LIMIT_SIZE(name) \
+    printf("profile limit." #name "=%zu\n", properties.limits.name)
+#define REPORT_LIMIT_FLOAT(name) \
+    printf("profile limit." #name "=%.9g\n", properties.limits.name)
+#define REPORT_LIMIT_U32_ARRAY(name, count) \
+    do { \
+        for (size_t index = 0; index < (count); ++index) { \
+            printf("profile limit." #name "[%zu]=%u\n", index, \
+                   properties.limits.name[index]); \
+        } \
+    } while (0)
+#define REPORT_LIMIT_FLOAT_ARRAY(name, count) \
+    do { \
+        for (size_t index = 0; index < (count); ++index) { \
+            printf("profile limit." #name "[%zu]=%.9g\n", index, \
+                   properties.limits.name[index]); \
+        } \
+    } while (0)
+    REPORT_LIMIT_U32(maxImageDimension1D);
+    REPORT_LIMIT_U32(maxImageDimension2D);
+    REPORT_LIMIT_U32(maxImageDimension3D);
+    REPORT_LIMIT_U32(maxImageDimensionCube);
+    REPORT_LIMIT_U32(maxImageArrayLayers);
+    REPORT_LIMIT_U32(maxTexelBufferElements);
+    REPORT_LIMIT_U32(maxUniformBufferRange);
+    REPORT_LIMIT_U32(maxStorageBufferRange);
+    REPORT_LIMIT_U32(maxPushConstantsSize);
+    REPORT_LIMIT_U32(maxMemoryAllocationCount);
+    REPORT_LIMIT_U32(maxSamplerAllocationCount);
+    REPORT_LIMIT_U64(bufferImageGranularity);
+    REPORT_LIMIT_U64(sparseAddressSpaceSize);
+    REPORT_LIMIT_U32(maxBoundDescriptorSets);
+    REPORT_LIMIT_U32(maxPerStageDescriptorSamplers);
+    REPORT_LIMIT_U32(maxPerStageDescriptorUniformBuffers);
+    REPORT_LIMIT_U32(maxPerStageDescriptorStorageBuffers);
+    REPORT_LIMIT_U32(maxPerStageDescriptorSampledImages);
+    REPORT_LIMIT_U32(maxPerStageDescriptorStorageImages);
+    REPORT_LIMIT_U32(maxPerStageDescriptorInputAttachments);
+    REPORT_LIMIT_U32(maxPerStageResources);
+    REPORT_LIMIT_U32(maxDescriptorSetSamplers);
+    REPORT_LIMIT_U32(maxDescriptorSetUniformBuffers);
+    REPORT_LIMIT_U32(maxDescriptorSetUniformBuffersDynamic);
+    REPORT_LIMIT_U32(maxDescriptorSetStorageBuffers);
+    REPORT_LIMIT_U32(maxDescriptorSetStorageBuffersDynamic);
+    REPORT_LIMIT_U32(maxDescriptorSetSampledImages);
+    REPORT_LIMIT_U32(maxDescriptorSetStorageImages);
+    REPORT_LIMIT_U32(maxDescriptorSetInputAttachments);
+    REPORT_LIMIT_U32(maxVertexInputAttributes);
+    REPORT_LIMIT_U32(maxVertexInputBindings);
+    REPORT_LIMIT_U32(maxVertexInputAttributeOffset);
+    REPORT_LIMIT_U32(maxVertexInputBindingStride);
+    REPORT_LIMIT_U32(maxVertexOutputComponents);
+    REPORT_LIMIT_U32(maxTessellationGenerationLevel);
+    REPORT_LIMIT_U32(maxTessellationPatchSize);
+    REPORT_LIMIT_U32(maxTessellationControlPerVertexInputComponents);
+    REPORT_LIMIT_U32(maxTessellationControlPerVertexOutputComponents);
+    REPORT_LIMIT_U32(maxTessellationControlPerPatchOutputComponents);
+    REPORT_LIMIT_U32(maxTessellationControlTotalOutputComponents);
+    REPORT_LIMIT_U32(maxTessellationEvaluationInputComponents);
+    REPORT_LIMIT_U32(maxTessellationEvaluationOutputComponents);
+    REPORT_LIMIT_U32(maxGeometryShaderInvocations);
+    REPORT_LIMIT_U32(maxGeometryInputComponents);
+    REPORT_LIMIT_U32(maxGeometryOutputComponents);
+    REPORT_LIMIT_U32(maxGeometryOutputVertices);
+    REPORT_LIMIT_U32(maxGeometryTotalOutputComponents);
+    REPORT_LIMIT_U32(maxFragmentInputComponents);
+    REPORT_LIMIT_U32(maxFragmentOutputAttachments);
+    REPORT_LIMIT_U32(maxFragmentDualSrcAttachments);
+    REPORT_LIMIT_U32(maxFragmentCombinedOutputResources);
+    REPORT_LIMIT_U32(maxComputeSharedMemorySize);
+    REPORT_LIMIT_U32_ARRAY(maxComputeWorkGroupCount, 3);
+    REPORT_LIMIT_U32(maxComputeWorkGroupInvocations);
+    REPORT_LIMIT_U32_ARRAY(maxComputeWorkGroupSize, 3);
+    REPORT_LIMIT_U32(subPixelPrecisionBits);
+    REPORT_LIMIT_U32(subTexelPrecisionBits);
+    REPORT_LIMIT_U32(mipmapPrecisionBits);
+    REPORT_LIMIT_U32(maxDrawIndexedIndexValue);
+    REPORT_LIMIT_U32(maxDrawIndirectCount);
+    REPORT_LIMIT_FLOAT(maxSamplerLodBias);
+    REPORT_LIMIT_FLOAT(maxSamplerAnisotropy);
+    REPORT_LIMIT_U32(maxViewports);
+    REPORT_LIMIT_U32_ARRAY(maxViewportDimensions, 2);
+    REPORT_LIMIT_FLOAT_ARRAY(viewportBoundsRange, 2);
+    REPORT_LIMIT_U32(viewportSubPixelBits);
+    REPORT_LIMIT_SIZE(minMemoryMapAlignment);
+    REPORT_LIMIT_U64(minTexelBufferOffsetAlignment);
+    REPORT_LIMIT_U64(minUniformBufferOffsetAlignment);
+    REPORT_LIMIT_U64(minStorageBufferOffsetAlignment);
+    REPORT_LIMIT_I32(minTexelOffset);
+    REPORT_LIMIT_U32(maxTexelOffset);
+    REPORT_LIMIT_I32(minTexelGatherOffset);
+    REPORT_LIMIT_U32(maxTexelGatherOffset);
+    REPORT_LIMIT_FLOAT(minInterpolationOffset);
+    REPORT_LIMIT_FLOAT(maxInterpolationOffset);
+    REPORT_LIMIT_U32(subPixelInterpolationOffsetBits);
+    REPORT_LIMIT_U32(maxFramebufferWidth);
+    REPORT_LIMIT_U32(maxFramebufferHeight);
+    REPORT_LIMIT_U32(maxFramebufferLayers);
+    REPORT_LIMIT_U32(framebufferColorSampleCounts);
+    REPORT_LIMIT_U32(framebufferDepthSampleCounts);
+    REPORT_LIMIT_U32(framebufferStencilSampleCounts);
+    REPORT_LIMIT_U32(framebufferNoAttachmentsSampleCounts);
+    REPORT_LIMIT_U32(maxColorAttachments);
+    REPORT_LIMIT_U32(sampledImageColorSampleCounts);
+    REPORT_LIMIT_U32(sampledImageIntegerSampleCounts);
+    REPORT_LIMIT_U32(sampledImageDepthSampleCounts);
+    REPORT_LIMIT_U32(sampledImageStencilSampleCounts);
+    REPORT_LIMIT_U32(storageImageSampleCounts);
+    REPORT_LIMIT_U32(maxSampleMaskWords);
+    REPORT_LIMIT_U32(timestampComputeAndGraphics);
+    REPORT_LIMIT_FLOAT(timestampPeriod);
+    REPORT_LIMIT_U32(maxClipDistances);
+    REPORT_LIMIT_U32(maxCullDistances);
+    REPORT_LIMIT_U32(maxCombinedClipAndCullDistances);
+    REPORT_LIMIT_U32(discreteQueuePriorities);
+    REPORT_LIMIT_FLOAT_ARRAY(pointSizeRange, 2);
+    REPORT_LIMIT_FLOAT_ARRAY(lineWidthRange, 2);
+    REPORT_LIMIT_FLOAT(pointSizeGranularity);
+    REPORT_LIMIT_FLOAT(lineWidthGranularity);
+    REPORT_LIMIT_U32(strictLines);
+    REPORT_LIMIT_U32(standardSampleLocations);
+    REPORT_LIMIT_U64(optimalBufferCopyOffsetAlignment);
+    REPORT_LIMIT_U64(optimalBufferCopyRowPitchAlignment);
+    REPORT_LIMIT_U64(nonCoherentAtomSize);
+#undef REPORT_LIMIT_U32
+#undef REPORT_LIMIT_I32
+#undef REPORT_LIMIT_U64
+#undef REPORT_LIMIT_SIZE
+#undef REPORT_LIMIT_FLOAT
+#undef REPORT_LIMIT_U32_ARRAY
+#undef REPORT_LIMIT_FLOAT_ARRAY
+
+#define REPORT_SPARSE(name) \
+    printf("profile sparse." #name "=%u\n", properties.sparseProperties.name)
+    REPORT_SPARSE(residencyStandard2DBlockShape);
+    REPORT_SPARSE(residencyStandard2DMultisampleBlockShape);
+    REPORT_SPARSE(residencyStandard3DBlockShape);
+    REPORT_SPARSE(residencyAlignedMipSize);
+    REPORT_SPARSE(residencyNonResidentStrict);
+#undef REPORT_SPARSE
+}
+
 static ProcAddressReport report_proc_addresses(
     VkInstance instance,
     VkDevice device,
@@ -228,6 +458,12 @@ int main(int argc, char** argv) {
     PFN_vkGetPhysicalDeviceQueueFamilyProperties get_queue_family_properties =
         (PFN_vkGetPhysicalDeviceQueueFamilyProperties)get_proc(
             instance, "vkGetPhysicalDeviceQueueFamilyProperties");
+    PFN_vkGetPhysicalDeviceFeatures get_physical_device_features =
+        (PFN_vkGetPhysicalDeviceFeatures)get_proc(
+            instance, "vkGetPhysicalDeviceFeatures");
+    PFN_vkGetPhysicalDeviceProperties get_physical_device_properties =
+        (PFN_vkGetPhysicalDeviceProperties)get_proc(
+            instance, "vkGetPhysicalDeviceProperties");
     PFN_vkCreateDevice create_device =
         (PFN_vkCreateDevice)get_proc(instance, "vkCreateDevice");
     PFN_vkDestroyInstance destroy_instance =
@@ -236,15 +472,30 @@ int main(int argc, char** argv) {
     PFN_vkEnumerateDeviceExtensionProperties raw_enumerate_device_extensions =
         enumerate_device_extensions;
     PFN_vkCreateDevice raw_create_device = create_device;
+    PFN_vkGetPhysicalDeviceFeatures raw_get_physical_device_features =
+        get_physical_device_features;
     const bool use_hdr_filter = getenv("TESO4M4_PROBE_HDR_FILTER") != NULL;
-    if (use_hdr_filter) {
+    const bool use_legacy_feature_profile =
+        getenv("TESO4M4_PROBE_LEGACY_FEATURE_PROFILE") != NULL;
+    if (use_hdr_filter || use_legacy_feature_profile) {
         teso4m4_compat_reset();
         teso4m4_compat_set_logger(&probe_compat_log);
         teso4m4_compat_set_enumerate_device_extensions(
             raw_enumerate_device_extensions);
         teso4m4_compat_set_create_device(raw_create_device);
+        teso4m4_compat_set_get_physical_device_features(
+            raw_get_physical_device_features);
+        teso4m4_compat_set_legacy_feature_profile_enabled(
+            use_legacy_feature_profile);
+    }
+    if (use_hdr_filter) {
         enumerate_device_extensions =
             &teso4m4_enumerate_device_extension_properties;
+        create_device = &teso4m4_create_device;
+    }
+    if (use_legacy_feature_profile) {
+        get_physical_device_features =
+            &teso4m4_get_physical_device_features;
         create_device = &teso4m4_create_device;
     }
 
@@ -256,6 +507,9 @@ int main(int argc, char** argv) {
     if (result == VK_SUCCESS && physical_device_count > 0) {
         VkPhysicalDevice* devices = calloc(physical_device_count, sizeof(*devices));
         enumerate_physical_devices(instance, &physical_device_count, devices);
+        report_physical_device_profile(
+            devices[0], get_physical_device_features,
+            get_physical_device_properties);
 
         uint32_t raw_device_extension_count = 0;
         raw_enumerate_device_extensions(
@@ -323,6 +577,11 @@ int main(int argc, char** argv) {
         free(queue_families);
 
         if (queue_family_index != UINT32_MAX) {
+            VkPhysicalDeviceFeatures enabled_features = {0};
+            if (use_legacy_feature_profile) {
+                get_physical_device_features(
+                    devices[0], &enabled_features);
+            }
             float queue_priority = 1.0f;
             VkDeviceQueueCreateInfo queue_info = {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -336,6 +595,9 @@ int main(int argc, char** argv) {
                 .pQueueCreateInfos = &queue_info,
                 .enabledExtensionCount = requested_device_extension_count,
                 .ppEnabledExtensionNames = requested_device_extensions,
+                .pEnabledFeatures = use_legacy_feature_profile
+                    ? &enabled_features
+                    : NULL,
             };
             VkDevice device = VK_NULL_HANDLE;
             result = create_device(devices[0], &device_info, NULL, &device);

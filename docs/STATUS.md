@@ -684,3 +684,39 @@ game-bundle change, isolate the remaining memoryless-attachment,
 render-pass dependency/resolve encoder, and visibility-query changes and
 account for the 1.4.2 pipeline-cache UUID transition without deleting either
 cache.
+
+That classification is now complete. An exact source-built 1.4.2 and official
+1.4.1 expose identical core feature bits, limits, and sparse properties under
+the bridge's argument-buffer-disabled configuration; only API/driver version
+and pipeline-cache UUID differ. The known 1.4.2 changes target extensions,
+argument-buffer state, transient or multisampled images, heap placement,
+visibility queries, or the derived swapchain-view path that do not match the
+captured ESO reset. A new 24-cycle non-game composite probe also passes on both
+versions while recreating exact-size render targets, updating one full-lifetime
+descriptor set, and alternating command-buffer and command-pool reset. There is
+no reset-relevant differential basis for replacing the whole runtime with
+1.4.2.
+
+A different compatibility delta is confirmed. On the Apple M4, embedded
+MoltenVK 1.0.18 reports 18 enabled Vulkan 1.0 core features while official
+1.4.1 reports 36. ESO's static device-init routine checks ten features that
+are true in both runtimes, then queries the complete feature structure again
+and passes it unchanged as `VkDeviceCreateInfo.pEnabledFeatures`. The bridge
+therefore activates 18 capabilities that the embedded runtime kept disabled.
+
+Experiment 0018 is the next narrow repair candidate. Its
+`legacy-feature-profile` mode masks exactly those 18 additions at the
+`vkGetPhysicalDeviceFeatures` GIPA route and fails closed at `vkCreateDevice`
+if any is re-enabled. It does not spoof properties, limits, vendor identity,
+or pipeline-cache UUID and does not add a hot-path audit. The automated M4
+gate proves that all 55 visible feature values then exactly match embedded
+1.0.18 and that real ESO-era device creation succeeds.
+
+The source candidate has completed a clean shadow-bundle rebuild and the full
+non-game M4 gate without touching the installed Experiment 0017 bundle.
+Prepared official-1.4.1 proxy and runtime hashes are recorded in the
+[Experiment 0018 record](experiments/0018-legacy-feature-profile.md). All
+static checks pass; only the committed source identity remains before the
+installation preflight. A new explicit approval is required before restoring
+or modifying the game bundle. No additional user launch is requested against
+Experiment 0017.

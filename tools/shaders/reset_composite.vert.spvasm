@@ -1,0 +1,63 @@
+; SPIR-V
+; Version: 1.0
+; Generator: teso4m4
+; Bound: 64
+; Schema: 0
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main" %gl_position %uv_out %vertex_index
+OpName %main "main"
+OpName %gl_position "gl_Position"
+OpName %uv_out "uv_out"
+OpName %vertex_index "gl_VertexIndex"
+OpDecorate %gl_position BuiltIn Position
+OpDecorate %uv_out Location 0
+OpDecorate %vertex_index BuiltIn VertexIndex
+%void = OpTypeVoid
+%fn_void = OpTypeFunction %void
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
+%uint_3 = OpConstant %uint 3
+%float_n1 = OpConstant %float -1
+%float_0 = OpConstant %float 0
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%float_3 = OpConstant %float 3
+%v2float = OpTypeVector %float 2
+%v4float = OpTypeVector %float 4
+%arr_v2float_3 = OpTypeArray %v2float %uint_3
+%ptr_input_int = OpTypePointer Input %int
+%ptr_output_v2float = OpTypePointer Output %v2float
+%ptr_output_v4float = OpTypePointer Output %v4float
+%ptr_function_arr = OpTypePointer Function %arr_v2float_3
+%ptr_function_v2float = OpTypePointer Function %v2float
+%gl_position = OpVariable %ptr_output_v4float Output
+%uv_out = OpVariable %ptr_output_v2float Output
+%vertex_index = OpVariable %ptr_input_int Input
+%v2_n1_n1 = OpConstantComposite %v2float %float_n1 %float_n1
+%v2_3_n1 = OpConstantComposite %v2float %float_3 %float_n1
+%v2_n1_3 = OpConstantComposite %v2float %float_n1 %float_3
+%positions_value = OpConstantComposite %arr_v2float_3 %v2_n1_n1 %v2_3_n1 %v2_n1_3
+%v2_0_1 = OpConstantComposite %v2float %float_0 %float_1
+%v2_2_1 = OpConstantComposite %v2float %float_2 %float_1
+%v2_0_n1 = OpConstantComposite %v2float %float_0 %float_n1
+%uvs_value = OpConstantComposite %arr_v2float_3 %v2_0_1 %v2_2_1 %v2_0_n1
+%main = OpFunction %void None %fn_void
+%entry = OpLabel
+%positions = OpVariable %ptr_function_arr Function
+%uvs = OpVariable %ptr_function_arr Function
+OpStore %positions %positions_value
+OpStore %uvs %uvs_value
+%index = OpLoad %int %vertex_index
+%position_ptr = OpAccessChain %ptr_function_v2float %positions %index
+%position = OpLoad %v2float %position_ptr
+%position_x = OpCompositeExtract %float %position 0
+%position_y = OpCompositeExtract %float %position 1
+%position4 = OpCompositeConstruct %v4float %position_x %position_y %float_0 %float_1
+OpStore %gl_position %position4
+%uv_ptr = OpAccessChain %ptr_function_v2float %uvs %index
+%uv = OpLoad %v2float %uv_ptr
+OpStore %uv_out %uv
+OpReturn
+OpFunctionEnd

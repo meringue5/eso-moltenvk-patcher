@@ -1,0 +1,38 @@
+; SPIR-V
+; Version: 1.0
+; Generator: teso4m4
+; Bound: 32
+; Schema: 0
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %uv_in %color_out
+OpExecutionMode %main OriginUpperLeft
+OpName %main "main"
+OpName %source "source"
+OpName %uv_in "uv_in"
+OpName %color_out "color_out"
+OpDecorate %source DescriptorSet 0
+OpDecorate %source Binding 0
+OpDecorate %uv_in Location 0
+OpDecorate %color_out Location 0
+%void = OpTypeVoid
+%fn_void = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v4float = OpTypeVector %float 4
+%image2d = OpTypeImage %float 2D 0 0 0 1 Unknown
+%sampled_image2d = OpTypeSampledImage %image2d
+%ptr_uniform_sampled = OpTypePointer UniformConstant %sampled_image2d
+%ptr_input_v2float = OpTypePointer Input %v2float
+%ptr_output_v4float = OpTypePointer Output %v4float
+%source = OpVariable %ptr_uniform_sampled UniformConstant
+%uv_in = OpVariable %ptr_input_v2float Input
+%color_out = OpVariable %ptr_output_v4float Output
+%main = OpFunction %void None %fn_void
+%entry = OpLabel
+%sampled = OpLoad %sampled_image2d %source
+%uv = OpLoad %v2float %uv_in
+%color = OpImageSampleImplicitLod %v4float %sampled %uv
+OpStore %color_out %color
+OpReturn
+OpFunctionEnd

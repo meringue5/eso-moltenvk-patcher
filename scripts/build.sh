@@ -63,6 +63,10 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -o "$BUILD/probe_hdr_filter"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_legacy_feature_profile.c" "$ROOT/src/mvk_compat.c" \
+  -o "$BUILD/probe_legacy_feature_profile"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_lifecycle.c" "$ROOT/src/mvk_lifecycle.c" \
   -o "$BUILD/probe_lifecycle"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
@@ -89,6 +93,7 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
 "$BUILD/probe_self_patch"
 "$BUILD/probe_hdr_filter"
+"$BUILD/probe_legacy_feature_profile"
 "$BUILD/probe_lifecycle"
 "$BUILD/probe_reset_trace"
 "$BUILD/probe_render_audit"
@@ -101,4 +106,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" reset-no-pipeline-cache
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" full-lifetime-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" texture-cache-fix
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" legacy-feature-profile
 echo "Built teso4m4 artifacts in $BUILD"

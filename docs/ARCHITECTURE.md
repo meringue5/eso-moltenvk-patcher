@@ -143,6 +143,24 @@ successful `setenv` calls. A separate non-game probe verifies both the clean
 Neither check establishes rendering correctness; only the staged ESO run can
 answer that question.
 
+## Legacy core-feature profile
+
+Experiment 0018 adds a `legacy-feature-profile` mode above descriptor
+compatibility. GIPA returns a wrapper for `vkGetPhysicalDeviceFeatures`; the
+wrapper calls MoltenVK 1.4.1 and clears only the 18 core features that the
+embedded 1.0.18 runtime reports as false on the target Apple M4. It leaves all
+other feature bits and every physical-device property unchanged.
+
+ESO passes the returned structure directly to `vkCreateDevice`. The existing
+device wrapper therefore performs a second fail-closed check in this mode: if
+any of the 18 prohibited fields is enabled, it returns
+`VK_ERROR_FEATURE_NOT_PRESENT` without calling MoltenVK. Startup validation
+requires the exact 36-to-18 query summary, the feature GIPA route, and an
+18-feature create request with zero prohibited fields.
+
+This wrapper is invoked only during device discovery and creation. It adds no
+descriptor, draw, submit, or presentation hot-path work.
+
 ## Legacy allocation mode
 
 Experiment 0011 adds a distinct `legacy-allocation` marker mode. It retains the

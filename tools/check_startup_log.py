@@ -32,6 +32,14 @@ CREATE_DEVICE_RESULT = re.compile(
     r"^CREATE_DEVICE_RESULT: call=(?P<call>\d+) result=(?P<result>-?\d+) "
     r"device=(?P<device>.*)$"
 )
+CREATE_DEVICE_FEATURE_PROFILE = re.compile(
+    r"^CREATE_DEVICE_FEATURE_PROFILE: call=(?P<call>\d+) enabled=18 "
+    r"prohibited_enabled=0 expected_prohibited=0$"
+)
+LEGACY_FEATURE_PROFILE = re.compile(
+    r"^LEGACY_FEATURE_PROFILE: physical=.* raw_enabled=36 "
+    r"visible_enabled=18 masked=18 expected_masked=18$"
+)
 REMOVED_ONE = re.compile(r"(?:^| )removed=1(?: |$)")
 
 
@@ -129,6 +137,10 @@ def evaluate_startup_log(
         "MODE: texture cache fix enabled live_resources=1 "
         "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1"
     )
+    legacy_feature_profile_mode = (
+        "MODE: legacy feature profile enabled live_resources=1 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1"
+    )
     matched_modes = [
         mode
         for mode in (
@@ -140,6 +152,7 @@ def evaluate_startup_log(
             reset_no_pipeline_cache_mode,
             full_lifetime_audit_mode,
             texture_cache_fix_mode,
+            legacy_feature_profile_mode,
         )
         if mode in lines
     ]
@@ -191,6 +204,28 @@ def evaluate_startup_log(
         for line in lines
     ):
         reasons.append("GIPA did not route surface-format enumeration through the filter")
+    if legacy_feature_profile_mode in matched_modes:
+        if not any(
+            line.startswith("GIPA: ")
+            and "name=vkGetPhysicalDeviceFeatures" in line
+            and "shim=legacy-feature-profile" in line
+            for line in lines
+        ):
+            reasons.append(
+                "GIPA did not route physical-device features through the legacy profile"
+            )
+        feature_profile_lines = [
+            line
+            for line in lines
+            if line.startswith("LEGACY_FEATURE_PROFILE: ")
+        ]
+        if not feature_profile_lines or any(
+            not LEGACY_FEATURE_PROFILE.fullmatch(line)
+            for line in feature_profile_lines
+        ):
+            reasons.append(
+                "the legacy physical-device feature mask was not exact"
+            )
 
     filter_lines = [line for line in lines if line.startswith("HDR_FILTER: ")]
     if not any(
@@ -225,6 +260,7 @@ def evaluate_startup_log(
     create_records: dict[str, tuple[int, str]] = {}
     create_extensions: dict[str, dict[int, str]] = {}
     create_results: dict[str, tuple[int, str]] = {}
+    create_feature_profiles: dict[str, str] = {}
     malformed_create_lines: list[str] = []
     for line in lines:
         if line.startswith("CREATE_DEVICE: "):
@@ -258,6 +294,12 @@ def evaluate_startup_log(
                     int(match.group("result")),
                     match.group("device"),
                 )
+        elif line.startswith("CREATE_DEVICE_FEATURE_PROFILE: "):
+            match = CREATE_DEVICE_FEATURE_PROFILE.fullmatch(line)
+            if not match or match.group("call") in create_feature_profiles:
+                malformed_create_lines.append(line)
+            else:
+                create_feature_profiles[match.group("call")] = line
 
     if malformed_create_lines:
         reasons.append("malformed or duplicate vkCreateDevice diagnostic records")
@@ -289,6 +331,15 @@ def evaluate_startup_log(
             )
     if set(create_extensions) - set(create_records):
         reasons.append("device-extension records exist without a matching request")
+    if legacy_feature_profile_mode in matched_modes:
+        if set(create_feature_profiles) != set(create_records):
+            reasons.append(
+                "vkCreateDevice legacy feature-profile validation is incomplete"
+            )
+    elif create_feature_profiles:
+        reasons.append(
+            "legacy feature-profile validation appeared outside its selected mode"
+        )
 
     if any(
         line.startswith("GDPA: ") and "name=vkSetHdrMetadataEXT" in line

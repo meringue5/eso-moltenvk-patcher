@@ -25,6 +25,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0015 | 2026-07-25 | Reset-only pipeline-cache bypass | Failed; complete cache bypass did not correct rendering | [Run](0015-reset-pipeline-cache-bypass.md) |
 | 0016 | 2026-07-25 | Full-lifetime reset-state audit | Inconclusive; three reset windows overflowed and the audit degraded performance | [Run](0016-full-lifetime-reset-audit.md) |
 | 0017 | 2026-07-25 | Swapchain Metal texture-cache fix | Failed ESO applicability; FPS restored, resolution reset blacked out | [Run](0017-swapchain-texture-cache-fix.md) |
+| 0018 | 2026-07-26 | Embedded-runtime core feature profile | Prepared; non-game differential gate passed | [Run](0018-legacy-feature-profile.md) |
 
 ## Recording policy
 
