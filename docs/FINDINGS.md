@@ -258,3 +258,21 @@ handles are known and live, but their slot contents may have been established
 before mirroring began. Consequently the zero stale-set result excludes a
 rebound of a *known* destroyed view; it does not yet exclude a persistent
 descriptor set whose contents predate the first swapchain.
+
+## MoltenVK 1.4.1 swapchain image-view cache defect
+
+A focused non-game M4 probe now reproduces an internal MoltenVK 1.4.1 failure
+that the public Vulkan audits could not observe. The probe renders a changing
+clear color through a component-swizzled image view, then reads the current
+`CAMetalDrawable` base texture. When the same swapchain `VkImage` acquired a
+new base `MTLTexture`, official 1.4.1 left that texture untouched while its
+cached derived image view continued to receive rendering on the earlier
+drawable. Acquire, command submission, and presentation all remained valid.
+
+The exact v1.4.1 source with only upstream commit `9a5e233` backported passed
+the same drawable-replacement probe and wrote every expected current-frame
+pixel. The upstream change invalidates and recreates a cached image-view Metal
+texture when its base, parent/root texture, or IOSurface identity changes. This
+establishes the mechanism and the narrow repair independently of ESO. The
+final ESO reset test is still required to establish that this mechanism is the
+game's observed solid-color or frozen-frame defect.

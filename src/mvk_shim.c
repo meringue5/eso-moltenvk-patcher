@@ -43,6 +43,7 @@ typedef enum {
     TESO4M4_MODE_RENDER_AUDIT,
     TESO4M4_MODE_RESET_NO_PIPELINE_CACHE,
     TESO4M4_MODE_FULL_LIFETIME_AUDIT,
+    TESO4M4_MODE_TEXTURE_CACHE_FIX,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -207,6 +208,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     }
     if (strcmp(mode, "full-lifetime-audit") == 0) {
         return TESO4M4_MODE_FULL_LIFETIME_AUDIT;
+    }
+    if (strcmp(mode, "texture-cache-fix") == 0) {
+        return TESO4M4_MODE_TEXTURE_CACHE_FIX;
     }
     return TESO4M4_MODE_DISABLED;
 }
@@ -444,6 +448,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     } else if (mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT) {
         log_message(
             "MODE: full lifetime audit enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
+    } else if (mode == TESO4M4_MODE_TEXTURE_CACHE_FIX) {
+        log_message(
+            "MODE: texture cache fix enabled live_resources=1 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
     } else {
         log_message(

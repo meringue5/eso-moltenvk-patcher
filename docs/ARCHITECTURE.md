@@ -298,6 +298,27 @@ ordinary hot paths do not write one log record per call. Any overflow, missing
 layout, unknown bound slot/resource, invalid command generation, or unknown
 synchronization edge makes the coded result inconclusive.
 
+## Swapchain Metal texture-cache backport
+
+Experiment 0017 keeps the MoltenVK 1.4.1 API and configuration baseline but
+builds that exact source tag with one later upstream correction. A presentable
+swapchain `VkImage` does not own one permanent Metal texture:
+`MVKPresentableSwapchainImage::getMTLTexture()` obtains the texture from the
+current `CAMetalDrawable`. In unpatched 1.4.1,
+`MVKImageViewPlane::getMTLTexture()` can nevertheless retain a derived Metal
+texture view created from an earlier drawable.
+
+The backport checks the current base, parent/root texture, and IOSurface
+identity before reusing the derived view. If the backing drawable changed, it
+removes the old view from live-resource tracking, releases it, and creates a
+new view from the current base. No Vulkan call, swapchain policy, descriptor
+configuration, or pipeline cache is changed.
+
+The build script verifies the exact v1.4.1 source commit, exact upstream commit,
+and exact two-file patch hash before compiling. The differential probe renders
+through a view, reads the current drawable base texture, and requires official
+1.4.1 to expose the stale write while the backport corrects it.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

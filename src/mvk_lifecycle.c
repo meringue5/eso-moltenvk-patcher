@@ -389,9 +389,19 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_image_view(
     if (generation != 0) {
         lifecycle_log(
             "SWAPCHAIN_IMAGE_VIEW_CREATE: device=%p generation=%" PRIu64
-            " image=%p view=%p format=%d result=%d",
+            " image=%p view=%p view_type=%d format=%d"
+            " components=%d,%d,%d,%d aspect=0x%x"
+            " base_mip=%u level_count=%u base_layer=%u layer_count=%u"
+            " result=%d",
             (void*)device, generation, (void*)create_info->image,
-            (void*)*image_view, create_info->format, result);
+            (void*)*image_view, create_info->viewType, create_info->format,
+            create_info->components.r, create_info->components.g,
+            create_info->components.b, create_info->components.a,
+            create_info->subresourceRange.aspectMask,
+            create_info->subresourceRange.baseMipLevel,
+            create_info->subresourceRange.levelCount,
+            create_info->subresourceRange.baseArrayLayer,
+            create_info->subresourceRange.layerCount, result);
     }
     return result;
 }

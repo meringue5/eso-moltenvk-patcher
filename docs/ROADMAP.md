@@ -58,12 +58,13 @@ are in [Project status](STATUS.md); completed runs belong in the
   full-array lookups, and 131,072-slot destruction scans plausibly caused the
   observed 8 FPS and gradual 30-to-8 FPS decline. Quantify that failure with a
   loaded-state non-game benchmark.
-- Prepare Experiment 0017 as a narrow MoltenVK 1.4.1 source backport of the
-  upstream dynamic swapchain `MTLTexture` cache invalidation fix. Do not adopt
-  all of 1.4.2 as one undifferentiated change.
-- Before installation, require a non-game drawable-replacement probe that
-  fails against official 1.4.1, passes with the one-patch backport, and proves
-  the affected image-view path matches the candidate being exercised.
+- Preserve the Experiment 0017 differential result. The non-game
+  drawable-replacement probe returned `STALE` against official 1.4.1 and
+  `PASS` against the exact one-patch backport. Do not adopt all of 1.4.2 as
+  one undifferentiated change.
+- Complete Experiment 0017's source, static-analysis, compatibility, target,
+  restore-path, and installation gates before requesting approval for the
+  one-patch candidate.
 - Keep the remaining user-controlled execution for final repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.

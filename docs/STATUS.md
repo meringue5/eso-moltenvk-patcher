@@ -599,3 +599,24 @@ presentation continue while visible output is stale. Experiment 0017 will keep
 the 1.4.1 baseline and backport only this correction. A non-game
 drawable-replacement probe must distinguish official 1.4.1 from the patched
 build before any new game-bundle installation or final user validation.
+
+That differential gate now passes on the Apple M4. A 64 x 64 non-game
+swapchain probe rendered changing clear colors through a component-swizzled
+image view and read the current drawable's base Metal texture. With the
+official release MoltenVK 1.4.1 binary, the same `VkImage` received a different
+`MTLTexture` at frame 3, but the new texture remained `0,0,0,0` instead of the
+expected current-frame value. The old cached image view had received the
+rendering. The probe returned `STALE`.
+
+The exact v1.4.1 source tag with only upstream commit `9a5e233` backported saw
+the same base-texture replacement and wrote the exact expected pixel
+`191,64,82,255`; every later frame also matched and the probe returned `PASS`.
+This confirms the internal failure mechanism without ESO: public Vulkan work
+can remain valid while an image view writes an earlier `CAMetalDrawable`.
+
+Experiment 0017 is therefore a narrow repair candidate, not a 1.4.2 upgrade.
+Its reproducible source build pins the v1.4.1 source commit, the exact upstream
+fix commit, and the two-file patch hash. A distinct `texture-cache-fix` bridge
+mode retains descriptor compatibility and disables the Experiment 0016
+full-lifetime audit. The game bundle is still unchanged; the final source and
+compatibility gates must pass before requesting new installation approval.

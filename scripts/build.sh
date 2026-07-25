@@ -9,6 +9,7 @@ ESO="$GAME_MAC/eso"
 BINK="$GAME_MAC/libBink2Macx64.dylib"
 LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 MVK_ROOT="${MVK_ROOT:-$ROOT/vendor/MoltenVK}"
+MVK_INCLUDE_ROOT="${MVK_INCLUDE_ROOT:-$MVK_ROOT}"
 MVK="$MVK_ROOT/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib"
 MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 BUILD="$ROOT/build"
@@ -31,7 +32,7 @@ cp -p "$MVK" "$BUILD/libMoltenVK.teso4m4.dylib"
 
 xcrun clang -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
-  -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_compat.c" \
   "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_reset_trace.c" \
   "$ROOT/src/mvk_render_audit.c" \
@@ -44,42 +45,42 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O0 \
   "$ROOT/tools/probe_self_patch.c" -o "$BUILD/probe_self_patch"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" -o "$BUILD/probe_vulkan"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_mvk_config.c" -o "$BUILD/probe_mvk_config"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -DTESO4M4_STATIC_MOLTENVK=1 -I"$ROOT/src" \
-  -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" "$LEGACY_MVK" \
   -framework Metal -framework Foundation -framework QuartzCore -framework IOSurface \
   -framework IOKit -framework CoreGraphics -framework AppKit -lc++ \
   -o "$BUILD/probe_vulkan_legacy"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_hdr_filter.c" "$ROOT/src/mvk_compat.c" \
   -o "$BUILD/probe_hdr_filter"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_lifecycle.c" "$ROOT/src/mvk_lifecycle.c" \
   -o "$BUILD/probe_lifecycle"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_reset_trace.c" "$ROOT/src/mvk_reset_trace.c" \
   "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_render_audit.c" \
   -o "$BUILD/probe_reset_trace"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
-  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_render_audit.c" "$ROOT/src/mvk_render_audit.c" \
   -o "$BUILD/probe_render_audit"
 xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
-  -Wall -Wextra -Werror -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  -Wall -Wextra -Werror -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_surface_formats.m" "$ROOT/src/mvk_compat.c" \
   -framework AppKit -framework QuartzCore -o "$BUILD/probe_surface_formats"
 xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -DTESO4M4_STATIC_MOLTENVK=1 \
-  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_surface_formats.m" "$ROOT/src/mvk_compat.c" "$LEGACY_MVK" \
   -framework Metal -framework Foundation -framework QuartzCore -framework IOSurface \
   -framework IOKit -framework CoreGraphics -framework AppKit -lc++ \
@@ -99,4 +100,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" render-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" reset-no-pipeline-cache
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" full-lifetime-audit
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" texture-cache-fix
 echo "Built teso4m4 artifacts in $BUILD"

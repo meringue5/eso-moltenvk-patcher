@@ -33,13 +33,14 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "no-command-pooling") != 0 &&
          strcmp(argv[2], "render-audit") != 0 &&
          strcmp(argv[2], "reset-no-pipeline-cache") != 0 &&
-         strcmp(argv[2], "full-lifetime-audit") != 0)) {
+         strcmp(argv[2], "full-lifetime-audit") != 0 &&
+         strcmp(argv[2], "texture-cache-fix") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
             "default|descriptor-compat|legacy-allocation|reset-resource-trace|"
             "no-command-pooling|render-audit|reset-no-pipeline-cache|"
-            "full-lifetime-audit\n",
+            "full-lifetime-audit|texture-cache-fix\n",
                 argv[0]);
         return 2;
     }
@@ -56,6 +57,7 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "render-audit") == 0 ||
         strcmp(argv[2], "reset-no-pipeline-cache") == 0 ||
         strcmp(argv[2], "full-lifetime-audit") == 0 ||
+        strcmp(argv[2], "texture-cache-fix") == 0 ||
         legacy_allocation;
     const bool no_command_pooling =
         strcmp(argv[2], "no-command-pooling") == 0;

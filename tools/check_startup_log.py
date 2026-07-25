@@ -125,6 +125,10 @@ def evaluate_startup_log(
         "MODE: full lifetime audit enabled live_resources=1 "
         "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1"
     )
+    texture_cache_fix_mode = (
+        "MODE: texture cache fix enabled live_resources=1 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1"
+    )
     matched_modes = [
         mode
         for mode in (
@@ -135,6 +139,7 @@ def evaluate_startup_log(
             render_audit_mode,
             reset_no_pipeline_cache_mode,
             full_lifetime_audit_mode,
+            texture_cache_fix_mode,
         )
         if mode in lines
     ]

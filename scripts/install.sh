@@ -17,7 +17,8 @@ MODE="${TESO4M4_MODE:-descriptor-compat}"
   || "$MODE" == "no-command-pooling" \
   || "$MODE" == "render-audit" \
   || "$MODE" == "reset-no-pipeline-cache" \
-  || "$MODE" == "full-lifetime-audit" ]] || {
+  || "$MODE" == "full-lifetime-audit" \
+  || "$MODE" == "texture-cache-fix" ]] || {
   echo "Unsupported experiment mode: $MODE"
   exit 1
 }
