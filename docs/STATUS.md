@@ -556,3 +556,16 @@ acquire-submit-present chain. The installed Experiment 0015 bridge has not yet
 been restored, so the required pristine-loader source rebuild, complete
 non-game gate, installation, and evidence preparation remain ahead of any user
 launch.
+
+That gate is now complete from source commit `7db8803`. All 48 Experiment 0015
+evidence checksums were reverified, and a cache-preserving restore produced the
+exact original-loader baseline. The full build, 68 Python tests, warnings as
+errors, Clang static analysis, all focused probes, all eight effective
+configuration probes, and fresh replacement/embedded Apple M4 probes passed.
+
+Experiment 0016 is installed in exact `full-lifetime-audit` mode. Built and
+installed proxy and MoltenVK files are byte-identical, the target and marker
+are current, the quick gate is `READY`, and both pipeline caches retain their
+pre-restore hashes and sizes. The remaining pre-user gate is to commit this
+installation record and prepare fresh ignored evidence. No agent launched
+Steam, the launcher, or ESO.

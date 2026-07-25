@@ -1,8 +1,8 @@
 # Experiment 0016: full-lifetime reset-state audit
 
 - Date: 2026-07-25
-- Outcome: **planned; source candidate passes focused non-game probes**
-- Rollback: **not started**
+- Outcome: **running; installed and awaiting one targeted reset**
+- Rollback: **not performed; restore path checked**
 
 ## Question
 
@@ -94,9 +94,16 @@ Focused probes already establish:
   threshold, and a mirrored descriptor update remains below the existing
   ten-microsecond threshold.
 
-The complete pristine-loader build, real-Metal probes, warnings-as-errors, and
-static analysis remain pending until the source checkpoint is committed and
-the installed Experiment 0015 loader is restored.
+Source commit `7db8803` passes 68 Python tests, Python compilation, shell
+syntax, whitespace checks, warnings-as-errors, and Clang static analysis. The
+complete pristine-loader build passes Bink re-export, Rosetta self-patch, HDR,
+lifecycle, reset-resource, full render-audit, and all eight effective
+configuration probes.
+
+Fresh replacement and embedded-runtime probes reached the Apple M4. They
+reproduced the established HDR negotiation and 100-name proc-address results;
+the surface probes reproduced 60 MoltenVK 1.4.1 formats with the exact ESO HDR
+pair versus three embedded-runtime formats without it.
 
 ## Procedure
 
@@ -126,7 +133,33 @@ collected and analyzed first.
 
 ## Evidence
 
-Pending the committed build, installation, and user-controlled run.
+Before restoration, all 48 Experiment 0015 evidence files passed their
+`SHA256SUMS` manifest. The selected ESO SHA-256, UUID, client version, and
+databuild remained current. ESO, Steam, and the launcher were stopped. The
+active loader was the current Experiment 0015 bridge, its marker was present,
+and both pipeline caches matched their preserved hashes.
+
+A cache-preserving restore returned the active loader to the checked pristine
+source and displaced the old marker. Post-restore status reported the exact
+target, original/inactive loader, and absent marker; both cache hashes remained
+unchanged.
+
+The complete source build and non-game gate above then passed. The candidate
+was installed in exact `full-lifetime-audit` mode under the task's explicit
+approval. Built and installed files are byte-identical:
+
+```text
+libBink2Macx64.dylib
+0676aa70ada8623b726de0a4613c406a600547d3171337954dba8f9379bbbdcb
+
+libMoltenVK.teso4m4.dylib
+d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+Post-install status reports the bridge target current and marker present; the
+marker contains `full-lifetime-audit` and the quick gate is `READY`. The active
+4,259,071-byte cache and 6,800,792-byte old backup retain their pre-restore
+hashes. No agent launched Steam, the launcher, or ESO.
 
 ## Result
 
@@ -138,8 +171,8 @@ Pending.
 
 ## Rollback
 
-Not started. The pristine loader and both existing pipeline-cache files are the
-required checked restore boundary.
+Not performed. The checked pristine loader and both unchanged pipeline-cache
+files remain the restore boundary.
 
 ## Follow-up
 
