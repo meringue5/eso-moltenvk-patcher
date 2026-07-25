@@ -301,13 +301,17 @@ generation. Its forwarding smoke probe passes, all 42 Python tests pass, and
 Clang reports no warning or static-analyzer finding. It does not change the
 17-entry redirect set, compatibility filters, Vulkan inputs, or results.
 
-The next gate is explicit approval for a cache-preserving technical restore,
-full source rebuild, evidence preparation, and installation. No user game test
-is requested before that installation completes.
+The user approved the cache-preserving technical restore and installation.
+After Steam stopped, the pristine-loader restore, full source build, all
+non-game smoke checks, current/legacy real-Metal probes, and installation
+completed. Installed proxy and MoltenVK hashes exactly match the built
+artifacts. Both pipeline caches and the exact 1920 x 1200 settings state are
+unchanged. Post-install status is current and enabled, the quick update gate is
+`READY`, and fresh ignored evidence is prepared.
 
-After installation, the bounded test is a cold start at the preserved
-1920 x 1200 setting for at most three minutes through world entry, with no
-graphics-menu access or setting change. This distinguishes an unsupported
-resolution from a broken live transition while collecting the generation trace.
-The unchanged five-minute Auridon interval and performance A/B remain
+The next gate is now the bounded user-controlled cold start at the preserved
+1920 x 1200 setting for at most three minutes through world entry. Do not open
+the graphics menu or change a setting. This distinguishes an unsupported
+resolution from a broken live transition while collecting the generation
+trace. The unchanged five-minute Auridon interval and performance A/B remain
 downstream of this reset-path gate.

@@ -26,11 +26,11 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve Experiment 0009 as a second live-reset rendering failure. Do not
   change resolution, SSAO, or another reset-triggering graphics option during
   an otherwise unchanged correctness or performance run.
-- Complete Experiment 0010's installation gate. Its source candidate now
+- Complete Experiment 0010's bounded cold-start run. Its installed bridge
   instruments swapchain generations, dependent image views/render passes/
   framebuffers, and the first acquires/presentations without changing Vulkan
-  arguments or results. A full clean rebuild still requires an explicitly
-  approved cache-preserving loader restore.
+  arguments or results. The clean rebuild, real-Metal probes, cache-preserving
+  restore/reinstall, and evidence preparation have passed.
 - After instrumentation, cold-start the preserved 1920 x 1200 setting before
   any separate live-reset comparison. A cold pass would distinguish the
   transition path from an intrinsically unsupported resolution.

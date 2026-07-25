@@ -1,8 +1,8 @@
 # Experiment 0010: swapchain lifecycle trace
 
 - Date: 2026-07-25
-- Outcome: **planned; source candidate statically verified**
-- Rollback: **not started; Experiment 0009 bridge remains installed**
+- Outcome: **running; instrumented bridge installed, cold-start run pending**
+- Rollback: **not performed; restore path rechecked**
 
 ## Question
 
@@ -68,18 +68,50 @@ destroy order, result, or presentation request.
 - lifecycle forwarding smoke probe: passed
 - bridge and lifecycle sources: clean under `-Wall -Wextra -Werror`
 - Clang static analyzer: no finding
-- full bridge rebuild: pending the technically required restore of the active
-  proxy to the pristine loader
-- installation: pending explicit approval
+- full bridge rebuild: passed from source commit `2594b31`
+- installation: explicitly approved and completed in descriptor-compatibility
+  mode
 
-The Experiment 0009 pipeline-cache state will be preserved through the
-restore/reinstall boundary. No game, Steam, or launcher process may be running
-for that operation.
+The Experiment 0009 pipeline-cache state was preserved through the
+restore/reinstall boundary. The first restore attempt failed closed because
+Steam was still running and changed no file. After Steam stopped, the process
+gate passed.
+
+## Installation checkpoint
+
+The cache-preserving technical restore returned only the Bink loader to the
+pristine file. The pinned MoltenVK 1.4.1 release was reverified, and the full
+build passed Bink re-export, Rosetta self-patch, HDR filter, lifecycle trace,
+MoltenVK configuration, legacy/current Vulkan proc, and legacy/current
+surface-format probes.
+
+The rebuilt files were then installed with both pipeline caches left in place.
+Installed and built hashes match:
+
+```text
+libBink2Macx64.dylib
+3f3f8dce7a400140f14edb0595e0892945df297d6b8a870c5f4f77932b51101a
+
+libMoltenVK.teso4m4.dylib
+d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398
+```
+
+Post-install status reports the selected ESO target current, the bridge
+installed and current, and the enable marker present. The quick gate is
+`READY`. The ignored evidence boundary is
+`experiment-0010-20260725T103330Z`.
+
+The exact active settings hash is
+`5912a842e7157a73d189f43a1faaf6d8a7635b7cae8a6c0920afff417ae6b21a`,
+with 1920 x 1200, ambient occlusion `0`, and `SkipPregameVideos` `1`.
+The active 4,041,740-byte pipeline cache remains
+`229fc841f078176f845e3654690d4ab1f478231d9659150096ef45e572c516c7`;
+the 6,800,792-byte old backup remains
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 
 ## Procedure
 
-After the source candidate is committed and explicit installation approval is
-received:
+The following installation steps are complete:
 
 1. confirm ESO, Steam, and the launcher are stopped;
 2. preserve both pipeline caches and restore only the pristine Bink loader;
@@ -90,7 +122,7 @@ received:
    pipeline caches;
 7. re-run status and artifact fingerprint checks.
 
-Only then ask the user for one Steam-authenticated cold-start run:
+The remaining step is one user-controlled Steam-authenticated cold-start run:
 
 - do not open the graphics menu or change a setting;
 - enter the existing character and reach the world;
@@ -110,7 +142,8 @@ first acquires/presents, and lifecycle anomalies.
 
 ## Result
 
-Pending installation and the bounded user-controlled run.
+Installation and evidence preparation passed. The bounded user-controlled run
+is pending.
 
 ## Interpretation
 
@@ -118,9 +151,8 @@ Pending.
 
 ## Rollback
 
-Not started. The currently installed Experiment 0009 bridge remains the active
-loader until installation approval permits the cache-preserving technical
-restore and rebuild.
+Not performed. The Experiment 0010 bridge is installed, and the pristine loader
+plus both pre-existing pipeline caches remain available.
 
 ## Follow-up
 
