@@ -564,3 +564,38 @@ pre-restore hashes and sizes. The installation record is committed and the
 authoritative ignored collection directory is
 `artifacts/experiment-0016-20260725T135200Z`. All agent-controlled pre-user
 gates are complete. No agent launched Steam, the launcher, or ESO.
+
+The user subsequently reported four attempts under Experiment 0016. The first
+two ran at approximately 8 FPS, the third recovered only to approximately
+20 FPS, and the fourth declined from approximately 30 to 14 to 8 FPS. Graphics
+option changes did not produce solid-color or frozen output in those states.
+The raw bridge log contains five ESO process identities, including two without
+a completed reset summary; the record does not infer the reason for that
+process-count difference.
+
+Three reset windows did complete. Across them, 105,356--116,091 bound
+descriptor slots were known and zero were unknown or stale. Command-buffer
+generation, descriptor record/update order, queue semaphores and fences,
+attachment load/store state, subresource barriers, tracked layouts, and image
+memory overlap checks reported no inconsistency. Each window had
+16,816--17,888 accumulated mirror overflows, however, so the analyzer correctly
+rejected all three as incomplete. Experiment 0016 is inconclusive rather than
+a clean public-state pass.
+
+The audit implementation itself is now the leading explanation for the
+performance collapse: it retains dead full-lifetime entries, performs several
+full fixed-array handle searches, and scans all 131,072 descriptor slots on
+resource destruction under one mutex. Its lightly populated smoke benchmark
+did not model this load. Do not run the installed `full-lifetime-audit` again.
+The ignored evidence directory has 48 checksum-verified files, the startup
+verdict passed, no crash report was added, and the exact target remains
+current.
+
+The next repair gate is below the observed Vulkan state. MoltenVK 1.4.2 includes
+an upstream correction for a cached Metal texture view that can remain attached
+to an earlier dynamically replaced swapchain drawable. That mechanism matches
+the established condition in which Vulkan acquire, work submission, and
+presentation continue while visible output is stale. Experiment 0017 will keep
+the 1.4.1 baseline and backport only this correction. A non-game
+drawable-replacement probe must distinguish official 1.4.1 from the patched
+build before any new game-bundle installation or final user validation.

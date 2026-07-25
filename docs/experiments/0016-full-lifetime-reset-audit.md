@@ -1,7 +1,7 @@
 # Experiment 0016: full-lifetime reset-state audit
 
 - Date: 2026-07-25
-- Outcome: **running; installed and awaiting one targeted reset**
+- Outcome: **inconclusive; three reset windows overflowed the mirror**
 - Rollback: **not performed; restore path checked**
 
 ## Question
@@ -167,11 +167,86 @@ launched Steam, the launcher, or ESO.
 
 ## Result
 
-Pending.
+The user reported four attempts under the installed candidate. The first two
+were limited to approximately 8 FPS and accepted graphics-option changes
+without visible corruption. After a complete Steam-path exit, the third attempt
+reached approximately 20 FPS and again accepted the change. The fourth attempt
+declined from approximately 30 to 14 to 8 FPS. No solid-color or frozen-frame
+failure was observed in these low or declining performance states.
+
+The bridge log contains five ESO process identities after the preparation
+boundary. One was a short process without an audit summary; this record does
+not infer why the number of process identities differs from the four
+user-reported attempts. Three reset windows completed their eight-presentation
+bound:
+
+| Run | Known descriptor slots bound | Unknown or stale slots bound | Subresource barriers | Attachments | Mirror overflows |
+|---|---:|---:|---:|---:|---:|
+| `20260725T140843.054761000Z-pid54697` | 116,091 | 0 | 243 | 880 | 17,888 |
+| `20260725T141101.377891000Z-pid54831` | 107,593 | 0 | 438 | 876 | 17,166 |
+| `20260725T141347.989042000Z-pid54981` | 105,356 | 0 | 144 | 876 | 16,816 |
+
+In all three completed windows:
+
+- unknown descriptor sets, unknown layouts, zero-update sets, stale sets, and
+  stale slots bound were all zero;
+- live and undeclared image-memory overlaps and tracked layout mismatches were
+  zero;
+- every sampled attachment used `LOAD` plus `STORE`, with no missing clear,
+  unknown view, or dead view;
+- eight command buffers were submitted with no invalid generation and no
+  descriptor update-after-record;
+- eight queue submits had matched wait and signal semaphores, with no unknown
+  wait; fence submit/reset/wait order was complete;
+- reset-created pipeline binds retained exact render-pass linkage and no Vulkan
+  failure was recorded.
+
+Descriptor slots still named image views when those views were destroyed, but
+none of those stale slots was subsequently bound in the completed windows.
+The full-lifetime mirror therefore removes the earlier
+`last_update_sequence=0` blind spot for every observed bound slot.
+
+The analyzer rejected all three completed windows because their pre-window
+full-lifetime mirror state had already overflowed 16,816--17,888 times. This is
+the required fail-closed result, not clean coverage. The aggregate counter does
+not retain the responsible table name after the bounded anomaly log is
+consumed, so the missing state cannot be reconstructed from this evidence.
+
+The collected settings remained structurally exact and changed
+`SUB_SAMPLING` from `2` to `1` with resolution from 1920 x 1200 to
+2048 x 1280. No crash report was created. The startup verdict passed for the
+last process. All 48 files in
+`artifacts/experiment-0016-20260725T135200Z/SHA256SUMS` reverified.
 
 ## Interpretation
 
-Pending.
+Experiment 0016 is formally inconclusive because the mirror overflow violates
+its diagnostic-pass criterion and the target high-performance rendering
+failure did not recur. It is nevertheless useful negative evidence: in three
+completed reset windows, every descriptor slot that was actually bound was
+known, no stale descriptor was rebound, ESO's command-buffer generations and
+submit synchronization were coherent, and the tracked attachment and
+subresource state was clean.
+
+The declining FPS is most plausibly an instrumentation artifact, not a new
+MoltenVK conclusion. The audit keeps full-lifetime tombstones in fixed tables,
+several handle lookups scan entire 2,048--16,384-entry arrays, and destroying
+an image view, buffer, sampler, or buffer view scans all 131,072 descriptor
+slots while holding the audit mutex. The original smoke benchmark measured
+only a lightly populated update path and could not detect this loaded-table
+degradation. This explains both the table overflow and a cost that grows with
+object churn. It remains an inference until a loaded-state non-game benchmark
+quantifies it, but the installed audit must not be used for another performance
+or correctness run.
+
+Because the public-state observations that did complete were clean, the next
+gate moves below Vulkan handles to MoltenVK's Metal texture lifetime. MoltenVK
+1.4.2 contains an upstream fix for cached `MTLTexture` views of dynamically
+replaced swapchain drawables. That mechanism exactly permits acquire, submit,
+and present to continue while rendering targets an earlier drawable. The next
+candidate will backport only that fix to 1.4.1 and must reproduce and repair it
+in a non-game probe before any installation is proposed; this result does not
+authorize or require a wholesale 1.4.2 upgrade.
 
 ## Rollback
 
@@ -180,7 +255,9 @@ files remain the restore boundary.
 
 ## Follow-up
 
-If one public category is implicated, implement only a distinguishable narrow
-counterfactual against that category. If all public categories are clean,
-instrument MoltenVK's internal Metal texture/resource or render-encoder reset
-boundary rather than adding another configuration A/B.
+Do not request another Experiment 0016 launch. Add a loaded-state non-game
+benchmark for the audit's performance failure, then prepare Experiment 0017 as
+an exact MoltenVK 1.4.1 source build with only the upstream dynamic
+swapchain-texture cache invalidation backported. Require an agent-run
+drawable-replacement probe to fail on official 1.4.1 and pass on the backport
+before the remaining user-controlled run is used as final repair validation.

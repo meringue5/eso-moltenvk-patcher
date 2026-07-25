@@ -50,18 +50,23 @@ are in [Project status](STATUS.md); completed runs belong in the
   observed reset-created pipeline binds matched their render pass, and solid
   color still recurred. Do not delete, replace, or further bypass caches as a
   reset-correctness experiment.
-- Complete Experiment 0016 as one joined observation candidate. It starts the
-  descriptor mirror at process sequence 1 and combines layout/slot contents,
-  ESO command-buffer generations, attachment load/store/clear and roles,
-  aspect/mip/layer transitions, stage/access masks, queue ordering,
-  semaphores, and fences.
-- Treat any fixed-table overflow, unknown bound slot/layout/resource, missing
-  command generation, or unknown synchronization edge as inconclusive rather
-  than clean coverage.
-- If that joined public-state audit is complete and clean while rendering
-  fails, move directly to MoltenVK Metal texture/resource lifetime or
-  render-encoder reset instrumentation. Do not add another generic
-  configuration A/B.
+- Preserve Experiment 0016 as inconclusive. Three reset windows observed only
+  known bound descriptor slots, valid command generations and synchronization,
+  and clean tracked attachment/subresource state, but 16,816--17,888
+  full-lifetime mirror overflows invalidate complete coverage.
+- Do not repeat the installed full-lifetime audit. Its non-reused tombstones,
+  full-array lookups, and 131,072-slot destruction scans plausibly caused the
+  observed 8 FPS and gradual 30-to-8 FPS decline. Quantify that failure with a
+  loaded-state non-game benchmark.
+- Prepare Experiment 0017 as a narrow MoltenVK 1.4.1 source backport of the
+  upstream dynamic swapchain `MTLTexture` cache invalidation fix. Do not adopt
+  all of 1.4.2 as one undifferentiated change.
+- Before installation, require a non-game drawable-replacement probe that
+  fails against official 1.4.1, passes with the one-patch backport, and proves
+  the affected image-view path matches the candidate being exercised.
+- Keep the remaining user-controlled execution for final repair validation:
+  one normal-performance world entry and one graphics reset, with no additional
+  diagnostic-only run first.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.
