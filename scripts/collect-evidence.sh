@@ -61,6 +61,25 @@ echo "$REPORT_COUNT" > "$OUTPUT/crash-report-count.txt"
 START_LOCAL="$(date -r "$START_EPOCH" '+%Y-%m-%d %H:%M:%S')"
 /usr/bin/log show --style syslog --start "$START_LOCAL" --predicate 'process == "eso"' \
   > "$OUTPUT/eso-unified.log" 2> "$OUTPUT/eso-unified.stderr" || true
+FOCUS_PID="$(
+  sed -nE 's/^startup run: .*pid([0-9]+)$/\1/p' \
+    "$OUTPUT/startup-verdict.txt"
+)"
+FOCUS_ANALYSIS_EXIT=0
+if [[ "$FOCUS_PID" == <-> ]]; then
+  /usr/bin/log show --style compact --start "$START_LOCAL" \
+    --predicate \
+    "(process == \"runningboardd\" OR process == \"WindowServer\" OR process == \"Dock\" OR process == \"loginwindow\" OR process == \"tccd\") AND (eventMessage CONTAINS[c] \"$FOCUS_PID\" OR eventMessage CONTAINS[c] \"com.zenimaxonline.eso\" OR eventMessage CONTAINS[c] \"zosSteamStarterMac2\")" \
+    > "$OUTPUT/window-focus.log" 2> "$OUTPUT/window-focus.stderr" || true
+  python3 "$ROOT/tools/analyze_focus_log.py" \
+    "$OUTPUT/window-focus.log" --pid "$FOCUS_PID" \
+    > "$OUTPUT/focus-verdict.txt" 2>&1 || FOCUS_ANALYSIS_EXIT=$?
+else
+  echo "No eligible startup PID was available." \
+    > "$OUTPUT/focus-verdict.txt"
+  FOCUS_ANALYSIS_EXIT=2
+fi
+echo "$FOCUS_ANALYSIS_EXIT" > "$OUTPUT/focus-verdict-exit-code.txt"
 
 for LOG_NAME in client interface; do
   SOURCE_LOG="$ESO_LIVE/Logs/$LOG_NAME.log"
