@@ -18,6 +18,7 @@
 
 #include "mvk_compat.h"
 #include "mvk_lifecycle.h"
+#include "mvk_reset_trace.h"
 
 typedef struct {
     const char* symbol;
@@ -31,11 +32,13 @@ static FILE* g_log;
 static char g_run_id[80] = "uninitialized";
 static PFN_vkGetInstanceProcAddr g_next_get_instance_proc_addr;
 static PFN_vkGetDeviceProcAddr g_next_get_device_proc_addr;
+static bool g_reset_trace_enabled;
 
 typedef enum {
     TESO4M4_MODE_DISABLED = 0,
     TESO4M4_MODE_DESCRIPTOR_COMPAT,
     TESO4M4_MODE_LEGACY_ALLOCATION,
+    TESO4M4_MODE_RESET_RESOURCE_TRACE,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -77,12 +80,20 @@ static PFN_vkVoidFunction VKAPI_CALL traced_get_device_proc_addr(
         return NULL;
     }
     PFN_vkVoidFunction result = g_next_get_device_proc_addr(device, name);
-    PFN_vkVoidFunction returned =
+    PFN_vkVoidFunction lifecycle_returned =
         teso4m4_lifecycle_intercept(name, result);
+    PFN_vkVoidFunction returned = lifecycle_returned;
+    const char* shim = returned != result ? "lifecycle-trace" : "none";
+    if (g_reset_trace_enabled) {
+        returned = teso4m4_reset_trace_intercept(name, lifecycle_returned);
+        if (returned != lifecycle_returned) {
+            shim = "reset-resource-trace";
+        }
+    }
     log_message(
         "GDPA: device=%p name=%s result=%p returned=%p shim=%s%s",
         (void*)device, name ? name : "(null)", (void*)result,
-        (void*)returned, returned != result ? "lifecycle-trace" : "none",
+        (void*)returned, shim,
         result ? "" : " [NULL]");
     return returned;
 }
@@ -177,6 +188,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     }
     if (strcmp(mode, "legacy-allocation") == 0) {
         return TESO4M4_MODE_LEGACY_ALLOCATION;
+    }
+    if (strcmp(mode, "reset-resource-trace") == 0) {
+        return TESO4M4_MODE_RESET_RESOURCE_TRACE;
     }
     return TESO4M4_MODE_DISABLED;
 }
@@ -279,6 +293,10 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             g_next_get_instance_proc_addr =
                 (PFN_vkGetInstanceProcAddr)destinations[index];
             destinations[index] = (void*)&traced_get_instance_proc_addr;
+        } else if (g_reset_trace_enabled) {
+            destinations[index] = (void*)teso4m4_reset_trace_intercept(
+                target->symbol,
+                (PFN_vkVoidFunction)destinations[index]);
         }
     }
 
@@ -350,6 +368,9 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     teso4m4_compat_set_logger(&compat_log_message);
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&compat_log_message);
+    teso4m4_reset_trace_reset();
+    teso4m4_reset_trace_set_logger(&compat_log_message);
+    g_reset_trace_enabled = false;
     log_message("RUN_START: bridge starting pid=%ld", (long)getpid());
 
     char directory[4096];
@@ -362,6 +383,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message("SKIP: enable marker absent");
         return;
     }
+    g_reset_trace_enabled = mode == TESO4M4_MODE_RESET_RESOURCE_TRACE;
     if (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -374,6 +396,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message(
             "MODE: legacy allocation enabled live_resources=1 "
             "metal_argument_buffers=0 use_mtlheap=0");
+    } else if (mode == TESO4M4_MODE_RESET_RESOURCE_TRACE) {
+        log_message(
+            "MODE: reset resource trace enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "

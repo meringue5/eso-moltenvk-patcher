@@ -33,7 +33,7 @@ xcrun clang -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
   -I"$MVK_ROOT/MoltenVK/include" \
   "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_compat.c" \
-  "$ROOT/src/mvk_lifecycle.c" \
+  "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_reset_trace.c" \
   -Wl,-install_name,@executable_path/libBink2Macx64.dylib \
   -Wl,-reexport_library,"$BUILD/libBink2Macx64.teso4m4-original.dylib" \
   -o "$BUILD/libBink2Macx64.dylib"
@@ -63,6 +63,11 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_lifecycle.c" "$ROOT/src/mvk_lifecycle.c" \
   -o "$BUILD/probe_lifecycle"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
+  -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_reset_trace.c" "$ROOT/src/mvk_reset_trace.c" \
+  "$ROOT/src/mvk_lifecycle.c" \
+  -o "$BUILD/probe_reset_trace"
 xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -I"$ROOT/src" -I"$MVK_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_surface_formats.m" "$ROOT/src/mvk_compat.c" \
@@ -79,7 +84,9 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_self_patch"
 "$BUILD/probe_hdr_filter"
 "$BUILD/probe_lifecycle"
+"$BUILD/probe_reset_trace"
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" default
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" descriptor-compat
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" legacy-allocation
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" reset-resource-trace
 echo "Built teso4m4 artifacts in $BUILD"

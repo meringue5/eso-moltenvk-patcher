@@ -105,9 +105,17 @@ def evaluate_startup_log(
         "MODE: legacy allocation enabled live_resources=1 "
         "metal_argument_buffers=0 use_mtlheap=0"
     )
+    reset_resource_trace_mode = (
+        "MODE: reset resource trace enabled live_resources=1 "
+        "metal_argument_buffers=0 use_mtlheap=1"
+    )
     matched_modes = [
         mode
-        for mode in (descriptor_mode, legacy_allocation_mode)
+        for mode in (
+            descriptor_mode,
+            legacy_allocation_mode,
+            reset_resource_trace_mode,
+        )
         if mode in lines
     ]
     if len(matched_modes) != 1:

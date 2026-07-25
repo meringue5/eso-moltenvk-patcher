@@ -133,6 +133,16 @@ class StartupLogTests(unittest.TestCase):
             verdict.reasons,
         )
 
+    def test_accepts_reset_resource_trace_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: reset resource trace enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1",
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
     def test_time_gate_rejects_stale_run(self) -> None:
         cutoff = run_epoch(RUN)
         assert cutoff is not None

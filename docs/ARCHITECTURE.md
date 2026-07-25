@@ -176,6 +176,25 @@ tracking state and do not retain pointers to caller-owned create structures.
 The coded post-run analyzer selects only a run after the evidence-preparation
 boundary.
 
+## Bounded reset-resource trace
+
+Experiment 0012 composes a second observation layer outside the lifecycle
+wrappers. It also intercepts resource-related entries in the 17 direct patch
+targets, because relying on GDPA alone would miss ESO's static memory, buffer,
+image, command-buffer-end, and render-pass-end calls.
+
+The trace remains inactive during ordinary startup and gameplay. After two
+swapchains exist, the next successful device wait arms one bounded window. The
+next created swapchain becomes the reset target, and its eighth presentation
+atomically closes the window and emits aggregate counters. Only the first 48
+high-value details are logged. All wrappers call the previous layer and return
+its result unchanged.
+
+This architecture establishes whether reset-time resources and command work
+are created, bound, recorded, and submitted. It cannot by itself inspect Metal
+resource contents or prove that a successful Vulkan operation produced correct
+pixels.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

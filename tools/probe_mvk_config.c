@@ -28,11 +28,12 @@ int main(int argc, char** argv) {
     if (argc != 3 ||
         (strcmp(argv[2], "default") != 0 &&
          strcmp(argv[2], "descriptor-compat") != 0 &&
-         strcmp(argv[2], "legacy-allocation") != 0)) {
+         strcmp(argv[2], "legacy-allocation") != 0 &&
+         strcmp(argv[2], "reset-resource-trace") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
-            "default|descriptor-compat|legacy-allocation\n",
+            "default|descriptor-compat|legacy-allocation|reset-resource-trace\n",
                 argv[0]);
         return 2;
     }
@@ -43,7 +44,9 @@ int main(int argc, char** argv) {
     const bool legacy_allocation =
         strcmp(argv[2], "legacy-allocation") == 0;
     const bool descriptor_compat =
-        strcmp(argv[2], "descriptor-compat") == 0 || legacy_allocation;
+        strcmp(argv[2], "descriptor-compat") == 0 ||
+        strcmp(argv[2], "reset-resource-trace") == 0 ||
+        legacy_allocation;
     if (descriptor_compat &&
         (setenv("MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES", "1", 1) != 0 ||
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
