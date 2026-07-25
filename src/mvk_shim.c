@@ -46,6 +46,7 @@ typedef enum {
     TESO4M4_MODE_FULL_LIFETIME_AUDIT,
     TESO4M4_MODE_TEXTURE_CACHE_FIX,
     TESO4M4_MODE_LEGACY_FEATURE_PROFILE,
+    TESO4M4_MODE_PERFORMANCE_SAFE,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -222,6 +223,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     if (strcmp(mode, "legacy-feature-profile") == 0) {
         return TESO4M4_MODE_LEGACY_FEATURE_PROFILE;
     }
+    if (strcmp(mode, "performance-safe") == 0) {
+        return TESO4M4_MODE_PERFORMANCE_SAFE;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -249,13 +253,14 @@ static bool verify_moltenvk_configuration(
     log_message(
         "MOLTENVK_CONFIG: live_resources=%u metal_argument_buffers=%u "
         "use_mtlheap=%d synchronous_queue_submits=%u command_pooling=%u "
-        "prefill=%d",
+        "prefill=%d maximize_concurrent_compilation=%u",
         configuration.liveCheckAllResources,
         configuration.useMetalArgumentBuffers,
         configuration.useMTLHeap,
         configuration.synchronousQueueSubmits,
         configuration.useCommandPooling,
-        configuration.prefillMetalCommandBuffers);
+        configuration.prefillMetalCommandBuffers,
+        configuration.shouldMaximizeConcurrentCompilation);
 
     const MVKConfigUseMTLHeap expected_mtlheap =
         mode == TESO4M4_MODE_LEGACY_ALLOCATION
@@ -263,13 +268,19 @@ static bool verify_moltenvk_configuration(
             : MVK_CONFIG_USE_MTLHEAP_WHERE_SAFE;
     const VkBool32 expected_command_pooling =
         mode == TESO4M4_MODE_NO_COMMAND_POOLING ? VK_FALSE : VK_TRUE;
+    const VkBool32 expected_synchronous_submits =
+        mode == TESO4M4_MODE_PERFORMANCE_SAFE ? VK_FALSE : VK_TRUE;
+    const VkBool32 expected_concurrent_compilation =
+        mode == TESO4M4_MODE_PERFORMANCE_SAFE ? VK_TRUE : VK_FALSE;
     if (configuration.liveCheckAllResources != VK_TRUE ||
         configuration.useMetalArgumentBuffers != VK_FALSE ||
         configuration.useMTLHeap != expected_mtlheap ||
-        configuration.synchronousQueueSubmits != VK_TRUE ||
+        configuration.synchronousQueueSubmits != expected_synchronous_submits ||
         configuration.useCommandPooling != expected_command_pooling ||
         configuration.prefillMetalCommandBuffers !=
-            MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS_STYLE_NO_PREFILL) {
+            MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS_STYLE_NO_PREFILL ||
+        configuration.shouldMaximizeConcurrentCompilation !=
+            expected_concurrent_compilation) {
         log_message("ERROR: MoltenVK configuration differs from selected mode");
         return false;
     }
@@ -432,6 +443,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT;
     g_legacy_feature_profile_enabled =
         mode == TESO4M4_MODE_LEGACY_FEATURE_PROFILE;
+    teso4m4_lifecycle_set_enabled(
+        mode != TESO4M4_MODE_PERFORMANCE_SAFE);
     teso4m4_reset_trace_set_pipeline_cache_bypass(
         mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE);
     teso4m4_reset_trace_set_full_lifetime_audit(
@@ -441,7 +454,12 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
          setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0) ||
         (mode == TESO4M4_MODE_NO_COMMAND_POOLING &&
-         setenv("MVK_CONFIG_USE_COMMAND_POOLING", "0", 1) != 0)) {
+         setenv("MVK_CONFIG_USE_COMMAND_POOLING", "0", 1) != 0) ||
+        (mode == TESO4M4_MODE_PERFORMANCE_SAFE &&
+         (setenv("MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS", "0", 1) != 0 ||
+          setenv(
+              "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
+              "1", 1) != 0))) {
         log_message("ERROR: could not set selected compatibility mode: %s",
                     strerror(errno));
         return;
@@ -478,6 +496,12 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message(
             "MODE: legacy feature profile enabled live_resources=1 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
+    } else if (mode == TESO4M4_MODE_PERFORMANCE_SAFE) {
+        log_message(
+            "MODE: performance safe enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "lifecycle_trace=0");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "

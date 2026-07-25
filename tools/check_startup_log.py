@@ -41,6 +41,20 @@ LEGACY_FEATURE_PROFILE = re.compile(
     r"visible_enabled=18 masked=18 expected_masked=18$"
 )
 REMOVED_ONE = re.compile(r"(?:^| )removed=1(?: |$)")
+PERFORMANCE_DIRECT_NAMES = (
+    "vkDeviceWaitIdle",
+    "vkCreateSwapchainKHR",
+    "vkDestroySwapchainKHR",
+    "vkGetSwapchainImagesKHR",
+    "vkCreateImageView",
+    "vkDestroyImageView",
+    "vkCreateRenderPass",
+    "vkDestroyRenderPass",
+    "vkCreateFramebuffer",
+    "vkDestroyFramebuffer",
+    "vkAcquireNextImageKHR",
+    "vkQueuePresentKHR",
+)
 
 
 @dataclass(frozen=True)
@@ -141,6 +155,12 @@ def evaluate_startup_log(
         "MODE: legacy feature profile enabled live_resources=1 "
         "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1"
     )
+    performance_safe_mode = (
+        "MODE: performance safe enabled live_resources=1 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+        "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+        "lifecycle_trace=0"
+    )
     matched_modes = [
         mode
         for mode in (
@@ -153,6 +173,7 @@ def evaluate_startup_log(
             full_lifetime_audit_mode,
             texture_cache_fix_mode,
             legacy_feature_profile_mode,
+            performance_safe_mode,
         )
         if mode in lines
     ]
@@ -162,10 +183,18 @@ def evaluate_startup_log(
     expected_command_pooling = (
         0 if no_command_pooling_mode in matched_modes else 1
     )
+    expected_synchronous_submits = (
+        0 if performance_safe_mode in matched_modes else 1
+    )
+    expected_concurrent_compilation = (
+        1 if performance_safe_mode in matched_modes else 0
+    )
     expected_configuration = (
         "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
-        f"use_mtlheap={expected_mtlheap} synchronous_queue_submits=1 "
-        f"command_pooling={expected_command_pooling} prefill=0"
+        f"use_mtlheap={expected_mtlheap} "
+        f"synchronous_queue_submits={expected_synchronous_submits} "
+        f"command_pooling={expected_command_pooling} prefill=0 "
+        f"maximize_concurrent_compilation={expected_concurrent_compilation}"
     )
     if expected_configuration not in lines:
         reasons.append("the effective MoltenVK configuration was not verified")
@@ -225,6 +254,33 @@ def evaluate_startup_log(
         ):
             reasons.append(
                 "the legacy physical-device feature mask was not exact"
+            )
+    if performance_safe_mode in matched_modes:
+        for name in PERFORMANCE_DIRECT_NAMES:
+            records = [
+                line
+                for line in lines
+                if line.startswith("GDPA: ") and f"name={name} " in line
+            ]
+            if not records or any("shim=none" not in line for line in records):
+                reasons.append(
+                    f"performance mode did not route {name} directly"
+                )
+        lifecycle_prefixes = (
+            "DEVICE_WAIT_IDLE:",
+            "SWAPCHAIN_CREATE:",
+            "SWAPCHAIN_DESTROY:",
+            "SWAPCHAIN_IMAGES:",
+            "SWAPCHAIN_IMAGE:",
+            "SWAPCHAIN_IMAGE_VIEW_",
+            "SWAPCHAIN_RENDER_PASS_",
+            "SWAPCHAIN_FRAMEBUFFER_",
+            "SWAPCHAIN_ACQUIRE:",
+            "SWAPCHAIN_PRESENT:",
+        )
+        if any(line.startswith(lifecycle_prefixes) for line in lines):
+            reasons.append(
+                "performance mode emitted lifecycle hot-path records"
             )
 
     filter_lines = [line for line in lines if line.startswith("HDR_FILTER: ")]

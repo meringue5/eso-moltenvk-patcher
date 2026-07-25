@@ -78,12 +78,15 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Close Experiment 0018 as a negative result. Its exact 18/18 feature mask
   still produced solid output after one resolution reset, so do not repeat or
   subdivide the core-feature experiment.
-- Prepare one combined `performance-safe` successor to reduce user runs:
+- Preserve the prepared combined `performance-safe` successor that reduces
+  user runs:
   remove the failed feature mask and all lifecycle wrappers, set asynchronous
   queue submission and maximum concurrent compilation, and retain every
   established 1.4.1 compatibility setting. Keep live-resource checking
   enabled; do not fold the aggressive descriptor-semantics change into this
   bundle.
+- Commit the prepared Experiment 0019 source identity, then complete its
+  install preflight. Do not subdivide the bundle into additional user runs.
 - Keep the next user-controlled execution for a prepared repair validation:
   one normal-performance world entry and one graphics reset, with no additional
   diagnostic-only run first.

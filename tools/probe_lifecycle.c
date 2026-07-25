@@ -177,6 +177,38 @@ static uint64_t monotonic_nanoseconds(void) {
 
 int main(void) {
     teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_enabled(false);
+    const struct {
+        const char* name;
+        PFN_vkVoidFunction function;
+    } performance_entries[] = {
+        {"vkDeviceWaitIdle", (PFN_vkVoidFunction)&fake_device_wait_idle},
+        {"vkCreateSwapchainKHR", (PFN_vkVoidFunction)&fake_create_swapchain},
+        {"vkDestroySwapchainKHR", (PFN_vkVoidFunction)&fake_destroy_swapchain},
+        {"vkGetSwapchainImagesKHR", (PFN_vkVoidFunction)&fake_get_swapchain_images},
+        {"vkCreateImageView", (PFN_vkVoidFunction)&fake_create_image_view},
+        {"vkDestroyImageView", (PFN_vkVoidFunction)&fake_destroy_image_view},
+        {"vkCreateRenderPass", (PFN_vkVoidFunction)&fake_create_render_pass},
+        {"vkDestroyRenderPass", (PFN_vkVoidFunction)&fake_destroy_render_pass},
+        {"vkCreateFramebuffer", (PFN_vkVoidFunction)&fake_create_framebuffer},
+        {"vkDestroyFramebuffer", (PFN_vkVoidFunction)&fake_destroy_framebuffer},
+        {"vkAcquireNextImageKHR", (PFN_vkVoidFunction)&fake_acquire_next_image},
+        {"vkQueuePresentKHR", (PFN_vkVoidFunction)&fake_queue_present},
+    };
+    for (size_t index = 0;
+         index < sizeof(performance_entries) / sizeof(performance_entries[0]);
+         ++index) {
+        if (!check(
+                teso4m4_lifecycle_intercept(
+                    performance_entries[index].name,
+                    performance_entries[index].function) ==
+                    performance_entries[index].function,
+                "disabled lifecycle mode must return the original function")) {
+            return 1;
+        }
+    }
+
+    teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&test_log);
 
     PFN_vkDeviceWaitIdle wait_idle = (PFN_vkDeviceWaitIdle)

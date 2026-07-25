@@ -74,6 +74,7 @@ static FramebufferRecord g_framebuffers[kMaxFramebuffers];
 static uint64_t g_generation_counter;
 static uint64_t g_wait_counter;
 static bool g_overflow_reported;
+static bool g_enabled = true;
 
 static void lifecycle_log(const char* format, ...) {
     if (!g_logger) {
@@ -654,12 +655,19 @@ void teso4m4_lifecycle_reset(void) {
     g_generation_counter = 0;
     g_wait_counter = 0;
     g_overflow_reported = false;
+    g_enabled = true;
     pthread_mutex_unlock(&g_lock);
 }
 
 void teso4m4_lifecycle_set_logger(Teso4m4LifecycleLogFunction logger) {
     pthread_mutex_lock(&g_lock);
     g_logger = logger;
+    pthread_mutex_unlock(&g_lock);
+}
+
+void teso4m4_lifecycle_set_enabled(bool enabled) {
+    pthread_mutex_lock(&g_lock);
+    g_enabled = enabled;
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -671,6 +679,10 @@ PFN_vkVoidFunction teso4m4_lifecycle_intercept(
     }
     PFN_vkVoidFunction returned = next_function;
     pthread_mutex_lock(&g_lock);
+    if (!g_enabled) {
+        pthread_mutex_unlock(&g_lock);
+        return next_function;
+    }
     if (strcmp(name, "vkDeviceWaitIdle") == 0) {
         g_next_device_wait_idle = (PFN_vkDeviceWaitIdle)next_function;
         returned = (PFN_vkVoidFunction)&traced_device_wait_idle;

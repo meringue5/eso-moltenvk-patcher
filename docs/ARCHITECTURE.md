@@ -161,6 +161,26 @@ requires the exact 36-to-18 query summary, the feature GIPA route, and an
 This wrapper is invoked only during device discovery and creation. It adds no
 descriptor, draw, submit, or presentation hot-path work.
 
+## Performance-safe execution path
+
+Experiment 0019 adds a `performance-safe` mode that retains descriptor
+compatibility and the HDR filters but removes diagnostic routing from the
+steady-state execution path. The lifecycle interceptor is disabled before
+proc lookup; all twelve lifecycle-observed functions therefore return the
+exact MoltenVK pointer instead of a bridge wrapper. Startup validation requires
+those GDPA records to report `shim=none` and rejects any lifecycle event.
+
+Before MoltenVK is loaded, the mode sets asynchronous queue submission and
+maximum concurrent compilation. The post-load private configuration query
+requires those values together with live-resource checking, disabled argument
+buffers, MTLHeap where safe, command pooling, and no command prefill. Any
+mismatch stops before ESO's patch sites are modified.
+
+This mode deliberately does not use Experiment 0018's feature mask and does
+not disable live-resource checking. It combines performance-path changes to
+minimize scarce user executions; it is not a single-variable attribution
+experiment.
+
 ## Legacy allocation mode
 
 Experiment 0011 adds a distinct `legacy-allocation` marker mode. It retains the

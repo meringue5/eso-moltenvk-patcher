@@ -23,7 +23,7 @@ def good_log() -> str:
             ),
             record("MOLTENVK: loaded path=/sanitized/libMoltenVK.teso4m4.dylib"),
             record(
-                "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 use_mtlheap=1 synchronous_queue_submits=1 command_pooling=1 prefill=0"
+                "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 use_mtlheap=1 synchronous_queue_submits=1 command_pooling=1 prefill=0 maximize_concurrent_compilation=0"
             ),
             record("HDR_COMPAT: filter=enabled extension=VK_EXT_hdr_metadata"),
             record(
@@ -230,6 +230,69 @@ class StartupLogTests(unittest.TestCase):
         )
         self.assertIn(
             "vkCreateDevice legacy feature-profile validation is incomplete",
+            verdict.reasons,
+        )
+
+    def test_accepts_performance_safe_mode(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: performance safe enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "lifecycle_trace=0",
+        ).replace(
+            "synchronous_queue_submits=1 command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "synchronous_queue_submits=0 command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=1",
+        )
+        direct_names = (
+            "vkDeviceWaitIdle",
+            "vkCreateSwapchainKHR",
+            "vkDestroySwapchainKHR",
+            "vkGetSwapchainImagesKHR",
+            "vkCreateImageView",
+            "vkDestroyImageView",
+            "vkCreateRenderPass",
+            "vkDestroyRenderPass",
+            "vkCreateFramebuffer",
+            "vkDestroyFramebuffer",
+            "vkAcquireNextImageKHR",
+            "vkQueuePresentKHR",
+        )
+        text += "\n" + "\n".join(
+            record(
+                f"GDPA: device=0x2 name={name} result=0x8 "
+                "returned=0x8 shim=none"
+            )
+            for name in direct_names
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
+    def test_rejects_performance_safe_lifecycle_wrapper(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: performance safe enabled live_resources=1 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "lifecycle_trace=0",
+        ).replace(
+            "synchronous_queue_submits=1 command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "synchronous_queue_submits=0 command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=1",
+        )
+        text += "\n" + record(
+            "GDPA: device=0x2 name=vkAcquireNextImageKHR result=0x8 "
+            "returned=0x9 shim=lifecycle-trace"
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "performance mode did not route vkAcquireNextImageKHR directly",
             verdict.reasons,
         )
 

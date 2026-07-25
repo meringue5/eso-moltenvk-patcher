@@ -107,4 +107,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" full-lifetime-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" texture-cache-fix
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" legacy-feature-profile
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" performance-safe
 echo "Built teso4m4 artifacts in $BUILD"

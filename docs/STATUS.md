@@ -744,3 +744,15 @@ while retaining official MoltenVK 1.4.1, both HDR filters, disabled argument
 buffers, live-resource compatibility, MTLHeap, command pooling, and no
 prefill. Do not request a user run until this bundle is fully rebuilt and
 validated.
+
+Experiment 0019 now implements that combined `performance-safe` source path.
+All twelve lifecycle-observed GDPA functions return their original MoltenVK
+pointer, the failed feature mask is inactive, asynchronous submission and
+maximum concurrent compilation are enabled, and live-resource checking remains
+enabled. The effective configuration probe, direct-routing unit gate, complete
+shadow-bundle source build, 73 Python tests, static checks, and Clang analysis
+pass. The M4 reset composite also passes all 24 cycles with the combined
+submission and compilation settings. Prepared hashes and the remaining
+installation gate are recorded in the
+[Experiment 0019 record](experiments/0019-performance-safe-path.md). No game
+bundle file has been changed for 0019.

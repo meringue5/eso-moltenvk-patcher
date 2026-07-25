@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <vulkan/vulkan.h>
 
 #if defined(__GNUC__)
@@ -13,6 +14,7 @@ typedef void (*Teso4m4LifecycleLogFunction)(const char* message);
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_reset(void);
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_logger(
     Teso4m4LifecycleLogFunction logger);
+TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_enabled(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN PFN_vkVoidFunction
 teso4m4_lifecycle_intercept(
     const char* name,
