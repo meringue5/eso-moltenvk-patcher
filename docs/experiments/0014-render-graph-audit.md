@@ -1,7 +1,7 @@
 # Experiment 0014: bounded render-graph audit
 
 - Date: 2026-07-25
-- Outcome: **running; installed and awaiting one user-controlled reset**
+- Outcome: **failed rendering correctness; diagnostic audit succeeded**
 - Rollback: **not performed; restore path checked**
 
 ## Question
@@ -137,11 +137,81 @@ launcher, or ESO.
 
 ## Result
 
-Pending.
+The user observed two distinct operating states under the same installed
+candidate:
+
+1. an initial 8 FPS state in which resolution and other graphics options could
+   be changed without corrupting output;
+2. after exiting through Steam and restarting the whole launch path, a restored
+   60 FPS state in which changing resolution again produced persistent solid
+   color.
+
+Four post-preparation ESO processes began an audit. One ended after the audit
+armed but before a replacement swapchain completed the window. Three completed
+all eight presentations with no Vulkan failure or mirror overflow. The
+chronology and user report place the terminal run
+`20260725T130615.206232000Z-pid43186` in the 60 FPS/solid-color phase; the logs
+do not themselves measure FPS.
+
+The coded all-runs comparison reports:
+
+| Metric | Earlier complete run 1 | Earlier complete run 2 | Terminal 60 FPS/fail run |
+|---|---:|---:|---:|
+| Descriptor update calls | 8,690 | 8,495 | 9,671 |
+| Image descriptor writes | 50,433 | 49,380 | 60,182 |
+| Referenced views destroyed | 3,632 | 2,723 | 512 |
+| Stale descriptor sets bound | 0 | 0 | 0 |
+| Destroyed image ranges reused | 244 | 307 | 117 |
+| Live image overlaps | 0 | 0 | 0 |
+| Layout mismatches | 0 | 0 | 0 |
+| Reset graphics pipelines | 135 | 124 | 151 |
+| Reset pipelines created with cache | 135 | 124 | 151 |
+| Exact pipeline/render-pass binds | 2,359 | 2,142 | 1,632 |
+| Different render-pass binds | 0 | 0 | 0 |
+
+In the terminal run, all 151 reset-created graphics pipelines used a non-null
+pipeline cache, all 1,632 observed graphics binds used a pipeline created in
+the same audit, and every bind matched the exact active render-pass handle.
+The first 128 render-pass tails contained live descriptor sets with zero stale
+slots. Image barriers numbered 77 with no tracked layout mismatch. No image
+copy, blit, or resolve path was used.
+
+The terminal run continued through 484 balanced render passes and 9,671
+indexed draws in the first eight replacement frames. Swapchain lifecycle was
+clean, the startup verdict passed, no crash report appeared, and all evidence
+checksums pass. The settings file ended byte-identical to its baseline, so the
+user's final resolution selection was not persisted at exit. The active
+pipeline cache grew from 4,203,757 to 4,259,071 bytes and changed hash; the old
+backup remained unchanged.
 
 ## Interpretation
 
-Pending.
+**Confirmed:** destroying an image view while mirrored descriptor slots still
+name it is common during ESO's reset, but none of those stale sets was
+subsequently bound in any completed audit. The simple form of hypothesis 1—a
+destroyed view directly rebound into the final pass—is not supported.
+
+**Confirmed:** no completed run showed an unknown descriptor handle, live
+image-memory overlap, tracked barrier/render-pass layout mismatch, attachment
+with a dead view, pipeline bound against a different render pass, or mirror
+overflow. These observations substantially reduce hypotheses 3 and 4 and the
+render-pass-linkage form of hypothesis 5. They do not prove Metal-side resource
+contents correct.
+
+**Inference:** destroyed-range reuse is normal in both behavioral states and
+was more frequent in the earlier completed runs than in the terminal corrupt
+run. Its event count alone therefore does not explain corruption.
+
+**Leading hypothesis:** pipeline-cache contents now provide the narrowest
+testable difference. The low-performance state permitted live resets; after
+the complete launch-path restart, performance returned to 60 FPS and the reset
+failed. Every replacement pipeline in all completed audits was created with
+the active cache, which changed and grew over the session. This is correlation,
+not proof of a bad key or cached Metal pipeline.
+
+**Still open:** a descriptor rebind/order semantic not expressible as a dead
+handle, and a Metal-side lifetime/content hazard after legal Vulkan object
+destruction.
 
 ## Rollback
 
@@ -150,5 +220,10 @@ both pipeline caches were preserved in place.
 
 ## Follow-up
 
-Do not request another user run until the coded analyzer has classified this
-one.
+Prepare one targeted counterfactual: during the bounded loaded-world reset
+only, forward `vkCreateGraphicsPipelines` with `VK_NULL_HANDLE` instead of
+ESO's pipeline cache. Vulkan permits a null cache. Keep ordinary startup and
+steady-world pipeline creation unchanged. If this preserves 60 FPS and makes
+the resolution reset render correctly, the cache path is causal enough to
+design a durable reset-only workaround. If it fails, move to descriptor update
+ordering or Metal-side capture rather than another configuration toggle.

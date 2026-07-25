@@ -184,6 +184,23 @@ def summarize_run(run_id: str, lines: list[str]) -> Summary:
 
 
 def analyze(text: str, after_epoch: float | None = None) -> Summary:
+    eligible = eligible_runs(text, after_epoch)
+    if not eligible:
+        return Summary(
+            None,
+            False,
+            "missing",
+            {},
+            (),
+            ("no render audit matched the time gate",),
+        )
+    _, _, run_id, lines = max(eligible)
+    return summarize_run(run_id, lines)
+
+
+def eligible_runs(
+    text: str, after_epoch: float | None = None
+) -> list[tuple[float, int, str, list[str]]]:
     eligible: list[tuple[float, int, str, list[str]]] = []
     for order, (run_id, lines) in enumerate(parse_runs(text).items()):
         epoch = run_epoch(run_id)
@@ -200,17 +217,65 @@ def analyze(text: str, after_epoch: float | None = None) -> Summary:
                     lines,
                 )
             )
-    if not eligible:
-        return Summary(
-            None,
-            False,
-            "missing",
-            {},
-            (),
-            ("no render audit matched the time gate",),
+    return eligible
+
+
+def analyze_all(
+    text: str, after_epoch: float | None = None
+) -> tuple[Summary, ...]:
+    return tuple(
+        summarize_run(run_id, lines)
+        for _, _, run_id, lines in eligible_runs(text, after_epoch)
+    )
+
+
+COMPARISON_COUNTERS = (
+    "descriptor_update_calls",
+    "descriptor_image_writes",
+    "descriptor_views_destroyed_while_referenced",
+    "descriptor_stale_sets_bound",
+    "descriptor_stale_slots_bound",
+    "image_dead_range_reuses",
+    "image_live_overlaps",
+    "layout_mismatches",
+    "graphics_pipelines_created_during_audit",
+    "graphics_pipelines_with_cache",
+    "pipeline_binds_created_during_audit",
+    "pipeline_render_pass_exact",
+    "pipeline_render_pass_different",
+    "render_pass_begins",
+    "state_overflows",
+)
+
+
+def command_all_runs(args: argparse.Namespace) -> int:
+    results = analyze_all(
+        args.log.read_text(encoding="utf-8", errors="replace"),
+        args.after_epoch,
+    )
+    print(f"render-audit eligible runs: {len(results)}")
+    completed = 0
+    invalid_completed = 0
+    for index, result in enumerate(results, start=1):
+        print(
+            f"run {index}: {result.run_id or 'none'} "
+            f"complete={'yes' if result.complete else 'no'} "
+            f"reason={result.reason}"
         )
-    _, _, run_id, lines = max(eligible)
-    return summarize_run(run_id, lines)
+        if not result.complete:
+            print("- audit ended before a summary; no counter comparison")
+            continue
+        completed += 1
+        invalid_completed += bool(result.anomalies)
+        for name in COMPARISON_COUNTERS:
+            print(f"- {name}={result.counters.get(name, -1)}")
+        for anomaly in result.anomalies:
+            print(f"- analyzer anomaly: {anomaly}")
+    print(
+        f"render-audit comparison: completed={completed} "
+        f"invalid_completed={invalid_completed}"
+    )
+    return 0 if completed > 0 and invalid_completed == 0 else 2
 
 
 def command_analyze(args: argparse.Namespace) -> int:
@@ -238,12 +303,15 @@ def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser(description=__doc__)
     value.add_argument("log", type=Path)
     value.add_argument("--after-epoch", type=float)
+    value.add_argument("--all-runs", action="store_true")
     value.set_defaults(function=command_analyze)
     return value
 
 
 def main() -> int:
     args = parser().parse_args()
+    if args.all_runs:
+        args.function = command_all_runs
     try:
         return args.function(args)
     except OSError as error:

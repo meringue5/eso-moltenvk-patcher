@@ -42,17 +42,17 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Preserve Experiment 0013 as the negative command-pooling result. Disabling
   MoltenVK internal command pooling did not repair the reset; do not run
   another generic MoltenVK configuration A/B.
-- Complete Experiment 0014's single bundled render-graph audit. Its coded
-  candidate mirrors descriptor/image-view state and, in the same bounded
-  window, correlates live image-memory ranges, `vkCmdPipelineBarrier`,
-  render-pass attachments, reset-created pipelines, and image
-  copy/blit/resolve calls.
-- Accept the audit only if its fixed-capacity mirrors do not overflow. Treat
-  layout mismatches recorded in API command-recording order as leads requiring
-  sequence correlation, not standalone proof of an invalid executed layout.
-- Use the one run to choose a targeted descriptor-lifetime repair, a targeted
-  layout/barrier repair, or deeper Metal-side capture. Do not split these five
-  observations into five game runs.
+- Preserve Experiment 0014 as the completed bundled audit. Three windows had
+  complete mirror coverage and found no stale set rebound, live image overlap,
+  tracked layout mismatch, dead attachment, or pipeline/render-pass mismatch.
+- Prepare a reset-only pipeline-cache counterfactual. Keep startup and
+  steady-world pipeline creation unchanged; while the bounded loaded-world
+  reset is active, pass `VK_NULL_HANDLE` as the optional cache to
+  `vkCreateGraphicsPipelines`.
+- If the bypass preserves the recovered 60 FPS state and corrects live reset,
+  retain it as a narrow workaround candidate and then measure reset latency.
+  If solid color persists, stop cache work and instrument descriptor
+  update/bind ordering or Metal object contents.
 - Only after the reset boundary is classified, run one unchanged five-minute
   Auridon interval with ambient occlusion `0`. Use the rewritten pipeline cache
   to test, not assume, the shader-compilation explanation for stuttering.

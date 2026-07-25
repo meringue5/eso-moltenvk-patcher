@@ -473,3 +473,26 @@ evidence is prepared under
 user-controlled world entry and one fullscreen-resolution change, stopping as
 soon as correct output, solid color, a frozen last frame, or a crash is known.
 No HUD, capture, travel, FPS measurement, or second setting change is needed.
+
+The user then exposed two states under this candidate. An initial 8 FPS phase
+allowed resolution and other option changes without corrupting output. After a
+complete Steam-path exit and restart, performance returned to 60 FPS, but one
+resolution change again produced persistent solid color. Four audits began;
+three completed without Vulkan failure or mirror overflow. The terminal
+60 FPS/fail run completed 484 render passes and 9,671 indexed draws in its
+first eight replacement frames.
+
+Across all three completed audits, descriptor slots still referenced views at
+view destruction, but no stale set was subsequently bound. There were no
+unknown handles, live image overlaps, tracked layout mismatches, dead
+attachments, or pipeline/render-pass mismatches. Destroyed image-range reuse
+was more frequent in the earlier completed runs than in the terminal corrupt
+run, so its count alone is not causal. The simple stale-view rebound and public
+layout/linkage hypotheses are substantially reduced.
+
+Every reset graphics pipeline in every completed audit was created with the
+active pipeline cache. The cache grew by 55,314 bytes and changed hash over the
+multi-run session, while the old backup was unchanged. Combined with the
+8 FPS/reset-correct versus restarted 60 FPS/reset-fail split, this makes a
+reset-only null pipeline-cache counterfactual the next gate. It is a targeted
+Vulkan-permitted call change, not another MoltenVK configuration toggle.

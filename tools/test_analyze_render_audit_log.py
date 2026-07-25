@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from analyze_render_audit_log import EXPECTED_COUNTERS, analyze
+from analyze_render_audit_log import EXPECTED_COUNTERS, analyze, analyze_all
 
 
 RUN = "20260725T130000.123456789Z-pid50000"
@@ -62,6 +62,15 @@ class RenderAuditLogTests(unittest.TestCase):
         result = analyze(good_log(), after_epoch=2_000_000_000)
         self.assertIsNone(result.run_id)
         self.assertFalse(result.complete)
+
+    def test_all_runs_keeps_chronological_order(self) -> None:
+        second = good_log().replace(
+            RUN, "20260725T130100.123456789Z-pid50001"
+        )
+        results = analyze_all(good_log() + "\n" + second)
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0].run_id, RUN)
+        self.assertTrue(results[1].run_id.endswith("pid50001"))
 
 
 if __name__ == "__main__":

@@ -225,3 +225,21 @@ swapchain then acquired and presented 262 frames; its first eight contained
 MoltenVK's internal command-memory pool is therefore not the primary cause.
 This result does not exclude ESO's reuse of already allocated Vulkan command
 buffers or descriptor sets.
+
+Experiment 0014 joined descriptor contents, image-view lifetimes, image-memory
+ranges, barriers, render-pass attachments, and graphics pipelines in the same
+bounded reset window. Three completed audits had zero mirror overflow, unknown
+handle, stale descriptor-set bind, live image overlap, tracked layout mismatch,
+dead attachment view, or pipeline/render-pass mismatch. Hundreds to thousands
+of descriptor slots still named a view when that view was destroyed, but none
+of the affected sets was later bound. This excludes the simple
+destroyed-view-rebound explanation, not every descriptor ordering semantic.
+
+The same candidate exposed two user-visible states: an initial 8 FPS phase in
+which graphics resets remained usable, followed after complete Steam-path
+restart by a 60 FPS phase in which a resolution reset again produced solid
+color. Every reset-created graphics pipeline in all completed audits received
+the active pipeline cache and was later bound to the exact matching render
+pass. The active cache grew by 55,314 bytes over the multi-run session. This
+behavioral split makes reset-only pipeline-cache bypass the next narrow
+counterfactual; it does not yet prove cached pipeline corruption.

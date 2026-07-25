@@ -121,6 +121,13 @@ python3 "$ROOT/tools/analyze_render_audit_log.py" \
   || RENDER_AUDIT_ANALYSIS_EXIT=$?
 echo "$RENDER_AUDIT_ANALYSIS_EXIT" \
   > "$OUTPUT/render-audit-events-exit-code.txt"
+RENDER_AUDIT_COMPARISON_EXIT=0
+python3 "$ROOT/tools/analyze_render_audit_log.py" \
+  "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" --all-runs \
+  > "$OUTPUT/render-audit-comparison.txt" 2>&1 \
+  || RENDER_AUDIT_COMPARISON_EXIT=$?
+echo "$RENDER_AUDIT_COMPARISON_EXIT" \
+  > "$OUTPUT/render-audit-comparison-exit-code.txt"
 
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
