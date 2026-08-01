@@ -2,6 +2,8 @@
 
 Promoted: 2026-08-01
 
+Current maintenance baseline: 2026-08-02 startup-clean checkpoint
+
 `teso4m4` is a production runtime patch from this promotion point onward. The
 project's prior work remains preserved as research and experiment history; it
 is the evidence that led to this release baseline and must not be rewritten as
@@ -14,13 +16,16 @@ if it had been production at the time.
 | Product | `teso4m4` macOS runtime patch |
 | ESO client | Steam macOS ESO 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
-| Bridge profile | `performance-aggressive` |
+| Bridge profile | `performance-aggressive` plus the bounded startup compositor neutralizer |
 | Validated hardware | Apple M4 MacBook Air, through Rosetta |
 | Gameplay evidence | Roughly 93 minutes of ordinary play at the observed 60 FPS VSync ceiling, including live graphics and resolution changes |
+| Startup evidence | Two consecutive exact starts with 79 target draws neutralized at ordinals 71--149 and the normal scene forwarded at ordinal 150 |
 | Safety boundary | Exact executable identity, static layout, original patch bytes, backup, and restore path must all pass |
 
 No semantic product version has been assigned yet. Until the first GitHub
 Release is cut, **Production Baseline 2026-08-01** is the public version name.
+The 2026-08-02 startup-clean checkpoint is the current maintenance baseline
+within that product line; it does not rename the original promotion milestone.
 
 ## Promotion boundary
 
@@ -29,7 +34,11 @@ established compatibility, rendering correctness, and ordinary-play stability.
 Experiment 0021's MoltenVK 1.4.2 maintenance adoption and the subsequent
 ordinary-play validation establish this production baseline. Later startup
 artifact investigations are bounded maintenance diagnostics; they do not
-reclassify the working gameplay patch as experimental.
+reclassify the working gameplay patch as experimental. Experiment 0031's two
+successful starts promote its exact bounded compositor substitution to the
+current maintenance baseline. Removing diagnostic-only tracking and folding
+the behavior into the future release package remain engineering follow-up,
+not an unresolved correctness result for this checkpoint.
 
 ## Supported scope today
 

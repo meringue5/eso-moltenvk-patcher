@@ -35,9 +35,11 @@ changes and comfortable gameplay at these relatively high settings. The latest
 client log independently confirms six completed reset sequences with zero
 error markers; visual correctness after those resets is the user's observation.
 
-The roughly one-second hot-pink startup frame remains with this template and
-with `SkipPregameVideos=1`. The template records that known state; it does not
-claim to repair the startup artifact.
+The settings template and `SkipPregameVideos=1` do not themselves repair the
+formerly visible hot-pink startup frame. Experiment 0031 now neutralizes that
+frame in the bridge with an exact, bounded compositor substitution while
+leaving this settings file unchanged. The template remains a settings record,
+not the mechanism for the startup presentation repair.
 
 ## Historical Experiment 0003 snapshot
 

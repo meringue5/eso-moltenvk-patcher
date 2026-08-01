@@ -164,7 +164,7 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 | Mac | Apple M4 MacBook Air |
 | ESO | Steam macOS client 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
-| Bridge profile | `performance-aggressive` |
+| Bridge profile | `performance-aggressive` plus the bounded startup compositor neutralizer |
 | Display profile | 2048 x 1280, VSync enabled |
 | Graphics profile | Mixed medium-to-high settings with SSAO and high-resolution shadows |
 | Ordinary-play validation | Roughly 93 minutes across multiple zones |
@@ -187,8 +187,8 @@ The former full-screen hot-pink startup interval is now neutralized by replacing
 only the exact bounded placeholder-compositor draws with the existing black
 startup background. Two consecutive exact runs passed and forwarded the normal
 scene unchanged. The underlying ESO placeholder input is not modified; release
-integration of the proven runtime guard is tracked in the
-[current project status](docs/STATUS.md).
+packaging and diagnostic-log reduction for the proven runtime guard are tracked
+in the [current project status](docs/STATUS.md).
 
 ## Source build and maintenance installation
 

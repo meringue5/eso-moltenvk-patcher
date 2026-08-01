@@ -6,7 +6,9 @@ Last updated: 2026-08-02
 
 `teso4m4` was promoted to production on 2026-08-01. The validated gameplay
 baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
-for ESO 12.0.7, databuild `3281538`.
+for ESO 12.0.7, databuild `3281538`. Experiment 0031's exact bounded startup
+compositor neutralizer is the current 2026-08-02 maintenance baseline layered
+on that unchanged gameplay configuration.
 Experiment 0028's live input audit is complete. The exact run isolates a
 descriptor-update transition while the pipeline, draw, layout, bound set
 objects, and push state remain fixed. Its cache-preserving rollback is complete:

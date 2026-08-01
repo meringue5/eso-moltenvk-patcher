@@ -14,6 +14,16 @@
 - Integrated pre/post update identity checks with experiment evidence handling.
 - Added a guarded, reversible `SkipPregameVideos` settings helper.
 - Made settings helpers fail closed when ESO process inspection is unavailable.
+- Validated the official MoltenVK 1.4.2 `performance-aggressive` checkpoint in
+  roughly 93 minutes of ordinary play, including six successful live graphics
+  and resolution reset sequences at the observed 60 FPS VSync ceiling.
+- Replaced the blanket Steam-closed maintenance condition with a shared
+  bundle-idle gate that permits idle Steam while blocking actual ESO, launcher,
+  file-use, update, or indeterminate activity.
+- Established the **2026-08-02 startup-clean maintenance baseline**: two
+  consecutive exact starts suppressed only the proven placeholder-compositor
+  window, forwarded the normal scene at ordinal 150, and showed no pink frame,
+  crash, settings change, or readback/queue-wait path.
 
 ## 0.1.0 - 2026-07-19
 

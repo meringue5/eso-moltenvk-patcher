@@ -6,9 +6,11 @@ are in [Project status](STATUS.md); completed runs belong in the
 
 ## P0: preserve the 1.4.2 production baseline
 
-- Treat official MoltenVK 1.4.2 plus `performance-aggressive` as the current
-  production baseline. Extended ordinary play, relatively high settings, and live
-  resolution/graphics resets now render correctly on the tested M4 MacBook Air.
+- Treat official MoltenVK 1.4.2 plus `performance-aggressive` and Experiment
+  0031's exact bounded startup compositor neutralizer as the current 2026-08-02
+  maintenance baseline. Extended ordinary play, relatively high settings, live
+  resolution/graphics resets, and two consecutive startup-clean runs now render
+  correctly on the tested M4 MacBook Air.
 - Preserve the 48-key sanitized standard settings asset and its source hash.
   Do not commit or distribute the complete `UserSettings.txt`.
 - Do not request another dedicated graphics-reset run. Reopen that category
@@ -140,7 +142,9 @@ are in [Project status](STATUS.md); completed runs belong in the
   the exact ESO/pipeline/layout/set/generation identities, ordinal-150
   fail-open boundary, and zero-readback design. Remove diagnostic-only logging
   and tracking that are unnecessary after the bounded latch, then repeat the
-  complete non-game gates before treating the integration as release-ready.
+  complete non-game gates before treating that packaged integration as
+  release-ready. This optimization does not revoke the installed Experiment
+  0031 checkpoint's status as the current maintenance baseline.
 - If the exact fixed-window log spans ordinals 80--140, forwards at 150, and
   pink still appears, close the repair as failed and use Experiment 0029 or a
   bounded pre-present exact-pixel replacement. Do not add per-frame readback
