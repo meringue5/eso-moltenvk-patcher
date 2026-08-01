@@ -25,10 +25,22 @@ removed the prior reset symptom. The 1.4.1 failures remain valid historical
 evidence, but another dedicated reset reproduction is not warranted unless the
 problem recurs.
 
-The remaining visible defect is a roughly one-second full-screen hot-pink
-frame during early startup. It disappears before normal UI/gameplay, has no
-reported gameplay effect, and still occurs with `SkipPregameVideos=1`; it is
-therefore a low-impact startup presentation glitch, not the active gameplay
+The remaining visible defect is a roughly one-second full-screen neon-pink or
+hot-pink frame during early startup. Experiment 0022 localizes its lifetime to
+the first 3420 x 2148 backing surface: two independent lifecycle traces show
+exactly one successful present before a 3420 x 2146 replacement, after 796 and
+852 ms. The latest uninstrumented 1.4.2 client log repeats the same reset
+timing at 908 ms. Surface convergence completes before account login.
+
+Static analysis and proc order place this first frame before ESO's captured
+shader/pipeline/draw path. A non-game 1.4.2 probe also shows that load-only
+drawables start transparent black and opaque-black clears remain black at the
+exact ESO extents. Missing assets, pregame videos, and a MoltenVK automatic
+pink default are therefore excluded as leading explanations. ESO's dynamic
+full-surface clear value is the leading source; application window/layer
+background exposure is secondary. Existing evidence does not capture the
+actual generation-1 clear value, so the exact pixel writer remains the active
+gate. This is a low-impact startup presentation defect, not a gameplay
 blocker.
 
 The current full settings file has SHA-256

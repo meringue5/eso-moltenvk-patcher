@@ -14,10 +14,16 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Do not request another dedicated graphics-reset run. Reopen that category
   only if the symptom recurs, and preserve the prior 1.4.1 failures as valid
   historical evidence rather than re-running old configuration A/B tests.
-- Treat the roughly one-second hot-pink startup frame as the remaining visual
-  defect. It is low impact and occurs before normal UI/gameplay. Investigate
-  pre-UI surface clear/load and first-presentation behavior through static
-  analysis and non-game probes before considering any user run.
+- Preserve Experiment 0022's startup-surface boundary: the first 3420 x 2148
+  generation presents once, survives 796--908 ms, and is replaced by
+  3420 x 2146 before account login. Do not classify it as a missing-shader,
+  pregame-video, native-resolution-setting, or automatic MoltenVK pink-clear
+  defect.
+- Complete a bounded startup-only audit candidate that records the actual
+  generation-1 clear value and its framebuffer/rect association, then disables
+  itself at generation 2. Prove with a non-game probe that the audit separates
+  neon-pink clear, black clear, and load-only submission before requesting one
+  targeted user startup.
 - Keep the working 1.4.2 runtime profile and cache state unchanged while
   investigating the startup artifact.
 

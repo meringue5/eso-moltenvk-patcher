@@ -372,6 +372,41 @@ second and then disappears before normal UI/gameplay. `SkipPregameVideos=1`
 removes the logged video/logo states but not this frame, so the artifact remains
 a separate low-impact early-presentation defect.
 
+## The startup color is confined to a transient one-present surface
+
+Exact-run correlation localizes the observed neon-pink/hot-pink interval to
+ESO's first macOS backing surface. In two independent lifecycle traces,
+generation 1 is 3420 x 2148, has exactly one successful acquire and present,
+and is replaced by generation 2 at 3420 x 2146. The first reset is ready for
+852 and 796 ms respectively before correction begins. A later uninstrumented
+MoltenVK 1.4.2 run repeats the timing at 908 ms. The corrected surface is ready
+more than 1.5 seconds before the first logged account-login state in both
+traced runs.
+
+Static analysis shows that ESO creates these color attachments with load/store
+operations and uses a separate full-target `vkCmdClearAttachments` path with a
+dynamic four-float color. The first-generation proc trace reaches render-pass
+and clear entry points before its one present, while shader-module creation,
+graphics-pipeline creation, pipeline binding, and indexed drawing appear only
+after generation 2 has presented. A missing material/texture shader is
+therefore not a credible mechanism for the first full-screen frame.
+
+An official MoltenVK 1.4.2 AppKit probe using the exact aggressive profile
+recreates the two-pixel surface replacement without ESO. Five fresh load-only
+processes read transparent black, and explicit opaque-black clears remain
+black. The same controls pass at ESO's exact 3420 x 2148 to 3420 x 2146
+extents; an explicit `{1,0,1,1}` control produces BGRA 255,0,255,255. MoltenVK
+did not paint any tested first drawable pink in this configuration, and neither
+the extent nor its two-pixel correction transforms a normal black clear. Fresh
+load-only contents are not guaranteed by Vulkan; this observation constrains
+the tested implementation rather than establishing a portable API default.
+
+The leading remaining source is an ESO-supplied dynamic clear value during the
+temporary surface interval. Application window/layer background exposure is a
+secondary hypothesis. Existing evidence does not record the actual first
+generation `VkClearAttachment.clearValue`, so the precise pixel writer is not
+yet confirmed.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313
