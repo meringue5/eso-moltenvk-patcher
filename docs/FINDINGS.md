@@ -525,6 +525,14 @@ content, uniform or push values, or another input can change without changing
 the recorded pipeline. Descriptor/resource provenance for this exact identity
 is the remaining causal boundary.
 
+The target vertex hash is not material-specific: the same 17,392-byte module
+was created 69 times in the bounded run. The target 18,280-byte fragment module
+was created once immediately before the two target pipeline handles. Neither
+exact module fingerprint appears as an uncompressed SPIR-V blob at any SPIR-V
+magic candidate in the exact ESO executable or bundled `game0000.dat`. This
+weakens a direct missing/corrupt standalone shader-file explanation, while not
+excluding runtime translation or a compressed asset source.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

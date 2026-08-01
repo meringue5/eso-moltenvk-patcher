@@ -216,3 +216,19 @@ bridge was reinstalled in `performance-aggressive` mode. The installed proxy,
 renamed original, and official MoltenVK match the verified build byte for byte.
 No further user run is justified until a narrower descriptor/resource
 candidate passes its static and non-game discrimination gate.
+
+## Static follow-up
+
+Within the exact run, the 17,392-byte vertex shader hash
+`c8307556011c995e` was created 69 times and paired with many fragment modules.
+It is therefore a common vertex module rather than a unique pink-material
+identity. The target 18,280-byte fragment hash `6907bd3576e3a930` was created
+once, immediately before the two target graphics pipelines.
+
+A read-only scan tested every SPIR-V magic candidate in the exact ESO
+executable and its bundled `game0000.dat` at those two recorded module sizes.
+Neither exact FNV-64 shader fingerprint is present as an uncompressed SPIR-V
+blob. This does not identify the source asset or exclude a compressed package,
+but it rules out direct byte-for-byte recovery from the two principal local
+binaries. Runtime descriptor/layout evidence is more discriminating than a
+generic file-integrity hypothesis.
