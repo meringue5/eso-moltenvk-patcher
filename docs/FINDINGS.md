@@ -507,6 +507,24 @@ an ESO FX-material or related application draw is now the leading source. It
 remains an inference rather than a confirmed writer until a presented draw or
 pixel is directly associated with that path.
 
+Experiment 0027 directly associates that interval with submitted draw
+provenance. In the exact run where the user again observed pink, all nine
+opaque-black samples through generation-2 ordinal 70 contained zero draws.
+Every exact-magenta sample from ordinals 80 through 140 contained exactly one
+indexed draw using pipeline signature `c43e4410d3b33fe7`, vertex shader hash
+`c8307556011c995e`, and fragment shader hash `6907bd3576e3a930`. All twenty
+pixel/draw pairs had complete submit-semaphore provenance and no capacity or
+pipeline overflow. With the already verified black full-surface clears, this
+single draw or an input it samples is the swapchain magenta writer.
+
+The same draw signature, pipeline signature, and shader hashes remain present
+at ordinals 150 through 180, when the sampled swapchain pixels are normal scene
+colors. Pipeline identity therefore localizes the writer but does not prove
+that the shader bytecode hard-codes magenta. Descriptor-bound texture/resource
+content, uniform or push values, or another input can change without changing
+the recorded pipeline. Descriptor/resource provenance for this exact identity
+is the remaining causal boundary.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

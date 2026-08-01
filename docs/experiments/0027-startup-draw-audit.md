@@ -1,8 +1,8 @@
 # Experiment 0027: bounded startup presented-draw audit
 
 - Date: 2026-08-01
-- Outcome: **running; approved audit installed and fresh evidence boundary prepared**
-- Rollback: **pending the single user-controlled startup; restore path checked**
+- Outcome: **succeeded; one swapchain-linked indexed draw/pipeline isolated**
+- Rollback: **complete; `performance-aggressive` restored with caches preserved**
 
 ## Question
 
@@ -151,5 +151,68 @@ The fresh ignored evidence boundary
 `artifacts/experiment-0027-20260801T111424Z` started at
 `2026-08-01T11:14:26Z` from source commit `b29e6dd`. No game process was
 launched by the agent. Exactly one user-controlled normal Steam-path startup
-is now authorized; evidence collection and immediate restoration remain
-pending.
+was authorized at this checkpoint; its completed evidence and restoration are
+recorded below.
+
+## Result
+
+The user completed exactly one normal Steam-path startup and reported that the
+pink frame remained visible. Exact run
+`20260801T111610.337976000Z-pid92750` completed all twenty scheduled pixel and
+draw summaries without a skipped read, lifecycle error, provenance gap, table
+overflow, or pipeline overflow. No crash report was created.
+
+Generation 1 ordinal 1 and generation 2 ordinals 1 through 70 were opaque
+black at all five sample points. Each corresponding submitted swapchain render
+pass contained zero draw calls and zero graphics pipelines. Generation 2
+ordinals 80 through 140 were exact RGBA `(255,0,255,255)` at all five points.
+Each contained exactly one indexed draw and one complete graphics-pipeline
+identity:
+
+```text
+pipeline signature: c43e4410d3b33fe7
+vertex shader hash: c8307556011c995e
+fragment shader hash: 6907bd3576e3a930
+draw signature: fbc03c0d0e1a8b86
+```
+
+That pipeline signature was created for two render-pass handles with the same
+shader and relevant state identity immediately after the last sampled black
+frame. The analyzer produced
+`DRAW-PIPELINE-CANDIDATE-ISOLATED`.
+
+Generation 2 ordinals 150 through 180 contained normal scene colors, but still
+used the same one indexed draw, pipeline signature, shader hashes, and draw
+signature. The pipeline is therefore the exact swapchain writer class that
+begins with the magenta interval, but the result does **not** establish that
+its shader bytecode contains a hard-coded magenta output. A texture,
+descriptor, push/uniform value, or other input used by the same draw can change
+from magenta to the normal scene without changing this recorded identity.
+
+Experiment 0024 already proves that the preceding full-surface clears are
+black. Combined with this run, the five sampled final pixels can only acquire
+their canonical magenta during this single indexed draw or from an input it
+samples. The next static/non-game gate is descriptor and resource provenance
+for this exact shader/pipeline identity; repeating a generic pipeline or pixel
+audit is not warranted.
+
+`collect-evidence.sh`'s generic startup verdict reported `FAIL` because its
+normal-mode checker does not recognize this isolated experimental mode as a
+supported compatibility mode. This is not the Experiment 0027 verdict: the
+dedicated analyzer independently required the exact
+`startup-draw-audit` mode line, effective aggressive MoltenVK configuration,
+twenty pixel/draw pairs, complete signal-semaphore provenance, and bounded
+finish before returning its successful classification.
+
+The settings file remained byte-identical at
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+The old-backup cache remained
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`;
+the active 1.4.2 cache updated normally during startup to
+`a9a4ee5112466265c233e2561bb6c284032bfa30f077c0227259f09db682a063`.
+
+After evidence collection, the original loader was restored and the validated
+bridge was reinstalled in `performance-aggressive` mode. The installed proxy,
+renamed original, and official MoltenVK match the verified build byte for byte.
+No further user run is justified until a narrower descriptor/resource
+candidate passes its static and non-game discrimination gate.

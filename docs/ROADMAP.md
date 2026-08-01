@@ -75,14 +75,19 @@ are in [Project status](STATUS.md); completed runs belong in the
   hashes to the exact signal semaphore; the real MoltenVK/AppKit control joins
   a full-surface magenta draw to five exact pre-present magenta pixels at both
   small and ESO extents. All missing-provenance and capacity cases fail closed.
-- Experiment 0027 received explicit `startup-draw-audit` approval. Its
-  cache-preserving restore, clean rebuild, byte-exact install verification, and
-  fresh evidence boundary are complete; both caches and settings remain
-  unchanged.
-- Request exactly one user-controlled normal Steam-path startup and only the
-  visible-pink yes/no observation. Then collect the bounded pixels and draw
-  provenance, run the fail-closed analyzer, and restore
-  `performance-aggressive` immediately.
+- Preserve Experiment 0027 as the completed presented-draw result. The nine
+  black samples had no draw; all seven exact-magenta samples had one indexed
+  draw with pipeline `c43e4410d3b33fe7`, vertex hash `c8307556011c995e`, and
+  fragment hash `6907bd3576e3a930`. The same draw/pipeline continued into the
+  four normal-scene samples, so do not call the shader itself a confirmed
+  constant-magenta source.
+- The normal `performance-aggressive` profile is restored with settings and
+  backup cache preserved. Do not repeat the color, clear, or pipeline audit.
+- Trace the exact pipeline's descriptor/resource inputs using static analysis,
+  existing logs, and a non-game fail-closed probe first. A successor should
+  distinguish a sampled image/texture from a uniform or push-value source and
+  remain bounded to the already proven black-to-magenta interval. Request no
+  user startup until that candidate passes its non-game gate.
 
 ### Superseded reset-investigation record
 

@@ -7,7 +7,7 @@ Last updated: 2026-08-01
 `teso4m4` was promoted to production on 2026-08-01. The validated gameplay
 baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
 for ESO 12.0.7, databuild `3281538`.
-Experiment 0026 is complete and the normal marker is restored. The update
+Experiment 0027 is complete and the normal marker is restored. The update
 check, executable fingerprint, installed runtime hash, bridge/build byte
 comparison, and 1.4.2 pipeline-cache UUID all remain current.
 
@@ -169,15 +169,15 @@ swapchain-linked draw audit passes its non-game gate.
 
 The exact run produced no crash report and left the settings file byte-identical
 at SHA-256 `297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
-The active 1.4.2 cache updated normally to
+That Experiment 0026 run updated the active 1.4.2 cache normally to
 `8b061e93fa21d2b687ec7eef5bafa363c04418e468928bdaee3a687585773de7`;
 the old-backup cache remains unchanged at
 `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 The cache-preserving rollback restored `performance-aggressive`; official
 MoltenVK and the installed proxy still match their verified build artifacts.
 
-Experiment 0027 is now the active bounded audit and is installed with the
-user's explicit approval.
+Experiment 0027 completed its active bounded audit and the normal profile is
+restored.
 Its `startup-draw-audit` mode retains Experiment 0026's exact pixel sampler and
 adds submit-semaphore provenance for each sampled frame: draw counts, ordered
 draw signature, at most eight stable graphics-pipeline signatures, and separate
@@ -196,10 +196,32 @@ and approved install completed with Steam, the launcher, and ESO closed. The
 installed proxy and MoltenVK match the clean build byte for byte; both cache
 hashes and the settings hash remained unchanged. The fresh evidence boundary
 `experiment-0027-20260801T111424Z` began at `2026-08-01T11:14:26Z` from commit
-`b29e6dd`. The active gate is exactly one user-controlled normal Steam-path
-startup, reporting only whether pink appeared. Collection, draw-correlation
-analysis, and immediate restoration to `performance-aggressive` follow that
-single run.
+`b29e6dd`.
+
+The user reported visible pink in exact run
+`20260801T111610.337976000Z-pid92750`. All twenty scheduled pixel/draw pairs
+completed with exact submit-semaphore provenance and no overflow. The nine
+opaque-black samples through generation-2 ordinal 70 had zero draws. Every
+exact-magenta sample from ordinals 80 through 140 had exactly one indexed draw
+using pipeline signature `c43e4410d3b33fe7`, vertex shader hash
+`c8307556011c995e`, and fragment shader hash `6907bd3576e3a930`. The analyzer
+verdict is `DRAW-PIPELINE-CANDIDATE-ISOLATED`.
+
+The same one draw and pipeline remained present when ordinals 150 through 180
+contained normal scene colors. This identifies the sole swapchain draw that
+writes the magenta samples, but does not by itself prove a hard-coded shader
+color: an input texture, descriptor, uniform/push value, or related resource
+can change while the pipeline and draw signature stay fixed. The next gate is
+static and non-game descriptor/resource provenance for this exact identity,
+not another generic color, clear, or pipeline audit.
+
+No crash report was created and settings remained byte-identical. The active
+1.4.2 cache updated normally to
+`a9a4ee5112466265c233e2561bb6c284032bfa30f077c0227259f09db682a063`;
+the old-backup cache is unchanged. Cache-preserving rollback restored the
+`performance-aggressive` marker, and the installed proxy, renamed original,
+and official MoltenVK match the verified build byte for byte. No further user
+run is requested until a narrower successor passes its non-game gate.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
@@ -214,11 +236,12 @@ committed
 The full settings and latest logs remain ignored evidence at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`.
 
-The active 1.4.2 cache is 7,977,079 bytes, has UUID
+At the earlier Experiment 0025 checkpoint, the active 1.4.2 cache was
+7,977,079 bytes, had UUID
 `db6602241a0502090000000100000000`, and SHA-256
 `aed8bce13b26a8d2760b69d34440d27b1bdf244b4cdee6490bd847f759b904ba`.
-ESO updated its contents during the Experiment 0025 run without changing its
-size. The old-backup
+ESO updated its contents during that run without changing its size. The
+old-backup
 cache likewise remained
 `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 The preserved 1.4.1 runtime/cache and older cache remain available.
