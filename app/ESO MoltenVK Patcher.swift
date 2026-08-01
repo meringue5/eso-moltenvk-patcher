@@ -5,6 +5,7 @@ import Foundation
 struct TargetProfile: Decodable {
     let description: String
     let sha256: String
+    let original_bink_sha256: String
     let uuid: String
 }
 
@@ -61,8 +62,17 @@ final class PatcherEngine {
             return "Unsupported ESO client\n\nFound: \(digest)\nSupported: \(profile.sha256)\n\nNo files were changed."
         }
         let marker = layout.macOS.appendingPathComponent(".teso4m4-enable")
-        let installed = files.fileExists(atPath: marker.path)
-        return "Supported ESO client\n\n\(profile.description)\n\nPatch status: \(installed ? "installed" : "not installed")\nLocation: \(app.path)"
+        if files.fileExists(atPath: marker.path) {
+            let bridge = resourceRoot.appendingPathComponent("Payload/libBink2Macx64.dylib")
+            guard try sha256(layout.bink) == sha256(bridge) else {
+                return "Incomplete patch state\n\nThe patch marker exists but the installed bridge does not match this release. Use Remove to restore the verified backup."
+            }
+            return "Supported ESO client\n\n\(profile.description)\n\nPatch status: installed\nLocation: \(app.path)"
+        }
+        guard try sha256(layout.bink) == profile.original_bink_sha256 else {
+            return "Unsupported Bink library\n\nThe selected ESO client does not contain the original Bink library expected by this profile.\n\nNo files were changed."
+        }
+        return "Supported ESO client\n\n\(profile.description)\n\nPatch status: not installed\nLocation: \(app.path)"
     }
 
     func install(_ app: URL) throws -> String {
@@ -72,6 +82,11 @@ final class PatcherEngine {
         guard !files.fileExists(atPath: marker.path) else {
             throw PatcherError.message("The patch is already installed. Use Repair or Remove.")
         }
+        for name in ["libBink2Macx64.teso4m4-original.dylib", "libMoltenVK.teso4m4.dylib"] {
+            guard !files.fileExists(atPath: layout.macOS.appendingPathComponent(name).path) else {
+                throw PatcherError.message("A previous patch attempt left \(name). Use Remove to restore the verified backup first.")
+            }
+        }
         let stateDir = try stateDirectory(for: app)
         try files.createDirectory(at: stateDir, withIntermediateDirectories: true)
         let backup = stateDir.appendingPathComponent("original-libBink2Macx64.dylib")
@@ -80,8 +95,10 @@ final class PatcherEngine {
         let renamedOriginal = layout.macOS.appendingPathComponent("libBink2Macx64.teso4m4-original.dylib")
         let replacement = resourceRoot.appendingPathComponent("Payload/libBink2Macx64.dylib")
         let runtime = resourceRoot.appendingPathComponent("Payload/libMoltenVK.teso4m4.dylib")
-        try installReplacement(from: layout.bink, copyOriginalTo: renamedOriginal, replacement: replacement)
         do {
+            try copyVerified(layout.bink, to: renamedOriginal)
+            try retagOriginalBink(renamedOriginal)
+            try installReplacement(from: layout.bink, copyOriginalTo: renamedOriginal, replacement: replacement, preserveSource: false)
             try installReplacement(from: runtime, copyOriginalTo: layout.macOS.appendingPathComponent("libMoltenVK.teso4m4.dylib"), replacement: runtime, preserveSource: false)
             try "startup-compositor-neutralize\n".write(to: marker, atomically: true, encoding: .utf8)
             let state = InstallState(targetPath: app.path, executableSHA256: try sha256(layout.executable), originalBinkSHA256: originalHash, installedAt: Date())
@@ -98,8 +115,17 @@ final class PatcherEngine {
         try requireIdle(app)
         let stateDir = try stateDirectory(for: app)
         let backup = stateDir.appendingPathComponent("original-libBink2Macx64.dylib")
+        let stateURL = stateDir.appendingPathComponent("install-state.json")
         guard files.fileExists(atPath: backup.path) else {
             throw PatcherError.message("A verified restore backup was not found for this ESO installation.")
+        }
+        guard let state = try? JSONDecoder().decode(InstallState.self, from: Data(contentsOf: stateURL)),
+              state.targetPath == app.path,
+              state.executableSHA256 == profile.sha256,
+              try sha256(layout.executable) == profile.sha256,
+              state.originalBinkSHA256 == profile.original_bink_sha256,
+              try sha256(backup) == profile.original_bink_sha256 else {
+            throw PatcherError.message("The restore record or backup does not match this exact ESO client. No files were changed.")
         }
         try restoreBink(from: backup, to: layout.bink)
         for name in ["libBink2Macx64.teso4m4-original.dylib", "libMoltenVK.teso4m4.dylib", ".teso4m4-enable"] {
@@ -127,6 +153,9 @@ final class PatcherEngine {
         let result = try layout(app)
         guard try sha256(result.executable) == profile.sha256 else {
             throw PatcherError.message("This ESO build is not in the supported profile. No files were changed.")
+        }
+        guard try sha256(result.bink) == profile.original_bink_sha256 else {
+            throw PatcherError.message("This ESO client does not contain the original Bink library expected by this profile. No files were changed.")
         }
         return result
     }
@@ -168,6 +197,16 @@ final class PatcherEngine {
         guard try sha256(backup) == sha256(temporary) else { throw PatcherError.message("Restore verification failed.") }
         try files.removeItem(at: destination)
         try files.moveItem(at: temporary, to: destination)
+    }
+
+    private func retagOriginalBink(_ original: URL) throws {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/install_name_tool")
+        task.arguments = ["-id", "@loader_path/libBink2Macx64.teso4m4-original.dylib", original.path]
+        try task.run(); task.waitUntilExit()
+        guard task.terminationStatus == 0 else {
+            throw PatcherError.message("Could not prepare the original Bink library for the reversible bridge.")
+        }
     }
 
     private func requireIdle(_ app: URL) throws {
