@@ -9,11 +9,13 @@ baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
 for ESO 12.0.7, databuild `3281538`.
 Experiment 0028's live input audit is complete. The exact run isolates a
 descriptor-update transition while the pipeline, draw, layout, bound set
-objects, and push state remain fixed. ESO is closed, but Steam PID 429 remains
-open; the safety gate therefore leaves `startup-input-audit` installed until a
-cache-preserving rollback can restore `performance-aggressive`. The update
-check, executable fingerprint, official runtime hash, settings hash, and 1.4.2
-pipeline-cache UUID remain current.
+objects, and push state remain fixed. Its cache-preserving rollback is complete:
+the validated `performance-aggressive` profile is restored and the settings and
+both cache states are preserved. Steam PID 429 remained open throughout the
+restore, proving the production bundle-idle gate permits an idle Steam client
+while still failing closed on actual ESO, launcher, file-use, or update
+activity. The update check, executable fingerprint, official runtime hash,
+settings hash, and 1.4.2 pipeline-cache UUID remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -264,7 +266,8 @@ Both match the verified clean build. The evidence boundary
 `experiment-0028-20260801T153500Z` started at `2026-08-01T11:46:03Z` from
 commit `4ee8194` with a current eight-repository launcher snapshot. One
 user-controlled startup completed in exact run
-`20260801T160428.543259000Z-pid786`; restoration remains.
+`20260801T160428.543259000Z-pid786`. The cache-preserving restoration completed
+under the bundle-idle gate while Steam PID 429 remained open.
 
 All twenty input samples completed without a skip, overflow, lifecycle error,
 or provenance gap. The target pipeline layout contains two required sets:

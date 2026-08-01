@@ -100,11 +100,13 @@ are in [Project status](STATUS.md); completed runs belong in the
   scene samples retain the same pipeline, draw, set objects, layout, and zero
   push state, while the descriptor-update signature changes. Do not repeat the
   aggregate input audit.
-- Restore `performance-aggressive` with both caches preserved as soon as Steam
-  exits. Then design a bounded per-required-set and per-descriptor-class
-  successor for the exact pipeline. It should distinguish image from buffer
-  state without the broad render audit's overhead. Complete static, synthetic,
-  and real non-game gates before another user-controlled startup.
+- The cache-preserving `performance-aggressive` restoration is complete. It
+  succeeded while idle Steam remained open under the shared bundle-idle gate;
+  Steam itself is not a maintenance dependency or blocker. Design a bounded
+  per-required-set and per-descriptor-class successor for the exact pipeline.
+  It should distinguish image from buffer state without the broad render
+  audit's overhead. Complete static, synthetic, and real non-game gates before
+  another user-controlled startup.
 
 ### Superseded reset-investigation record
 

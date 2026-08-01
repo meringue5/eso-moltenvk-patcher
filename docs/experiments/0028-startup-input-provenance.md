@@ -2,7 +2,8 @@
 
 - Date: 2026-08-01
 - Outcome: **succeeded; descriptor-state transition isolated**
-- Rollback: **pending because Steam remains open after evidence collection**
+- Rollback: **complete; `performance-aggressive` restored with idle Steam open
+  and both caches preserved**
 
 ## Question
 
@@ -229,5 +230,25 @@ the old-backup cache at
 `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 The active 1.4.2 cache updated normally to
 `234dc3189fcd2156e9de984a8aec5d5b87a66e8a6e39f7b4f081df851019a7b8`.
-ESO is closed, but Steam PID 429 remains open, so the safety gate correctly
-defers the cache-preserving rollback until the user exits Steam completely.
+Evidence collection ended with ESO closed and Steam PID 429 still open. The
+historical process-name gate initially deferred rollback solely because Steam
+existed, not because it held an ESO file or had update work in progress.
+
+## Rollback completion
+
+The production dependency review confirmed that the maintenance target is the
+exact `eso.app` bundle, not the idle Steam client. Commit `2d8ac51` replaced the
+blanket `steam_osx` exclusion with a shared fail-closed bundle-idle gate. It
+blocks ESO, the ZeniMax launcher, any process holding a file below the target
+bundle, incomplete or indeterminate Steam update state, and staged ESO download
+content. An idle Steam client is allowed only when all of those checks pass.
+Seven focused gate cases and all 121 discovered tests pass.
+
+With Steam PID 429 still running, the live gate found no process holding an ESO
+bundle file, a complete appmanifest (`StateFlags 4` with equal downloaded and
+required byte counts), and no staged `steamapps/downloading/306130` content.
+The cache-preserving restore and `performance-aggressive` reinstall then both
+succeeded. The installed proxy and official MoltenVK match the clean build, the
+profile marker is `performance-aggressive`, and the update and pipeline-cache
+UUID checks pass. The settings, old-backup cache, and active 1.4.2 cache remain
+at the hashes recorded above.
