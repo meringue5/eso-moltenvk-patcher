@@ -81,33 +81,41 @@ of the two inputs supplies it, and whether the transition replaces a descriptor
 or fills a stable image, remain unproven. This is a low-impact startup
 presentation defect, not a gameplay blocker.
 
-Experiment 0030 is now the prepared production-repair candidate. It uses the
-already proven descriptor transition instead of spending another startup on
-input readback. Only the exact indexed compositor pipeline, pipeline layout,
-ordered two-set structure, generation-2 window, and complete descriptor state
-can arm it. While the first target descriptor signature remains stable, the
-bridge replaces that draw with an opaque-black full-frame clear. The first
-changed descriptor state is forwarded and permanently latches direct
-forwarding. Ordinal 150, 96 suppressed draws, missing state, or any unexpected
-target use fails open to the application command. There is no pixel readback,
-shader/asset replacement, settings change, or cache change.
+Experiment 0030 failed to cover the target interval and remains installed
+pending a bundle-idle rollback. In exact run
+`20260801T172806.047658000Z-pid17050`, it suppressed one exact compositor draw
+at generation-2 ordinal 71, then treated a new draw-recording-time descriptor
+signature at ordinal 72 as the scene transition and permanently forwarded.
+The independently proven magenta interval begins at ordinal 80 and continues
+through ordinal 140, with scene first sampled at 150. The user therefore still
+saw pink because the candidate disarmed before every proven magenta sample.
+This result does not exclude the compositor-placeholder hypothesis.
 
-The complete bridge build and configuration matrix pass. Synthetic lifecycle
-controls prove stable-state suppression, first-transition forwarding, and
-incomplete-state fail-open behavior. All 129 Python tests pass. The real
-official MoltenVK 1.4.2/AppKit/Metal gate passes black clear, magenta clear,
-graphics draw, load-only, and RGBA16F subresource controls at small and exact
-ESO extents outside the restricted sandbox. No game process or bundle was
-touched during candidate preparation. The user subsequently approved
-installation. The bundle-idle gate passed with idle Steam open, a clean rebuild
-reproduced proxy SHA-256 `b929afbd...`, and the candidate is now installed as
-`startup-compositor-neutralize`. The settings and both cache hashes remained
-byte-identical across the cache-preserving restore/install. One bounded
-user-controlled startup is now the active gate.
+The original dedicated analyzer incorrectly called any clean descriptor latch
+plus persistent pink an exclusion. It now requires suppression through the
+proven ordinal-140 endpoint and refuses a forwarding latch before ordinal 150;
+the exact run is correctly `INCONCLUSIVE`. The run reached the ordinal-180
+finish without lifecycle error or new crash report. Settings remained exact,
+the preserved old cache stayed byte-identical, and the active 1.4.2 cache only
+received its normal runtime update.
 
-Experiment 0029 remains a prepared diagnostic fallback, not the next required
-run. Its two-input readback can distinguish scene from GUI only if the narrower
-descriptor-transition neutralizer fails open or the artifact persists.
+Experiment 0031 now implements the smaller corrected repair in source. It
+suppresses every complete exact-target compositor draw from the observed first
+target at ordinal 71 through ordinal 149, ignores descriptor-signature churn,
+and forwards/latches at the proven scene boundary 150. It retains all exact
+pipeline, layout, descriptor-shape, framebuffer, generation, and draw-type
+checks, fails open on incomplete or unexpected state, and enables no pixel
+readback or queue wait.
+
+The complete build/configuration matrix, synthetic descriptor-churn and
+fail-open controls, 133 Python tests, compiler/static checks, and official
+MoltenVK 1.4.2/AppKit/Metal small and exact-ESO surface controls pass. The
+prepared proxy is `4c1c69fd86bf...`; the game bundle was not changed. A
+pre-present exact-magenta detector was rejected for this candidate because it
+would add queue-idle/readback synchronization to dozens of startup frames.
+Experiment 0029 remains the diagnostic fallback if a mechanically complete
+window still leaves pink. The next gate is source checkpointing followed by
+explicit installation approval and the shared bundle-idle restore/install.
 
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface

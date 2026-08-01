@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Classify the bounded startup-compositor placeholder neutralizer."""
+"""Classify the fixed-window startup compositor neutralizer."""
 
 from __future__ import annotations
 
@@ -19,17 +19,15 @@ MODE = (
     "pixel_readback=disabled fallback=forward"
 )
 BEGIN = (
-    "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 first_present=60 "
-    "last_present=150 max_suppressed_draws=96 fallback=forward"
+    "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 first_present=71 "
+    "last_present=150 max_suppressed_draws=96 strategy=ordinal-window "
+    "fallback=forward"
 )
 FINISH = (
     "STARTUP_COLOR_AUDIT_FINISH: reason=generation-2-present-limit "
     "generation=2 ordinal=180"
 )
 TARGET_PIPELINE = "c43e4410d3b33fe7"
-FIRST_PROVEN_MAGENTA_ORDINAL = 80
-LAST_PROVEN_MAGENTA_ORDINAL = 140
-FIRST_PROVEN_SCENE_ORDINAL = 150
 SUPPRESS = re.compile(
     r"^STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS: generation=(?P<generation>\d+) "
     r"ordinal=(?P<ordinal>\d+) pipeline=(?P<pipeline>[0-9a-f]{16}) "
@@ -49,10 +47,10 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
     candidates = [
         (run_epoch(run_id), order, run_id, lines)
         for order, (run_id, lines) in enumerate(parse_runs(text).items())
-        if MODE in lines
+        if MODE in lines and BEGIN in lines
     ]
     if not candidates:
-        return "INVALID", ["no startup compositor neutralize run was found"]
+        return "INVALID", ["no fixed-window compositor neutralizer run was found"]
     _, _, run_id, lines = max(
         candidates,
         key=lambda item: (
@@ -60,8 +58,6 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
         ),
     )
     reasons: list[str] = []
-    if BEGIN not in lines:
-        reasons.append("the exact bounded neutralizer was not armed")
     if FINISH not in lines:
         reasons.append("the bounded two-generation window did not finish")
     if any(
@@ -77,86 +73,74 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
     ):
         reasons.append("lifecycle tracking reported an error or truncation")
 
-    suppress_matches = [
+    raw_suppressions = [
         SUPPRESS.fullmatch(line)
         for line in lines
         if line.startswith("STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS:")
     ]
-    if not suppress_matches:
+    suppressions = [match for match in raw_suppressions if match]
+    if not raw_suppressions:
         reasons.append("no compositor draw was suppressed")
-    elif any(match is None for match in suppress_matches):
+    elif len(suppressions) != len(raw_suppressions):
         reasons.append("a compositor suppression record was malformed")
     else:
-        suppressions = [match for match in suppress_matches if match]
         draws = [int(match.group("draw")) for match in suppressions]
         ordinals = [int(match.group("ordinal")) for match in suppressions]
-        descriptors = {match.group("descriptor") for match in suppressions}
         if draws != list(range(1, len(draws) + 1)):
-            reasons.append("suppressed draw ordinals were not contiguous")
+            reasons.append("suppressed draw counters were not contiguous")
         if any(
             match.group("generation") != "2"
             or match.group("pipeline") != TARGET_PIPELINE
             for match in suppressions
         ):
             reasons.append("a suppression escaped the exact generation/pipeline")
-        if any(ordinal < 60 or ordinal >= 150 for ordinal in ordinals):
-            reasons.append("a suppression escaped the bounded present interval")
-        if len(descriptors) != 1:
-            reasons.append("the suppressed placeholder descriptor state changed")
-        if min(ordinals) > FIRST_PROVEN_MAGENTA_ORDINAL:
+        if any(ordinal < 71 or ordinal >= 150 for ordinal in ordinals):
+            reasons.append("a suppression escaped the fixed present window")
+        if min(ordinals) > 80:
             reasons.append("suppression began after the proven magenta interval")
-        if max(ordinals) < LAST_PROVEN_MAGENTA_ORDINAL:
+        if max(ordinals) < 140:
             reasons.append("suppression ended before the proven magenta interval")
 
-    latch_matches = [
+    raw_latches = [
         LATCH.fullmatch(line)
         for line in lines
         if line.startswith("STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")
     ]
-    valid_latches = [match for match in latch_matches if match]
-    if not latch_matches:
+    latches = [match for match in raw_latches if match]
+    if not raw_latches:
         reasons.append("the neutralizer never latched back to forwarding")
-    elif any(match is None for match in latch_matches):
+    elif len(latches) != len(raw_latches):
         reasons.append("a compositor latch record was malformed")
-    elif len(valid_latches) != 1:
+    elif len(latches) != 1:
         reasons.append("the neutralizer produced more than one terminal latch")
     else:
-        latch = valid_latches[0]
+        latch = latches[0]
         if (
             latch.group("action") != "forward"
-            or latch.group("reason") != "descriptor-transition"
-        ):
-            reasons.append("the neutralizer ended through a fallback path")
-        if (
-            latch.group("generation") != "2"
+            or latch.group("reason") != "present-deadline"
+            or latch.group("generation") != "2"
+            or int(latch.group("ordinal")) != 150
             or latch.group("pipeline") != TARGET_PIPELINE
-            or not 60 <= int(latch.group("ordinal")) <= 150
         ):
-            reasons.append("the forwarding latch escaped the exact target window")
-        elif int(latch.group("ordinal")) < FIRST_PROVEN_SCENE_ORDINAL:
-            reasons.append("the forwarding latch preceded the proven scene boundary")
-        if suppress_matches and all(suppress_matches):
-            placeholder = suppress_matches[0].group("descriptor")
-            if latch.group("descriptor") == placeholder:
-                reasons.append("the forwarding latch did not cross a descriptor transition")
-            if int(latch.group("draws")) != len(suppress_matches):
-                reasons.append("the latch suppressed-draw total was inconsistent")
+            reasons.append("the neutralizer did not forward at the exact deadline")
+        if suppressions and int(latch.group("draws")) != len(suppressions):
+            reasons.append("the latch suppressed-draw total was inconsistent")
 
-    print(f"startup-compositor-neutralize-run: {run_id}")
+    print(f"startup-compositor-window-neutralize-run: {run_id}")
     print(
-        "startup-compositor-neutralize-pink-observed: "
+        "startup-compositor-window-neutralize-pink-observed: "
         f"{'yes' if pink_observed else 'no'}"
     )
     print(
-        "startup-compositor-neutralize-suppressed-draws: "
-        f"{len(suppress_matches)}"
+        "startup-compositor-window-neutralize-suppressed-draws: "
+        f"{len(raw_suppressions)}"
     )
     if reasons:
         return "INCONCLUSIVE", reasons
     return (
-        "COMPOSITOR-PLACEHOLDER-EXCLUDED"
+        "WINDOW-NEUTRALIZATION-FAILED"
         if pink_observed
-        else "COMPOSITOR-PLACEHOLDER-NEUTRALIZED",
+        else "WINDOW-NEUTRALIZED",
         [],
     )
 
@@ -172,10 +156,10 @@ def main() -> int:
         args.log.read_text(encoding="utf-8", errors="replace"),
         args.pink_observed == "yes",
     )
-    print(f"startup-compositor-neutralize-verdict: {verdict}")
+    print(f"startup-compositor-window-neutralize-verdict: {verdict}")
     for reason in reasons:
-        print(f"startup-compositor-neutralize-reason: {reason}")
-    return 0 if verdict != "INCONCLUSIVE" and verdict != "INVALID" else 1
+        print(f"startup-compositor-window-neutralize-reason: {reason}")
+    return 0 if verdict not in ("INCONCLUSIVE", "INVALID") else 1
 
 
 if __name__ == "__main__":

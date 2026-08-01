@@ -30,7 +30,7 @@ enum {
     kStartupAuditGenerationLimit = 2,
     kStartupAuditGeneration2PresentLimit = 180,
     kStartupAuditDetailLimit = 2048,
-    kCompositorNeutralizeFirstPresent = 60,
+    kCompositorNeutralizeFirstPresent = 71,
     kCompositorNeutralizeLastPresent = 150,
     kCompositorNeutralizeMaxSuppressedDraws = 96,
 };
@@ -387,9 +387,9 @@ typedef enum {
     TESO4M4_COMPOSITOR_NEUTRALIZE_ABORTED,
 } CompositorNeutralizeState;
 static CompositorNeutralizeState g_compositor_neutralize_state;
-static uint64_t g_compositor_placeholder_signature;
 static uint32_t g_compositor_suppressed_draw_count;
 static VkPipeline g_compositor_neutralize_test_pipeline;
+static uint32_t g_compositor_neutralize_test_ordinal;
 static bool g_reset_has_run;
 
 static void lifecycle_log(const char* format, ...) {
@@ -2271,11 +2271,14 @@ static bool should_suppress_compositor_draw_locked(
     if (!target) {
         return false;
     }
-    const uint32_t ordinal =
-        next_present_ordinal_for_generation_locked(command->generation);
-    if (!test_override &&
-        (command->generation != 2 ||
-         ordinal < kCompositorNeutralizeFirstPresent)) {
+    const uint32_t ordinal = test_override &&
+            g_compositor_neutralize_test_ordinal != 0
+        ? g_compositor_neutralize_test_ordinal
+        : next_present_ordinal_for_generation_locked(command->generation);
+    const bool enforce_window = !test_override ||
+        g_compositor_neutralize_test_ordinal != 0;
+    if ((!test_override && command->generation != 2) ||
+        (enforce_window && ordinal < kCompositorNeutralizeFirstPresent)) {
         return false;
     }
     if (!indexed) {
@@ -2284,13 +2287,13 @@ static bool should_suppress_compositor_draw_locked(
             "unexpected-non-indexed-target", command, ordinal, 0);
         return false;
     }
-    if (!test_override && ordinal > kCompositorNeutralizeLastPresent) {
+    if (enforce_window && ordinal >= kCompositorNeutralizeLastPresent) {
         if (g_compositor_neutralize_state ==
             TESO4M4_COMPOSITOR_NEUTRALIZE_SUPPRESSING) {
             compositor_neutralize_latch_locked(
                 TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING,
                 "present-deadline", command, ordinal,
-                g_compositor_placeholder_signature);
+                0);
         }
         return false;
     }
@@ -2306,24 +2309,18 @@ static bool should_suppress_compositor_draw_locked(
             descriptor_signature);
         return false;
     }
-    /* The first complete target state is the bounded placeholder baseline. */
+    /*
+     * Experiment 0030 proved that descriptor signatures churn before the
+     * independently sampled magenta interval. Keep the intervention tied to
+     * the exact compositor and the proven ordinal window instead.
+     */
     if (g_compositor_neutralize_state ==
         TESO4M4_COMPOSITOR_NEUTRALIZE_ARMED) {
-        g_compositor_placeholder_signature = descriptor_signature;
         g_compositor_neutralize_state =
             TESO4M4_COMPOSITOR_NEUTRALIZE_SUPPRESSING;
-    } else if (descriptor_signature !=
-               g_compositor_placeholder_signature) {
-        compositor_neutralize_latch_locked(
-            TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING,
-            "descriptor-transition", command, ordinal,
-            descriptor_signature);
-        return false;
     }
     if (g_compositor_suppressed_draw_count >=
-            kCompositorNeutralizeMaxSuppressedDraws ||
-        (!test_override &&
-         ordinal >= kCompositorNeutralizeLastPresent)) {
+            kCompositorNeutralizeMaxSuppressedDraws) {
         compositor_neutralize_latch_locked(
             TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING,
             "suppression-deadline", command, ordinal,
@@ -3719,9 +3716,9 @@ void teso4m4_lifecycle_reset(void) {
     g_compositor_image_sampler = NULL;
     g_compositor_neutralize_state =
         TESO4M4_COMPOSITOR_NEUTRALIZE_INACTIVE;
-    g_compositor_placeholder_signature = 0;
     g_compositor_suppressed_draw_count = 0;
     g_compositor_neutralize_test_pipeline = VK_NULL_HANDLE;
+    g_compositor_neutralize_test_ordinal = 0;
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -3794,14 +3791,14 @@ void teso4m4_lifecycle_set_startup_compositor_neutralize(bool enabled) {
     g_compositor_neutralize_state = enabled
         ? TESO4M4_COMPOSITOR_NEUTRALIZE_ARMED
         : TESO4M4_COMPOSITOR_NEUTRALIZE_INACTIVE;
-    g_compositor_placeholder_signature = 0;
     g_compositor_suppressed_draw_count = 0;
     pthread_mutex_unlock(&g_lock);
     if (enabled) {
         lifecycle_log(
             "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2"
-            " first_present=60 last_present=150"
-            " max_suppressed_draws=96 fallback=forward");
+            " first_present=71 last_present=150"
+            " max_suppressed_draws=96 strategy=ordinal-window"
+            " fallback=forward");
     }
 }
 
@@ -3809,6 +3806,13 @@ void teso4m4_lifecycle_set_compositor_neutralize_test_pipeline(
     VkPipeline pipeline) {
     pthread_mutex_lock(&g_lock);
     g_compositor_neutralize_test_pipeline = pipeline;
+    pthread_mutex_unlock(&g_lock);
+}
+
+void teso4m4_lifecycle_set_compositor_neutralize_test_ordinal(
+    uint32_t ordinal) {
+    pthread_mutex_lock(&g_lock);
+    g_compositor_neutralize_test_ordinal = ordinal;
     pthread_mutex_unlock(&g_lock);
 }
 

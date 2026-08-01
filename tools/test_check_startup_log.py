@@ -496,8 +496,8 @@ class StartupLogTests(unittest.TestCase):
         )
         text += "\n" + record(
             "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 "
-            "first_present=60 last_present=150 max_suppressed_draws=96 "
-            "fallback=forward"
+            "first_present=71 last_present=150 max_suppressed_draws=96 "
+            "strategy=ordinal-window fallback=forward"
         )
         verdict = evaluate_startup_log(text)
         self.assertTrue(verdict.passed, verdict.reasons)

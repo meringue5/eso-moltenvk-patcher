@@ -1,7 +1,7 @@
 # Experiment 0030: startup compositor placeholder neutralization
 
 - Date: 2026-08-02
-- Outcome: **running**
+- Outcome: **failed**
 - Rollback: **not started; candidate installed**
 
 ## Question
@@ -143,23 +143,47 @@ active cache: 234dc3189fcd2156e9de984a8aec5d5b87a66e8a6e39f7b4f081df851019a7b8
 old backup:   72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
 ```
 
-No Steam, launcher, or ESO process was launched by the agent. The bounded
-user-controlled startup and visual result remain pending.
+No Steam, launcher, or ESO process was launched by the agent.
+
+The user then performed the single bounded startup and reported that the pink
+interval remained visible. The exact eligible run is
+`20260801T172806.047658000Z-pid17050`. It contains one suppression at
+generation 2 ordinal 71 with descriptor signature `593490cb014fd20f`, followed
+immediately by a permanent descriptor-transition forwarding latch at ordinal
+72 with signature `f9e28936d0b40ea9`. The known visible magenta samples from
+the prior exact audit begin at ordinal 80 and continue through ordinal 140.
+The candidate therefore forwarded the entire proven magenta interval; it did
+not test whether replacing those frames' compositor draw would remove pink.
+
+The bounded audit finished at ordinal 180 without lifecycle error, detail
+truncation, or pixel-readback activation. No new crash report appeared.
+`UserSettings.txt` retained exact normalized and structural identity with SHA-256
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+The active 1.4.2 pipeline cache underwent a normal runtime update to SHA-256
+`ad3f6ba04c03e685d89c1f3806fb48f17ac9d521ea041331a1e286d4b23711bb`;
+the preserved old backup remained byte-identical at
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 
 ## Interpretation
 
-Confirmed: the implementation is bound to the exact observed compositor
-identity, converts a stable target draw to black, forwards the transition draw,
-fails open on incomplete state, and leaves pixel readback disabled.
+Confirmed: the implementation matched the exact compositor identity and
+replaced one early draw, but its draw-recording-time descriptor signature
+changed at ordinal 72. That is eight presents before the first proven magenta
+sample and 78 presents before the first proven scene sample. The intervention
+therefore disarmed before the interval it was meant to cover.
 
-Inference: the Experiment 0028 descriptor transition is a stronger and less
-intrusive repair boundary than changing application assets, shaders, settings,
-or caches. It removes the known presentation interval while preserving the
-normal scene transition.
+The original analyzer's `COMPOSITOR-PLACEHOLDER-EXCLUDED` classification was
+invalid for this trace because it checked that a transition occurred but did
+not require suppression to span the known magenta interval. The analyzer now
+requires coverage through ordinal 140 and a forwarding latch no earlier than
+ordinal 150; this exact run correctly returns `INCONCLUSIVE` with an early-latch
+reason.
 
-Hypothesis: the first target descriptor state still denotes the visible
-canonical-magenta placeholder in the next live startup. Only the controlled
-user observation can validate that final application-specific link.
+Inference: Experiment 0028's sampled-present aggregate transition cannot be
+used as “the first changed draw-recording signature.” Transitional compositor
+states exist at ordinals 71 and 72 before the stable sampled-magenta interval.
+This result does not exclude the compositor-placeholder cause and does not
+justify changing assets, shaders, settings, or caches.
 
 ## Rollback
 
@@ -170,9 +194,10 @@ changing either retained cache or settings state.
 
 ## Follow-up
 
-If the candidate removes the artifact and the exact log shows a descriptor
-transition latch, promote the bounded neutralizer into the packaged aggressive
-profile and re-run normal startup/build validation. If it fails open or the
-artifact persists, restore the production profile and use Experiment 0029 only
-to identify which scene/GUI input remains responsible; do not broaden the
-neutralizer.
+Restore `performance-aggressive` when the bundle-idle gate permits it. Preserve
+this early-latch result. A successor must either arm only at the independently
+proven ordinal-80 boundary and require coverage through ordinal 140, or detect
+and replace exact final-image magenta immediately before presentation. It must
+pass static, synthetic, and real non-game synchronization controls before any
+new installation or user startup. Experiment 0029 remains available if the
+two compositor inputs must be distinguished.

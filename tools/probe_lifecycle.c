@@ -1008,6 +1008,7 @@ static bool run_startup_draw_provenance_case(void) {
     }
 
     teso4m4_lifecycle_set_compositor_neutralize_test_pipeline(pipeline);
+    teso4m4_lifecycle_set_compositor_neutralize_test_ordinal(71);
     teso4m4_lifecycle_set_startup_compositor_neutralize(true);
     if (begin_command_buffer(command_buffer, &command_begin) != VK_SUCCESS) {
         return check(false, "neutralizer fail-open command begin failed");
@@ -1077,6 +1078,7 @@ static bool run_startup_draw_provenance_case(void) {
         .pImageInfo = &transitioned_image,
     };
     update_descriptor_sets(device, 1, &transitioned_write, 0, NULL);
+    teso4m4_lifecycle_set_compositor_neutralize_test_ordinal(72);
     if (begin_command_buffer(command_buffer, &command_begin) != VK_SUCCESS) {
         return check(false, "neutralizer transition command begin failed");
     }
@@ -1087,14 +1089,33 @@ static bool run_startup_draw_provenance_case(void) {
         0, 1, &descriptor_set, 0, NULL);
     draw_indexed(command_buffer, 6, 1, 0, 0, 0);
     end_render_pass(command_buffer);
+    if (!check(
+            g_cmd_draw_indexed_forward_count == 2 &&
+                g_cmd_clear_attachments_count == 2 &&
+                strstr(g_log, "reason=descriptor-transition") == NULL,
+            "ordinal-window neutralizer must ignore descriptor churn")) {
+        return false;
+    }
+
+    teso4m4_lifecycle_set_compositor_neutralize_test_ordinal(150);
+    if (begin_command_buffer(command_buffer, &command_begin) != VK_SUCCESS) {
+        return check(false, "neutralizer deadline command begin failed");
+    }
+    begin_render_pass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    bind_pipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    bind_descriptor_sets(
+        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+        0, 1, &descriptor_set, 0, NULL);
+    draw_indexed(command_buffer, 6, 1, 0, 0, 0);
+    end_render_pass(command_buffer);
     return check(
         g_cmd_draw_indexed_forward_count == 3 &&
-            g_cmd_clear_attachments_count == 1 &&
+            g_cmd_clear_attachments_count == 2 &&
             strstr(
                 g_log,
                 "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH: action=forward"
-                " reason=descriptor-transition") != NULL,
-        "neutralizer must forward the first transitioned compositor draw");
+                " reason=present-deadline") != NULL,
+        "ordinal-window neutralizer must forward the ordinal-150 draw");
 }
 
 static bool run_startup_color_case(

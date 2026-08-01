@@ -116,25 +116,26 @@ are in [Project status](STATUS.md); completed runs belong in the
   MoltenVK/AppKit BGRA8 plus RGBA16F mip/layer controls pass. Retain it as a
   fallback only; the already proven aggregate descriptor transition permits a
   narrower repair trial without another readback-only startup.
-- Experiment 0030 implements that startup-only repair. It matches the exact
-  indexed pipeline, pipeline layout, two ordered set layouts, zero-push state,
-  and bounded generation-2 interval. It replaces only the stable first target
-  descriptor state with opaque black, forwards the first changed-state draw,
-  and permanently latches to forwarding. Incomplete state, unexpected use,
-  ordinal/draw deadline, or identity mismatch fails open. It adds no pixel
-  readback and changes no cache, setting, shader, or asset.
-- The synthetic suppression, descriptor-transition, and fail-open controls,
-  complete build/configuration matrix, 129 Python tests, and official 1.4.2
-  AppKit/Metal surface controls pass. Explicit installation approval was
-  received; the cache-preserving clean rebuild and install completed under the
-  bundle-idle gate with idle Steam open. The candidate is installed and the
-  next gate is one user-controlled startup; no gameplay duration or setting
-  change is required.
-- If the artifact disappears and the log records the exact transition latch,
-  promote the bounded behavior into the packaged aggressive profile. If it
-  fails open or pink persists, restore `performance-aggressive` and use
-  Experiment 0029 to distinguish the scene and GUI inputs; do not broaden the
-  intervention speculatively.
+- Close Experiment 0030 as a failed-coverage repair. The exact run suppressed
+  only ordinal 71 and permanently forwarded at ordinal 72, before the proven
+  ordinal-80-through-140 magenta interval. Pink persistence therefore does not
+  exclude the compositor-placeholder cause. Preserve the active-cache update,
+  unchanged settings/old backup, and corrected analyzer result.
+- Preserve Experiment 0031's prepared fixed-window source candidate. It
+  suppresses only the complete exact compositor identity from ordinal 71
+  through 149, ignores the descriptor churn that invalidated Experiment 0030,
+  and forwards at 150. The synthetic lifecycle control, dedicated analyzer,
+  clean build/configuration matrix, 133 tests, static checks, and official
+  MoltenVK/AppKit/Metal control pass without a game-bundle change.
+- Checkpoint the exact source, then require explicit Experiment 0031 install
+  approval. Under the bundle-idle gate, restore the failed 0030 candidate,
+  rebuild the checkpoint, install the fixed-window candidate with caches and
+  settings preserved, and verify one fresh evidence boundary before requesting
+  the single user-controlled startup.
+- If the exact fixed-window log spans ordinals 80--140, forwards at 150, and
+  pink still appears, close the repair as failed and use Experiment 0029 or a
+  bounded pre-present exact-pixel replacement. Do not add per-frame readback
+  synchronization unless the smaller no-readback repair is actually excluded.
 
 ### Superseded reset-investigation record
 

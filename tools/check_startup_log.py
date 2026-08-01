@@ -454,8 +454,8 @@ def evaluate_startup_log(
     if startup_compositor_neutralize_mode in matched_modes:
         if (
             "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 "
-            "first_present=60 last_present=150 max_suppressed_draws=96 "
-            "fallback=forward"
+            "first_present=71 last_present=150 max_suppressed_draws=96 "
+            "strategy=ordinal-window fallback=forward"
             not in lines
         ):
             reasons.append("startup compositor neutralizer was not armed exactly")

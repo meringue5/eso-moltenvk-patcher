@@ -572,6 +572,17 @@ which image changes, and it does not exclude new contents written into a stable
 image object. A bounded two-input image audit remains necessary before choosing
 the neutralization point.
 
+Experiment 0030 establishes that the sampled-present boundary cannot be
+naively applied to the first target draw recorded after startup. In exact run
+`20260801T172806.047658000Z-pid17050`, the target compositor appeared with one
+descriptor signature at ordinal 71 and another at ordinal 72. The neutralizer
+therefore suppressed only ordinal 71 and latched to forwarding eight presents
+before the first independently proven magenta sample at ordinal 80. Persistent
+pink in that run is evidence of an early intervention latch, not evidence
+against the compositor-placeholder cause. Any successor using descriptor
+state must anchor its eligibility to the proven magenta/scene interval rather
+than treating the first changed recording-time signature as the scene boundary.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313
