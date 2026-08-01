@@ -111,4 +111,4 @@ selects Experiment 0029 or the pre-present exact-pixel alternative.
 Not approved or started. The currently installed game bundle still contains
 the failed Experiment 0030 candidate. Its restoration is the next bundle write
 once the idle gate passes; this source work does not grant installation
-approval.
+approval. The exact prepared source checkpoint is commit `1dacfd2`.
