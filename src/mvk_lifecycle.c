@@ -1154,6 +1154,11 @@ void teso4m4_lifecycle_set_startup_color_audit(bool enabled) {
     }
 }
 
+bool teso4m4_lifecycle_startup_window_open(void) {
+    return atomic_load(&g_startup_color_audit) &&
+           !atomic_load(&g_startup_color_audit_finished);
+}
+
 PFN_vkVoidFunction teso4m4_lifecycle_intercept(
     const char* name,
     PFN_vkVoidFunction next_function) {

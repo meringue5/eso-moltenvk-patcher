@@ -16,6 +16,8 @@ LOAD_COMMAND = struct.Struct("<II")
 MH_MAGIC_64 = 0xFEEDFACF
 LC_UUID = 0x1B
 PATCH_SIZE = 12
+FX_SENTINEL_PATCH_SIZE = 17
+FX_SENTINEL_CONSTANT_SIZE = 16
 
 
 def macho_uuid(data: bytes) -> bytes:
@@ -92,6 +94,100 @@ def main() -> None:
             f'    {{"{target["symbol"]}", 0x{offset:x}ULL, {{{byte_list}}}}},'
         )
     lines.extend(("};", ""))
+
+    experimental = manifest.get("experimental_targets", {})
+    sentinel = experimental.get("fx_material_initializer")
+    if sentinel is None:
+        lines.extend(
+            (
+                "#define ESO_HAS_FX_SENTINEL_TARGET 0",
+                "static const Teso4m4FxSentinelTarget kFxSentinelTarget = {0};",
+                "",
+            )
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text("\n".join(lines), encoding="ascii")
+        return
+    if not isinstance(sentinel, dict):
+        raise SystemExit("FX material initializer profile must be an object")
+    sentinel_offset = int(sentinel["image_offset"], 0)
+    sentinel_expected = executable[
+        sentinel_offset : sentinel_offset + FX_SENTINEL_PATCH_SIZE
+    ]
+    if len(sentinel_expected) != FX_SENTINEL_PATCH_SIZE:
+        raise SystemExit("FX material initializer patch target is outside executable")
+    recorded_sentinel = sentinel.get("expected_bytes")
+    if (
+        not isinstance(recorded_sentinel, str)
+        or len(recorded_sentinel) != FX_SENTINEL_PATCH_SIZE * 2
+        or recorded_sentinel.lower() != sentinel_expected.hex()
+    ):
+        raise SystemExit(
+            "recorded FX material initializer bytes mismatch\n"
+            f"expected: {recorded_sentinel}\nactual:   {sentinel_expected.hex()}"
+        )
+    constant_offset = int(sentinel["first_constant_offset"], 0)
+    constant_expected = executable[
+        constant_offset : constant_offset + FX_SENTINEL_CONSTANT_SIZE
+    ]
+    recorded_constant = sentinel.get("first_constant_expected_bytes")
+    if (
+        len(constant_expected) != FX_SENTINEL_CONSTANT_SIZE
+        or not isinstance(recorded_constant, str)
+        or len(recorded_constant) != FX_SENTINEL_CONSTANT_SIZE * 2
+        or recorded_constant.lower() != constant_expected.hex()
+    ):
+        raise SystemExit(
+            "recorded FX material constant bytes mismatch\n"
+            f"expected: {recorded_constant}\nactual:   {constant_expected.hex()}"
+        )
+    callers = sentinel.get("caller_return_offsets")
+    caller_calls = sentinel.get("caller_call_expected_bytes")
+    if (
+        not isinstance(callers, list)
+        or not isinstance(caller_calls, list)
+        or len(callers) != 2
+        or len(caller_calls) != 2
+    ):
+        raise SystemExit("FX material initializer requires exactly two callers")
+    caller_offsets = []
+    for return_value, recorded_call in zip(callers, caller_calls, strict=True):
+        return_offset = int(return_value, 0)
+        call = executable[return_offset - 5 : return_offset]
+        if (
+            len(call) != 5
+            or call[0] != 0xE8
+            or not isinstance(recorded_call, str)
+            or len(recorded_call) != 10
+            or recorded_call.lower() != call.hex()
+        ):
+            raise SystemExit(
+                f"recorded FX material caller bytes mismatch at 0x{return_offset:x}"
+            )
+        displacement = struct.unpack("<i", call[1:])[0]
+        if return_offset + displacement != sentinel_offset:
+            raise SystemExit(
+                f"FX material caller does not target initializer at 0x{return_offset:x}"
+            )
+        caller_offsets.append(return_offset)
+
+    sentinel_bytes = ", ".join(f"0x{byte:02x}" for byte in sentinel_expected)
+    constant_bytes = ", ".join(f"0x{byte:02x}" for byte in constant_expected)
+    lines.extend(
+        (
+            "#define ESO_HAS_FX_SENTINEL_TARGET 1",
+            "static const Teso4m4FxSentinelTarget kFxSentinelTarget = {",
+            f"    0x{sentinel_offset:x}ULL,",
+            f"    {{{sentinel_bytes}}},",
+            f"    0x{constant_offset:x}ULL,",
+            f"    {{{constant_bytes}}},",
+            "    {"
+            + ", ".join(f"0x{offset:x}ULL" for offset in caller_offsets)
+            + "},",
+            "};",
+            "",
+        )
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("\n".join(lines), encoding="ascii")
 

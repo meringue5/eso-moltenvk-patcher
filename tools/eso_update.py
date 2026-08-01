@@ -338,6 +338,10 @@ def audit_manifest(
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if reference.get("schema_version") != SCHEMA_VERSION or "analysis" not in reference:
         return None, ["reference manifest has no schema-v2 update profile"]
+    if reference.get("experimental_targets"):
+        return None, [
+            "experimental patch targets require manual analysis on an ESO update"
+        ]
     legacy = reference["analysis"]["legacy_moltenvk"]
     member = legacy["archive_member"]
     try:

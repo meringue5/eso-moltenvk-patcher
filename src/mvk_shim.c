@@ -17,6 +17,7 @@
 #include <MoltenVK/mvk_private_api.h>
 
 #include "mvk_compat.h"
+#include "eso_fx_sentinel.h"
 #include "mvk_lifecycle.h"
 #include "mvk_reset_trace.h"
 
@@ -50,6 +51,7 @@ typedef enum {
     TESO4M4_MODE_PERFORMANCE_SAFE,
     TESO4M4_MODE_PERFORMANCE_AGGRESSIVE,
     TESO4M4_MODE_STARTUP_COLOR_AUDIT,
+    TESO4M4_MODE_STARTUP_FX_NEUTRALIZE,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -235,6 +237,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     if (strcmp(mode, "startup-color-audit") == 0) {
         return TESO4M4_MODE_STARTUP_COLOR_AUDIT;
     }
+    if (strcmp(mode, "startup-fx-neutralize") == 0) {
+        return TESO4M4_MODE_STARTUP_FX_NEUTRALIZE;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -280,10 +285,12 @@ static bool verify_moltenvk_configuration(
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
         mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
-        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE;
     const VkBool32 expected_live_resources =
         (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
-         mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT)
+         mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
+         mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE)
             ? VK_FALSE
             : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
@@ -443,6 +450,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     teso4m4_lifecycle_set_logger(&compat_log_message);
     teso4m4_reset_trace_reset();
     teso4m4_reset_trace_set_logger(&compat_log_message);
+    teso4m4_fx_sentinel_reset();
+    teso4m4_fx_sentinel_set_logger(&compat_log_message);
+    teso4m4_fx_sentinel_set_window_function(
+        &teso4m4_lifecycle_startup_window_open);
     g_reset_trace_enabled = false;
     g_legacy_feature_profile_enabled = false;
     g_startup_color_audit_enabled = false;
@@ -458,6 +469,11 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message("SKIP: enable marker absent");
         return;
     }
+    if (mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE &&
+        !ESO_HAS_FX_SENTINEL_TARGET) {
+        log_message("SKIP: selected target has no FX sentinel profile");
+        return;
+    }
     g_reset_trace_enabled =
         mode == TESO4M4_MODE_RESET_RESOURCE_TRACE ||
         mode == TESO4M4_MODE_NO_COMMAND_POOLING ||
@@ -467,11 +483,13 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_legacy_feature_profile_enabled =
         mode == TESO4M4_MODE_LEGACY_FEATURE_PROFILE;
     g_startup_color_audit_enabled =
-        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE;
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
         mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
-        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE;
     teso4m4_lifecycle_set_enabled(
         !performance_mode || g_startup_color_audit_enabled);
     teso4m4_lifecycle_set_startup_color_audit(
@@ -483,7 +501,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     if (setenv(
             "MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES",
             (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
-             mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT) ? "0" : "1",
+             mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
+             mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE) ? "0" : "1",
             1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -549,6 +568,12 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
             "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
             "generation_limit=2 generation_2_present_limit=180");
+    } else if (mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE) {
+        log_message(
+            "MODE: startup FX neutralize enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "generation_limit=2 generation_2_present_limit=180");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "
@@ -582,6 +607,11 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     }
     if (!install_patches(header, moltenvk)) {
         log_message("ERROR: patch transaction aborted");
+        return;
+    }
+    if (mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE &&
+        !teso4m4_fx_sentinel_install(header, &kFxSentinelTarget)) {
+        log_message("ERROR: startup FX sentinel patch was not installed");
         return;
     }
     log_message("HDR_COMPAT: filter=%s extension=%s", "enabled",

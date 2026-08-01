@@ -10,6 +10,22 @@
     "vkGetInstanceProcAddr": "0x4b3be90",
     "vkGetDeviceProcAddr": "0x4b3be98"
   },
+  "experimental_targets": {
+    "fx_material_initializer": {
+      "image_offset": "0x35fcd42",
+      "expected_bytes": "554889e50f57c00f11070f280d6d383000",
+      "first_constant_offset": "0x39005c0",
+      "first_constant_expected_bytes": "0000803f000000000000803f00000000",
+      "caller_return_offsets": [
+        "0x1ba0dc",
+        "0x1bb46d"
+      ],
+      "caller_call_expected_bytes": [
+        "e8662c4403",
+        "e8d5184403"
+      ]
+    }
+  },
   "targets": [
     {
       "symbol": "vkGetPhysicalDeviceProperties",

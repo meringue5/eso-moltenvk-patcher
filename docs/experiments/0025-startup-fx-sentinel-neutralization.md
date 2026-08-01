@@ -1,0 +1,119 @@
+# Experiment 0025: bounded startup FX-sentinel neutralization
+
+- Date: 2026-08-01
+- Outcome: **discriminating candidate prepared; not installed or user-tested**
+- Rollback: **not required; installed game remains `performance-aggressive`**
+
+## Question
+
+Does the exact-magenta default initialized for ESO's `FXMaterial` parameter
+block supply the transient full-screen startup color observed after generation
+2 becomes drawable?
+
+## Hypothesis
+
+If that default reaches the startup presentation, replacing only its RGB
+components with black during the already validated two-generation audit window
+will remove or change the pink frame. If the initializer is exercised and the
+pink frame persists unchanged, this exact sentinel is excluded as its source.
+
+An unexercised initializer, a non-matching output block, an unprofiled caller,
+or failure to reach the ordinal-180 finish is inconclusive rather than a
+negative result.
+
+## Static connection and exact target
+
+For the fingerprinted ESO 12.0.7 executable, the initializer at image offset
+`0x35fcd42` writes these three consecutive vectors:
+
+```text
+offset 0x10: (1, 0, 1, 0)
+offset 0x20: (1, 0, 1, 0)
+offset 0x30: (1, 0, 1, 1)
+```
+
+Its only two direct call sites return at image offsets `0x1ba0dc` and
+`0x1bb46d`. Their enclosing paths immediately select
+`technique_FXMaterial` and `technique_FXMaterialTransparent`, respectively.
+The nearby embedded shader metadata names the associated `cbFXMaterial`,
+`FXMaterialPS`, `FXMaterialTransparentPS`, `FXMaterialVS`, and
+`ZoFXMaterial.fx` objects. This is a materially stronger connection than the
+earlier isolated `#FF00FF` constant, but it still does not statically prove
+that this material writes the startup swapchain.
+
+The exact 17-byte initializer prefix, its first 16-byte constant, both five-byte
+direct calls, executable SHA-256, and Mach-O UUID are recorded in the selected
+target manifest. Generation for another ESO executable fails closed, and the
+fast update-rebase path refuses any manifest containing experimental patch
+targets until they receive manual analysis.
+
+## Candidate change set
+
+The new `startup-fx-neutralize` mode retains the exact effective MoltenVK 1.4.2
+`performance-aggressive` configuration and both existing pipeline caches and
+settings. It also retains Experiment 0024's bounded lifecycle window:
+
+- generation 1 plus generation 2 through present ordinal 180;
+- no mutation after that atomic finish gate;
+- first eight initializer events logged, then detail logging capped;
+- normal mode never installs the FX patch.
+
+The patch validates the original 17 bytes before writing. An executable
+trampoline reproduces the displaced prologue and RIP-relative constant load,
+then resumes at byte 17. The wrapper calls that complete original initializer
+first. Only if all three vectors still exactly match the profiled magenta
+pattern does it write `(0,0,0,0)`, `(0,0,0,0)`, and `(0,0,0,1)`. Alpha is
+preserved, non-matching materials are unchanged, and the code page is returned
+to RX protection. Failure to restore RX is fatal rather than continuing with a
+writable code page.
+
+This is a causal intervention, not another broad shader, texture, overlay,
+resolution, cache, or configuration experiment.
+
+## Non-game validation
+
+No Steam, launcher, or ESO process was started or controlled, and no installed
+file, cache, or setting was changed. A `/tmp` app view pointed the build at the
+current executable, pristine Bink restore source, and bundled legacy MoltenVK.
+
+The synthetic x86 probe installs the same 17-byte absolute jump and executable
+trampoline into a private VM page, executes an initializer with the profiled
+output, verifies exact black substitution, closes the bounded window, and
+verifies that the next execution retains magenta. It also proves that a
+one-byte mismatch prevents any substitution.
+
+```text
+FX sentinel smoke: PASS exact_match=1 bounded_window=1 trampoline=1
+104 Python tests: PASS
+full source build: PASS
+all existing bridge smoke probes: PASS
+startup-fx-neutralize MoltenVK configuration probe: PASS
+python compileall, shell syntax, git diff check: PASS
+```
+
+## One-run decision table
+
+After an explicitly approved installation, one user-controlled normal
+Steam-path startup is sufficient. The user need only report whether the pink
+frame appeared; the bridge log supplies the remaining classification.
+
+| Visual result | Exact matched initializer event | Bounded finish | Verdict |
+|---|---:|---:|---|
+| Pink absent or visibly changed to black | yes | yes | FX sentinel is causal for the startup color |
+| Same pink frame persists | yes | yes | This exact FX sentinel is excluded |
+| Either result | no, malformed, or unprofiled | either | Inconclusive; do not interpret the visual result |
+| Either result | yes | no | Inconclusive; bounded execution not proven |
+
+`tools/analyze_startup_fx_neutralize.py` implements this table. The
+`FX-SENTINEL-CAUSAL` and `FX-SENTINEL-EXCLUDED` verdicts both require an exact
+installed-patch record, contiguous matched calls from a profiled caller, and
+the generation-2 ordinal-180 finish.
+
+## Installation gate
+
+The candidate is complete enough to request one scarce startup, but this
+record does not authorize modifying the game bundle. Installation requires a
+new explicit user approval for `startup-fx-neutralize`, with Steam, the
+launcher, and ESO stopped. The installer must preserve both caches and the
+current settings. After the run and evidence collection, restore the normal
+`performance-aggressive` marker and verify installed hashes and cache state.

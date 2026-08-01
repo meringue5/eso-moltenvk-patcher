@@ -15,6 +15,7 @@ import uuid
 
 from eso_update import (
     SCHEMA_VERSION,
+    audit_manifest,
     client_build_identity,
     command_check,
     command_select,
@@ -52,6 +53,26 @@ def manifest_for(data: bytes, identifier: uuid.UUID) -> dict[str, object]:
 
 
 class UpdateToolTests(unittest.TestCase):
+    def test_experimental_targets_block_fast_rebase(self) -> None:
+        candidate, failures = audit_manifest(
+            Path("unused-executable"),
+            Path("unused-archive"),
+            {
+                "schema_version": SCHEMA_VERSION,
+                "analysis": {},
+                "experimental_targets": {"fx_material_initializer": {}},
+            },
+            Path("unused-runtime"),
+            "synthetic",
+        )
+        self.assertIsNone(candidate)
+        self.assertEqual(
+            failures,
+            [
+                "experimental patch targets require manual analysis on an ESO update"
+            ],
+        )
+
     def test_patch_targets_records_and_validates_exact_bytes(self) -> None:
         executable = bytes(range(64))
         manifest = {

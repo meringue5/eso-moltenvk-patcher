@@ -93,6 +93,26 @@ and matches the validated build byte-for-byte. No further user run is justified
 until a bounded candidate can associate a presented draw or pixel with the
 FX-material path.
 
+Experiment 0025 now completes that candidate without changing the installed
+game. Static analysis narrows the exact initializer at image offset
+`0x35fcd42` to two direct callers whose enclosing paths select
+`technique_FXMaterial` and `technique_FXMaterialTransparent`. The initializer
+writes two `(1,0,1,0)` vectors and one `(1,0,1,1)` vector in a single parameter
+block. The new `startup-fx-neutralize` mode runs the original initializer and,
+only during Experiment 0024's validated generation-2 ordinal-180 window,
+changes those exact matches to black while preserving alpha. Normal
+`performance-aggressive` never installs this patch.
+
+The synthetic executable-trampoline probe, exact-byte/constant/caller target
+generation, full source build, effective aggressive configuration check, and
+104 Python tests pass. The fast update-rebase path now fails closed when an
+experimental target is present. No installed file, cache, or setting was
+changed. This candidate is sufficiently discriminating for one startup, but
+it is not installed: the active gate is a new explicit user approval for
+`startup-fx-neutralize`. A matched unchanged-pink run excludes this exact
+sentinel; a matched disappearance or change to black establishes causality;
+missing hook evidence or bounded finish is inconclusive.
+
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
 ordinary use. The transient startup artifact did not prevent that session.

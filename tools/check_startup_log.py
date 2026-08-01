@@ -173,6 +173,12 @@ def evaluate_startup_log(
         "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
         "generation_limit=2 generation_2_present_limit=180"
     )
+    startup_fx_neutralize_mode = (
+        "MODE: startup FX neutralize enabled live_resources=0 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+        "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+        "generation_limit=2 generation_2_present_limit=180"
+    )
     matched_modes = [
         mode
         for mode in (
@@ -188,6 +194,7 @@ def evaluate_startup_log(
             performance_safe_mode,
             performance_aggressive_mode,
             startup_color_audit_mode,
+            startup_fx_neutralize_mode,
         )
         if mode in lines
     ]
@@ -201,12 +208,14 @@ def evaluate_startup_log(
         performance_safe_mode in matched_modes
         or performance_aggressive_mode in matched_modes
         or startup_color_audit_mode in matched_modes
+        or startup_fx_neutralize_mode in matched_modes
     )
     expected_live_resources = (
         0
         if (
             performance_aggressive_mode in matched_modes
             or startup_color_audit_mode in matched_modes
+            or startup_fx_neutralize_mode in matched_modes
         )
         else 1
     )
@@ -283,7 +292,11 @@ def evaluate_startup_log(
             reasons.append(
                 "the legacy physical-device feature mask was not exact"
             )
-    if performance_mode and startup_color_audit_mode not in matched_modes:
+    startup_audit_mode = (
+        startup_color_audit_mode in matched_modes
+        or startup_fx_neutralize_mode in matched_modes
+    )
+    if performance_mode and not startup_audit_mode:
         for name in PERFORMANCE_DIRECT_NAMES:
             records = [
                 line
@@ -310,13 +323,21 @@ def evaluate_startup_log(
             reasons.append(
                 "performance mode emitted lifecycle hot-path records"
             )
-    if startup_color_audit_mode in matched_modes:
+    if startup_audit_mode:
         if (
             "STARTUP_COLOR_AUDIT_BEGIN: generation_limit=2 "
             "generation_2_present_limit=180"
             not in lines
         ):
             reasons.append("startup color audit did not arm its bounded two-generation gate")
+    if startup_fx_neutralize_mode in matched_modes:
+        sentinel_begin = (
+            "STARTUP_FX_SENTINEL_BEGIN: initializer_offset=0x35fcd42 "
+            "window=generation-2-present-180 vectors=0x10,0x20,0x30 "
+            "replacement=black-preserve-alpha"
+        )
+        if sentinel_begin not in lines:
+            reasons.append("startup FX sentinel patch was not installed exactly")
 
     filter_lines = [line for line in lines if line.startswith("HDR_FILTER: ")]
     if not any(

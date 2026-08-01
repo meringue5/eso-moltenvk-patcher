@@ -392,6 +392,16 @@ ESO FX-material default value, but no static call chain yet connects that
 material to startup presentation. An FX-material error/default frame is thus a
 locally supported hypothesis, not a confirmed writer.
 
+Follow-up exact-build disassembly narrows that candidate. The initializer at
+image offset `0x35fcd42` writes `(1,0,1,0)` at offsets `0x10` and `0x20` and
+`(1,0,1,1)` at `0x30` in the same parameter block. Its only two direct calls
+are inside builders that immediately select `technique_FXMaterial` and
+`technique_FXMaterialTransparent`; embedded shader metadata also names
+`cbFXMaterial`, the corresponding vertex/pixel shaders, and
+`ZoFXMaterial.fx`. This confirms the constant's FX-material role, but a causal
+startup association still requires the bounded intervention prepared in
+Experiment 0025.
+
 Exact-run correlation still establishes an early surface transition. In two
 independent lifecycle traces, generation 1 is 3420 x 2148, has exactly one
 successful acquire and present, and is replaced by generation 2 at

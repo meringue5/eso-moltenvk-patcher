@@ -44,6 +44,18 @@ are in [Project status](STATUS.md); completed runs belong in the
   candidate has passed its non-game gate.
 - Keep the working 1.4.2 runtime profile and cache state unchanged while
   investigating the startup artifact.
+- Experiment 0025 now supplies the next discriminating candidate. It validates
+  and hooks the exact `FXMaterial` initializer only in the two-generation audit
+  window, runs the original initializer, and changes only three exact magenta
+  vectors to black while preserving alpha. Its synthetic trampoline, bounded
+  window, full build, configuration, and 104-test gates pass. It is not
+  installed; obtain a new explicit approval for `startup-fx-neutralize` before
+  changing the game bundle.
+- One matched, bounded startup decides this branch: disappearance/change to
+  black confirms the sentinel as causal; unchanged pink excludes it. Missing
+  initializer evidence or a missing ordinal-180 finish is inconclusive. After
+  evidence collection, restore `performance-aggressive` and preserve both
+  caches and settings.
 
 ### Superseded reset-investigation record
 

@@ -383,6 +383,49 @@ class StartupLogTests(unittest.TestCase):
         verdict = evaluate_startup_log(text)
         self.assertTrue(verdict.passed, verdict.reasons)
 
+    def test_accepts_startup_fx_neutralize_with_exact_patch_record(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: startup FX neutralize enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "generation_limit=2 generation_2_present_limit=180",
+        ).replace(
+            "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=1 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "MOLTENVK_CONFIG: live_resources=0 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=0 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=1",
+        )
+        text += "\n" + record(
+            "STARTUP_COLOR_AUDIT_BEGIN: generation_limit=2 "
+            "generation_2_present_limit=180"
+        )
+        text += "\n" + record(
+            "STARTUP_FX_SENTINEL_BEGIN: initializer_offset=0x35fcd42 "
+            "window=generation-2-present-180 vectors=0x10,0x20,0x30 "
+            "replacement=black-preserve-alpha"
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
+        verdict = evaluate_startup_log(
+            "\n".join(
+                line
+                for line in text.splitlines()
+                if "STARTUP_FX_SENTINEL_BEGIN:" not in line
+            )
+        )
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "startup FX sentinel patch was not installed exactly",
+            verdict.reasons,
+        )
+
     def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
         text = good_log().replace(
             "MODE: descriptor compatibility enabled live_resources=1 "

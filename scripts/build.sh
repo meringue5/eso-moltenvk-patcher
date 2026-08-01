@@ -42,6 +42,7 @@ xcrun clang -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
   -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_compat.c" \
+  "$ROOT/src/eso_fx_sentinel.c" \
   "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_reset_trace.c" \
   "$ROOT/src/mvk_render_audit.c" \
   -Wl,-install_name,@executable_path/libBink2Macx64.dylib \
@@ -52,6 +53,9 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   "$ROOT/tools/smoke_proxy.c" -o "$BUILD/smoke_proxy"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O0 \
   "$ROOT/tools/probe_self_patch.c" -o "$BUILD/probe_self_patch"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O0 \
+  -I"$ROOT/src" "$ROOT/tools/probe_fx_sentinel.c" \
+  "$ROOT/src/eso_fx_sentinel.c" -o "$BUILD/probe_fx_sentinel"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" -o "$BUILD/probe_vulkan"
@@ -100,6 +104,7 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
 "$BUILD/probe_self_patch"
+"$BUILD/probe_fx_sentinel"
 "$BUILD/probe_hdr_filter"
 "$BUILD/probe_legacy_feature_profile"
 "$BUILD/probe_lifecycle"
@@ -118,4 +123,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" performance-safe
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" performance-aggressive
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-color-audit
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-fx-neutralize
 echo "Built teso4m4 artifacts in $BUILD"
