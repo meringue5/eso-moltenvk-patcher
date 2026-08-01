@@ -410,6 +410,30 @@ withholding only its presentation; permanently latch back to direct MoltenVK
 forwarding at the first valid compositor input. Do not add steady-state pixel
 readback or a general shader/material replacement.
 
+The complete observed presentation stack is now:
+
+1. ESO's `ZOMetalGameView` owns an opaque `CAMetalLayer`; its AppKit fallback
+   paint is black.
+2. MoltenVK exposes that layer as a Vulkan surface and two successive ESO
+   swapchains. MoltenVK load-only content is transparent black, not magenta.
+3. ESO's submitted startup clears write opaque black to the swapchain.
+4. ESO renders offscreen scene and GUI images, then the identified fullscreen
+   compositor samples them as MSL `Sampler0` and `Sampler1` and writes the
+   opaque final swapchain color.
+5. `vkQueuePresentKHR` hands that already-magenta image to the Metal layer.
+   Normally colored Game Mode and window overlays are composed afterward by
+   macOS.
+
+Experiment 0029's isolated diagnostic crosses the remaining offscreen
+boundary. It preserves descriptor image-view identity and the view's base
+mip/layer, then uses MoltenVK's Metal texture accessor only at the twenty
+proven pre-present samples. It supports BGRA8, RGBA8, and RGBA16F, sorts the
+two image bindings into MSL sampler order, and compares direct input pixels
+with descriptor signatures. This distinguishes scene versus GUI and descriptor
+replacement versus in-place content. Any image-view gap, descriptor copy,
+unsupported subresource/format, or synchronization loss makes the run
+inconclusive. The mechanism is absent from normal production modes.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

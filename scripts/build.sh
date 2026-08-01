@@ -7,6 +7,7 @@ ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zen
 GAME_MAC="$ESO_APP/Contents/MacOS"
 ESO="$GAME_MAC/eso"
 BINK="$GAME_MAC/libBink2Macx64.dylib"
+PRISTINE="$GAME_MAC/libBink2Macx64.teso4m4-pristine.dylib"
 LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 MVK_ROOT="${MVK_ROOT:-$ROOT/vendor/MoltenVK-1.4.2-official}"
 MVK_INCLUDE_ROOT="${MVK_INCLUDE_ROOT:-$MVK_ROOT}"
@@ -25,15 +26,24 @@ ACTUAL_MVK_SHA="$(shasum -a 256 "$MVK" | awk '{print $1}')"
   echo "Actual:   $ACTUAL_MVK_SHA"
   exit 1
 }
+SOURCE_BINK="$BINK"
 if otool -L "$BINK" | grep -q 'teso4m4-original'; then
-  echo "Active Bink is already a teso4m4 proxy. Restore before rebuilding."
-  exit 1
+  [[ -f "$PRISTINE" ]] || {
+    echo "Active Bink is a bridge and the pristine build source is missing."
+    exit 1
+  }
+  SOURCE_BINK="$PRISTINE"
+elif [[ -f "$PRISTINE" ]]; then
+  cmp -s "$BINK" "$PRISTINE" || {
+    echo "Active original Bink differs from the pristine build source."
+    exit 1
+  }
 fi
 
 mkdir -p "$BUILD"
 python3 "$ROOT/tools/generate_targets.py" "$ESO" "$MANIFEST" "$BUILD/generated_targets.h"
 
-cp -p "$BINK" "$BUILD/libBink2Macx64.teso4m4-original.dylib"
+cp -p "$SOURCE_BINK" "$BUILD/libBink2Macx64.teso4m4-original.dylib"
 install_name_tool -id @loader_path/libBink2Macx64.teso4m4-original.dylib \
   "$BUILD/libBink2Macx64.teso4m4-original.dylib"
 cp -p "$MVK" "$BUILD/libMoltenVK.teso4m4.dylib"
@@ -128,4 +138,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-present-pixel-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-draw-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-input-audit
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-audit
 echo "Built teso4m4 artifacts in $BUILD"

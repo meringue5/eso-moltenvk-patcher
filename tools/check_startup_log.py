@@ -185,6 +185,28 @@ def evaluate_startup_log(
         "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
         "generation_limit=2 generation_2_present_limit=180 pixel_samples=20"
     )
+    startup_draw_audit_mode = (
+        "MODE: startup draw audit enabled live_resources=0 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+        "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+        "generation_limit=2 generation_2_present_limit=180 "
+        "pixel_samples=20 draw_provenance=enabled"
+    )
+    startup_input_audit_mode = (
+        "MODE: startup input audit enabled live_resources=0 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+        "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+        "generation_limit=2 generation_2_present_limit=180 "
+        "pixel_samples=20 draw_provenance=enabled input_provenance=enabled"
+    )
+    startup_compositor_audit_mode = (
+        "MODE: startup compositor audit enabled live_resources=0 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+        "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+        "generation_limit=2 generation_2_present_limit=180 "
+        "pixel_samples=20 draw_provenance=enabled input_provenance=enabled "
+        "descriptor_classes=enabled"
+    )
     matched_modes = [
         mode
         for mode in (
@@ -202,6 +224,9 @@ def evaluate_startup_log(
             startup_color_audit_mode,
             startup_fx_neutralize_mode,
             startup_present_pixel_audit_mode,
+            startup_draw_audit_mode,
+            startup_input_audit_mode,
+            startup_compositor_audit_mode,
         )
         if mode in lines
     ]
@@ -217,6 +242,9 @@ def evaluate_startup_log(
         or startup_color_audit_mode in matched_modes
         or startup_fx_neutralize_mode in matched_modes
         or startup_present_pixel_audit_mode in matched_modes
+        or startup_draw_audit_mode in matched_modes
+        or startup_input_audit_mode in matched_modes
+        or startup_compositor_audit_mode in matched_modes
     )
     expected_live_resources = (
         0
@@ -225,6 +253,9 @@ def evaluate_startup_log(
             or startup_color_audit_mode in matched_modes
             or startup_fx_neutralize_mode in matched_modes
             or startup_present_pixel_audit_mode in matched_modes
+            or startup_draw_audit_mode in matched_modes
+            or startup_input_audit_mode in matched_modes
+            or startup_compositor_audit_mode in matched_modes
         )
         else 1
     )
@@ -305,6 +336,9 @@ def evaluate_startup_log(
         startup_color_audit_mode in matched_modes
         or startup_fx_neutralize_mode in matched_modes
         or startup_present_pixel_audit_mode in matched_modes
+        or startup_draw_audit_mode in matched_modes
+        or startup_input_audit_mode in matched_modes
+        or startup_compositor_audit_mode in matched_modes
     )
     if performance_mode and not startup_audit_mode:
         for name in PERFORMANCE_DIRECT_NAMES:
@@ -348,7 +382,13 @@ def evaluate_startup_log(
         )
         if sentinel_begin not in lines:
             reasons.append("startup FX sentinel patch was not installed exactly")
-    if startup_present_pixel_audit_mode in matched_modes:
+    pixel_audit_mode = (
+        startup_present_pixel_audit_mode in matched_modes
+        or startup_draw_audit_mode in matched_modes
+        or startup_input_audit_mode in matched_modes
+        or startup_compositor_audit_mode in matched_modes
+    )
+    if pixel_audit_mode:
         pixel_begin = (
             "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1 "
             "generation_2_samples=1,10,20,30,40,50,60,70,80,90,100,"
@@ -362,6 +402,41 @@ def evaluate_startup_log(
             reasons.append("startup present pixel schedule was not armed exactly")
         if pixel_ready not in lines:
             reasons.append("startup present pixel sampler was not ready exactly")
+    draw_audit_mode = (
+        startup_draw_audit_mode in matched_modes
+        or startup_input_audit_mode in matched_modes
+        or startup_compositor_audit_mode in matched_modes
+    )
+    if draw_audit_mode and (
+        "STARTUP_DRAW_AUDIT_BEGIN: generation_limit=2 "
+        "generation_2_present_limit=180 max_distinct_pipelines_per_submit=8"
+        not in lines
+    ):
+        reasons.append("startup draw provenance was not armed exactly")
+    input_audit_mode = (
+        startup_input_audit_mode in matched_modes
+        or startup_compositor_audit_mode in matched_modes
+    )
+    if input_audit_mode and (
+        "STARTUP_INPUT_AUDIT_BEGIN: generation_limit=2 "
+        "generation_2_present_limit=180 max_descriptor_set_layouts=2048 "
+        "max_pipeline_layouts=2048 max_descriptor_sets=131072 max_bound_sets=16"
+        not in lines
+    ):
+        reasons.append("startup input provenance was not armed exactly")
+    if startup_compositor_audit_mode in matched_modes:
+        if (
+            "STARTUP_COMPOSITOR_AUDIT_BEGIN: image_bindings_per_set=2 "
+            "sampled_subresources=base-mip-base-layer"
+            not in lines
+        ):
+            reasons.append("startup compositor provenance was not armed exactly")
+        if (
+            "STARTUP_COMPOSITOR_IMAGE_READY: synchronization=queue-wait-idle "
+            "points_per_image=5 formats=rgba8,bgra8,rgba16f"
+            not in lines
+        ):
+            reasons.append("startup compositor image sampler was not ready exactly")
 
     filter_lines = [line for line in lines if line.startswith("HDR_FILTER: ")]
     if not any(

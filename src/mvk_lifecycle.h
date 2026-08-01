@@ -19,6 +19,19 @@ typedef bool (*Teso4m4PresentPixelSampler)(
     uint64_t generation,
     uint32_t ordinal,
     uint32_t image_index);
+typedef bool (*Teso4m4CompositorImageSampler)(
+    VkQueue queue,
+    VkImage image,
+    VkFormat format,
+    VkImageViewType view_type,
+    uint32_t mip_level,
+    uint32_t array_layer,
+    uint64_t generation,
+    uint32_t ordinal,
+    uint32_t set_slot,
+    uint32_t binding,
+    uint32_t array_element,
+    uint32_t image_ordinal);
 
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_reset(void);
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_logger(
@@ -33,8 +46,13 @@ teso4m4_lifecycle_set_startup_draw_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_startup_input_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_startup_compositor_audit(bool enabled);
+TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_present_pixel_sampler(
     Teso4m4PresentPixelSampler sampler);
+TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_compositor_image_sampler(
+    Teso4m4CompositorImageSampler sampler);
 TESO4M4_LIFECYCLE_HIDDEN bool
 teso4m4_lifecycle_startup_window_open(void);
 TESO4M4_LIFECYCLE_HIDDEN PFN_vkVoidFunction

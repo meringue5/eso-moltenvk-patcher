@@ -33,6 +33,7 @@ typedef struct {
     VkFramebuffer* framebuffers;
     uint32_t image_count;
     VkRenderPass render_pass;
+    VkFormat format;
 } Generation;
 
 static char g_audit_log[65536];
@@ -87,6 +88,9 @@ static void enable_startup_color_audit(void) {
     teso4m4_lifecycle_set_startup_present_pixel_audit(true);
     teso4m4_lifecycle_set_startup_draw_audit(true);
     teso4m4_lifecycle_set_startup_input_audit(true);
+    teso4m4_lifecycle_set_startup_compositor_audit(true);
+    teso4m4_lifecycle_set_compositor_image_sampler(
+        &teso4m4_present_pixel_sample_compositor_image);
     g_create_swapchain = (PFN_vkCreateSwapchainKHR)
         teso4m4_lifecycle_intercept(
             "vkCreateSwapchainKHR",
@@ -246,6 +250,7 @@ static bool create_generation(
                "vkCreateSwapchainKHR")) {
         return false;
     }
+    generation->format = surface_format.format;
     if (!vk_ok(g_get_swapchain_images(
                    device, generation->swapchain,
                    &generation->image_count, NULL),
@@ -508,6 +513,7 @@ static bool submit_frame(
     Generation* generation,
     VkExtent2D extent,
     FirstFrameMode mode,
+    uint64_t compositor_generation,
     uint8_t pixel[4]) {
     VkSemaphore acquired = VK_NULL_HANDLE;
     VkSemaphore rendered = VK_NULL_HANDLE;
@@ -625,6 +631,13 @@ static bool submit_frame(
     if (!read_pixel(texture, pixel)) {
         return false;
     }
+    if (!teso4m4_present_pixel_sample_compositor_image(
+            queue, generation->images[image_index], generation->format,
+            VK_IMAGE_VIEW_TYPE_2D, 0, 0, compositor_generation, 1,
+            1, 3, 0, 0)) {
+        fprintf(stderr, "compositor image sampler control failed\n");
+        return false;
+    }
     const VkPresentInfoKHR present_info = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
@@ -697,6 +710,151 @@ static bool present_without_rendering(
     vkQueueWaitIdle(queue);
     vkDestroySemaphore(device, acquired, NULL);
     return true;
+}
+
+static bool run_rgba16f_subresource_control(
+    VkPhysicalDevice physical_device,
+    VkDevice device,
+    VkQueue queue,
+    VkCommandPool command_pool) {
+    const VkImageCreateInfo image_info = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format = VK_FORMAT_R16G16B16A16_SFLOAT,
+        .extent = {32, 32, 1},
+        .mipLevels = 2,
+        .arrayLayers = 3,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .tiling = VK_IMAGE_TILING_OPTIMAL,
+        .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                 VK_IMAGE_USAGE_SAMPLED_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+    VkImage image = VK_NULL_HANDLE;
+    if (!vk_ok(vkCreateImage(device, &image_info, NULL, &image),
+               "vkCreateImage(rgba16f)")) {
+        return false;
+    }
+    VkMemoryRequirements requirements = {};
+    vkGetImageMemoryRequirements(device, image, &requirements);
+    VkPhysicalDeviceMemoryProperties properties = {};
+    vkGetPhysicalDeviceMemoryProperties(physical_device, &properties);
+    uint32_t memory_type = UINT32_MAX;
+    for (uint32_t index = 0; index < properties.memoryTypeCount; ++index) {
+        if ((requirements.memoryTypeBits & (1u << index)) != 0 &&
+            (properties.memoryTypes[index].propertyFlags &
+             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0) {
+            memory_type = index;
+            break;
+        }
+    }
+    if (memory_type == UINT32_MAX) {
+        fprintf(stderr, "no device-local image memory type\n");
+        return false;
+    }
+    const VkMemoryAllocateInfo allocation_info = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = requirements.size,
+        .memoryTypeIndex = memory_type,
+    };
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    if (!vk_ok(vkAllocateMemory(
+                   device, &allocation_info, NULL, &memory),
+               "vkAllocateMemory(rgba16f)") ||
+        !vk_ok(vkBindImageMemory(device, image, memory, 0),
+               "vkBindImageMemory(rgba16f)")) {
+        return false;
+    }
+    const VkCommandBufferAllocateInfo command_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = command_pool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    VkCommandBuffer command = VK_NULL_HANDLE;
+    if (!vk_ok(vkAllocateCommandBuffers(
+                   device, &command_info, &command),
+               "vkAllocateCommandBuffers(rgba16f)")) {
+        return false;
+    }
+    const VkCommandBufferBeginInfo begin_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    if (!vk_ok(vkBeginCommandBuffer(command, &begin_info),
+               "vkBeginCommandBuffer(rgba16f)")) {
+        return false;
+    }
+    const VkImageSubresourceRange range = {
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .baseMipLevel = 1,
+        .levelCount = 1,
+        .baseArrayLayer = 2,
+        .layerCount = 1,
+    };
+    const VkImageMemoryBarrier before = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange = range,
+    };
+    vkCmdPipelineBarrier(
+        command, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &before);
+    const VkClearColorValue magenta = {.float32 = {1.0f, 0.0f, 1.0f, 1.0f}};
+    vkCmdClearColorImage(
+        command, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        &magenta, 1, &range);
+    const VkImageMemoryBarrier after = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+        .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange = range,
+    };
+    vkCmdPipelineBarrier(
+        command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1,
+        &after);
+    if (!vk_ok(vkEndCommandBuffer(command), "vkEndCommandBuffer(rgba16f)")) {
+        return false;
+    }
+    const VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command,
+    };
+    if (!vk_ok(vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE),
+               "vkQueueSubmit(rgba16f)") ||
+        !vk_ok(vkQueueWaitIdle(queue), "vkQueueWaitIdle(rgba16f)")) {
+        return false;
+    }
+    const bool sampled = teso4m4_present_pixel_sample_compositor_image(
+        queue, image, VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_IMAGE_VIEW_TYPE_2D_ARRAY, 1, 2, 9, 1, 1, 3, 0, 0);
+    vkFreeCommandBuffers(device, command_pool, 1, &command);
+    vkDestroyImage(device, image, NULL);
+    vkFreeMemory(device, memory, NULL);
+    if (!sampled) {
+        return false;
+    }
+    const char* summary = strstr(
+        g_audit_log,
+        "STARTUP_COMPOSITOR_IMAGE_SUMMARY: generation=9 ordinal=1"
+        " set_slot=1 binding=3 array_element=0 image_ordinal=0"
+        " vk_format=97 metal_format=115 mip=1 layer=2 extent=16x16"
+        " samples=5 exact_magenta=5 near_magenta=5 black=0");
+    return summary != NULL;
 }
 
 static FirstFrameMode parse_mode(const char* value) {
@@ -879,6 +1037,11 @@ int main(int argc, char** argv) {
         }
 
         enable_startup_color_audit();
+        if (!run_rgba16f_subresource_control(
+                physical_device, device, queue, command_pool)) {
+            fprintf(stderr, "RGBA16F compositor subresource control failed\n");
+            return 3;
+        }
         const VkExtent2D first_extent = {width, first_height};
         Generation first = {};
         if (!create_generation(
@@ -889,7 +1052,7 @@ int main(int argc, char** argv) {
         uint8_t first_pixel[4] = {};
         if (!submit_frame(
                 device, queue, command_pool, &first, first_extent,
-                first_mode, first_pixel)) {
+                first_mode, 1, first_pixel)) {
             return 1;
         }
 
@@ -904,7 +1067,7 @@ int main(int argc, char** argv) {
         uint8_t corrected_pixel[4] = {};
         if (!submit_frame(
                 device, queue, command_pool, &corrected, corrected_extent,
-                kClearBlack, corrected_pixel)) {
+                kClearBlack, 2, corrected_pixel)) {
             return 1;
         }
         for (uint32_t ordinal = 1; ordinal < 180; ++ordinal) {
@@ -991,6 +1154,23 @@ int main(int argc, char** argv) {
         const char* summary = strstr(g_audit_log, expected_pixel_summary);
         if (!summary || !strstr(summary, expected_pixel_class)) {
             fprintf(stderr, "present pixel audit did not classify %s\n", argv[1]);
+            return 3;
+        }
+        const char* compositor_summary = strstr(
+            g_audit_log,
+            "STARTUP_COMPOSITOR_IMAGE_SUMMARY: generation=1 ordinal=1"
+            " set_slot=1 binding=3 array_element=0 image_ordinal=0");
+        if (!compositor_summary ||
+            ((first_mode == kClearNeonPink ||
+              first_mode == kDrawNeonPink) &&
+             !strstr(
+                 compositor_summary,
+                 "samples=5 exact_magenta=5 near_magenta=5 black=0")) ||
+            (first_mode == kClearBlack &&
+             !strstr(
+                 compositor_summary,
+                 "samples=5 exact_magenta=0 near_magenta=0 black=5"))) {
+            fprintf(stderr, "compositor image sampler did not classify %s\n", argv[1]);
             return 3;
         }
         if (first_mode == kDrawNeonPink &&

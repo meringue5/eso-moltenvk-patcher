@@ -39,6 +39,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0026 | 2026-08-01 | Bounded startup pre-present pixel audit | Succeeded; exact magenta confirmed in final swapchain content before present, normal profile restored | [Run](0026-startup-present-pixel-audit.md) |
 | 0027 | 2026-08-01 | Bounded startup presented-draw audit | Succeeded; isolated the sole indexed draw/pipeline writing both magenta and later scene frames, normal profile restored | [Run](0027-startup-draw-audit.md) |
 | 0028 | 2026-08-01 / 2026-08-02 | Bounded startup draw-input provenance audit | Succeeded; stable sets/layout/push but descriptor update changed from magenta to scene, normal profile restored with caches and settings preserved | [Run](0028-startup-input-provenance.md) |
+| 0029 | 2026-08-02 | Bounded startup scene/GUI compositor input audit | Planned; source and non-game gates pass, production profile unchanged | [Run](0029-startup-compositor-input-audit.md) |
 
 ## Recording policy
 

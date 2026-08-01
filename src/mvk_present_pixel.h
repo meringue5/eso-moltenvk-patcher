@@ -25,3 +25,17 @@ TESO4M4_PRESENT_PIXEL_HIDDEN bool teso4m4_present_pixel_sample(
     uint64_t generation,
     uint32_t ordinal,
     uint32_t image_index);
+TESO4M4_PRESENT_PIXEL_HIDDEN bool
+teso4m4_present_pixel_sample_compositor_image(
+    VkQueue queue,
+    VkImage image,
+    VkFormat format,
+    VkImageViewType view_type,
+    uint32_t mip_level,
+    uint32_t array_layer,
+    uint64_t generation,
+    uint32_t ordinal,
+    uint32_t set_slot,
+    uint32_t binding,
+    uint32_t array_element,
+    uint32_t image_ordinal);

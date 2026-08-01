@@ -21,7 +21,9 @@ proprietary artifacts.
 ## Preflight
 
 - Confirm `scripts/status.sh` output and restore readiness.
-- Confirm game, Steam, and launcher processes are stopped before installation.
+- Confirm the shared bundle-idle gate passes. ESO and the launcher must be
+  absent and no process may hold the bundle; idle Steam is allowed when no
+  content operation is active.
 - Rebuild from source and record validation results.
 - Prepare evidence collection before modifying the game bundle.
 - Record the user's explicit installation approval for this run outside the

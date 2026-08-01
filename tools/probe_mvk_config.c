@@ -43,7 +43,8 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "startup-fx-neutralize") != 0 &&
          strcmp(argv[2], "startup-present-pixel-audit") != 0 &&
          strcmp(argv[2], "startup-draw-audit") != 0 &&
-         strcmp(argv[2], "startup-input-audit") != 0)) {
+         strcmp(argv[2], "startup-input-audit") != 0 &&
+         strcmp(argv[2], "startup-compositor-audit") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
@@ -52,7 +53,8 @@ int main(int argc, char** argv) {
             "full-lifetime-audit|texture-cache-fix|legacy-feature-profile|"
             "performance-safe|performance-aggressive|startup-color-audit|"
             "startup-fx-neutralize|startup-present-pixel-audit|"
-            "startup-draw-audit|startup-input-audit\n",
+            "startup-draw-audit|startup-input-audit|"
+            "startup-compositor-audit\n",
             argv[0]);
         return 2;
     }
@@ -78,6 +80,7 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-present-pixel-audit") == 0 ||
         strcmp(argv[2], "startup-draw-audit") == 0 ||
         strcmp(argv[2], "startup-input-audit") == 0 ||
+        strcmp(argv[2], "startup-compositor-audit") == 0 ||
         legacy_allocation;
     const bool no_command_pooling =
         strcmp(argv[2], "no-command-pooling") == 0;
@@ -89,7 +92,8 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-fx-neutralize") == 0 ||
         strcmp(argv[2], "startup-present-pixel-audit") == 0 ||
         strcmp(argv[2], "startup-draw-audit") == 0 ||
-        strcmp(argv[2], "startup-input-audit") == 0;
+        strcmp(argv[2], "startup-input-audit") == 0 ||
+        strcmp(argv[2], "startup-compositor-audit") == 0;
     const bool performance_mode =
         performance_safe || performance_aggressive;
     if (descriptor_compat &&

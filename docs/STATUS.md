@@ -81,6 +81,24 @@ of the two inputs supplies it, and whether the transition replaces a descriptor
 or fills a stable image, remain unproven. This is a low-impact startup
 presentation defect, not a gameplay blocker.
 
+Experiment 0029 is the prepared bounded successor. Its isolated
+`startup-compositor-audit` mode carries each of the two mixed-set image
+bindings, image views, base mip/layer, and update signatures through the
+existing draw-submit-semaphore-present chain, then samples both offscreen
+inputs at the same twenty pre-present checkpoints. The analyzer maps ordered
+MSL `Sampler0` to scene and `Sampler1` to GUI and distinguishes descriptor
+replacement from an in-place content transition. Missing/copy state,
+unsupported view/format, synchronization loss, or readback failure is
+inconclusive.
+
+The complete bridge build, configuration matrix, lifecycle/subresource probe,
+125 Python tests, warnings-as-errors, and Clang static analysis pass. The real
+official MoltenVK/AppKit gate passes BGRA8 controls at small and exact ESO
+extents and a separate RGBA16F array-image control at mip 1/layer 2. No game
+process or bundle was touched. The installed mode is still
+`performance-aggressive`; Experiment 0029 awaits explicit installation
+approval and one bounded user-controlled startup.
+
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface
 extents. Its generation-1-only stopping rule is now invalidated before

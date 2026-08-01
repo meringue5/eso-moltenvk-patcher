@@ -12,7 +12,7 @@
 enum {
     kMaxSwapchains = 32,
     kMaxSwapchainImages = 256,
-    kMaxImageViews = 512,
+    kMaxImageViews = 8192,
     kMaxRenderPasses = 512,
     kMaxFramebuffers = 512,
     kMaxCommandBuffers = 512,
@@ -23,6 +23,7 @@ enum {
     kMaxPipelineLayouts = 2048,
     kMaxDescriptorSets = 131072,
     kMaxBoundDescriptorSets = 16,
+    kMaxTrackedImageBindings = 2,
     kMaxDrawPipelines = 8,
     kMaxRenderPassAttachments = 16,
     kFirstPresentationLimit = 8,
@@ -51,6 +52,22 @@ typedef struct {
 } ImageRecord;
 
 typedef struct {
+    uint32_t binding;
+    uint32_t array_element;
+    VkImageView view;
+    VkSampler sampler;
+    VkImageLayout layout;
+    VkImage image;
+    VkFormat format;
+    VkImageViewType view_type;
+    uint32_t base_mip_level;
+    uint32_t base_array_layer;
+    uint64_t signature;
+    uint64_t update_call;
+    bool valid;
+} DescriptorImageBindingState;
+
+typedef struct {
     VkSemaphore handle;
     VkQueue queue;
     uint64_t generation;
@@ -72,6 +89,18 @@ typedef struct {
     uint64_t push_constant_signature;
     uint32_t push_constant_bytes;
     bool input_complete;
+    uint64_t descriptor_set_layout_signatures[kMaxBoundDescriptorSets];
+    uint64_t descriptor_image_update_signatures[kMaxBoundDescriptorSets];
+    uint64_t descriptor_buffer_update_signatures[kMaxBoundDescriptorSets];
+    uint64_t descriptor_image_update_calls[kMaxBoundDescriptorSets];
+    uint64_t descriptor_buffer_update_calls[kMaxBoundDescriptorSets];
+    uint64_t descriptor_image_update_counts[kMaxBoundDescriptorSets];
+    uint64_t descriptor_buffer_update_counts[kMaxBoundDescriptorSets];
+    uint32_t descriptor_expected_image_counts[kMaxBoundDescriptorSets];
+    uint32_t descriptor_expected_buffer_counts[kMaxBoundDescriptorSets];
+    bool descriptor_class_complete;
+    DescriptorImageBindingState descriptor_images
+        [kMaxBoundDescriptorSets][kMaxTrackedImageBindings];
     bool occupied;
 } SignaledSemaphoreRecord;
 
@@ -117,6 +146,16 @@ typedef struct {
     uint64_t update_signature;
     uint64_t update_count;
     uint64_t last_update_call;
+    uint64_t image_update_signature;
+    uint64_t image_update_count;
+    uint64_t last_image_update_call;
+    uint64_t buffer_update_signature;
+    uint64_t buffer_update_count;
+    uint64_t last_buffer_update_call;
+    uint32_t expected_image_count;
+    uint32_t expected_buffer_count;
+    bool class_complete;
+    DescriptorImageBindingState images[kMaxTrackedImageBindings];
     bool occupied;
     bool alive;
 } DescriptorSetRecord;
@@ -164,11 +203,28 @@ typedef struct {
     uint64_t push_constant_signature;
     uint32_t push_constant_bytes;
     bool input_complete;
+    uint64_t descriptor_set_layout_signatures[kMaxBoundDescriptorSets];
+    uint64_t descriptor_image_update_signatures[kMaxBoundDescriptorSets];
+    uint64_t descriptor_buffer_update_signatures[kMaxBoundDescriptorSets];
+    uint64_t descriptor_image_update_calls[kMaxBoundDescriptorSets];
+    uint64_t descriptor_buffer_update_calls[kMaxBoundDescriptorSets];
+    uint64_t descriptor_image_update_counts[kMaxBoundDescriptorSets];
+    uint64_t descriptor_buffer_update_counts[kMaxBoundDescriptorSets];
+    uint32_t descriptor_expected_image_counts[kMaxBoundDescriptorSets];
+    uint32_t descriptor_expected_buffer_counts[kMaxBoundDescriptorSets];
+    bool descriptor_class_complete;
+    DescriptorImageBindingState descriptor_images
+        [kMaxBoundDescriptorSets][kMaxTrackedImageBindings];
 } DrawSubmissionSummary;
 
 typedef struct {
     VkImageView handle;
     uint64_t generation;
+    VkImage image;
+    VkFormat format;
+    VkImageViewType view_type;
+    uint32_t base_mip_level;
+    uint32_t base_array_layer;
     bool alive;
 } ImageViewRecord;
 
@@ -229,6 +285,18 @@ typedef struct {
     uint32_t draw_push_constant_bytes;
     uint32_t draw_bound_set_count;
     bool draw_input_complete;
+    uint64_t draw_set_layout_signatures[kMaxBoundDescriptorSets];
+    uint64_t draw_set_image_update_signatures[kMaxBoundDescriptorSets];
+    uint64_t draw_set_buffer_update_signatures[kMaxBoundDescriptorSets];
+    uint64_t draw_set_image_update_calls[kMaxBoundDescriptorSets];
+    uint64_t draw_set_buffer_update_calls[kMaxBoundDescriptorSets];
+    uint64_t draw_set_image_update_counts[kMaxBoundDescriptorSets];
+    uint64_t draw_set_buffer_update_counts[kMaxBoundDescriptorSets];
+    uint32_t draw_set_expected_image_counts[kMaxBoundDescriptorSets];
+    uint32_t draw_set_expected_buffer_counts[kMaxBoundDescriptorSets];
+    bool draw_descriptor_class_complete;
+    DescriptorImageBindingState draw_descriptor_images
+        [kMaxBoundDescriptorSets][kMaxTrackedImageBindings];
 } CommandBufferRecord;
 
 static PFN_vkDeviceWaitIdle g_next_device_wait_idle;
@@ -291,9 +359,12 @@ static atomic_bool g_startup_color_audit;
 static atomic_bool g_startup_present_pixel_audit;
 static atomic_bool g_startup_draw_audit;
 static atomic_bool g_startup_input_audit;
+static atomic_bool g_startup_compositor_audit;
 static atomic_bool g_startup_color_audit_finished;
 static atomic_uint g_startup_color_detail_count;
 static Teso4m4PresentPixelSampler g_present_pixel_sampler;
+static Teso4m4CompositorImageSampler g_compositor_image_sampler;
+static bool g_reset_has_run;
 
 static void lifecycle_log(const char* format, ...) {
     if (!g_logger ||
@@ -429,6 +500,48 @@ static void remember_signaled_semaphore(
             summary->push_constant_signature;
         existing->push_constant_bytes = summary->push_constant_bytes;
         existing->input_complete = summary->input_complete;
+        memcpy(
+            existing->descriptor_set_layout_signatures,
+            summary->descriptor_set_layout_signatures,
+            sizeof(existing->descriptor_set_layout_signatures));
+        memcpy(
+            existing->descriptor_image_update_signatures,
+            summary->descriptor_image_update_signatures,
+            sizeof(existing->descriptor_image_update_signatures));
+        memcpy(
+            existing->descriptor_buffer_update_signatures,
+            summary->descriptor_buffer_update_signatures,
+            sizeof(existing->descriptor_buffer_update_signatures));
+        memcpy(
+            existing->descriptor_image_update_calls,
+            summary->descriptor_image_update_calls,
+            sizeof(existing->descriptor_image_update_calls));
+        memcpy(
+            existing->descriptor_buffer_update_calls,
+            summary->descriptor_buffer_update_calls,
+            sizeof(existing->descriptor_buffer_update_calls));
+        memcpy(
+            existing->descriptor_image_update_counts,
+            summary->descriptor_image_update_counts,
+            sizeof(existing->descriptor_image_update_counts));
+        memcpy(
+            existing->descriptor_buffer_update_counts,
+            summary->descriptor_buffer_update_counts,
+            sizeof(existing->descriptor_buffer_update_counts));
+        memcpy(
+            existing->descriptor_expected_image_counts,
+            summary->descriptor_expected_image_counts,
+            sizeof(existing->descriptor_expected_image_counts));
+        memcpy(
+            existing->descriptor_expected_buffer_counts,
+            summary->descriptor_expected_buffer_counts,
+            sizeof(existing->descriptor_expected_buffer_counts));
+        existing->descriptor_class_complete =
+            summary->descriptor_class_complete;
+        memcpy(
+            existing->descriptor_images,
+            summary->descriptor_images,
+            sizeof(existing->descriptor_images));
     }
 }
 
@@ -517,12 +630,26 @@ static void add_image(
     report_overflow("swapchain-image");
 }
 
-static void add_image_view(VkImageView handle, uint64_t generation) {
+static void add_image_view(
+    VkImageView handle,
+    uint64_t generation,
+    const VkImageViewCreateInfo* create_info) {
     for (size_t index = 0; index < kMaxImageViews; ++index) {
         if (!g_image_views[index].alive) {
             g_image_views[index] = (ImageViewRecord){
                 .handle = handle,
                 .generation = generation,
+                .image = create_info ? create_info->image : VK_NULL_HANDLE,
+                .format = create_info ? create_info->format : VK_FORMAT_UNDEFINED,
+                .view_type = create_info
+                    ? create_info->viewType
+                    : VK_IMAGE_VIEW_TYPE_2D,
+                .base_mip_level = create_info
+                    ? create_info->subresourceRange.baseMipLevel
+                    : 0,
+                .base_array_layer = create_info
+                    ? create_info->subresourceRange.baseArrayLayer
+                    : 0,
                 .alive = true,
             };
             return;
@@ -615,6 +742,11 @@ static bool descriptor_type_is_image(VkDescriptorType type) {
            type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
            type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
            type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+}
+
+static bool descriptor_type_is_image_class(VkDescriptorType type) {
+    return descriptor_type_is_image(type) ||
+           type == VK_DESCRIPTOR_TYPE_SAMPLER;
 }
 
 static bool descriptor_type_is_buffer(VkDescriptorType type) {
@@ -764,6 +896,61 @@ static uint64_t descriptor_write_signature(
     return hash;
 }
 
+static void update_descriptor_image_bindings(
+    DescriptorSetRecord* record,
+    const VkWriteDescriptorSet* write,
+    uint64_t update_call) {
+    if (!record || !write || !descriptor_type_is_image(write->descriptorType) ||
+        !write->pImageInfo) {
+        return;
+    }
+    for (uint32_t element = 0; element < write->descriptorCount; ++element) {
+        const uint32_t array_element = write->dstArrayElement + element;
+        DescriptorImageBindingState* state = NULL;
+        for (uint32_t index = 0; index < kMaxTrackedImageBindings; ++index) {
+            DescriptorImageBindingState* candidate = &record->images[index];
+            if (candidate->valid && candidate->binding == write->dstBinding &&
+                candidate->array_element == array_element) {
+                state = candidate;
+                break;
+            }
+            if (!candidate->valid && !state) {
+                state = candidate;
+            }
+        }
+        if (!state) {
+            record->class_complete = false;
+            continue;
+        }
+        const VkDescriptorImageInfo* image = &write->pImageInfo[element];
+        ImageViewRecord* view = find_image_view(image->imageView);
+        uint64_t signature = UINT64_C(1469598103934665603);
+        signature = hash_mix(signature, write->dstBinding);
+        signature = hash_mix(signature, array_element);
+        signature = hash_mix(signature, (uint64_t)(uintptr_t)image->sampler);
+        signature = hash_mix(signature, (uint64_t)(uintptr_t)image->imageView);
+        signature = hash_mix(signature, image->imageLayout);
+        *state = (DescriptorImageBindingState){
+            .binding = write->dstBinding,
+            .array_element = array_element,
+            .view = image->imageView,
+            .sampler = image->sampler,
+            .layout = image->imageLayout,
+            .image = view ? view->image : VK_NULL_HANDLE,
+            .format = view ? view->format : VK_FORMAT_UNDEFINED,
+            .view_type = view ? view->view_type : VK_IMAGE_VIEW_TYPE_2D,
+            .base_mip_level = view ? view->base_mip_level : 0,
+            .base_array_layer = view ? view->base_array_layer : 0,
+            .signature = signature,
+            .update_call = update_call,
+            .valid = view != NULL,
+        };
+        if (!view) {
+            record->class_complete = false;
+        }
+    }
+}
+
 static ShaderModuleRecord* find_shader_module(VkShaderModule handle) {
     for (size_t index = 0; index < kMaxShaderModules; ++index) {
         if (g_shader_modules[index].alive &&
@@ -864,9 +1051,52 @@ static void merge_submission_command(
             command->draw_push_constant_signature;
         summary->push_constant_bytes = command->draw_push_constant_bytes;
         summary->input_complete = command->draw_input_complete;
+        memcpy(
+            summary->descriptor_set_layout_signatures,
+            command->draw_set_layout_signatures,
+            sizeof(summary->descriptor_set_layout_signatures));
+        memcpy(
+            summary->descriptor_image_update_signatures,
+            command->draw_set_image_update_signatures,
+            sizeof(summary->descriptor_image_update_signatures));
+        memcpy(
+            summary->descriptor_buffer_update_signatures,
+            command->draw_set_buffer_update_signatures,
+            sizeof(summary->descriptor_buffer_update_signatures));
+        memcpy(
+            summary->descriptor_image_update_calls,
+            command->draw_set_image_update_calls,
+            sizeof(summary->descriptor_image_update_calls));
+        memcpy(
+            summary->descriptor_buffer_update_calls,
+            command->draw_set_buffer_update_calls,
+            sizeof(summary->descriptor_buffer_update_calls));
+        memcpy(
+            summary->descriptor_image_update_counts,
+            command->draw_set_image_update_counts,
+            sizeof(summary->descriptor_image_update_counts));
+        memcpy(
+            summary->descriptor_buffer_update_counts,
+            command->draw_set_buffer_update_counts,
+            sizeof(summary->descriptor_buffer_update_counts));
+        memcpy(
+            summary->descriptor_expected_image_counts,
+            command->draw_set_expected_image_counts,
+            sizeof(summary->descriptor_expected_image_counts));
+        memcpy(
+            summary->descriptor_expected_buffer_counts,
+            command->draw_set_expected_buffer_counts,
+            sizeof(summary->descriptor_expected_buffer_counts));
+        summary->descriptor_class_complete =
+            command->draw_descriptor_class_complete;
+        memcpy(
+            summary->descriptor_images,
+            command->draw_descriptor_images,
+            sizeof(summary->descriptor_images));
     } else if (summary->generation != command->generation) {
         summary->generation = 0;
         summary->input_complete = false;
+        summary->descriptor_class_complete = false;
     } else {
         summary->bound_set_count += command->draw_bound_set_count;
         summary->descriptor_layout_signature = hash_mix(
@@ -883,6 +1113,7 @@ static void merge_submission_command(
             command->draw_push_constant_signature);
         summary->push_constant_bytes += command->draw_push_constant_bytes;
         summary->input_complete &= command->draw_input_complete;
+        summary->descriptor_class_complete = false;
     }
     summary->draw_count += command->draw_count;
     summary->indexed_draw_count += command->indexed_draw_count;
@@ -940,9 +1171,52 @@ static void merge_present_signal(
             signal->push_constant_signature;
         summary->push_constant_bytes = signal->push_constant_bytes;
         summary->input_complete = signal->input_complete;
+        memcpy(
+            summary->descriptor_set_layout_signatures,
+            signal->descriptor_set_layout_signatures,
+            sizeof(summary->descriptor_set_layout_signatures));
+        memcpy(
+            summary->descriptor_image_update_signatures,
+            signal->descriptor_image_update_signatures,
+            sizeof(summary->descriptor_image_update_signatures));
+        memcpy(
+            summary->descriptor_buffer_update_signatures,
+            signal->descriptor_buffer_update_signatures,
+            sizeof(summary->descriptor_buffer_update_signatures));
+        memcpy(
+            summary->descriptor_image_update_calls,
+            signal->descriptor_image_update_calls,
+            sizeof(summary->descriptor_image_update_calls));
+        memcpy(
+            summary->descriptor_buffer_update_calls,
+            signal->descriptor_buffer_update_calls,
+            sizeof(summary->descriptor_buffer_update_calls));
+        memcpy(
+            summary->descriptor_image_update_counts,
+            signal->descriptor_image_update_counts,
+            sizeof(summary->descriptor_image_update_counts));
+        memcpy(
+            summary->descriptor_buffer_update_counts,
+            signal->descriptor_buffer_update_counts,
+            sizeof(summary->descriptor_buffer_update_counts));
+        memcpy(
+            summary->descriptor_expected_image_counts,
+            signal->descriptor_expected_image_counts,
+            sizeof(summary->descriptor_expected_image_counts));
+        memcpy(
+            summary->descriptor_expected_buffer_counts,
+            signal->descriptor_expected_buffer_counts,
+            sizeof(summary->descriptor_expected_buffer_counts));
+        summary->descriptor_class_complete =
+            signal->descriptor_class_complete;
+        memcpy(
+            summary->descriptor_images,
+            signal->descriptor_images,
+            sizeof(summary->descriptor_images));
     } else if (summary->generation != signal->generation) {
         summary->generation = 0;
         summary->input_complete = false;
+        summary->descriptor_class_complete = false;
     } else {
         summary->bound_set_count += signal->bound_set_count;
         summary->descriptor_layout_signature = hash_mix(
@@ -959,6 +1233,7 @@ static void merge_present_signal(
             signal->push_constant_signature);
         summary->push_constant_bytes += signal->push_constant_bytes;
         summary->input_complete &= signal->input_complete;
+        summary->descriptor_class_complete = false;
     }
     summary->tracked_command_count += signal->tracked_command_count;
     summary->draw_count += signal->draw_count;
@@ -1318,6 +1593,19 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_allocate_descriptor_sets(
             record->update_signature = 0;
             record->update_count = 0;
             record->last_update_call = 0;
+            record->image_update_signature = 0;
+            record->image_update_count = 0;
+            record->last_image_update_call = 0;
+            record->buffer_update_signature = 0;
+            record->buffer_update_count = 0;
+            record->last_buffer_update_call = 0;
+            record->expected_image_count = layout
+                ? layout->image_count + layout->sampler_count
+                : 0;
+            record->expected_buffer_count =
+                layout ? layout->buffer_count : 0;
+            record->class_complete = layout != NULL;
+            memset(record->images, 0, sizeof(record->images));
             record->alive = true;
         }
     }
@@ -1410,6 +1698,8 @@ static VKAPI_ATTR void VKAPI_CALL traced_update_descriptor_sets(
         DescriptorSetRecord* record =
             find_descriptor_set(writes[index].dstSet, false);
         if (record && record->alive) {
+            const uint64_t write_signature =
+                descriptor_write_signature(&writes[index]);
             if (record->last_update_call != update_call) {
                 record->update_signature =
                     UINT64_C(1469598103934665603);
@@ -1417,9 +1707,35 @@ static VKAPI_ATTR void VKAPI_CALL traced_update_descriptor_sets(
                 record->last_update_call = update_call;
             }
             record->update_signature = hash_mix(
-                record->update_signature,
-                descriptor_write_signature(&writes[index]));
+                record->update_signature, write_signature);
             ++record->update_count;
+            if (descriptor_type_is_image_class(
+                    writes[index].descriptorType)) {
+                if (record->last_image_update_call != update_call) {
+                    record->image_update_signature =
+                        UINT64_C(1469598103934665603);
+                    record->image_update_count = 0;
+                    record->last_image_update_call = update_call;
+                }
+                record->image_update_signature = hash_mix(
+                    record->image_update_signature, write_signature);
+                ++record->image_update_count;
+                update_descriptor_image_bindings(
+                    record, &writes[index], update_call);
+            } else if (descriptor_type_is_buffer(
+                           writes[index].descriptorType)) {
+                if (record->last_buffer_update_call != update_call) {
+                    record->buffer_update_signature =
+                        UINT64_C(1469598103934665603);
+                    record->buffer_update_count = 0;
+                    record->last_buffer_update_call = update_call;
+                }
+                record->buffer_update_signature = hash_mix(
+                    record->buffer_update_signature, write_signature);
+                ++record->buffer_update_count;
+            } else {
+                record->class_complete = false;
+            }
         }
     }
     for (uint32_t index = 0; copies && index < copy_count; ++index) {
@@ -1446,6 +1762,7 @@ static VKAPI_ATTR void VKAPI_CALL traced_update_descriptor_sets(
                 destination->update_signature,
                 signature);
             ++destination->update_count;
+            destination->class_complete = false;
         }
     }
     pthread_mutex_unlock(&g_lock);
@@ -1846,6 +2163,36 @@ static void record_draw_locked(
     signature = hash_mix(signature, first_instance);
     command->draw_signature = signature;
     if (atomic_load(&g_startup_input_audit)) {
+        memset(
+            command->draw_set_layout_signatures, 0,
+            sizeof(command->draw_set_layout_signatures));
+        memset(
+            command->draw_set_image_update_signatures, 0,
+            sizeof(command->draw_set_image_update_signatures));
+        memset(
+            command->draw_set_buffer_update_signatures, 0,
+            sizeof(command->draw_set_buffer_update_signatures));
+        memset(
+            command->draw_set_image_update_calls, 0,
+            sizeof(command->draw_set_image_update_calls));
+        memset(
+            command->draw_set_buffer_update_calls, 0,
+            sizeof(command->draw_set_buffer_update_calls));
+        memset(
+            command->draw_set_image_update_counts, 0,
+            sizeof(command->draw_set_image_update_counts));
+        memset(
+            command->draw_set_buffer_update_counts, 0,
+            sizeof(command->draw_set_buffer_update_counts));
+        memset(
+            command->draw_set_expected_image_counts, 0,
+            sizeof(command->draw_set_expected_image_counts));
+        memset(
+            command->draw_set_expected_buffer_counts, 0,
+            sizeof(command->draw_set_expected_buffer_counts));
+        memset(
+            command->draw_descriptor_images, 0,
+            sizeof(command->draw_descriptor_images));
         uint64_t layout_signature = UINT64_C(1469598103934665603);
         uint64_t handle_signature = UINT64_C(1469598103934665603);
         uint64_t update_signature = UINT64_C(1469598103934665603);
@@ -1866,6 +2213,28 @@ static void record_draw_locked(
             const bool known = set && set->alive;
             const uint64_t set_layout = known ? set->layout_signature : 0;
             const uint64_t set_update = known ? set->update_signature : 0;
+            command->draw_set_layout_signatures[slot] = set_layout;
+            command->draw_set_image_update_signatures[slot] =
+                known ? set->image_update_signature : 0;
+            command->draw_set_buffer_update_signatures[slot] =
+                known ? set->buffer_update_signature : 0;
+            command->draw_set_image_update_calls[slot] =
+                known ? set->last_image_update_call : 0;
+            command->draw_set_buffer_update_calls[slot] =
+                known ? set->last_buffer_update_call : 0;
+            command->draw_set_image_update_counts[slot] =
+                known ? set->image_update_count : 0;
+            command->draw_set_buffer_update_counts[slot] =
+                known ? set->buffer_update_count : 0;
+            command->draw_set_expected_image_counts[slot] =
+                known ? set->expected_image_count : 0;
+            command->draw_set_expected_buffer_counts[slot] =
+                known ? set->expected_buffer_count : 0;
+            if (known) {
+                memcpy(
+                    command->draw_descriptor_images[slot], set->images,
+                    sizeof(command->draw_descriptor_images[slot]));
+            }
             layout_signature = hash_mix(layout_signature, slot);
             layout_signature = hash_mix(layout_signature, set_layout);
             handle_signature = hash_mix(handle_signature, slot);
@@ -1882,6 +2251,19 @@ static void record_draw_locked(
                     command->bound_pipeline_set_layout_signatures[slot] &&
                 (command->bound_pipeline_set_descriptor_counts[slot] == 0 ||
                  set_update != 0);
+            complete &= known && set->class_complete &&
+                (set->expected_image_count == 0 ||
+                 set->image_update_signature != 0) &&
+                (set->expected_buffer_count == 0 ||
+                 set->buffer_update_signature != 0);
+            uint32_t tracked_images = 0;
+            for (uint32_t image_index = 0;
+                 known && image_index < kMaxTrackedImageBindings;
+                 ++image_index) {
+                tracked_images += set->images[image_index].valid ? 1u : 0u;
+            }
+            complete &= !known ||
+                tracked_images == set->expected_image_count;
             ++bound_count;
         }
         complete &=
@@ -1898,6 +2280,7 @@ static void record_draw_locked(
         command->draw_push_constant_bytes = command->push_constant_bytes;
         command->draw_bound_set_count = bound_count;
         command->draw_input_complete = complete;
+        command->draw_descriptor_class_complete = complete;
     }
 }
 
@@ -2124,7 +2507,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_image_view(
         ImageRecord* image = find_image(create_info->image);
         if (image) {
             generation = image->generation;
-            add_image_view(*image_view, generation);
+        }
+        if (image || atomic_load(&g_startup_input_audit)) {
+            add_image_view(*image_view, generation, create_info);
         }
         pthread_mutex_unlock(&g_lock);
     }
@@ -2464,6 +2849,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
             uint32_t matched_signals = 0;
             DrawSubmissionSummary present_draw = {0};
             Teso4m4PresentPixelSampler sampler = NULL;
+            Teso4m4CompositorImageSampler compositor_sampler = NULL;
             pthread_mutex_lock(&g_lock);
             SwapchainRecord* record = find_swapchain(swapchain);
             if (record) {
@@ -2489,6 +2875,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
                 merge_present_signal(&present_draw, signal);
             }
             sampler = g_present_pixel_sampler;
+            compositor_sampler = g_compositor_image_sampler;
             pthread_mutex_unlock(&g_lock);
 
             const uint32_t ordinal = found_swapchain
@@ -2605,6 +2992,48 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
                         present_draw.push_constant_signature,
                         present_draw.push_constant_bytes,
                         present_draw.input_complete ? "yes" : "no");
+                    const uint32_t logged_set_count =
+                        present_draw.bound_set_count <
+                                kMaxBoundDescriptorSets
+                            ? present_draw.bound_set_count
+                            : kMaxBoundDescriptorSets;
+                    for (uint32_t slot = 0; slot < logged_set_count;
+                         ++slot) {
+                        lifecycle_log(
+                            "STARTUP_PRESENT_DESCRIPTOR_CLASS:"
+                            " generation=%" PRIu64 " ordinal=%u slot=%u"
+                            " layout_signature=%016" PRIx64
+                            " expected_images=%u expected_buffers=%u"
+                            " image_update_signature=%016" PRIx64
+                            " image_update_writes=%" PRIu64
+                            " image_update_call=%" PRIu64
+                            " buffer_update_signature=%016" PRIx64
+                            " buffer_update_writes=%" PRIu64
+                            " buffer_update_call=%" PRIu64
+                            " class_complete=%s",
+                            swapchain_snapshot.generation, ordinal, slot,
+                            present_draw
+                                .descriptor_set_layout_signatures[slot],
+                            present_draw
+                                .descriptor_expected_image_counts[slot],
+                            present_draw
+                                .descriptor_expected_buffer_counts[slot],
+                            present_draw
+                                .descriptor_image_update_signatures[slot],
+                            present_draw
+                                .descriptor_image_update_counts[slot],
+                            present_draw
+                                .descriptor_image_update_calls[slot],
+                            present_draw
+                                .descriptor_buffer_update_signatures[slot],
+                            present_draw
+                                .descriptor_buffer_update_counts[slot],
+                            present_draw
+                                .descriptor_buffer_update_calls[slot],
+                            present_draw.descriptor_class_complete
+                                ? "yes"
+                                : "no");
+                    }
                 }
             }
             if (!sampler(
@@ -2616,6 +3045,80 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
                     " ordinal=%u image_index=%u image=tracked"
                     " synchronization=same-queue sampler=failed",
                     swapchain_snapshot.generation, ordinal, image_index);
+            }
+            if (atomic_load(&g_startup_compositor_audit)) {
+                for (uint32_t set_slot = 0;
+                     set_slot < present_draw.bound_set_count &&
+                     set_slot < kMaxBoundDescriptorSets;
+                     ++set_slot) {
+                    uint32_t ordered[kMaxTrackedImageBindings] = {0};
+                    uint32_t ordered_count = 0;
+                    for (uint32_t state_index = 0;
+                         state_index < kMaxTrackedImageBindings;
+                         ++state_index) {
+                        if (present_draw.descriptor_images
+                                [set_slot][state_index].valid) {
+                            ordered[ordered_count++] = state_index;
+                        }
+                    }
+                    for (uint32_t left = 0; left < ordered_count; ++left) {
+                        for (uint32_t right = left + 1;
+                             right < ordered_count; ++right) {
+                            const DescriptorImageBindingState* a =
+                                &present_draw.descriptor_images
+                                    [set_slot][ordered[left]];
+                            const DescriptorImageBindingState* b =
+                                &present_draw.descriptor_images
+                                    [set_slot][ordered[right]];
+                            if (b->binding < a->binding ||
+                                (b->binding == a->binding &&
+                                 b->array_element < a->array_element)) {
+                                const uint32_t temporary = ordered[left];
+                                ordered[left] = ordered[right];
+                                ordered[right] = temporary;
+                            }
+                        }
+                    }
+                    for (uint32_t image_ordinal = 0;
+                         image_ordinal < ordered_count;
+                         ++image_ordinal) {
+                        const DescriptorImageBindingState* state =
+                            &present_draw.descriptor_images
+                                [set_slot][ordered[image_ordinal]];
+                        lifecycle_log(
+                            "STARTUP_PRESENT_COMPOSITOR_IMAGE:"
+                            " generation=%" PRIu64 " ordinal=%u"
+                            " set_slot=%u image_ordinal=%u binding=%u"
+                            " array_element=%u signature=%016" PRIx64
+                            " update_call=%" PRIu64 " view=%p image=%p"
+                            " format=%d view_type=%d mip=%u layer=%u"
+                            " layout=%d",
+                            swapchain_snapshot.generation, ordinal,
+                            set_slot, image_ordinal, state->binding,
+                            state->array_element, state->signature,
+                            state->update_call, (void*)state->view,
+                            (void*)state->image, state->format,
+                            state->view_type, state->base_mip_level,
+                            state->base_array_layer, state->layout);
+                        if (!compositor_sampler ||
+                            !compositor_sampler(
+                                queue, state->image, state->format,
+                                state->view_type, state->base_mip_level,
+                                state->base_array_layer,
+                                swapchain_snapshot.generation, ordinal,
+                                set_slot, state->binding,
+                                state->array_element, image_ordinal)) {
+                            lifecycle_log(
+                                "STARTUP_PRESENT_COMPOSITOR_IMAGE_SKIP:"
+                                " generation=%" PRIu64 " ordinal=%u"
+                                " set_slot=%u image_ordinal=%u binding=%u"
+                                " sampler=%s",
+                                swapchain_snapshot.generation, ordinal,
+                                set_slot, image_ordinal, state->binding,
+                                compositor_sampler ? "failed" : "missing");
+                        }
+                    }
+                }
             }
         }
     }
@@ -2899,6 +3402,8 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_clear_attachments(
 
 void teso4m4_lifecycle_reset(void) {
     pthread_mutex_lock(&g_lock);
+    const bool clear_runtime_tables = g_reset_has_run;
+    g_reset_has_run = true;
     g_next_device_wait_idle = NULL;
     g_next_create_swapchain = NULL;
     g_next_destroy_swapchain = NULL;
@@ -2935,18 +3440,20 @@ void teso4m4_lifecycle_reset(void) {
     g_next_cmd_bind_descriptor_sets = NULL;
     g_next_cmd_push_constants = NULL;
     g_logger = NULL;
-    memset(g_swapchains, 0, sizeof(g_swapchains));
-    memset(g_images, 0, sizeof(g_images));
-    memset(g_image_views, 0, sizeof(g_image_views));
-    memset(g_render_passes, 0, sizeof(g_render_passes));
-    memset(g_framebuffers, 0, sizeof(g_framebuffers));
-    memset(g_command_buffers, 0, sizeof(g_command_buffers));
-    memset(g_signaled_semaphores, 0, sizeof(g_signaled_semaphores));
-    memset(g_shader_modules, 0, sizeof(g_shader_modules));
-    memset(g_graphics_pipelines, 0, sizeof(g_graphics_pipelines));
-    memset(g_descriptor_set_layouts, 0, sizeof(g_descriptor_set_layouts));
-    memset(g_pipeline_layouts, 0, sizeof(g_pipeline_layouts));
-    memset(g_descriptor_sets, 0, sizeof(g_descriptor_sets));
+    if (clear_runtime_tables) {
+        memset(g_swapchains, 0, sizeof(g_swapchains));
+        memset(g_images, 0, sizeof(g_images));
+        memset(g_image_views, 0, sizeof(g_image_views));
+        memset(g_render_passes, 0, sizeof(g_render_passes));
+        memset(g_framebuffers, 0, sizeof(g_framebuffers));
+        memset(g_command_buffers, 0, sizeof(g_command_buffers));
+        memset(g_signaled_semaphores, 0, sizeof(g_signaled_semaphores));
+        memset(g_shader_modules, 0, sizeof(g_shader_modules));
+        memset(g_graphics_pipelines, 0, sizeof(g_graphics_pipelines));
+        memset(g_descriptor_set_layouts, 0, sizeof(g_descriptor_set_layouts));
+        memset(g_pipeline_layouts, 0, sizeof(g_pipeline_layouts));
+        memset(g_descriptor_sets, 0, sizeof(g_descriptor_sets));
+    }
     g_generation_counter = 0;
     g_wait_counter = 0;
     g_descriptor_update_call_counter = 0;
@@ -2956,9 +3463,11 @@ void teso4m4_lifecycle_reset(void) {
     atomic_store(&g_startup_present_pixel_audit, false);
     atomic_store(&g_startup_draw_audit, false);
     atomic_store(&g_startup_input_audit, false);
+    atomic_store(&g_startup_compositor_audit, false);
     atomic_store(&g_startup_color_audit_finished, false);
     atomic_store(&g_startup_color_detail_count, 0);
     g_present_pixel_sampler = NULL;
+    g_compositor_image_sampler = NULL;
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -3016,10 +3525,26 @@ void teso4m4_lifecycle_set_startup_input_audit(bool enabled) {
     }
 }
 
+void teso4m4_lifecycle_set_startup_compositor_audit(bool enabled) {
+    atomic_store(&g_startup_compositor_audit, enabled);
+    if (enabled) {
+        lifecycle_log(
+            "STARTUP_COMPOSITOR_AUDIT_BEGIN: image_bindings_per_set=2"
+            " sampled_subresources=base-mip-base-layer");
+    }
+}
+
 void teso4m4_lifecycle_set_present_pixel_sampler(
     Teso4m4PresentPixelSampler sampler) {
     pthread_mutex_lock(&g_lock);
     g_present_pixel_sampler = sampler;
+    pthread_mutex_unlock(&g_lock);
+}
+
+void teso4m4_lifecycle_set_compositor_image_sampler(
+    Teso4m4CompositorImageSampler sampler) {
+    pthread_mutex_lock(&g_lock);
+    g_compositor_image_sampler = sampler;
     pthread_mutex_unlock(&g_lock);
 }
 

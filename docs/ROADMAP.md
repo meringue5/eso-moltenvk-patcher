@@ -108,11 +108,14 @@ are in [Project status](STATUS.md); completed runs belong in the
   fragment set contains two images and three buffers, and only the images can
   supply the observed chromatic output. Do not spend another user run on a
   generic set/image-versus-buffer split.
-- Design a bounded two-input compositor audit that distinguishes the scene
-  image from the GUI image, including descriptor replacement versus an in-place
-  content transition. It must prove safe image/subresource sampling with a
-  synthetic control and the real MoltenVK/AppKit probe before installation.
-  No new user startup is justified before that gate passes.
+- Experiment 0029 implements the bounded two-input compositor audit. It orders
+  the mixed-set image bindings as retained MSL `Sampler0` (scene) and
+  `Sampler1` (GUI), carries image-view/base-subresource identity to present,
+  samples both inputs, and distinguishes descriptor replacement from in-place
+  content. Synthetic fail-closed controls, the complete build, and real
+  MoltenVK/AppKit BGRA8 plus RGBA16F mip/layer controls pass. The production
+  profile remains installed; one bounded startup is justified only after
+  explicit installation approval.
 - After identifying the offending input, prefer a startup-only neutralization
   of the application placeholder or its presentation. It must latch permanently
   back to direct forwarding at the first valid compositor input, add no

@@ -20,6 +20,8 @@ static uint32_t g_present_pixel_sample_count;
 static uint64_t g_present_pixel_generations[32];
 static uint32_t g_present_pixel_ordinals[32];
 static bool g_present_pixel_arguments_valid;
+static uint32_t g_compositor_image_sample_count;
+static bool g_compositor_image_arguments_valid;
 
 static void test_log(const char* message) {
     const int written = snprintf(
@@ -387,6 +389,30 @@ static bool fake_present_pixel_sampler(
     return true;
 }
 
+static bool fake_compositor_image_sampler(
+    VkQueue queue,
+    VkImage image,
+    VkFormat format,
+    VkImageViewType view_type,
+    uint32_t mip_level,
+    uint32_t array_layer,
+    uint64_t generation,
+    uint32_t ordinal,
+    uint32_t set_slot,
+    uint32_t binding,
+    uint32_t array_element,
+    uint32_t image_ordinal) {
+    g_compositor_image_arguments_valid &=
+        queue != VK_NULL_HANDLE && image == HANDLE(VkImage, 0xd04) &&
+        format == VK_FORMAT_R16G16B16A16_SFLOAT &&
+        view_type == VK_IMAGE_VIEW_TYPE_2D && mip_level == 1 &&
+        array_layer == 2 && generation == 1 && ordinal == 1 &&
+        set_slot == 0 && binding == 0 && array_element == 0 &&
+        image_ordinal == 0;
+    ++g_compositor_image_sample_count;
+    return true;
+}
+
 static bool run_present_pixel_schedule_case(void) {
     g_log_length = 0;
     g_log[0] = '\0';
@@ -504,6 +530,8 @@ static bool run_consumed_semaphore_case(void) {
     g_log[0] = '\0';
     g_present_pixel_sample_count = 0;
     g_present_pixel_arguments_valid = true;
+    g_compositor_image_sample_count = 0;
+    g_compositor_image_arguments_valid = true;
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&test_log);
     teso4m4_lifecycle_set_present_pixel_sampler(
@@ -581,6 +609,8 @@ static bool run_startup_draw_provenance_case(void) {
     g_log[0] = '\0';
     g_present_pixel_sample_count = 0;
     g_present_pixel_arguments_valid = true;
+    g_compositor_image_sample_count = 0;
+    g_compositor_image_arguments_valid = true;
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&test_log);
     teso4m4_lifecycle_set_present_pixel_sampler(
@@ -589,6 +619,9 @@ static bool run_startup_draw_provenance_case(void) {
     teso4m4_lifecycle_set_startup_present_pixel_audit(true);
     teso4m4_lifecycle_set_startup_draw_audit(true);
     teso4m4_lifecycle_set_startup_input_audit(true);
+    teso4m4_lifecycle_set_startup_compositor_audit(true);
+    teso4m4_lifecycle_set_compositor_image_sampler(
+        &fake_compositor_image_sampler);
 
     PFN_vkCreateSwapchainKHR create_swapchain = (PFN_vkCreateSwapchainKHR)
         teso4m4_lifecycle_intercept(
@@ -730,16 +763,24 @@ static bool run_startup_draw_provenance_case(void) {
         return check(false, "draw provenance framebuffer setup failed");
     }
 
-    const VkDescriptorSetLayoutBinding set_binding = {
-        .binding = 0,
-        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+    const VkDescriptorSetLayoutBinding set_bindings[] = {
+        {
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
+        {
+            .binding = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
     };
     const VkDescriptorSetLayoutCreateInfo set_layout_info = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = 1,
-        .pBindings = &set_binding,
+        .bindingCount = 2,
+        .pBindings = set_bindings,
     };
     VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
     if (create_set_layout(
@@ -775,20 +816,54 @@ static bool run_startup_draw_provenance_case(void) {
             device, &set_allocate_info, &descriptor_set) != VK_SUCCESS) {
         return check(false, "input provenance descriptor set setup failed");
     }
+    const VkImageViewCreateInfo descriptor_view_info = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = HANDLE(VkImage, 0xd04),
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = VK_FORMAT_R16G16B16A16_SFLOAT,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 1,
+            .levelCount = 1,
+            .baseArrayLayer = 2,
+            .layerCount = 1,
+        },
+    };
+    VkImageView descriptor_view = VK_NULL_HANDLE;
+    if (create_image_view(
+            device, &descriptor_view_info, NULL, &descriptor_view) !=
+        VK_SUCCESS) {
+        return check(false, "input provenance descriptor view setup failed");
+    }
     const VkDescriptorImageInfo descriptor_image = {
         .sampler = HANDLE(VkSampler, 0xd01),
-        .imageView = HANDLE(VkImageView, 0xd02),
+        .imageView = descriptor_view,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
-    const VkWriteDescriptorSet descriptor_write = {
-        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .dstSet = descriptor_set,
-        .dstBinding = 0,
-        .descriptorCount = 1,
-        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .pImageInfo = &descriptor_image,
+    const VkDescriptorBufferInfo descriptor_buffer = {
+        .buffer = HANDLE(VkBuffer, 0xd03),
+        .offset = 16,
+        .range = 64,
     };
-    update_descriptor_sets(device, 1, &descriptor_write, 0, NULL);
+    const VkWriteDescriptorSet descriptor_writes[] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = descriptor_set,
+            .dstBinding = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &descriptor_image,
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = descriptor_set,
+            .dstBinding = 1,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo = &descriptor_buffer,
+        },
+    };
+    update_descriptor_sets(device, 2, descriptor_writes, 0, NULL);
 
     const uint32_t vertex_code[] = {0x07230203, 0x00010000};
     const uint32_t fragment_code[] = {0x07230203, 0x00010001};
@@ -886,6 +961,8 @@ static bool run_startup_draw_provenance_case(void) {
     }
     return check(
         g_present_pixel_sample_count == 1 &&
+            g_compositor_image_sample_count == 1 &&
+            g_compositor_image_arguments_valid &&
             strstr(g_log, "STARTUP_DRAW_SHADER:") != NULL &&
             strstr(g_log, "STARTUP_DRAW_PIPELINE_CREATE:") != NULL &&
             strstr(g_log, "shader_hash_complete=yes") != NULL &&
@@ -896,11 +973,24 @@ static bool run_startup_draw_provenance_case(void) {
             strstr(g_log, "STARTUP_PRESENT_DRAW_PIPELINE: generation=1") != NULL &&
             strstr(g_log, "pipeline_state=tracked") != NULL &&
             strstr(g_log, "STARTUP_PRESENT_INPUT_PIPELINE: generation=1") != NULL &&
-            strstr(g_log, "descriptors=1 images=1 buffers=0") != NULL &&
+            strstr(g_log, "descriptors=2 images=1 buffers=1") != NULL &&
             strstr(g_log, "push_bytes=16 layout_complete=yes") != NULL &&
             strstr(g_log, "STARTUP_PRESENT_DRAW_INPUT: generation=1") != NULL &&
             strstr(g_log, "bound_sets=1") != NULL &&
-            strstr(g_log, "input_complete=yes") != NULL,
+            strstr(g_log, "input_complete=yes") != NULL &&
+            strstr(
+                g_log,
+                "STARTUP_PRESENT_DESCRIPTOR_CLASS: generation=1"
+                " ordinal=1 slot=0") != NULL &&
+            strstr(g_log, "expected_images=1 expected_buffers=1") != NULL &&
+            strstr(g_log, "image_update_writes=1") != NULL &&
+            strstr(g_log, "buffer_update_writes=1") != NULL &&
+            strstr(g_log, "class_complete=yes") != NULL &&
+            strstr(
+                g_log,
+                "STARTUP_PRESENT_COMPOSITOR_IMAGE: generation=1"
+                " ordinal=1 set_slot=0 image_ordinal=0 binding=0") != NULL &&
+            strstr(g_log, "format=97 view_type=1 mip=1 layer=2") != NULL,
         "present sample must retain exact draw and pipeline provenance");
 }
 
