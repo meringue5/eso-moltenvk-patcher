@@ -402,6 +402,16 @@ are inside builders that immediately select `technique_FXMaterial` and
 startup association still requires the bounded intervention prepared in
 Experiment 0025.
 
+Experiment 0025 installed an exact entry hook for that initializer and retained
+it through generation-2 present ordinal 180. The user observed unchanged pink,
+but the hook recorded zero initializer calls before the bounded finish. No
+sentinel value was therefore changed, and the visual result is inconclusive by
+the predeclared decision table. The run does establish that this initializer is
+not called between bridge hook installation and the end of early generation 2.
+Any remaining version of the FX-material hypothesis must involve state created
+before the hook or a different later value-copy/use path; repeating the same
+initializer intervention cannot add evidence.
+
 Exact-run correlation still establishes an early surface transition. In two
 independent lifecycle traces, generation 1 is 3420 x 2148, has exactly one
 successful acquire and present, and is replaced by generation 2 at

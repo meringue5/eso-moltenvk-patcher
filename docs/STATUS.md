@@ -88,10 +88,9 @@ The apparent remaining Steam process was an orphaned `ipcserver` with parent
 PID 1; neither `steam_osx`, ESO, nor the launcher was running, and it held no
 ESO bundle file open. A cache-preserving restore and reinstall then returned
 the marker to `performance-aggressive`. The installed proxy SHA-256 is
-`766526a899c07523790ac753959ab99a522af5b6e8993e1cadd690094ec8cc71`
-and matches the validated build byte-for-byte. No further user run is justified
-until a bounded candidate can associate a presented draw or pixel with the
-FX-material path.
+`fc95d3c84d16609d5bd7e300a2753babc7ea262b72dca3681d19cf6c293e1aaf`
+and matches the validated build byte-for-byte. Experiment 0025 has likewise
+been restored to this normal marker with all caches and settings preserved.
 
 Experiment 0025 now completes that candidate without changing the installed
 game. Static analysis narrows the exact initializer at image offset
@@ -107,12 +106,15 @@ The synthetic executable-trampoline probe, exact-byte/constant/caller target
 generation, full source build, effective aggressive configuration check, and
 104 Python tests pass. The fast update-rebase path now fails closed when an
 experimental target is present. The user then explicitly approved installation.
-The current marker is `startup-fx-neutralize`; installed proxy and MoltenVK
-match the validated build. Active-cache, old-backup-cache, and settings hashes
-remain exactly equal to the prepared pre-install boundary. The active gate is
-one user-controlled normal Steam-path startup. A matched unchanged-pink run
-excludes this exact sentinel; a matched disappearance or change to black
-establishes causality; missing hook evidence or bounded finish is inconclusive.
+The user completed the one startup and observed unchanged pink. The exact hook
+and ordinal-180 finish records are present, but the initializer produced zero
+calls inside the bounded window, so no value was neutralized. The analyzer
+correctly classifies the intervention as `INCONCLUSIVE`, not as an exclusion.
+This establishes that the initializer is not called between hook installation
+and the end of early generation 2. Do not repeat this intervention; a successor
+must target a later parameter copy/use or presented draw and account for a
+possible object created before the bridge constructor. No further user run is
+justified until that successor passes its non-game gate.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
@@ -129,9 +131,9 @@ The full settings and latest logs remain ignored evidence at
 
 The active 1.4.2 cache is 7,977,079 bytes, has UUID
 `db6602241a0502090000000100000000`, and SHA-256
-`498afb3db97c57c6fe6b0baef5307bf0c6a9330a73478519caa6cf659474a55b`.
-ESO updated its contents during the user run without changing its size; the
-hash remained identical across the later restore/reinstall. The old-backup
+`aed8bce13b26a8d2760b69d34440d27b1bdf244b4cdee6490bd847f759b904ba`.
+ESO updated its contents during the Experiment 0025 run without changing its
+size. The old-backup
 cache likewise remained
 `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 The preserved 1.4.1 runtime/cache and older cache remain available.

@@ -32,7 +32,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0022 | 2026-08-01 | Transient startup surface analysis | Screenshot amendment proves exact sRGB magenta persists beyond the first-surface boundary | [Run](0022-startup-surface-analysis.md) |
 | 0023 | 2026-08-01 | Bounded startup color audit candidate | Non-game mechanism succeeded; generation-1-only scope invalidated before installation | [Run](0023-startup-color-audit-candidate.md) |
 | 0024 | 2026-08-01 | Two-generation startup color audit redesign | Succeeded; exact pink run contained only opaque-black clears, normal profile restored | [Run](0024-two-generation-startup-color-audit.md) |
-| 0025 | 2026-08-01 | Bounded startup FX-sentinel neutralization | Installed with caches/settings preserved; awaiting one user startup | [Run](0025-startup-fx-sentinel-neutralization.md) |
+| 0025 | 2026-08-01 | Bounded startup FX-sentinel neutralization | Inconclusive; exact hook installed but initializer had zero calls, normal profile restored | [Run](0025-startup-fx-sentinel-neutralization.md) |
 
 ## Recording policy
 

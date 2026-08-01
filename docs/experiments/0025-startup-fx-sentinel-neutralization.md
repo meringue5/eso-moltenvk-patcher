@@ -1,8 +1,8 @@
 # Experiment 0025: bounded startup FX-sentinel neutralization
 
 - Date: 2026-08-01
-- Outcome: **candidate installed; awaiting one user-controlled startup**
-- Rollback: **available and preflight-checked; not yet performed**
+- Outcome: **inconclusive intervention; exact hook installed but initializer had zero calls during the bounded window**
+- Rollback: **complete; normal `performance-aggressive` restored with all caches and settings preserved**
 
 ## Question
 
@@ -140,3 +140,46 @@ login plus approximately 30 seconds, then quit normally. Stop earlier for a
 crash, hang, or unexpected rendering. Report whether pink remained unchanged
 or instead disappeared/changed to black. After evidence collection, restore
 the normal `performance-aggressive` marker and verify all preserved hashes.
+
+## User-run result
+
+The user launched ESO through the normal Steam path and observed the same pink
+frame. The exact bridge run is `20260801T091202.657581000Z-pid75132`. Automatic
+startup verification passed, no crash report was produced, and all 48 settings
+remained structurally identical.
+
+The experimental patch installed exactly, and the two-generation audit
+completed. It again recorded one generation-1 and 180 generation-2
+full-surface clears, all opaque black `(0,0,0,1)`. But there were **zero**
+`STARTUP_FX_SENTINEL` call records before the exact generation-2 ordinal-180
+finish. The analyzer therefore reports:
+
+```text
+startup-fx-events: 0
+startup-fx-verdict: INCONCLUSIVE
+startup-fx-reason: the FX initializer was not observed inside the startup window
+```
+
+The unchanged pink frame cannot exclude the sentinel by the experiment's
+decision table because no value was actually substituted. It does establish
+that this initializer is not called after the bridge installs its hook and
+before the bounded startup window ends. A material object created before the
+bridge constructor remains a logical alternative, so the result is not
+promoted to causal exclusion. Do not repeat this intervention; any successor
+must target a later value copy/use or a presented draw rather than this
+initializer call.
+
+## Rollback result
+
+Evidence was collected before rollback. The active 1.4.2 cache retained its
+7,977,079-byte size and changed normally during the run to SHA-256
+`aed8bce13b26a8d2760b69d34440d27b1bdf244b4cdee6490bd847f759b904ba`.
+The old-backup cache remained
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`,
+and settings remained
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+
+The pristine-loader restore and cache-preserving reinstall completed. The
+current marker is `performance-aggressive`; installed proxy and official
+MoltenVK match the validated build. No agent launched Steam, the launcher, or
+ESO.

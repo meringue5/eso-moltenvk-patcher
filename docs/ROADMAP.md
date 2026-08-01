@@ -56,6 +56,12 @@ are in [Project status](STATUS.md); completed runs belong in the
   initializer evidence or a missing ordinal-180 finish is inconclusive. After
   evidence collection, restore `performance-aggressive` and preserve both
   caches and settings.
+- Preserve Experiment 0025 as inconclusive and do not repeat it. The user saw
+  unchanged pink, the exact hook and ordinal-180 finish were present, but the
+  initializer produced zero calls inside the window, so no value was actually
+  neutralized. The normal `performance-aggressive` profile is restored. A
+  successor must intercept a later parameter copy/use or presented draw and
+  account for any object created before the bridge constructor.
 
 ### Superseded reset-investigation record
 
