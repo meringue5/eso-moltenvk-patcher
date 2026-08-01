@@ -86,7 +86,7 @@ design is documented in [Bridge architecture](docs/ARCHITECTURE.md). The
 the reversible Bink loader setup, validation transaction, private code-page
 copies, 12-byte jumps, and restore path.
 
-## Steam or all macOS editions?
+## All macOS editions and release direction
 
 **The stale runtime belongs to the ESO macOS game client; it is not evidence of
 a separate, abandoned Steam-only renderer.** ESO switched its Mac renderer to
@@ -116,6 +116,42 @@ The distinction for this repository is operational:
 
 See the [macOS client scope review](docs/research/eso-macos-client-scope.md) for
 the source record and limits of that conclusion.
+
+### Planned public release
+
+`teso4m4` is **not** an ESO add-on. It cannot be installed in the game's
+`AddOns` folder because it changes the runtime path inside the macOS game
+client. A folder-copy add-on release would therefore be misleading and would
+not work.
+
+The public-release target is a small signed and notarized **installer/manager
+app** distributed in a GitHub Release disk image. It is an installation tool,
+not an app that must stay running while ESO is played. It will bundle the
+verified bridge and runtime so players do not need Python, Xcode, or build
+scripts. Its user-facing actions will be **Install**, **Check**, **Repair**,
+and **Remove**.
+
+The installer will be edition-neutral:
+
+1. look for the known Steam and official ZeniMax launcher locations, then let
+   the player choose an ESO or launcher app if it is elsewhere;
+2. identify the contained `eso.app`, rather than trusting its enclosing path;
+3. verify the executable identity, static layout, required companion files,
+   and original patch bytes against a supported profile before changing
+   anything;
+4. make and record a restorable backup for that exact installation; and
+5. leave launching and authentication to the player's usual Steam or official
+   ESO launcher path.
+
+An unknown client build or an unverified direct-launcher installation must stop
+safely rather than receive a best-effort patch. The release installer should
+require ESO and its launcher to be closed before it changes their files, but
+Steam itself should not be treated as a required installation dependency or be
+asked to quit unless it is actually blocking access to the selected game files.
+
+This release format is planned; it does not exist yet. Until a direct-launcher
+client has passed the same identity, install/restore, and normal-launch tests,
+the only supported public claim remains the validated Steam installation above.
 
 ## Validated checkpoint
 
@@ -148,11 +184,12 @@ clears before normal UI and gameplay and had no observed effect on the validated
 session. Its investigation is tracked separately in the
 [current project status](docs/STATUS.md).
 
-## Build and install
+## Source build and research installation
 
-Requirements: macOS, Xcode command-line tools, Python 3, and a locally installed
-Steam copy of ESO. No ESO executable, Bink binary, credentials, or cache is
-distributed by this repository.
+The following path is for contributors and controlled research, not for a
+future end-user release. It currently requires macOS, Xcode command-line tools,
+Python 3, and the validated Steam installation of ESO. No ESO executable, Bink
+binary, credentials, or cache is distributed by this repository.
 
 Fetch the pinned official MoltenVK release and build the bridge:
 
@@ -228,3 +265,9 @@ Steam 전용 앱의 문제가 아니라 현재 ESO macOS 클라이언트에 포�
 여섯 번의 그래픽 장치 재설정과 설정·해상도 변경도 크래시나 지속적인
 렌더링 손상 없이 완료됐습니다. 정확히 검증된 ESO 빌드에서만 작동하며,
 Steam 실행과 인증 경로 및 원본 복구 경로를 그대로 보존합니다.
+
+일반 사용자를 위한 GitHub 배포본은 아직 준비 중입니다. 목표는 Python,
+Xcode, 스크립트 실행을 요구하지 않는 서명·공증된 설치/관리 도구이며,
+Steam과 공식 런처 설치본을 모두 감지하되 검증된 클라이언트에만 안전하게
+설치·복구하는 방식입니다. ESO 애드온 폴더에 넣는 방식은 이 런타임 패치에
+적합하지 않습니다.

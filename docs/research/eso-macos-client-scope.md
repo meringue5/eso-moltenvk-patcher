@@ -72,6 +72,29 @@ Do not claim direct-launcher support until a current non-Steam `eso.app` is
 fingerprinted and shown to match a supported target or receives its own exact
 manifest and installation-path validation.
 
+## Public-release implication
+
+The release artifact should not be a conventional ESO add-on archive. Add-ons
+live under the user's Documents folder and are loaded by ESO's add-on system;
+this bridge instead relies on the game's dynamic Bink-library path beside the
+client executable. The appropriate future artifact is therefore a signed and
+notarized installer/manager app that carries the bridge and replacement runtime
+and operates on one selected, verified ESO client at a time.
+
+That installer should discover known Steam and direct-launcher locations, allow
+the player to select a custom location, and then validate the actual `eso.app`
+instead of assuming any path is correct. Its supported-client registry must
+remain exact-build and fail closed. Steam is an important validation and launch
+context today, but it is not a runtime API dependency of the bridge and should
+not become a prerequisite for a direct-launcher user.
+
+The production installation policy should require the selected ESO client and
+its launcher to be closed before a file change. It should not make a blanket
+request to close Steam: if Steam does not hold the selected files, it is not a
+necessary installation blocker. This is a proposed user-experience policy; it
+requires implementation and direct-launcher validation before being presented
+as a supported release behavior.
+
 ## Search limitation
 
 Official patch notes announce the 2018 renderer transition but do not publish

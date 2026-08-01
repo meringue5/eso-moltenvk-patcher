@@ -242,3 +242,33 @@ experiment records.
   trim releases the accumulated state.
 - Search for safe engine commands or API paths before considering invasive
   runtime state destruction.
+
+## P4: public distribution without a Steam-only installation workflow
+
+This is packaging and compatibility work, not a change to the validated bridge
+or an authorization to install it on another client.
+
+- Deliver a signed and notarized installer/manager app in a GitHub Release disk
+  image. It must bundle the verified bridge and replacement runtime so normal
+  users do not need Python, Xcode, a source checkout, or shell commands.
+- Do not present `teso4m4` as an ESO add-on. The bridge belongs beside the
+  game's executable and cannot work from the `AddOns` folder.
+- Make the installer edition-neutral: discover known Steam and ZeniMax launcher
+  locations, allow explicit selection for custom locations, then identify the
+  contained `eso.app` by validated structure and binary identity instead of by
+  its enclosing path.
+- Maintain a supported-client profile registry keyed by exact executable
+  identity and static-layout checks. An unrecognized build or unverified
+  distribution must fail closed.
+- Keep launch and account authentication outside the installer. Players must
+  continue using their normal Steam or official ESO launcher flow.
+- Make backup, status, repair, and removal first-class installer actions. Store
+  enough per-installation state to restore only the selected client safely.
+- Require ESO and its launcher to be closed before changing selected game
+  files. Do not require Steam to quit merely as a blanket rule; diagnose actual
+  target-file access and prompt only for the process that blocks it.
+- Before claiming direct-launcher support, acquire a current lawful
+  direct-launcher client and complete identity comparison, install/restore,
+  launcher update, and normal-authentication validation. Reuse the Steam
+  profile only when the complete validation matches; otherwise add a separate
+  profile.
