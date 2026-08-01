@@ -1,8 +1,8 @@
 # Experiment 0030: startup compositor placeholder neutralization
 
 - Date: 2026-08-02
-- Outcome: **planned**
-- Rollback: **not started; production profile remains installed**
+- Outcome: **running**
+- Rollback: **not started; candidate installed**
 
 ## Question
 
@@ -76,6 +76,14 @@ not enable the bounded tracking tables or intervention.
   the launcher, open bundle files, and active Steam content operations are not.
 - Explicit approval remains required before modifying the game bundle.
 
+The user explicitly approved `startup-compositor-neutralize` installation.
+Evidence boundary `artifacts/experiment-0030-20260801T172534Z` was prepared
+from source commit `c04de86`. The locally parsed ESO target, databuild, and all
+eight launcher repository IDs remained exact. The latest `noUpdateRequired`
+launcher snapshot was 4,874 seconds old, so evidence preparation used the
+script's scoped 7,200-second maximum instead of requiring another launcher
+interaction; the build/content comparison itself was not weakened.
+
 ## Non-game evidence
 
 - Lifecycle wrapper control: stable descriptor state suppresses the indexed
@@ -118,8 +126,25 @@ fallback. It classifies the user's independent visual observation separately.
 
 ## Result
 
-The source candidate and all agent-only gates are complete. Installation and
-the one bounded user-controlled startup have not begun.
+The source candidate and all agent-only gates are complete. The shared
+bundle-idle gate passed while Steam remained open with no ESO bundle file or
+content-update activity. A cache-preserving pristine restore, clean rebuild,
+and approved `startup-compositor-neutralize` installation completed.
+
+The installed proxy matches prepared SHA-256
+`b929afbd24999a6ad08dc542d6683f71d1afad8162c19ad9e1e2a31c9d21c99a`
+byte for byte. The installed official MoltenVK remains
+`aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f`.
+The marker is exactly `startup-compositor-neutralize`. Installation preserved:
+
+```text
+settings:     297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c
+active cache: 234dc3189fcd2156e9de984a8aec5d5b87a66e8a6e39f7b4f081df851019a7b8
+old backup:   72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+```
+
+No Steam, launcher, or ESO process was launched by the agent. The bounded
+user-controlled startup and visual result remain pending.
 
 ## Interpretation
 
@@ -138,8 +163,10 @@ user observation can validate that final application-specific link.
 
 ## Rollback
 
-Not started. The installed `performance-aggressive` profile remains the
-production baseline and the prepared build has not entered the game bundle.
+Not started. The candidate is installed. The pristine loader and
+cache-preserving restore path were checked immediately before installation;
+the production `performance-aggressive` marker can be restored without
+changing either retained cache or settings state.
 
 ## Follow-up
 

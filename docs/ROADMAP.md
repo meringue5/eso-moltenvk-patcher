@@ -125,9 +125,11 @@ are in [Project status](STATUS.md); completed runs belong in the
   readback and changes no cache, setting, shader, or asset.
 - The synthetic suppression, descriptor-transition, and fail-open controls,
   complete build/configuration matrix, 129 Python tests, and official 1.4.2
-  AppKit/Metal surface controls pass. The production profile remains installed.
-  The next gate is one explicitly approved installation and user-controlled
-  startup; no gameplay duration or setting change is required.
+  AppKit/Metal surface controls pass. Explicit installation approval was
+  received; the cache-preserving clean rebuild and install completed under the
+  bundle-idle gate with idle Steam open. The candidate is installed and the
+  next gate is one user-controlled startup; no gameplay duration or setting
+  change is required.
 - If the artifact disappears and the log records the exact transition latch,
   promote the bounded behavior into the packaged aggressive profile. If it
   fails open or pink persists, restore `performance-aggressive` and use

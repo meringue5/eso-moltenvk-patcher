@@ -98,8 +98,12 @@ incomplete-state fail-open behavior. All 129 Python tests pass. The real
 official MoltenVK 1.4.2/AppKit/Metal gate passes black clear, magenta clear,
 graphics draw, load-only, and RGBA16F subresource controls at small and exact
 ESO extents outside the restricted sandbox. No game process or bundle was
-touched. The installed mode remains `performance-aggressive`; Experiment 0030
-awaits explicit installation approval and one bounded user-controlled startup.
+touched during candidate preparation. The user subsequently approved
+installation. The bundle-idle gate passed with idle Steam open, a clean rebuild
+reproduced proxy SHA-256 `b929afbd...`, and the candidate is now installed as
+`startup-compositor-neutralize`. The settings and both cache hashes remained
+byte-identical across the cache-preserving restore/install. One bounded
+user-controlled startup is now the active gate.
 
 Experiment 0029 remains a prepared diagnostic fallback, not the next required
 run. Its two-input readback can distinguish scene from GUI only if the narrower
