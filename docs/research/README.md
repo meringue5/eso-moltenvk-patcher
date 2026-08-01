@@ -22,6 +22,9 @@ do not replace local experiment records or establish the current safety state.
   (2026-07-26): official release identity, ESO fix applicability, exact
   Experiment 0020 non-game validation, performance comparison, and
   pipeline-cache transition requirements.
+- [ESO macOS client distribution and MoltenVK scope](eso-macos-client-scope.md)
+  (2026-08-01): 2018 renderer adoption, current embedded-runtime age, Steam
+  versus direct-launcher content flow, and the supported scope of `teso4m4`.
 
 ## Maintenance rules
 

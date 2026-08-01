@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title desc">
+  <title id="title">How teso4m4 overrides ESO's original MoltenVK path</title>
+  <desc id="desc">ESO's original straight path is Vulkan calls through embedded MoltenVK 1.0.18, then Metal, then the Apple GPU. teso4m4 cuts the old edge in private process memory and takes a green detour through its entry override and MoltenVK 1.4.2 compatibility layer, then rejoins the same Metal stage. The old MoltenVK node is greyed out but remains unchanged on disk. The override disappears when ESO quits.</desc>
+  <defs>
+    <marker id="darkArrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0L11 5.5 0 11z" fill="#27343d"/>
+    </marker>
+    <marker id="greyArrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0L11 5.5 0 11z" fill="#a1a7aa"/>
+    </marker>
+    <marker id="greenArrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0L11 5.5 0 11z" fill="#158467"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="460" rx="18" fill="#fbfaf5"/>
+
+  <g font-family="ui-rounded,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <text x="48" y="53" fill="#27343d" font-size="27" font-weight="700">teso4m4 overrides the old MoltenVK stage</text>
+
+    <text x="48" y="259" fill="#7b8489" font-size="15" font-weight="700">ORIGINAL PATH</text>
+
+    <rect x="48" y="282" width="176" height="84" rx="13" fill="#fff" stroke="#27343d" stroke-width="2.5"/>
+    <text x="136" y="316" fill="#27343d" font-size="19" font-weight="700" text-anchor="middle">ESO</text>
+    <text x="136" y="343" fill="#59666f" font-size="15" text-anchor="middle">Vulkan calls</text>
+
+    <path d="M226 324C307 321 386 326 466 324" fill="none" stroke="#a1a7aa" stroke-width="3" stroke-linecap="round" marker-end="url(#greyArrow)"/>
+
+    <path d="M330 309l24 30M354 309l-24 30" stroke="#cf4e57" stroke-width="5" stroke-linecap="round"/>
+    <text x="342" y="360" fill="#cf4e57" font-size="14" font-weight="700" text-anchor="middle">overridden</text>
+
+    <rect x="475" y="274" width="224" height="100" rx="13" fill="#ececeb" stroke="#a1a7aa" stroke-width="2.5"/>
+    <text x="587" y="313" fill="#8a9195" font-size="18" font-weight="700" text-anchor="middle">Embedded MoltenVK 1.0.18</text>
+    <text x="587" y="341" fill="#9ca2a5" font-size="14" text-anchor="middle">original translation layer</text>
+    <text x="587" y="362" fill="#9ca2a5" font-size="13" text-anchor="middle">still present on disk</text>
+
+    <path d="M701 324C729 326 752 321 779 324" fill="none" stroke="#a1a7aa" stroke-width="3" stroke-linecap="round" marker-end="url(#greyArrow)"/>
+    <path d="M731 309l24 30M755 309l-24 30" stroke="#cf4e57" stroke-width="5" stroke-linecap="round"/>
+
+    <rect x="788" y="282" width="158" height="84" rx="13" fill="#fff" stroke="#27343d" stroke-width="2.5"/>
+    <text x="867" y="316" fill="#27343d" font-size="19" font-weight="700" text-anchor="middle">Metal</text>
+    <text x="867" y="343" fill="#59666f" font-size="14" text-anchor="middle">existing layer</text>
+
+    <path d="M948 324C968 322 986 326 1004 324" fill="none" stroke="#27343d" stroke-width="3" stroke-linecap="round" marker-end="url(#darkArrow)"/>
+
+    <rect x="1013" y="282" width="139" height="84" rx="13" fill="#fff" stroke="#27343d" stroke-width="2.5"/>
+    <text x="1082" y="316" fill="#27343d" font-size="18" font-weight="700" text-anchor="middle">Apple GPU</text>
+    <text x="1082" y="343" fill="#59666f" font-size="14" text-anchor="middle">same target</text>
+
+    <text x="246" y="94" fill="#158467" font-size="15" font-weight="700">TESO4M4 OVERRIDE</text>
+
+    <path d="M224 324C250 324 250 145 278 145" fill="none" stroke="#158467" stroke-width="4" stroke-linecap="round" marker-end="url(#greenArrow)"/>
+
+    <rect x="287" y="103" width="174" height="84" rx="13" fill="#eef8f3" stroke="#158467" stroke-width="3"/>
+    <text x="374" y="136" fill="#174c3f" font-size="18" font-weight="700" text-anchor="middle">teso4m4</text>
+    <text x="374" y="161" fill="#477267" font-size="14" text-anchor="middle">17 in-memory jumps</text>
+
+    <path d="M463 145C477 142 489 148 502 145" fill="none" stroke="#158467" stroke-width="4" stroke-linecap="round" marker-end="url(#greenArrow)"/>
+
+    <rect x="511" y="95" width="248" height="100" rx="13" fill="#eef8f3" stroke="#158467" stroke-width="3"/>
+    <text x="635" y="134" fill="#174c3f" font-size="19" font-weight="700" text-anchor="middle">MoltenVK 1.4.2</text>
+    <text x="635" y="163" fill="#477267" font-size="14" text-anchor="middle">ESO compatibility layer</text>
+    <text x="635" y="184" fill="#477267" font-size="13" text-anchor="middle">replaces the grey stage below</text>
+
+    <path d="M761 145C782 145 769 251 788 251C811 251 823 242 842 263" fill="none" stroke="#158467" stroke-width="4" stroke-linecap="round" marker-end="url(#greenArrow)"/>
+    <text x="835" y="224" fill="#158467" font-size="14" font-weight="700" text-anchor="middle">rejoins here</text>
+
+    <path d="M635 198C635 220 614 236 598 258" fill="none" stroke="#b7bcb9" stroke-width="2" stroke-dasharray="6 6"/>
+
+    <path d="M48 407C350 410 794 404 1152 408" fill="none" stroke="#d4d5cf" stroke-width="2" stroke-linecap="round"/>
+    <text x="48" y="430" fill="#65717a" font-size="14">On disk: ESO and embedded 1.0.18 unchanged</text>
+    <text x="464" y="430" fill="#65717a" font-size="14">Quit: override disappears</text>
+    <text x="797" y="430" fill="#65717a" font-size="14">Restore: pristine Bink loader returns</text>
+  </g>
+</svg>

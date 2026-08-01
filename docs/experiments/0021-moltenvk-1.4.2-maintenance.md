@@ -236,3 +236,21 @@ The active 1.4.2 pipeline cache is 7,754,395 bytes with UUID
 All raw checkpoint checksums verify at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`. The Experiment
 0021 outcome is amended to **succeeded in ordinary high-settings gameplay**.
+
+### 2026-08-01 performance clarification
+
+The user clarifies that the on-screen counter remained at the 60 FPS VSync
+ceiling throughout active gameplay in this roughly 93-minute session. The
+validated 2048 x 1280 profile includes SSAO, high-resolution shadows, and the
+other 48 allowlisted values in the committed standard settings asset. No
+comparable sustained drop toward the embedded-runtime baseline's 30--33 FPS
+state was observed.
+
+The preserved ESO, interface, and bridge logs do not record continuous FPS
+samples. The 60 FPS statement is therefore a direct user observation. The logs
+independently establish the run identity and duration, exact 1.4.2
+`performance-aggressive` activation, repeated loaded-world completion, six
+graphics-device reset sequences, and no subsequent ESO crash report. This
+supports the combined runtime/profile/settings/cache checkpoint as a successful
+real-use performance and correctness result; it does not isolate a particular
+MoltenVK change or guarantee the same result on another machine.

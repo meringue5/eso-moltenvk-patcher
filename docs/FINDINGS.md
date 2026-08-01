@@ -15,6 +15,14 @@ specific procedures, failures, and hypotheses remain in the
 
 ## Repeatable frame-rate degradation
 
+The user reports that this was the long-standing embedded MoltenVK 1.0.18
+experience on the M4: medium settings were not practical, minimum-oriented
+settings still struggled to reach 50 FPS, object-heavy areas repeatedly fell
+toward 30 FPS, and leaving or reloading the current UI/world state was used as
+a recovery workaround. Graphics-option changes could also destabilize or crash
+the vanilla client. These are direct user observations; the captures below
+provide the independently measured subset of that history.
+
 The same general scene and workload can run near 54-56 FPS, then fall to about
 33 FPS after continued play. Logging out of the world and logging back in
 restores about 56 FPS without restarting the launcher.
@@ -360,12 +368,22 @@ without invalidating the earlier 1.4.1 failures. The latest preserved 1.4.2 run
 passed bridge startup, logged six complete graphics-device reset sequences with
 zero error markers, repeatedly completed world loading, and produced no crash
 report. The user directly observed normal scene rendering after resolution and
-graphics-setting changes and comfortable play at relatively high settings.
+graphics-setting changes. With the committed 2048 x 1280 standard settings,
+the user also observed the on-screen counter remain at the 60 FPS VSync ceiling
+throughout active gameplay in the roughly 93-minute session. No comparable
+sustained frame-rate degradation occurred.
+
+The ESO, interface, and bridge logs do not contain continuous FPS samples, so
+the 60 FPS statement is a direct user observation rather than automated
+telemetry. The logs independently establish the session boundary, exact bridge
+configuration, repeated world loads, six reset sequences, and absence of a
+subsequent crash report.
 
 This establishes successful reset behavior for the combined official 1.4.2,
 `performance-aggressive`, and 1.4.2-cache checkpoint. The evidence does not
-attribute the improvement to a particular 1.4.2 fix, nor does it prove that the
-same behavior generalizes to another ESO build or Apple GPU.
+attribute the performance or correctness improvement to a particular 1.4.2
+fix, nor does it prove that the same behavior generalizes to another ESO build
+or Apple GPU.
 
 The transient full-screen hot-pink startup frame persists for roughly one
 second and then disappears before normal UI/gameplay. `SkipPregameVideos=1`

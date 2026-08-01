@@ -1,100 +1,230 @@
-# teso4m4
+# The Unofficial MoltenVK Patch for The Elder Scrolls Online
 
-Experimental macOS performance research and runtime tooling for the Steam build
-of **The Elder Scrolls Online** on Apple Silicon.
+`teso4m4` redirects the macOS client of **The Elder Scrolls Online** from its
+statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
+1.4.2 release. The current patch and installer are validated on the normal
+Steam launch path; on the tested M4 MacBook Air, a 2048 x 1280 medium-to-high
+graphics profile held the 60 FPS VSync ceiling throughout roughly 93 minutes
+of user-observed active gameplay.
 
-> [!WARNING]
-> The bridge remains an exact-build research prototype, not a generally
-> supported game patch. The current Apple M4 checkpoint uses official MoltenVK
-> 1.4.2 and has passed extended ordinary play at relatively high settings,
-> including user-controlled resolution and graphics resets that previously
-> corrupted output on 1.4.1. A roughly one-second full-screen hot-pink frame
-> still appears during startup, before normal UI rendering, but has no observed
-> gameplay impact. See the [current status](docs/STATUS.md) and the
-> [sanitized standard settings](config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+## What the patch delivers
 
-`teso4m4` documents reproducible findings, conservative graphics settings, and
-an experimental method for redirecting ESO's statically linked MoltenVK 1.0.18
-runtime to a current dynamic MoltenVK release while preserving Steam launch and
-authentication.
+[![Simple sketch of the teso4m4 override: ESO's original straight path runs through embedded MoltenVK 1.0.18 and then Metal; teso4m4 cuts that old path in process memory, detours through MoltenVK 1.4.2, and rejoins the same Metal stage](docs/images/teso4m4-runtime-hijack-simple.svg)](docs/images/teso4m4-runtime-hijack-simple.svg)
 
-## Current status
+*The grey line is ESO's original path through embedded MoltenVK 1.0.18. At
+launch, `teso4m4` cuts that route at the old entry points, takes the green
+detour through MoltenVK 1.4.2, and rejoins the same Metal stage. The grey code
+remains unchanged on disk, and the override disappears when ESO exits.*
 
-The latest verified baseline, active blocker, and next test gate are maintained
-in [Project status](docs/STATUS.md). Use that dated snapshot rather than this
-landing page when deciding whether an experiment is safe to continue.
+- **60 FPS in real gameplay on the validated M4 checkpoint.** The previous
+  sustained 30--33 FPS degradation did not return during the 93-minute session.
+- **Higher visual settings without the old performance compromise.** The
+  validated profile enables SSAO, high-resolution shadows, higher character
+  detail, foliage, water reflections, and full-resolution subsampling.
+- **Stable live graphics changes.** Resolution and graphics-setting changes
+  returned to correct scene rendering instead of crashing or leaving a solid,
+  black, or frozen frame.
+- **A current Metal translation layer.** ESO runs through official MoltenVK
+  1.4.2 with a compatibility and performance profile designed for its legacy
+  Vulkan behavior.
+- **The normal Steam path stays intact.** Launch and authentication continue
+  through Steam; the patch does not replace the launcher or bypass login.
+- **Updates fail safely and restoration is built in.** Unknown ESO builds are
+  rejected, original files and caches are preserved, and a checked restore
+  path is included.
 
-Start with the [documentation guide](docs/README.md), then use the
-[experiment index](docs/experiments/README.md) for historical evidence.
+## See it running
 
-## Repository layout
+[![ESO gameplay on the validated M4 MoltenVK 1.4.2 checkpoint, with the HUD showing 60 FPS](docs/images/teso4m4-m4-gameplay-60fps.png)](docs/images/teso4m4-m4-gameplay-60fps.png)
 
-```text
-config/             Build fingerprints and non-personal settings snapshots
-docs/               Current status, findings, plans, and technical guidance
-docs/experiments/   Append-only experiment records and their evidence summaries
-docs/research/      Dated external precedent reviews and literature notes
-scripts/            Fetch, build, install, restore, and status helpers
-src/                Runtime bridge source
-tools/              Binary-analysis and compatibility probes
-```
+*User-controlled gameplay during the validated roughly 93-minute session. The
+scene contains multiple characters, props, architecture, foliage, shadows, and
+distance detail; the lower-left HUD shows the 60 FPS VSync ceiling. Click the
+image to inspect the original 3420 x 2214 screenshot.*
 
-## Build overview
+## Before and after
+
+| Embedded MoltenVK 1.0.18 | `teso4m4` with official MoltenVK 1.4.2 |
+|---|---|
+| Medium settings were not practical in long-term user experience | Validated 2048 x 1280 medium-to-high profile |
+| Minimum-oriented play often stayed below 50 FPS | Active gameplay held the user-observed 60 FPS VSync ceiling |
+| Object-heavy states repeatedly approached 30--33 FPS | No comparable sustained degradation during roughly 93 minutes across multiple zones |
+| Leaving or reloading the current UI/world state was used as a recovery workaround | Performance remained stable through ordinary play and zone changes |
+| Graphics changes could destabilize or crash the client | Six logged graphics-device resets completed with correct rendering afterward |
+
+Preserved Metal HUD captures independently measured the embedded-runtime state
+falling from 54--56 FPS to 33.80 FPS while thermals remained nominal. The
+current 60 FPS result is the user's observation of the on-screen counter. The
+preserved logs independently establish the session duration, repeated world
+loads, exact bridge configuration, six graphics-device resets, and absence of
+a subsequent crash report. See the
+[frame-rate findings](docs/FINDINGS.md#repeatable-frame-rate-degradation) and
+[MoltenVK 1.4.2 validation](docs/experiments/0021-moltenvk-1.4.2-maintenance.md).
+
+## Why ESO needs a bridge
+
+ESO does not load MoltenVK from a replaceable dynamic library. MoltenVK 1.0.18
+is statically linked into the game executable, so swapping the bundled
+framework or archive does not change the code that runs.
+
+`teso4m4` solves that boundary by:
+
+1. loading through ESO's existing Bink dynamic-library path while re-exporting
+   the complete original Bink interface;
+2. verifying the exact ESO SHA-256, Mach-O UUID, and original patch-site bytes;
+3. loading the pinned official MoltenVK 1.4.2 dynamic library;
+4. redirecting all 17 verified externally referenced Vulkan entry points in
+   the running process;
+5. applying narrow HDR, surface-format, descriptor, and runtime-configuration
+   compatibility behavior required by ESO; and
+6. restoring executable code pages to RX permissions after patching.
+
+ESO's executable is not rewritten on disk. Unknown builds and unexpected bytes
+stop before redirection rather than receiving a best-effort patch. The detailed
+design is documented in [Bridge architecture](docs/ARCHITECTURE.md). The
+[detailed runtime hijack diagram](docs/images/teso4m4-runtime-bridge.svg) shows
+the reversible Bink loader setup, validation transaction, private code-page
+copies, 12-byte jumps, and restore path.
+
+## Steam or all macOS editions?
+
+**The stale runtime belongs to the ESO macOS game client; it is not evidence of
+a separate, abandoned Steam-only renderer.** ESO switched its Mac renderer to
+MoltenVK in [Update 20 in October 2018](https://forums.elderscrollsonline.com/en/discussion/comment/5552032/),
+and the current ESO 12.0.7 Mac executable under test still contains MoltenVK
+1.0.18, an [August 2018 release](https://github.com/KhronosGroup/MoltenVK/blob/main/Docs/Whats_New.md#moltenvk-1018).
+The game client has continued to update; its embedded translation layer has
+not kept pace with those updates.
+
+Steam supplies the entry point and authentication, then opens the ZeniMax ESO
+launcher, which maintains the Mac player client and shared game-content
+repositories. ZeniMax's own
+[support procedure](https://help.elderscrollsonline.com/app/answers/detail/a_id/26040/~/what-do-i-do-if-i-click-play-and-nothing-happens-on-steam-when-playing-on-mac)
+even moves a Steam-installed ESO game folder into a website-launcher
+installation before resuming updates. This supports a shared Mac client
+lineage, not an intentionally frozen Steam branch.
+
+The distinction for this repository is operational:
+
+- **Technical target:** the exact ESO macOS `eso.app` and its statically linked
+  MoltenVK runtime.
+- **Supported release today:** the Steam macOS installation, exact ESO 12.0.7
+  target, and normal Steam-authenticated launch path used for every validation.
+- **Not yet claimed:** the direct website-launcher installation. It is likely
+  to share the same game client, but a current non-Steam binary has not been
+  fingerprinted or passed this installer's complete path and restore checks.
+
+See the [macOS client scope review](docs/research/eso-macos-client-scope.md) for
+the source record and limits of that conclusion.
+
+## Validated checkpoint
+
+| Component | Verified value |
+|---|---|
+| Mac | Apple M4 MacBook Air |
+| ESO | Steam macOS client 12.0.7, databuild `3281538` |
+| Replacement runtime | Official MoltenVK 1.4.2 |
+| Bridge profile | `performance-aggressive` |
+| Display profile | 2048 x 1280, VSync enabled |
+| Graphics profile | Mixed medium-to-high settings with SSAO and high-resolution shadows |
+| Ordinary-play validation | Roughly 93 minutes across multiple zones |
+| Observed active-gameplay frame rate | 60 FPS VSync ceiling |
+| Graphics-device resets | Six complete sequences, zero logged reset errors |
+| Crash result | No subsequent ESO crash report |
+
+The 48 allowlisted settings are available as the
+[M4/MoltenVK 1.4.2 standard profile](config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+It is a selective merge reference, not a complete `UserSettings.txt`
+replacement.
+
+The current bridge is deliberately exact-build software. A launcher update is
+accepted only after its executable identity and static layout pass the update
+gate. The tested result applies to the combined runtime, bridge profile,
+settings, and cache checkpoint on the listed M4; other Apple GPUs and ESO
+builds require their own validation.
+
+A full-screen hot-pink frame remains visible briefly during early startup. It
+clears before normal UI and gameplay and had no observed effect on the validated
+session. Its investigation is tracked separately in the
+[current project status](docs/STATUS.md).
+
+## Build and install
 
 Requirements: macOS, Xcode command-line tools, Python 3, and a locally installed
-Steam copy of ESO. No ESO or Bink binaries are distributed by this repository.
+Steam copy of ESO. No ESO executable, Bink binary, credentials, or cache is
+distributed by this repository.
+
+Fetch the pinned official MoltenVK release and build the bridge:
 
 ```sh
 ./scripts/fetch-moltenvk.sh
 ./scripts/build.sh
 ```
 
-Installation is deliberately gated because live bridge builds have crashed or
-produced severe rendering corruption during graphics startup:
+Check the installed ESO build before installation:
+
+```sh
+./scripts/quick-update-check.sh
+```
+
+`READY` is the routine path. `STOP` means the client, launcher state, or bridge
+checkpoint needs review before installation.
+
+Install or restore the validated bridge:
 
 ```sh
 TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK ./scripts/install.sh
 ./scripts/restore.sh
 ```
 
-## Update gate
+The explicit environment gate prevents an accidental game-bundle change; it
+does not replace the exact-build, source-build, original-file, and restore-path
+checks performed by the installer.
 
-Before preparing an experiment, check whether the launcher has replaced the
-local ESO executable, whether its completed remote comparison is current, and
-whether the installed bridge checkpoint still matches:
-
-```sh
-./scripts/quick-update-check.sh
-```
-
-`READY` is the routine fast path. It covers the executable identity, client
-version/databuild, launcher repository state, and installed bridge checkpoint.
-`STOP` exits `3` and exposes the failing component for deeper analysis. The
-component checks remain available individually:
-
-```sh
-./scripts/check-update.sh
-./scripts/check-launcher-state.sh
-```
-
-These passive checks do not start an app or contact the network. If a new ESO
-build retains the verified binary layout,
+When a new ESO build retains the verified binary layout,
 `scripts/rebase-update.sh` can audit and create a new target manifest without
-modifying the game bundle. See the [update runbook](docs/UPDATES.md); no target
-is installed merely because the fast static audit passes.
+modifying the game bundle. See the [update runbook](docs/UPDATES.md).
 
-## Scope and legal note
+## Documentation
 
-This project is unaffiliated with ZeniMax, Bethesda, Valve, Apple, or Khronos.
-It does not distribute proprietary game files, credentials, or caches. MoltenVK
-is fetched from its official release and remains under its own Apache 2.0
-license. Use this project only with software and accounts you are authorized to
-operate.
+- [Current verified status](docs/STATUS.md)
+- [Durable findings](docs/FINDINGS.md)
+- [Bridge architecture](docs/ARCHITECTURE.md)
+- [Experiment history](docs/experiments/README.md)
+- [Settings and operational guidance](docs/SETTINGS.md)
+- [Documentation guide](docs/README.md)
+
+## Repository layout
+
+```text
+config/             Build fingerprints and non-personal settings snapshots
+docs/               Current status, findings, plans, and technical guidance
+docs/experiments/   Append-only experiment records and evidence summaries
+docs/research/      Dated external precedent and literature reviews
+scripts/            Fetch, build, install, restore, and status helpers
+src/                Runtime bridge source
+tools/              Binary-analysis and compatibility probes
+```
+
+## Scope and license
+
+`teso4m4` is unaffiliated with ZeniMax, Bethesda, Valve, Apple, or Khronos. The
+project is MIT-licensed and does not distribute proprietary game files,
+credentials, or caches. MoltenVK is fetched from its official release and
+remains under its Apache 2.0 license. Use this project only with software and
+accounts you are authorized to operate.
 
 ## 한국어 요약
 
-Steam판 ESO의 macOS 성능 저하와 종료 크래시를 조사하고, 오래된 정적
-MoltenVK를 최신 런타임으로 우회하는 실험 프로젝트입니다. 현재 Apple M4
-체크포인트는 공식 MoltenVK 1.4.2와 비교적 높은 그래픽 설정으로 장시간
-플레이 및 설정·해상도 변경을 통과했습니다. 시작 직후 약 1초간 전체 화면이
-핫핑크로 보이는 글리치는 남아 있습니다.
+`teso4m4`는 ESO의 macOS 실행 파일에 정적으로 포함된 MoltenVK 1.0.18을
+공식 MoltenVK 1.4.2로 우회하는 비공식 런타임 패치입니다. 구형 런타임은
+Steam 전용 앱의 문제가 아니라 현재 ESO macOS 클라이언트에 포함된
+구성요소이며, 현재 배포본과 설치 절차는 Steam판의 정상 인증 경로에서
+검증됐습니다. 테스트한 M4 MacBook Air에서는 과거 낮은 설정에서도 50 FPS
+유지가 어려웠고
+오브젝트가 많아지면 약 30--33 FPS까지 반복적으로 하락했지만, 패치 적용 후
+2048 x 1280의 중간 이상 혼합 설정으로 약 93분간 여러 지역을 플레이하면서
+사용자가 확인한 실제 플레이 구간은 VSync 상한인 60 FPS를 유지했습니다.
+여섯 번의 그래픽 장치 재설정과 설정·해상도 변경도 크래시나 지속적인
+렌더링 손상 없이 완료됐습니다. 정확히 검증된 ESO 빌드에서만 작동하며,
+Steam 실행과 인증 경로 및 원본 복구 경로를 그대로 보존합니다.

@@ -18,7 +18,17 @@ verdict. Its client log contains six complete graphics-device reset sequences,
 zero reset error markers, repeated loaded-world completions, and no subsequent
 ESO crash report. The user reports that resolution and graphics-setting
 changes now return to correct scene rendering and that relatively high settings
-remain comfortably playable.
+remain comfortably playable. With the committed 2048 x 1280 standard profile,
+the user observed the on-screen counter remain at the 60 FPS VSync ceiling
+throughout active gameplay in the roughly 93-minute session, without the
+embedded-runtime baseline's recurring sustained drop toward 30--33 FPS.
+
+The preserved ESO, interface, and bridge logs do not contain continuous FPS
+samples. They independently establish the session boundary, bridge
+configuration, world loads, reset sequences, and absence of a subsequent crash
+report; the 60 FPS result is a direct user observation. It applies to the
+combined runtime, profile, settings, and cache checkpoint on the tested M4, not
+as a guarantee for another machine or an attribution to one MoltenVK change.
 
 This establishes the current 1.4.2 checkpoint as a successful gameplay build
 on the tested Apple M4 MacBook Air. It does not isolate which 1.4.2 change,
