@@ -31,7 +31,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0021 | 2026-07-26 / 2026-08-01 | Official MoltenVK 1.4.2 maintenance adoption | Succeeded in ordinary high-settings gameplay; live graphics resets render correctly | [Run](0021-moltenvk-1.4.2-maintenance.md) |
 | 0022 | 2026-08-01 | Transient startup surface analysis | Screenshot amendment proves exact sRGB magenta persists beyond the first-surface boundary | [Run](0022-startup-surface-analysis.md) |
 | 0023 | 2026-08-01 | Bounded startup color audit candidate | Non-game mechanism succeeded; generation-1-only scope invalidated before installation | [Run](0023-startup-color-audit-candidate.md) |
-| 0024 | 2026-08-01 | Two-generation startup color audit redesign | Synthetic, real-MoltenVK, and full-build validation passed; not installed | [Run](0024-two-generation-startup-color-audit.md) |
+| 0024 | 2026-08-01 | Two-generation startup color audit redesign | Non-game validation passed; approved candidate installed, awaiting one bounded startup | [Run](0024-two-generation-startup-color-audit.md) |
 
 ## Recording policy
 

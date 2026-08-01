@@ -34,12 +34,10 @@ are in [Project status](STATUS.md); completed runs belong in the
   the known FX-material path from window/layer exposure.
 - Keep the redesign isolated from the normal performance path, retain the exact
   aggressive configuration, and keep the incidental build change removed.
-- The next gate is explicit approval for reversible game-bundle installation.
-  Only after installation, mode/configuration verification, and restore-path
-  verification may one Steam-path startup be requested.
-- Any later installation still requires explicit game-bundle approval and must
-  preserve both caches and settings. Analyze only its exact run ID and restore
-  the normal `performance-aggressive` marker after evidence collection.
+- The approved reversible installation is complete. Request exactly one normal
+  Steam-path startup ending at account login or 30 seconds, analyze only its
+  exact run ID, then restore the normal `performance-aggressive` marker while
+  preserving both caches and settings.
 - Keep the working 1.4.2 runtime profile and cache state unchanged while
   investigating the startup artifact.
 

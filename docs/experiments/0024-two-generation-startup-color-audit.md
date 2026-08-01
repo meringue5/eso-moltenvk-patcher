@@ -1,8 +1,8 @@
 # Experiment 0024: two-generation startup color audit redesign
 
 - Date: 2026-08-01
-- Outcome: **two-generation non-game validation passed; candidate not installed**
-- Rollback: **not required; game bundle, runtime, profile, caches, and settings were unchanged**
+- Outcome: **two-generation non-game validation passed; approved candidate installed, awaiting one bounded startup**
+- Rollback: **verified available; pristine loader and both cache states were checked before installation**
 
 ## Question
 
@@ -109,6 +109,48 @@ startup: exact magenta in a submitted clear decides that source; black or no
 clear rejects only the clear hypothesis and leaves the known FX-material and
 window/layer candidates.
 
-The candidate remains uninstalled. Modifying the game bundle requires separate
-explicit approval, after which the exact installed mode/configuration and
-restore path must be checked before one Steam-path startup is requested.
+## Approved installation checkpoint
+
+The user explicitly approved installation. An initial attempt correctly made
+no change because Steam was still running. After the user fully exited Steam,
+the update gate again recognized the exact ESO build. The installer then:
+
+1. restored the pristine Bink loader with cache preservation enabled;
+2. verified the original loader and absent active marker;
+3. installed the exact rebuilt bridge and official MoltenVK 1.4.2;
+4. wrote marker `startup-color-audit`;
+5. left the active and old-backup caches in place.
+
+Post-install verification at 17:24 +0900 records:
+
+```text
+bridge proxy SHA-256:
+  766526a899c07523790ac753959ab99a522af5b6e8993e1cadd690094ec8cc71
+re-export target SHA-256:
+  f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927
+official MoltenVK 1.4.2 SHA-256:
+  aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+active 1.4.2 cache SHA-256:
+  8316fda8dae6a03ac2c62cb40986ce0ae3ef08703f9c21d911760b88c096ba45
+old-backup cache SHA-256:
+  72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+```
+
+Installed bridge, re-export target, and runtime match their build artifacts
+byte-for-byte. The pristine restore source matches the independently preserved
+ESO copy. Cache hashes are identical before and after restore/install. Settings
+were not changed.
+
+## User-run gate
+
+One normal Steam-path startup is now justified. Stop at account login or after
+30 seconds, whichever comes first, then quit ESO and Steam normally. Stop
+earlier for a crash, hang, or unexpected corruption. No gameplay or additional
+screenshot is required.
+
+Exact magenta in a submitted generation-1 or generation-2 clear confirms the
+clear source. Only black/non-magenta or no submitted clear rejects that
+hypothesis and leaves the known FX-material and window/layer candidates.
+Missing two-generation submit/present linkage is inconclusive. After evidence
+collection, restore the normal `performance-aggressive` marker and preserve
+both caches.

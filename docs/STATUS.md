@@ -4,10 +4,12 @@ Last updated: 2026-08-01
 
 ## Current verified checkpoint
 
-The installed bridge remains exact for ESO 12.0.7, databuild `3281538`, and
-loads official MoltenVK 1.4.2 in `performance-aggressive` mode. The update
-check, executable fingerprint, installed runtime hash, and 1.4.2 pipeline-cache
-UUID all remain current.
+The validated gameplay baseline remains official MoltenVK 1.4.2 with the
+`performance-aggressive` profile for ESO 12.0.7, databuild `3281538`. The
+currently installed bridge is the explicitly approved, temporary
+`startup-color-audit` diagnostic, which retains the same effective aggressive
+MoltenVK configuration. The update check, executable fingerprint, installed
+runtime hash, and 1.4.2 pipeline-cache UUID all remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -64,11 +66,8 @@ black, and load-only submission with real MoltenVK at the exact ESO surface
 extents. Its generation-1-only stopping rule is now invalidated before
 installation, however: it suppresses logging precisely when the screenshot
 shows further evidence is required. The source build and 98 tests pass, but
-this candidate must not be installed or used for a user run. The installed
-game remains on the prior `performance-aggressive` bridge. The next gate is a
-smaller bounded redesign that covers generation 1 and early generation 2,
-followed by non-game validation; only then can explicit game-bundle approval be
-considered.
+that candidate was not installed or used for a user run. It was superseded by
+the smaller bounded redesign that covers generation 1 and early generation 2.
 
 Experiment 0024 implements that bounded two-generation redesign locally. It
 finishes at generation-2 present ordinal 180 and independently caps detailed
@@ -76,9 +75,11 @@ color records at 2,048, after which wrappers directly forward. CPU-only,
 official-MoltenVK/AppKit, and full-build validation now pass. Nine GPU control
 processes agree on pixels and recorded operations at small and exact ESO
 extents; only the first eight acquire/present results are logged before a silent
-ordinal-180 finish. All 99 Python tests and static checks pass. The candidate
-remains uninstalled; explicit game-bundle modification approval is the next
-gate.
+ordinal-180 finish. All 99 Python tests and static checks pass. Explicit
+game-bundle modification approval was received, and the exact built bridge was
+installed at 17:24 in `startup-color-audit` mode after a cache-preserving
+restore. The next gate is one bounded Steam-path startup followed by exact-run
+analysis and restoration to the normal `performance-aggressive` marker.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
@@ -92,9 +93,9 @@ as the
 The full settings and latest logs remain ignored evidence at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`.
 
-The active 1.4.2 cache is 7,754,395 bytes, has UUID
+The active 1.4.2 cache is 7,977,079 bytes, has UUID
 `db6602241a0502090000000100000000`, and SHA-256
-`3bbd27ad1e37fce3981f8c7dc7dae419791149b147445d38cd9fab04d03413df`.
+`8316fda8dae6a03ac2c62cb40986ce0ae3ef08703f9c21d911760b88c096ba45`.
 The preserved 1.4.1 runtime/cache and older cache remain available.
 
 ## Historical safety record
