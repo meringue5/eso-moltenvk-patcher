@@ -38,13 +38,14 @@ install_name_tool -id @loader_path/libBink2Macx64.teso4m4-original.dylib \
   "$BUILD/libBink2Macx64.teso4m4-original.dylib"
 cp -p "$MVK" "$BUILD/libMoltenVK.teso4m4.dylib"
 
-xcrun clang -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
+xcrun clang -fobjc-arc -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
   -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_compat.c" \
   "$ROOT/src/eso_fx_sentinel.c" \
   "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_reset_trace.c" \
-  "$ROOT/src/mvk_render_audit.c" \
+  "$ROOT/src/mvk_render_audit.c" "$ROOT/src/mvk_present_pixel.m" \
+  -framework Metal -framework Foundation \
   -Wl,-install_name,@executable_path/libBink2Macx64.dylib \
   -Wl,-reexport_library,"$BUILD/libBink2Macx64.teso4m4-original.dylib" \
   -o "$BUILD/libBink2Macx64.dylib"
@@ -124,4 +125,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" performance-aggressive
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-color-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-fx-neutralize
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-present-pixel-audit
 echo "Built teso4m4 artifacts in $BUILD"

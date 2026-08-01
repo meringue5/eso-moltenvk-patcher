@@ -13,6 +13,7 @@
 
 extern "C" {
 #include "mvk_lifecycle.h"
+#include "mvk_present_pixel.h"
 }
 
 extern "C" void VKAPI_CALL vkGetMTLTextureMVK(
@@ -63,7 +64,18 @@ static void audit_log(const char* message) {
 static void enable_startup_color_audit(void) {
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&audit_log);
+    teso4m4_present_pixel_reset();
+    if (!teso4m4_present_pixel_configure(
+            (PFN_vkVoidFunction)vkGetMTLTextureMVK,
+            (PFN_vkQueueWaitIdle)vkQueueWaitIdle,
+            &audit_log)) {
+        fprintf(stderr, "present pixel sampler configuration failed\n");
+        exit(3);
+    }
+    teso4m4_lifecycle_set_present_pixel_sampler(
+        &teso4m4_present_pixel_sample);
     teso4m4_lifecycle_set_startup_color_audit(true);
+    teso4m4_lifecycle_set_startup_present_pixel_audit(true);
     g_create_swapchain = (PFN_vkCreateSwapchainKHR)
         teso4m4_lifecycle_intercept(
             "vkCreateSwapchainKHR",
@@ -750,6 +762,21 @@ int main(int argc, char** argv) {
              (!has_audit_clear ||
               strstr(g_audit_log, expected_audit_rgba) == NULL))) {
             fprintf(stderr, "startup color audit did not classify %s\n", argv[1]);
+            return 3;
+        }
+        const char* expected_pixel_summary =
+            first_mode == kClearNeonPink
+                ? "STARTUP_PRESENT_PIXEL_SUMMARY: generation=1 ordinal=1"
+                  " image_index="
+                : "STARTUP_PRESENT_PIXEL_SUMMARY: generation=2 ordinal=1"
+                  " image_index=";
+        const char* expected_pixel_class =
+            first_mode == kClearNeonPink
+                ? "exact_magenta=5 near_magenta=5 black=0"
+                : "exact_magenta=0 near_magenta=0 black=5";
+        const char* summary = strstr(g_audit_log, expected_pixel_summary);
+        if (!summary || !strstr(summary, expected_pixel_class)) {
+            fprintf(stderr, "present pixel audit did not classify %s\n", argv[1]);
             return 3;
         }
         if (!(corrected_pixel[0] <= 3 && corrected_pixel[1] <= 3 &&

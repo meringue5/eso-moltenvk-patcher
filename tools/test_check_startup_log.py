@@ -426,6 +426,39 @@ class StartupLogTests(unittest.TestCase):
             verdict.reasons,
         )
 
+    def test_accepts_startup_present_pixel_audit_when_sampler_is_ready(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: startup present pixel audit enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "generation_limit=2 generation_2_present_limit=180 pixel_samples=8",
+        ).replace(
+            "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=1 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "MOLTENVK_CONFIG: live_resources=0 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=0 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=1",
+        )
+        text += "\n" + record(
+            "STARTUP_COLOR_AUDIT_BEGIN: generation_limit=2 "
+            "generation_2_present_limit=180"
+        )
+        text += "\n" + record(
+            "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1 "
+            "generation_2_samples=1,30,60,90,120,150,180"
+        )
+        text += "\n" + record(
+            "STARTUP_PRESENT_PIXEL_READY: synchronization=queue-wait-idle "
+            "samples=8 points_per_sample=5"
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
     def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
         text = good_log().replace(
             "MODE: descriptor compatibility enabled live_resources=1 "

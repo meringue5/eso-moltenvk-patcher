@@ -10,6 +10,15 @@
 #endif
 
 typedef void (*Teso4m4LifecycleLogFunction)(const char* message);
+typedef bool (*Teso4m4PresentPixelSampler)(
+    VkQueue queue,
+    VkImage image,
+    VkFormat format,
+    uint32_t width,
+    uint32_t height,
+    uint64_t generation,
+    uint32_t ordinal,
+    uint32_t image_index);
 
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_reset(void);
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_logger(
@@ -17,6 +26,11 @@ TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_logger(
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_enabled(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_startup_color_audit(bool enabled);
+TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_startup_present_pixel_audit(bool enabled);
+TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_present_pixel_sampler(
+    Teso4m4PresentPixelSampler sampler);
 TESO4M4_LIFECYCLE_HIDDEN bool
 teso4m4_lifecycle_startup_window_open(void);
 TESO4M4_LIFECYCLE_HIDDEN PFN_vkVoidFunction

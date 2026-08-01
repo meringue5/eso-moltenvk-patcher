@@ -62,6 +62,16 @@ are in [Project status](STATUS.md); completed runs belong in the
   neutralized. The normal `performance-aggressive` profile is restored. A
   successor must intercept a later parameter copy/use or presented draw and
   account for any object created before the bridge constructor.
+- Experiment 0026 is the completed non-game successor candidate. It samples
+  five points from eight final swapchain images immediately before present,
+  requires same-queue semaphore provenance, and never changes pixels. Exact
+  magenta and black controls pass at ESO's format and extents, along with the
+  complete temporary bridge link and 108 Python tests.
+- Obtain explicit approval naming `startup-present-pixel-audit`, then perform
+  the cache-preserving restore, clean source build, and exact-mode install.
+  Do not launch any user process. One user-controlled normal Steam-path startup
+  then decides whether the remaining source is inside final swapchain content
+  or after that boundary. Missing any of eight samples is inconclusive.
 
 ### Superseded reset-investigation record
 

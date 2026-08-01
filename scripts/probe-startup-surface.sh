@@ -9,6 +9,7 @@ DYLIB="$DYLIB_DIRECTORY/libMoltenVK.dylib"
 SOURCE="$ROOT/tools/probe_startup_surface.mm"
 OUTPUT="$ROOT/build/probe_startup_surface"
 LIFECYCLE_OBJECT="$ROOT/build/probe_startup_surface_lifecycle.o"
+PRESENT_PIXEL_OBJECT="$ROOT/build/probe_startup_surface_present_pixel.o"
 
 for file in "$DYLIB" "$SOURCE"; do
   [[ -f "$file" ]] || { echo "Missing required file: $file"; exit 1; }
@@ -20,10 +21,16 @@ xcrun clang -std=c11 -arch x86_64 -mmacosx-version-min=12.0 \
   -I"$HEADER_ROOT/MoltenVK/include" \
   -c "$ROOT/src/mvk_lifecycle.c" -o "$LIFECYCLE_OBJECT"
 
+xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=12.0 \
+  -Wall -Wextra -Werror -I"$ROOT/src" \
+  -I"$HEADER_ROOT/MoltenVK/include" \
+  -c "$ROOT/src/mvk_present_pixel.m" -o "$PRESENT_PIXEL_OBJECT"
+
 xcrun clang++ -fobjc-arc -std=c++17 -arch x86_64 \
   -mmacosx-version-min=12.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$HEADER_ROOT/MoltenVK/include" \
-  "$SOURCE" "$LIFECYCLE_OBJECT" -L"$DYLIB_DIRECTORY" -lMoltenVK \
+  "$SOURCE" "$LIFECYCLE_OBJECT" "$PRESENT_PIXEL_OBJECT" \
+  -L"$DYLIB_DIRECTORY" -lMoltenVK \
   -Wl,-rpath,"$DYLIB_DIRECTORY" \
   -framework AppKit -framework Metal -framework QuartzCore \
   -o "$OUTPUT"

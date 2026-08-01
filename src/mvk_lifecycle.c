@@ -16,6 +16,7 @@ enum {
     kMaxRenderPasses = 512,
     kMaxFramebuffers = 512,
     kMaxCommandBuffers = 512,
+    kMaxSignaledSemaphores = 512,
     kMaxRenderPassAttachments = 16,
     kFirstPresentationLimit = 8,
     kStartupAuditGenerationLimit = 2,
@@ -26,6 +27,9 @@ enum {
 typedef struct {
     VkSwapchainKHR handle;
     uint64_t generation;
+    VkFormat format;
+    uint32_t width;
+    uint32_t height;
     uint32_t acquire_count;
     uint32_t present_count;
     bool alive;
@@ -33,9 +37,17 @@ typedef struct {
 
 typedef struct {
     VkImage handle;
+    VkSwapchainKHR swapchain;
     uint64_t generation;
+    uint32_t index;
     bool alive;
 } ImageRecord;
+
+typedef struct {
+    VkSemaphore handle;
+    VkQueue queue;
+    bool occupied;
+} SignaledSemaphoreRecord;
 
 typedef struct {
     VkImageView handle;
@@ -97,13 +109,16 @@ static ImageViewRecord g_image_views[kMaxImageViews];
 static RenderPassRecord g_render_passes[kMaxRenderPasses];
 static FramebufferRecord g_framebuffers[kMaxFramebuffers];
 static CommandBufferRecord g_command_buffers[kMaxCommandBuffers];
+static SignaledSemaphoreRecord g_signaled_semaphores[kMaxSignaledSemaphores];
 static uint64_t g_generation_counter;
 static uint64_t g_wait_counter;
 static bool g_overflow_reported;
 static bool g_enabled = true;
 static atomic_bool g_startup_color_audit;
+static atomic_bool g_startup_present_pixel_audit;
 static atomic_bool g_startup_color_audit_finished;
 static atomic_uint g_startup_color_detail_count;
+static Teso4m4PresentPixelSampler g_present_pixel_sampler;
 
 static void lifecycle_log(const char* format, ...) {
     if (!g_logger ||
@@ -165,6 +180,49 @@ static ImageRecord* find_image(VkImage handle) {
     return NULL;
 }
 
+static ImageRecord* find_swapchain_image(
+    VkSwapchainKHR swapchain,
+    uint32_t image_index) {
+    for (size_t index = 0; index < kMaxSwapchainImages; ++index) {
+        if (g_images[index].alive &&
+            g_images[index].swapchain == swapchain &&
+            g_images[index].index == image_index) {
+            return &g_images[index];
+        }
+    }
+    return NULL;
+}
+
+static SignaledSemaphoreRecord* find_signaled_semaphore(
+    VkSemaphore handle) {
+    for (size_t index = 0; index < kMaxSignaledSemaphores; ++index) {
+        if (g_signaled_semaphores[index].occupied &&
+            g_signaled_semaphores[index].handle == handle) {
+            return &g_signaled_semaphores[index];
+        }
+    }
+    return NULL;
+}
+
+static void remember_signaled_semaphore(VkSemaphore handle, VkQueue queue) {
+    SignaledSemaphoreRecord* existing = find_signaled_semaphore(handle);
+    if (existing) {
+        existing->queue = queue;
+        return;
+    }
+    for (size_t index = 0; index < kMaxSignaledSemaphores; ++index) {
+        if (!g_signaled_semaphores[index].occupied) {
+            g_signaled_semaphores[index] = (SignaledSemaphoreRecord){
+                .handle = handle,
+                .queue = queue,
+                .occupied = true,
+            };
+            return;
+        }
+    }
+    report_overflow("signaled-semaphore");
+}
+
 static ImageViewRecord* find_image_view(VkImageView handle) {
     for (size_t index = 0; index < kMaxImageViews; ++index) {
         if (g_image_views[index].alive &&
@@ -197,12 +255,16 @@ static FramebufferRecord* find_framebuffer(VkFramebuffer handle) {
 
 static SwapchainRecord* add_swapchain(
     VkSwapchainKHR handle,
-    uint64_t generation) {
+    uint64_t generation,
+    const VkSwapchainCreateInfoKHR* create_info) {
     for (size_t index = 0; index < kMaxSwapchains; ++index) {
         if (!g_swapchains[index].alive) {
             g_swapchains[index] = (SwapchainRecord){
                 .handle = handle,
                 .generation = generation,
+                .format = create_info ? create_info->imageFormat : 0,
+                .width = create_info ? create_info->imageExtent.width : 0,
+                .height = create_info ? create_info->imageExtent.height : 0,
                 .alive = true,
             };
             return &g_swapchains[index];
@@ -212,17 +274,25 @@ static SwapchainRecord* add_swapchain(
     return NULL;
 }
 
-static void add_image(VkImage handle, uint64_t generation) {
+static void add_image(
+    VkImage handle,
+    VkSwapchainKHR swapchain,
+    uint64_t generation,
+    uint32_t image_index) {
     ImageRecord* existing = find_image(handle);
     if (existing) {
         existing->generation = generation;
+        existing->swapchain = swapchain;
+        existing->index = image_index;
         return;
     }
     for (size_t index = 0; index < kMaxSwapchainImages; ++index) {
         if (!g_images[index].alive) {
             g_images[index] = (ImageRecord){
                 .handle = handle,
+                .swapchain = swapchain,
                 .generation = generation,
+                .index = image_index,
                 .alive = true,
             };
             return;
@@ -353,6 +423,29 @@ static bool startup_audit_finished(void) {
            atomic_load(&g_startup_color_audit_finished);
 }
 
+static bool should_sample_present_pixel(
+    uint64_t generation,
+    uint32_t ordinal) {
+    if (generation == 1) {
+        return ordinal == 1;
+    }
+    if (generation != 2) {
+        return false;
+    }
+    switch (ordinal) {
+        case 1:
+        case 30:
+        case 60:
+        case 90:
+        case 120:
+        case 150:
+        case 180:
+            return true;
+        default:
+            return false;
+    }
+}
+
 static VKAPI_ATTR VkResult VKAPI_CALL traced_device_wait_idle(
     VkDevice device) {
     if (!g_next_device_wait_idle) {
@@ -394,7 +487,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_swapchain(
             create_info ? find_swapchain(create_info->oldSwapchain) : NULL;
         old_generation = old_record ? old_record->generation : 0;
         generation = ++g_generation_counter;
-        add_swapchain(*swapchain, generation);
+        add_swapchain(*swapchain, generation, create_info);
         pthread_mutex_unlock(&g_lock);
     }
 
@@ -491,7 +584,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_get_swapchain_images(
     if (generation != 0 && images && image_count &&
         (result == VK_SUCCESS || result == VK_INCOMPLETE)) {
         for (uint32_t index = 0; index < *image_count; ++index) {
-            add_image(images[index], generation);
+            add_image(images[index], swapchain, generation, index);
         }
     }
     pthread_mutex_unlock(&g_lock);
@@ -783,6 +876,20 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_submit(
     }
     VkResult result =
         g_next_queue_submit(queue, submit_count, submits, fence);
+    if (result == VK_SUCCESS && submits) {
+        pthread_mutex_lock(&g_lock);
+        for (uint32_t submit_index = 0; submit_index < submit_count;
+             ++submit_index) {
+            for (uint32_t signal_index = 0;
+                 signal_index < submits[submit_index].signalSemaphoreCount;
+                 ++signal_index) {
+                remember_signaled_semaphore(
+                    submits[submit_index].pSignalSemaphores[signal_index],
+                    queue);
+            }
+        }
+        pthread_mutex_unlock(&g_lock);
+    }
     if (!atomic_load(&g_startup_color_audit) ||
         atomic_load(&g_startup_color_audit_finished) || !submits) {
         return result;
@@ -828,12 +935,90 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
     if (startup_audit_finished()) {
         return g_next_queue_present(queue, present_info);
     }
+    if (atomic_load(&g_startup_present_pixel_audit) && present_info) {
+        for (uint32_t index = 0; index < present_info->swapchainCount;
+             ++index) {
+            const VkSwapchainKHR swapchain = present_info->pSwapchains[index];
+            const uint32_t image_index = present_info->pImageIndices
+                ? present_info->pImageIndices[index]
+                : UINT32_MAX;
+            SwapchainRecord swapchain_snapshot = {0};
+            ImageRecord image_snapshot = {0};
+            bool found_swapchain = false;
+            bool found_image = false;
+            bool same_queue_ready = true;
+            Teso4m4PresentPixelSampler sampler = NULL;
+            pthread_mutex_lock(&g_lock);
+            SwapchainRecord* record = find_swapchain(swapchain);
+            if (record) {
+                swapchain_snapshot = *record;
+                found_swapchain = true;
+            }
+            ImageRecord* image = find_swapchain_image(
+                swapchain, image_index);
+            if (image) {
+                image_snapshot = *image;
+                found_image = true;
+            }
+            for (uint32_t wait_index = 0;
+                 wait_index < present_info->waitSemaphoreCount;
+                 ++wait_index) {
+                SignaledSemaphoreRecord* signal = find_signaled_semaphore(
+                    present_info->pWaitSemaphores[wait_index]);
+                if (!signal || signal->queue != queue) {
+                    same_queue_ready = false;
+                    break;
+                }
+            }
+            sampler = g_present_pixel_sampler;
+            pthread_mutex_unlock(&g_lock);
+
+            const uint32_t ordinal = found_swapchain
+                ? swapchain_snapshot.present_count + 1
+                : 0;
+            if (!should_sample_present_pixel(
+                    swapchain_snapshot.generation, ordinal)) {
+                continue;
+            }
+            if (!found_image || !same_queue_ready || !sampler) {
+                lifecycle_log(
+                    "STARTUP_PRESENT_PIXEL_SKIP: generation=%" PRIu64
+                    " ordinal=%u image_index=%u image=%s"
+                    " synchronization=%s sampler=%s",
+                    swapchain_snapshot.generation, ordinal, image_index,
+                    found_image ? "tracked" : "missing",
+                    same_queue_ready ? "same-queue" : "unconfirmed",
+                    sampler ? "ready" : "missing");
+                continue;
+            }
+            if (!sampler(
+                    queue, image_snapshot.handle, swapchain_snapshot.format,
+                    swapchain_snapshot.width, swapchain_snapshot.height,
+                    swapchain_snapshot.generation, ordinal, image_index)) {
+                lifecycle_log(
+                    "STARTUP_PRESENT_PIXEL_SKIP: generation=%" PRIu64
+                    " ordinal=%u image_index=%u image=tracked"
+                    " synchronization=same-queue sampler=failed",
+                    swapchain_snapshot.generation, ordinal, image_index);
+            }
+        }
+    }
     VkResult result = g_next_queue_present(queue, present_info);
     if (!present_info) {
         lifecycle_log("SWAPCHAIN_PRESENT: queue=%p info=NULL result=%d",
                       (void*)queue, result);
         return result;
     }
+    pthread_mutex_lock(&g_lock);
+    for (uint32_t wait_index = 0;
+         wait_index < present_info->waitSemaphoreCount; ++wait_index) {
+        SignaledSemaphoreRecord* signal = find_signaled_semaphore(
+            present_info->pWaitSemaphores[wait_index]);
+        if (signal) {
+            signal->occupied = false;
+        }
+    }
+    pthread_mutex_unlock(&g_lock);
     bool finish_startup_audit = false;
     for (uint32_t index = 0; index < present_info->swapchainCount; ++index) {
         const VkSwapchainKHR swapchain = present_info->pSwapchains[index];
@@ -1121,13 +1306,16 @@ void teso4m4_lifecycle_reset(void) {
     memset(g_render_passes, 0, sizeof(g_render_passes));
     memset(g_framebuffers, 0, sizeof(g_framebuffers));
     memset(g_command_buffers, 0, sizeof(g_command_buffers));
+    memset(g_signaled_semaphores, 0, sizeof(g_signaled_semaphores));
     g_generation_counter = 0;
     g_wait_counter = 0;
     g_overflow_reported = false;
     g_enabled = true;
     atomic_store(&g_startup_color_audit, false);
+    atomic_store(&g_startup_present_pixel_audit, false);
     atomic_store(&g_startup_color_audit_finished, false);
     atomic_store(&g_startup_color_detail_count, 0);
+    g_present_pixel_sampler = NULL;
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -1152,6 +1340,22 @@ void teso4m4_lifecycle_set_startup_color_audit(bool enabled) {
             "STARTUP_COLOR_AUDIT_BEGIN: generation_limit=2"
             " generation_2_present_limit=180");
     }
+}
+
+void teso4m4_lifecycle_set_startup_present_pixel_audit(bool enabled) {
+    atomic_store(&g_startup_present_pixel_audit, enabled);
+    if (enabled) {
+        lifecycle_log(
+            "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1"
+            " generation_2_samples=1,30,60,90,120,150,180");
+    }
+}
+
+void teso4m4_lifecycle_set_present_pixel_sampler(
+    Teso4m4PresentPixelSampler sampler) {
+    pthread_mutex_lock(&g_lock);
+    g_present_pixel_sampler = sampler;
+    pthread_mutex_unlock(&g_lock);
 }
 
 bool teso4m4_lifecycle_startup_window_open(void) {

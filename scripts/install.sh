@@ -23,7 +23,8 @@ MODE="${TESO4M4_MODE:-descriptor-compat}"
   || "$MODE" == "performance-safe" \
   || "$MODE" == "performance-aggressive" \
   || "$MODE" == "startup-color-audit" \
-  || "$MODE" == "startup-fx-neutralize" ]] || {
+  || "$MODE" == "startup-fx-neutralize" \
+  || "$MODE" == "startup-present-pixel-audit" ]] || {
   echo "Unsupported experiment mode: $MODE"
   exit 1
 }

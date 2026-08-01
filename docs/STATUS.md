@@ -126,6 +126,24 @@ must target a later parameter copy/use or presented draw and account for a
 possible object created before the bridge constructor. No further user run is
 justified until that successor passes its non-game gate.
 
+Experiment 0026 now supplies that successor at the final swapchain boundary.
+Its isolated `startup-present-pixel-audit` mode reads, but never changes, five
+points from eight scheduled final swapchain images immediately before the real
+present. Same-queue semaphore provenance plus a scheduled `vkQueueWaitIdle`
+prevents reading unfinished rendering. The real MoltenVK/AppKit controls
+distinguish exact RGBA `(255,0,255,255)` from opaque black at both small and
+exact ESO extents; the temporary complete bridge link, lifecycle/reset probes,
+and all 108 Python tests pass. A complete exact run will therefore choose
+between magenta already present in final image content and a post-swapchain
+presentation/layer/compositor source.
+
+No game file was changed: the system correctly rejected restoration because
+the prior experimental approvals do not cover this new mode. The installed
+marker remains normal `performance-aggressive`, and active cache, backup cache,
+and settings hashes remain unchanged. The active gate is one explicit
+`startup-present-pixel-audit` installation approval; only after a clean
+cache-preserving rebuild/install is one user-controlled startup justified.
+
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
 ordinary use. The transient startup artifact did not prevent that session.
