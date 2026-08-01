@@ -43,11 +43,13 @@ removed the prior reset symptom. The 1.4.1 failures remain valid historical
 evidence, but another dedicated reset reproduction is not warranted unless the
 problem recurs.
 
-The remaining visible maintenance defect is a transient full-screen canonical-magenta
-frame during early startup. A user screenshot with embedded Display P3 maps its
-dominant content exactly to sRGB `(255,0,255)` / `#FF00FF`. Its ESO content is
-3420 x 2146, while normally colored macOS overlays remain visible above it;
-this is window/layer content rather than global display corruption.
+The former visible maintenance defect was a transient full-screen
+canonical-magenta frame during early startup; Experiment 0031 now neutralizes
+it in two consecutive exact runs. The original user screenshot with embedded
+Display P3 maps its dominant content exactly to sRGB `(255,0,255)` / `#FF00FF`.
+Its ESO content is 3420 x 2146, while normally colored macOS overlays remain
+visible above it; this established window/layer content rather than global
+display corruption and remains the evidence basis for the bounded repair.
 
 Experiment 0022 originally associated the user's approximate duration with the
 first 3420 x 2148 backing surface. The lifecycle fact remains: two independent
@@ -99,7 +101,7 @@ finish without lifecycle error or new crash report. Settings remained exact,
 the preserved old cache stayed byte-identical, and the active 1.4.2 cache only
 received its normal runtime update.
 
-Experiment 0031 now implements the smaller corrected repair in source. It
+Experiment 0031 implements the smaller corrected repair. It
 suppresses every complete exact-target compositor draw from the observed first
 target at ordinal 71 through ordinal 149, ignores descriptor-signature churn,
 and forwards/latches at the proven scene boundary 150. It retains all exact
@@ -118,8 +120,23 @@ gate is `READY`, and settings plus both caches are unchanged. A
 pre-present exact-magenta detector was rejected for this candidate because it
 would add queue-idle/readback synchronization to dozens of startup frames.
 Experiment 0029 remains the diagnostic fallback if a mechanically complete
-window still leaves pink. One user-controlled startup with only a pink/no-pink
-report is now the active gate; no gameplay or setting change is requested.
+window still leaves pink.
+
+The user completed two consecutive ordinary startups and reported no pink in
+either. Exact runs `20260801T174801.999163000Z-pid29680` and
+`20260801T174822.766268000Z-pid29762` each suppressed exactly 79 contiguous
+target draws from generation-2 ordinal 71 through 149, forwarded and latched
+at ordinal 150, and completed the bounded window at 180. The latest dedicated
+verdict is `WINDOW-NEUTRALIZED`; the generic startup verdict is `PASS`.
+No error, fallback, pixel readback, truncation, new crash report, or settings
+change occurred. The successful candidate remains installed.
+
+This is a persistent runtime presentation repair for the exact supported
+build, not deletion of ESO's underlying placeholder input. ESO still records
+the bounded compositor draw; the bridge substitutes opaque black only during
+the proven placeholder window and forwards the normal scene unchanged. The
+next engineering gate is to fold this bounded behavior into the packaged
+production profile while retaining the exact identity and fail-open guards.
 
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface

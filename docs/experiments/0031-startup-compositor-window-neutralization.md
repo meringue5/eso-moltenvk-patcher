@@ -1,8 +1,8 @@
 # Experiment 0031: fixed-window startup compositor neutralization
 
 - Date: 2026-08-02
-- Outcome: **running; candidate installed**
-- Rollback: **not started; pristine restore path checked**
+- Outcome: **succeeded; two consecutive startups neutralized**
+- Rollback: **not required; successful candidate retained installed**
 
 ## Question
 
@@ -130,6 +130,52 @@ active cache: ad3f6ba04c03e685d89c1f3806fb48f17ac9d521ea041331a1e286d4b23711bb
 old backup:   72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
 ```
 
-No Steam, launcher, or ESO process was launched by the agent. One bounded
-user-controlled startup is now the active gate; gameplay and settings changes
-are not required.
+No Steam, launcher, or ESO process was launched by the agent. The user-owned
+startup validation followed this installation boundary.
+
+## Result
+
+The user performed two consecutive ordinary startups and reported that the
+pink splash was absent both times. Exact runs
+`20260801T174801.999163000Z-pid29680` and
+`20260801T174822.766268000Z-pid29762` independently recorded the same complete
+mechanism:
+
+```text
+first suppression: generation 2, ordinal 71
+last suppression:  generation 2, ordinal 149
+suppressed draws:  79, contiguous
+pipeline:          c43e4410d3b33fe7
+forward latch:     ordinal 150, reason=present-deadline
+bounded finish:    ordinal 180
+```
+
+Descriptor signatures alternated throughout the window, independently
+confirming why Experiment 0030's first-transition rule was invalid. The fixed
+window correctly ignored that churn. The dedicated latest-run verdict is
+`WINDOW-NEUTRALIZED`; the generic bridge startup verdict is `PASS`. There was
+no lifecycle error, truncation, fallback, pixel-readback activation, or new
+crash report.
+
+Evidence collection preserved exact settings identity with zero changed keys:
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+The active 1.4.2 cache updated normally after the two runs to
+`f31c030f66137284be2f5a3423a643b5ed022000c1d098552eac2dab8bde85a0`;
+the old backup remained byte-identical at
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+The post-run quick update gate is `READY`.
+
+## Interpretation
+
+Confirmed: ESO continues to prepare the startup compositor draw, but the
+bridge prevents that exact draw from presenting its placeholder interval and
+substitutes the existing opaque-black startup background. At ordinal 150 the
+normal scene draw is forwarded unchanged. This is deterministic presentation
+neutralization, not a one-time cache effect and not removal or repair of the
+underlying ESO placeholder asset/input.
+
+The behavior persists on every startup while this exact bridge is installed.
+It is limited to the fingerprinted ESO build, exact compositor identities,
+generation 2, and ordinals 71--149. A future unknown ESO build still fails
+closed at the installer/profile boundary; an unexpected runtime mismatch
+forwards the application draw rather than broadly suppressing rendering.

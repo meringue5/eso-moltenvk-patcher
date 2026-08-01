@@ -132,10 +132,15 @@ are in [Project status](STATUS.md); completed runs belong in the
   and cache/settings preservation all pass. Standing authorization for future
   verified cache-preserving installs is recorded in `AGENTS.md`; do not pause
   for another per-install confirmation inside that scope.
-- The active gate is one user-controlled ordinary Steam-path startup. Request
-  only whether pink appeared; no gameplay, setting change, screenshot, or
-  extended duration is needed. Then collect the prepared Experiment 0031
-  evidence and restore/promote according to the exact visual and log result.
+- Preserve Experiment 0031 as a successful two-start repair. Both exact runs
+  suppressed 79 contiguous target draws at ordinals 71--149, forwarded at 150,
+  completed at 180, and produced no visible pink. Settings were unchanged, the
+  old cache backup was preserved, and no crash report appeared.
+- Fold the proven bounded behavior into the packaged production profile. Keep
+  the exact ESO/pipeline/layout/set/generation identities, ordinal-150
+  fail-open boundary, and zero-readback design. Remove diagnostic-only logging
+  and tracking that are unnecessary after the bounded latch, then repeat the
+  complete non-game gates before treating the integration as release-ready.
 - If the exact fixed-window log spans ordinals 80--140, forwards at 150, and
   pink still appears, close the repair as failed and use Experiment 0029 or a
   bounded pre-present exact-pixel replacement. Do not add per-frame readback

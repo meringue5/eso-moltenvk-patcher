@@ -183,9 +183,11 @@ gate. The tested result applies to the combined runtime, bridge profile,
 settings, and cache checkpoint on the listed M4; other Apple GPUs and ESO
 builds require their own validation.
 
-A full-screen hot-pink frame remains visible briefly during early startup. It
-clears before normal UI and gameplay and had no observed effect on the validated
-session. Its investigation is tracked separately in the
+The former full-screen hot-pink startup interval is now neutralized by replacing
+only the exact bounded placeholder-compositor draws with the existing black
+startup background. Two consecutive exact runs passed and forwarded the normal
+scene unchanged. The underlying ESO placeholder input is not modified; release
+integration of the proven runtime guard is tracked in the
 [current project status](docs/STATUS.md).
 
 ## Source build and maintenance installation

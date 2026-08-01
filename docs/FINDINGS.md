@@ -583,6 +583,18 @@ against the compositor-placeholder cause. Any successor using descriptor
 state must anchor its eligibility to the proven magenta/scene interval rather
 than treating the first changed recording-time signature as the scene boundary.
 
+Experiment 0031 validates the corrected intervention boundary twice. Exact
+runs `20260801T174801.999163000Z-pid29680` and
+`20260801T174822.766268000Z-pid29762` each replaced 79 contiguous exact-target
+compositor draws from generation-2 ordinals 71 through 149 with opaque-black
+full-frame clears, then forwarded the ordinal-150 normal-scene draw and latched
+to forwarding. The user observed no pink in either startup. Descriptor
+signatures alternated throughout both windows, confirming that this ordinary
+churn was the sole reason Experiment 0030 disarmed early. The successful
+behavior is a deterministic presentation neutralizer: it prevents the ESO
+placeholder interval from reaching the swapchain output but does not remove or
+repair the underlying placeholder image/resource.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

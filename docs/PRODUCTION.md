@@ -55,7 +55,8 @@ bundle race rather than the presence of the authentication client.
 - Preserve a verified restore path for each selected installation.
 - Keep account login and game launch under the user's normal Steam or ZeniMax
   launcher flow.
-- Treat the transient startup-magenta artifact as a maintenance defect, not a
-  reason to downgrade the validated gameplay baseline.
+- Retain the validated bounded startup-magenta neutralizer in the release
+  integration; it is a presentation repair and does not claim to modify ESO's
+  underlying placeholder resource.
 - Do not claim broader hardware or distribution support without matching
   evidence.
