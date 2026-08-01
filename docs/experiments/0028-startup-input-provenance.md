@@ -252,3 +252,37 @@ succeeded. The installed proxy and official MoltenVK match the clean build, the
 profile marker is `performance-aggressive`, and the update and pipeline-cache
 UUID checks pass. The settings, old-backup cache, and active 1.4.2 cache remain
 at the hashes recorded above.
+
+## 2026-08-02 pipeline-cache/MSL amendment
+
+A subsequent read-only inspection used the preserved active 1.4.2 cache at
+SHA-256
+`234dc3189fcd2156e9de984a8aec5d5b87a66e8a6e39f7b4f081df851019a7b8`,
+size 7,977,079 bytes. The cache was not modified. MoltenVK's documented cache
+format stores each shader module key, conversion configuration, conversion
+result, and retained MSL source. The active file has exactly one entry whose
+module size is 18,280 bytes, matching the target fragment module created once
+immediately before the two target pipeline handles. Its cache-key hash is
+`4b964bfa4d1ce9d2`.
+
+The retained MSL identifies a final scene-and-GUI compositor rather than an
+FX material. It reads three constant buffers and two texture/sampler inputs.
+The output path samples scene color from `Sampler0`, samples GUI color and
+alpha from `Sampler1`, converts the scene to sRGB, performs GUI alpha
+composition, applies a scalar scene-darkening factor, clips overscan to black,
+and writes opaque final color. No buffer-controlled operation can independently
+produce exact red and blue while keeping green at zero.
+
+The cache also contains the matching 17,392-byte vertex-module key
+`dd729f2752460709`; its retained MSL is the fullscreen post-process vertex path
+with three constant buffers and no image. These stage resource counts exactly
+map set 0 to the three vertex buffers and set 1 to the fragment compositor's
+two images plus three buffers.
+
+This amendment narrows the remaining cause beyond the original aggregate
+verdict. Canonical magenta must be supplied by the scene input, GUI input, or
+their sampled combination; a uniform full-screen placeholder image is the
+leading interpretation. It remains possible that a stable descriptor's image
+contents change in place. The next gate should therefore distinguish the two
+bound compositor images directly, not repeat a generic per-set or
+image-versus-buffer split.

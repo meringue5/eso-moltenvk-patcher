@@ -102,11 +102,22 @@ are in [Project status](STATUS.md); completed runs belong in the
   aggregate input audit.
 - The cache-preserving `performance-aggressive` restoration is complete. It
   succeeded while idle Steam remained open under the shared bundle-idle gate;
-  Steam itself is not a maintenance dependency or blocker. Design a bounded
-  per-required-set and per-descriptor-class successor for the exact pipeline.
-  It should distinguish image from buffer state without the broad render
-  audit's overhead. Complete static, synthetic, and real non-game gates before
-  another user-controlled startup.
+  Steam itself is not a maintenance dependency or blocker.
+- Preserve the read-only pipeline-cache result: the target is ESO's final
+  scene-and-GUI compositor. Its vertex set contains only three buffers; its
+  fragment set contains two images and three buffers, and only the images can
+  supply the observed chromatic output. Do not spend another user run on a
+  generic set/image-versus-buffer split.
+- Design a bounded two-input compositor audit that distinguishes the scene
+  image from the GUI image, including descriptor replacement versus an in-place
+  content transition. It must prove safe image/subresource sampling with a
+  synthetic control and the real MoltenVK/AppKit probe before installation.
+  No new user startup is justified before that gate passes.
+- After identifying the offending input, prefer a startup-only neutralization
+  of the application placeholder or its presentation. It must latch permanently
+  back to direct forwarding at the first valid compositor input, add no
+  steady-state readback, and preserve the production profile, settings, and
+  caches.
 
 ### Superseded reset-investigation record
 

@@ -368,6 +368,48 @@ and exact two-file patch hash before compiling. The differential probe renders
 through a view, reads the current drawable base texture, and requires official
 1.4.1 to expose the stale write while the backport corrects it.
 
+## Early startup compositor path
+
+Experiments 0022 through 0028 establish the startup path from the first macOS
+surface to final pixels. ESO first creates a 3420 x 2148 swapchain, presents it
+once, and replaces it with a 3420 x 2146 swapchain after roughly 0.8--0.9
+seconds. The visible magenta continues on the corrected swapchain. Submitted
+full-surface clears remain opaque black, and the final swapchain is likewise
+black through generation-2 present ordinal 70.
+
+After ESO obtains its descriptor, pipeline, and draw entry points, one indexed
+fullscreen draw begins at ordinal 80. That draw uses stable pipeline signature
+`c43e4410d3b33fe7`, vertex module hash `c8307556011c995e`, and fragment module
+hash `6907bd3576e3a930`. It writes canonical magenta through ordinal 140 and
+ordinary scene pixels from ordinal 150 onward without changing the pipeline,
+draw signature, descriptor-set objects, layout, or push state. Only the latest
+descriptor-update aggregate changes.
+
+The preserved MoltenVK 1.4.2 pipeline cache supplies the missing semantic
+layer. Its only 18,280-byte shader-module entry corresponds to the target
+fragment module created once in the exact run. The retained MSL is ESO's final
+scene-and-GUI compositor: it samples a scene texture and a GUI texture, applies
+scene gamma conversion, composites with GUI alpha, applies one scalar scene
+darkening value, clips overscan to black, and writes the final color. Its three
+buffers cannot independently create red-and-blue with zero green. The matching
+17,392-byte vertex module is a post-process fullscreen-quad transform using
+three buffers and no image.
+
+This maps Experiment 0028's buffer-only set 0 to vertex inputs and its mixed
+set 1 to the fragment compositor's two images plus three buffers. The remaining
+pixel-source boundary is therefore the compositor's scene image versus GUI
+image, including the possibility that a stable image object receives new
+contents. A shader compilation failure, a MoltenVK default color, a Vulkan
+clear, and the post-swapchain compositor/display path no longer fit the complete
+evidence chain.
+
+The production repair should remain startup-bounded. First identify which of
+the two compositor images supplies magenta and the exact resource transition
+that makes it valid. Prefer neutralizing that application placeholder or
+withholding only its presentation; permanently latch back to direct MoltenVK
+forwarding at the first valid compositor input. Do not add steady-state pixel
+readback or a general shader/material replacement.
+
 ## Remaining architectural risk
 
 Vulkan handles remain runtime-owned opaque objects. The analysis substantially

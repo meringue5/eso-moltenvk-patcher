@@ -551,6 +551,27 @@ magic candidate in the exact ESO executable or bundled `game0000.dat`. This
 weakens a direct missing/corrupt standalone shader-file explanation, while not
 excluding runtime translation or a compressed asset source.
 
+A read-only inspection of the preserved 7,977,079-byte MoltenVK 1.4.2 pipeline
+cache closes most of that semantic gap. The cache has exactly one shader entry
+whose recorded module size is 18,280 bytes. Its retained MSL is a final
+scene-and-GUI compositor: it samples `Sampler0` as scene color and `Sampler1`
+as GUI color/alpha, converts the scene to sRGB, alpha-composites the GUI,
+applies one scalar darkening factor, clips overscan to black, and writes the
+result. It has exactly two texture inputs and three constant buffers. The
+matching 17,392-byte vertex entry is a post-process fullscreen-quad transform
+with three buffers and no texture input.
+
+Those resource counts exactly map Experiment 0028's set 0 to the vertex
+buffers and set 1 to the fragment compositor's two images and three buffers.
+The fragment buffers cannot independently generate exact red and blue while
+leaving green at zero; the canonical-magenta pixels must originate from the
+scene image, GUI image, or their sampled combination. Uniform full-screen
+output makes an ESO magenta placeholder/sentinel image the leading explanation,
+not a broken shader. The aggregate descriptor transition still does not say
+which image changes, and it does not exclude new contents written into a stable
+image object. A bounded two-input image audit remains necessary before choosing
+the neutralization point.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

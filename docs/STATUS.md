@@ -65,16 +65,21 @@ exact ESO extents. Pregame videos, global HDR/display mapping,
 overlay-compositor failure, and a MoltenVK automatic pink default are therefore
 excluded as leading explanations. Proc order rules out a shader draw for the
 single generation-1 submission, but the screenshot persists into the later
-shader-capable interval. Moreover, exact `{1,0,1,1}` is loaded by an ESO
-parameter initializer used in code paths that resolve `technique_FXMaterial`
-and `technique_FXMaterialTransparent`. An ESO FX-material default/error color
-is therefore an application-owned candidate, though it is not yet connected
-to startup. Experiment 0024 subsequently excluded the dynamic full-surface
-clear, and the opaque view's black fallback weakened window/layer background
-exposure. Official MoltenVK and the installed bridge contain no exact
-`{1,0,1,1}` float constant. The exact-magenta FX-material or related ESO draw
-is now leading, but the exact presented pixel writer remains the active gate.
-This is a low-impact startup presentation defect, not a gameplay blocker.
+shader-capable interval. Experiments 0024 through 0028 subsequently exclude a
+dynamic magenta clear and identify one final fullscreen draw whose descriptor
+state changes when magenta becomes the normal scene.
+
+Read-only analysis of the preserved 1.4.2 pipeline cache now identifies that
+draw as ESO's final scene-and-GUI compositor. Its target fragment module has
+two texture inputs and three constant buffers; the buffers only provide shared
+frame state, color-correction state, and GUI/overscan state. The matching
+vertex module is a post-process fullscreen quad with three buffers and no
+image. This exactly maps the two Experiment 0028 descriptor sets and confines
+the color source to the compositor's scene or GUI texture input. An ESO
+canonical-magenta placeholder/sentinel image is now the leading cause. Which
+of the two inputs supplies it, and whether the transition replaces a descriptor
+or fills a stable image, remain unproven. This is a low-impact startup
+presentation defect, not a gameplay blocker.
 
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface
@@ -279,11 +284,16 @@ push state were stable. The descriptor-update signature alone changed from
 `DESCRIPTOR-STATE-CHANGE-CANDIDATE`.
 
 This result excludes a push-constant explanation and weakens a pure in-place
-texture/buffer-content transition. The next gate is a narrow per-set and
-per-descriptor-class split that distinguishes the buffer-only set from the
-mixed image/buffer set. Do not repeat the current aggregate input audit. The
-settings and old-backup cache remain unchanged; the active cache updated
-normally to
+texture/buffer-content transition. A read-only inspection of that exact active
+cache finds one 18,280-byte shader entry matching the once-created target
+fragment module. Its retained MSL is the final scene-and-GUI compositor with
+two textures and three buffers. The matching 17,392-byte vertex module is a
+fullscreen post-process transform with three buffers and no images. The set
+ownership and output expression therefore make the two compositor images, not
+the buffers, the remaining color source. Do not repeat the aggregate or generic
+per-class audit; the next gate should sample or identify the scene and GUI
+inputs separately and remain bounded to startup. The settings and old-backup
+cache remain unchanged; the active cache updated normally to
 `234dc3189fcd2156e9de984a8aec5d5b87a66e8a6e39f7b4f081df851019a7b8`.
 The full settings and latest logs remain ignored evidence at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`.
