@@ -34,6 +34,7 @@ static PFN_vkGetInstanceProcAddr g_next_get_instance_proc_addr;
 static PFN_vkGetDeviceProcAddr g_next_get_device_proc_addr;
 static bool g_reset_trace_enabled;
 static bool g_legacy_feature_profile_enabled;
+static bool g_startup_color_audit_enabled;
 
 typedef enum {
     TESO4M4_MODE_DISABLED = 0,
@@ -48,6 +49,7 @@ typedef enum {
     TESO4M4_MODE_LEGACY_FEATURE_PROFILE,
     TESO4M4_MODE_PERFORMANCE_SAFE,
     TESO4M4_MODE_PERFORMANCE_AGGRESSIVE,
+    TESO4M4_MODE_STARTUP_COLOR_AUDIT,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -230,6 +232,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     if (strcmp(mode, "performance-aggressive") == 0) {
         return TESO4M4_MODE_PERFORMANCE_AGGRESSIVE;
     }
+    if (strcmp(mode, "startup-color-audit") == 0) {
+        return TESO4M4_MODE_STARTUP_COLOR_AUDIT;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -274,9 +279,11 @@ static bool verify_moltenvk_configuration(
         mode == TESO4M4_MODE_NO_COMMAND_POOLING ? VK_FALSE : VK_TRUE;
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
-        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE;
+        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
+        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT;
     const VkBool32 expected_live_resources =
-        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE
+        (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
+         mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT)
             ? VK_FALSE
             : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
@@ -347,6 +354,10 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             g_next_get_instance_proc_addr =
                 (PFN_vkGetInstanceProcAddr)destinations[index];
             destinations[index] = (void*)&traced_get_instance_proc_addr;
+        } else if (g_startup_color_audit_enabled) {
+            destinations[index] = (void*)teso4m4_lifecycle_intercept(
+                target->symbol,
+                (PFN_vkVoidFunction)destinations[index]);
         } else if (g_reset_trace_enabled) {
             destinations[index] = (void*)teso4m4_reset_trace_intercept(
                 target->symbol,
@@ -434,6 +445,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     teso4m4_reset_trace_set_logger(&compat_log_message);
     g_reset_trace_enabled = false;
     g_legacy_feature_profile_enabled = false;
+    g_startup_color_audit_enabled = false;
     log_message("RUN_START: bridge starting pid=%ld", (long)getpid());
 
     char directory[4096];
@@ -454,18 +466,24 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT;
     g_legacy_feature_profile_enabled =
         mode == TESO4M4_MODE_LEGACY_FEATURE_PROFILE;
+    g_startup_color_audit_enabled =
+        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT;
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
-        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE;
+        mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
+        mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT;
     teso4m4_lifecycle_set_enabled(
-        !performance_mode);
+        !performance_mode || g_startup_color_audit_enabled);
+    teso4m4_lifecycle_set_startup_color_audit(
+        g_startup_color_audit_enabled);
     teso4m4_reset_trace_set_pipeline_cache_bypass(
         mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE);
     teso4m4_reset_trace_set_full_lifetime_audit(
         mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT);
     if (setenv(
             "MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES",
-            mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ? "0" : "1",
+            (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
+             mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT) ? "0" : "1",
             1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -525,6 +543,12 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
             "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
             "lifecycle_trace=0");
+    } else if (mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT) {
+        log_message(
+            "MODE: startup color audit enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "generation_limit=2 generation_2_present_limit=180");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "

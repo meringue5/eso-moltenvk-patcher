@@ -372,16 +372,36 @@ second and then disappears before normal UI/gameplay. `SkipPregameVideos=1`
 removes the logged video/logo states but not this frame, so the artifact remains
 a separate low-impact early-presentation defect.
 
-## The startup color is confined to a transient one-present surface
+## The startup color is exact sRGB magenta in the ESO content surface
 
-Exact-run correlation localizes the observed neon-pink/hot-pink interval to
-ESO's first macOS backing surface. In two independent lifecycle traces,
-generation 1 is 3420 x 2148, has exactly one successful acquire and present,
-and is replaced by generation 2 at 3420 x 2146. The first reset is ready for
-852 and 796 ms respectively before correction begins. A later uninstrumented
-MoltenVK 1.4.2 run repeats the timing at 908 ms. The corrected surface is ready
-more than 1.5 seconds before the first logged account-login state in both
-traced runs.
+A user-captured Display P3 PNG measures the ESO frame rather than relying on a
+subjective hot/neon-pink name. Its dominant stored P3 value `(234,51,247)`
+converts exactly to sRGB `(255,0,255)` / `#FF00FF`. The 3420 x 2146 ESO content
+is uniformly magenta over a large central region while macOS Game Mode and
+screenshot overlays retain normal colors above it. The defect is therefore in
+the ESO window/layer content, not global HDR, display color mapping, or overlay
+composition.
+
+The verified ESO executable contains 24 exact `{1,0,1,1}` float constants in
+`__TEXT,__const`, while official MoltenVK 1.4.2 and the installed bridge contain
+none. Seven decoded code references reach one pooled ESO copy. Several are in
+a parameter initializer called from code paths that subsequently resolve the
+literal techniques `technique_FXMaterial` and
+`technique_FXMaterialTransparent`. This establishes that exact magenta is an
+ESO FX-material default value, but no static call chain yet connects that
+material to startup presentation. An FX-material error/default frame is thus a
+locally supported hypothesis, not a confirmed writer.
+
+Exact-run correlation still establishes an early surface transition. In two
+independent lifecycle traces, generation 1 is 3420 x 2148, has exactly one
+successful acquire and present, and is replaced by generation 2 at
+3420 x 2146 after 852 and 796 ms; another run repeats the reset timing at
+908 ms. The screenshot corrects the former interpretation of that boundary:
+its capture time is approximately 2.645 seconds after the corrected surface
+was ready and 1.503 seconds after `AccountLogin`. Exact magenta therefore
+persists or is reproduced beyond generation-1 replacement. A taller drawable
+could be clipped into the corrected content area, so screenshot dimensions do
+not independently prove which swapchain image was visible.
 
 Static analysis shows that ESO creates these color attachments with load/store
 operations and uses a separate full-target `vkCmdClearAttachments` path with a
@@ -389,7 +409,10 @@ dynamic four-float color. The first-generation proc trace reaches render-pass
 and clear entry points before its one present, while shader-module creation,
 graphics-pipeline creation, pipeline binding, and indexed drawing appear only
 after generation 2 has presented. A missing material/texture shader is
-therefore not a credible mechanism for the first full-screen frame.
+therefore not a credible mechanism for the generation-1 submission. Because
+the screenshot amendment proves that magenta remains visible after generation
+2 is ready, this ordering does not exclude the exact-magenta FX-material path
+from the complete interval.
 
 An official MoltenVK 1.4.2 AppKit probe using the exact aggressive profile
 recreates the two-pixel surface replacement without ESO. Five fresh load-only
@@ -401,11 +424,12 @@ the extent nor its two-pixel correction transforms a normal black clear. Fresh
 load-only contents are not guaranteed by Vulkan; this observation constrains
 the tested implementation rather than establishing a portable API default.
 
-The leading remaining source is an ESO-supplied dynamic clear value during the
-temporary surface interval. Application window/layer background exposure is a
-secondary hypothesis. Existing evidence does not record the actual first
-generation `VkClearAttachment.clearValue`, so the precise pixel writer is not
-yet confirmed.
+The leading remaining sources are an ESO-supplied dynamic clear, its exact
+magenta FX-material default, and application window/layer background exposure.
+Existing evidence does not record the submitted `VkClearAttachment.clearValue`
+for both early generations or connect the material initializer to a presented
+draw, so the precise pixel writer is not yet confirmed. A generation-1-only
+diagnostic is insufficient.
 
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.

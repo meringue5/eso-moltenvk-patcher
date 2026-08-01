@@ -14,16 +14,32 @@ are in [Project status](STATUS.md); completed runs belong in the
 - Do not request another dedicated graphics-reset run. Reopen that category
   only if the symptom recurs, and preserve the prior 1.4.1 failures as valid
   historical evidence rather than re-running old configuration A/B tests.
-- Preserve Experiment 0022's startup-surface boundary: the first 3420 x 2148
-  generation presents once, survives 796--908 ms, and is replaced by
-  3420 x 2146 before account login. Do not classify it as a missing-shader,
-  pregame-video, native-resolution-setting, or automatic MoltenVK pink-clear
-  defect.
-- Complete a bounded startup-only audit candidate that records the actual
-  generation-1 clear value and its framebuffer/rect association, then disables
-  itself at generation 2. Prove with a non-game probe that the audit separates
-  neon-pink clear, black clear, and load-only submission before requesting one
-  targeted user startup.
+- Preserve Experiment 0022's lifecycle fact: the first 3420 x 2148 generation
+  presents once and is replaced by 3420 x 2146 after 796--908 ms. Also preserve
+  its screenshot amendment: exact sRGB `#FF00FF` remains visible roughly
+  2.645 seconds after the corrected surface is ready, so the color is not
+  confined to generation 1. Treat ESO's exact-magenta FX-material initializer
+  as a supported but unconnected candidate; pregame video, native-resolution setting,
+  global display/overlay, and automatic MoltenVK pink-clear explanations are
+  already contradicted by local evidence.
+- Preserve Experiment 0023's successful non-game discrimination mechanism,
+  but do not install its invalidated generation-1-only candidate.
+- Preserve Experiment 0024's completed non-game gate. Synthetic,
+  real-MoltenVK/AppKit, and full-build controls pass with pixel/audit agreement,
+  a generation-2 ordinal-180 finish, first-eight acquire/present logging, and a
+  2,048-detail hard cap.
+- If the two-generation audit records an exact magenta clear, the source is
+  decided. If it records only non-magenta or no submitted clear, do not promote
+  layer background automatically; the next static/bounded gate must distinguish
+  the known FX-material path from window/layer exposure.
+- Keep the redesign isolated from the normal performance path, retain the exact
+  aggressive configuration, and keep the incidental build change removed.
+- The next gate is explicit approval for reversible game-bundle installation.
+  Only after installation, mode/configuration verification, and restore-path
+  verification may one Steam-path startup be requested.
+- Any later installation still requires explicit game-bundle approval and must
+  preserve both caches and settings. Analyze only its exact run ID and restore
+  the normal `performance-aggressive` marker after evidence collection.
 - Keep the working 1.4.2 runtime profile and cache state unchanged while
   investigating the startup artifact.
 

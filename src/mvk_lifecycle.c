@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -14,7 +15,12 @@ enum {
     kMaxImageViews = 512,
     kMaxRenderPasses = 512,
     kMaxFramebuffers = 512,
+    kMaxCommandBuffers = 512,
+    kMaxRenderPassAttachments = 16,
     kFirstPresentationLimit = 8,
+    kStartupAuditGenerationLimit = 2,
+    kStartupAuditGeneration2PresentLimit = 180,
+    kStartupAuditDetailLimit = 2048,
 };
 
 typedef struct {
@@ -39,6 +45,9 @@ typedef struct {
 
 typedef struct {
     VkRenderPass handle;
+    uint32_t attachment_count;
+    VkFormat attachment_formats[kMaxRenderPassAttachments];
+    VkAttachmentLoadOp attachment_load_ops[kMaxRenderPassAttachments];
     uint64_t first_generation;
     uint64_t last_generation;
     uint32_t link_count;
@@ -47,9 +56,21 @@ typedef struct {
 
 typedef struct {
     VkFramebuffer handle;
+    VkRenderPass render_pass;
     uint64_t generation;
+    uint32_t width;
+    uint32_t height;
     bool alive;
 } FramebufferRecord;
+
+typedef struct {
+    VkCommandBuffer handle;
+    VkFramebuffer framebuffer;
+    VkRenderPass render_pass;
+    uint64_t generation;
+    bool occupied;
+    bool in_render_pass;
+} CommandBufferRecord;
 
 static PFN_vkDeviceWaitIdle g_next_device_wait_idle;
 static PFN_vkCreateSwapchainKHR g_next_create_swapchain;
@@ -63,6 +84,10 @@ static PFN_vkCreateFramebuffer g_next_create_framebuffer;
 static PFN_vkDestroyFramebuffer g_next_destroy_framebuffer;
 static PFN_vkAcquireNextImageKHR g_next_acquire_next_image;
 static PFN_vkQueuePresentKHR g_next_queue_present;
+static PFN_vkQueueSubmit g_next_queue_submit;
+static PFN_vkCmdBeginRenderPass g_next_cmd_begin_render_pass;
+static PFN_vkCmdEndRenderPass g_next_cmd_end_render_pass;
+static PFN_vkCmdClearAttachments g_next_cmd_clear_attachments;
 
 static Teso4m4LifecycleLogFunction g_logger;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -71,13 +96,19 @@ static ImageRecord g_images[kMaxSwapchainImages];
 static ImageViewRecord g_image_views[kMaxImageViews];
 static RenderPassRecord g_render_passes[kMaxRenderPasses];
 static FramebufferRecord g_framebuffers[kMaxFramebuffers];
+static CommandBufferRecord g_command_buffers[kMaxCommandBuffers];
 static uint64_t g_generation_counter;
 static uint64_t g_wait_counter;
 static bool g_overflow_reported;
 static bool g_enabled = true;
+static atomic_bool g_startup_color_audit;
+static atomic_bool g_startup_color_audit_finished;
+static atomic_uint g_startup_color_detail_count;
 
 static void lifecycle_log(const char* format, ...) {
-    if (!g_logger) {
+    if (!g_logger ||
+        (atomic_load(&g_startup_color_audit) &&
+         atomic_load(&g_startup_color_audit_finished))) {
         return;
     }
     char message[1024];
@@ -86,6 +117,25 @@ static void lifecycle_log(const char* format, ...) {
     vsnprintf(message, sizeof(message), format, arguments);
     va_end(arguments);
     g_logger(message);
+}
+
+static void startup_color_detail_log(const char* format, ...) {
+    const unsigned int ordinal =
+        atomic_fetch_add(&g_startup_color_detail_count, 1);
+    if (ordinal >= kStartupAuditDetailLimit) {
+        if (ordinal == kStartupAuditDetailLimit) {
+            lifecycle_log(
+                "STARTUP_COLOR_DETAIL_LIMIT: retained=%u",
+                kStartupAuditDetailLimit);
+        }
+        return;
+    }
+    char message[1024];
+    va_list arguments;
+    va_start(arguments, format);
+    vsnprintf(message, sizeof(message), format, arguments);
+    va_end(arguments);
+    lifecycle_log("%s", message);
 }
 
 static void report_overflow(const char* resource) {
@@ -195,25 +245,49 @@ static void add_image_view(VkImageView handle, uint64_t generation) {
     report_overflow("image-view");
 }
 
-static void add_render_pass(VkRenderPass handle) {
+static void add_render_pass(
+    VkRenderPass handle,
+    const VkRenderPassCreateInfo* create_info) {
     for (size_t index = 0; index < kMaxRenderPasses; ++index) {
         if (!g_render_passes[index].alive) {
             g_render_passes[index] = (RenderPassRecord){
                 .handle = handle,
                 .alive = true,
             };
+            if (create_info) {
+                const uint32_t count =
+                    create_info->attachmentCount < kMaxRenderPassAttachments
+                        ? create_info->attachmentCount
+                        : kMaxRenderPassAttachments;
+                g_render_passes[index].attachment_count = count;
+                for (uint32_t attachment = 0; attachment < count;
+                     ++attachment) {
+                    g_render_passes[index].attachment_formats[attachment] =
+                        create_info->pAttachments[attachment].format;
+                    g_render_passes[index].attachment_load_ops[attachment] =
+                        create_info->pAttachments[attachment].loadOp;
+                }
+            }
             return;
         }
     }
     report_overflow("render-pass");
 }
 
-static void add_framebuffer(VkFramebuffer handle, uint64_t generation) {
+static void add_framebuffer(
+    VkFramebuffer handle,
+    VkRenderPass render_pass,
+    uint64_t generation,
+    uint32_t width,
+    uint32_t height) {
     for (size_t index = 0; index < kMaxFramebuffers; ++index) {
         if (!g_framebuffers[index].alive) {
             g_framebuffers[index] = (FramebufferRecord){
                 .handle = handle,
+                .render_pass = render_pass,
                 .generation = generation,
+                .width = width,
+                .height = height,
                 .alive = true,
             };
             return;
@@ -222,10 +296,70 @@ static void add_framebuffer(VkFramebuffer handle, uint64_t generation) {
     report_overflow("framebuffer");
 }
 
+static CommandBufferRecord* find_command_buffer(VkCommandBuffer handle) {
+    for (size_t index = 0; index < kMaxCommandBuffers; ++index) {
+        if (g_command_buffers[index].occupied &&
+            g_command_buffers[index].handle == handle) {
+            return &g_command_buffers[index];
+        }
+    }
+    return NULL;
+}
+
+static CommandBufferRecord* set_command_buffer(
+    VkCommandBuffer handle,
+    const FramebufferRecord* framebuffer) {
+    CommandBufferRecord* record = find_command_buffer(handle);
+    if (!record) {
+        for (size_t index = 0; index < kMaxCommandBuffers; ++index) {
+            if (!g_command_buffers[index].occupied) {
+                record = &g_command_buffers[index];
+                break;
+            }
+        }
+    }
+    if (!record) {
+        report_overflow("command-buffer");
+        return NULL;
+    }
+    *record = (CommandBufferRecord){
+        .handle = handle,
+        .framebuffer = framebuffer->handle,
+        .render_pass = framebuffer->render_pass,
+        .generation = framebuffer->generation,
+        .occupied = true,
+        .in_render_pass = true,
+    };
+    return record;
+}
+
+static bool format_is_depth_or_stencil(VkFormat format) {
+    switch (format) {
+        case VK_FORMAT_D16_UNORM:
+        case VK_FORMAT_X8_D24_UNORM_PACK32:
+        case VK_FORMAT_D32_SFLOAT:
+        case VK_FORMAT_S8_UINT:
+        case VK_FORMAT_D16_UNORM_S8_UINT:
+        case VK_FORMAT_D24_UNORM_S8_UINT:
+        case VK_FORMAT_D32_SFLOAT_S8_UINT:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool startup_audit_finished(void) {
+    return atomic_load(&g_startup_color_audit) &&
+           atomic_load(&g_startup_color_audit_finished);
+}
+
 static VKAPI_ATTR VkResult VKAPI_CALL traced_device_wait_idle(
     VkDevice device) {
     if (!g_next_device_wait_idle) {
         return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    if (startup_audit_finished()) {
+        return g_next_device_wait_idle(device);
     }
     VkResult result = g_next_device_wait_idle(device);
     pthread_mutex_lock(&g_lock);
@@ -243,6 +377,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_swapchain(
     VkSwapchainKHR* swapchain) {
     if (!g_next_create_swapchain) {
         return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    if (startup_audit_finished()) {
+        return g_next_create_swapchain(
+            device, create_info, allocator, swapchain);
     }
     VkResult result =
         g_next_create_swapchain(device, create_info, allocator, swapchain);
@@ -285,6 +423,10 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_swapchain(
     const VkAllocationCallbacks* allocator) {
     if (!g_next_destroy_swapchain) {
         lifecycle_log("LIFECYCLE_ERROR: destroy swapchain target is unset");
+        return;
+    }
+    if (startup_audit_finished()) {
+        g_next_destroy_swapchain(device, swapchain, allocator);
         return;
     }
     g_next_destroy_swapchain(device, swapchain, allocator);
@@ -334,6 +476,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_get_swapchain_images(
     if (!g_next_get_swapchain_images) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    if (startup_audit_finished()) {
+        return g_next_get_swapchain_images(
+            device, swapchain, image_count, images);
+    }
     const uint32_t capacity = image_count ? *image_count : 0;
     VkResult result =
         g_next_get_swapchain_images(device, swapchain, image_count, images);
@@ -373,6 +519,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_image_view(
     VkImageView* image_view) {
     if (!g_next_create_image_view) {
         return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    if (startup_audit_finished()) {
+        return g_next_create_image_view(
+            device, create_info, allocator, image_view);
     }
     VkResult result =
         g_next_create_image_view(device, create_info, allocator, image_view);
@@ -415,6 +565,10 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_image_view(
         lifecycle_log("LIFECYCLE_ERROR: destroy image view target is unset");
         return;
     }
+    if (startup_audit_finished()) {
+        g_next_destroy_image_view(device, image_view, allocator);
+        return;
+    }
     g_next_destroy_image_view(device, image_view, allocator);
     uint64_t generation = 0;
     pthread_mutex_lock(&g_lock);
@@ -440,12 +594,16 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_render_pass(
     if (!g_next_create_render_pass) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    if (startup_audit_finished()) {
+        return g_next_create_render_pass(
+            device, create_info, allocator, render_pass);
+    }
     VkResult result =
         g_next_create_render_pass(device, create_info, allocator, render_pass);
     if (result == VK_SUCCESS && render_pass &&
         *render_pass != VK_NULL_HANDLE) {
         pthread_mutex_lock(&g_lock);
-        add_render_pass(*render_pass);
+        add_render_pass(*render_pass, create_info);
         pthread_mutex_unlock(&g_lock);
     }
     return result;
@@ -457,6 +615,10 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_render_pass(
     const VkAllocationCallbacks* allocator) {
     if (!g_next_destroy_render_pass) {
         lifecycle_log("LIFECYCLE_ERROR: destroy render pass target is unset");
+        return;
+    }
+    if (startup_audit_finished()) {
+        g_next_destroy_render_pass(device, render_pass, allocator);
         return;
     }
     g_next_destroy_render_pass(device, render_pass, allocator);
@@ -489,6 +651,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_framebuffer(
     if (!g_next_create_framebuffer) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    if (startup_audit_finished()) {
+        return g_next_create_framebuffer(
+            device, create_info, allocator, framebuffer);
+    }
     VkResult result =
         g_next_create_framebuffer(device, create_info, allocator, framebuffer);
     uint64_t generation = 0;
@@ -511,7 +677,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_framebuffer(
             }
         }
         if (generation != 0) {
-            add_framebuffer(*framebuffer, generation);
+            add_framebuffer(
+                *framebuffer, create_info->renderPass, generation,
+                create_info->width, create_info->height);
             RenderPassRecord* render_pass =
                 find_render_pass(create_info->renderPass);
             if (render_pass) {
@@ -545,6 +713,10 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_framebuffer(
         lifecycle_log("LIFECYCLE_ERROR: destroy framebuffer target is unset");
         return;
     }
+    if (startup_audit_finished()) {
+        g_next_destroy_framebuffer(device, framebuffer, allocator);
+        return;
+    }
     g_next_destroy_framebuffer(device, framebuffer, allocator);
     uint64_t generation = 0;
     pthread_mutex_lock(&g_lock);
@@ -572,6 +744,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_acquire_next_image(
     if (!g_next_acquire_next_image) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    if (startup_audit_finished()) {
+        return g_next_acquire_next_image(
+            device, swapchain, timeout, semaphore, fence, image_index);
+    }
     VkResult result = g_next_acquire_next_image(
         device, swapchain, timeout, semaphore, fence, image_index);
     uint64_t generation = 0;
@@ -583,12 +759,62 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_acquire_next_image(
         ordinal = ++record->acquire_count;
     }
     pthread_mutex_unlock(&g_lock);
-    if (ordinal <= kFirstPresentationLimit || result != VK_SUCCESS) {
+    if (ordinal <= kFirstPresentationLimit ||
+        (!atomic_load(&g_startup_color_audit) && result != VK_SUCCESS)) {
         lifecycle_log(
             "SWAPCHAIN_ACQUIRE: device=%p swapchain=%p generation=%" PRIu64
             " ordinal=%u image_index=%u result=%d",
             (void*)device, (void*)swapchain, generation, ordinal,
             image_index ? *image_index : UINT32_MAX, result);
+    }
+    return result;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_submit(
+    VkQueue queue,
+    uint32_t submit_count,
+    const VkSubmitInfo* submits,
+    VkFence fence) {
+    if (!g_next_queue_submit) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    if (startup_audit_finished()) {
+        return g_next_queue_submit(queue, submit_count, submits, fence);
+    }
+    VkResult result =
+        g_next_queue_submit(queue, submit_count, submits, fence);
+    if (!atomic_load(&g_startup_color_audit) ||
+        atomic_load(&g_startup_color_audit_finished) || !submits) {
+        return result;
+    }
+    for (uint32_t submit_index = 0; submit_index < submit_count;
+         ++submit_index) {
+        for (uint32_t command_index = 0;
+             command_index < submits[submit_index].commandBufferCount;
+             ++command_index) {
+            const VkCommandBuffer handle =
+                submits[submit_index].pCommandBuffers[command_index];
+            CommandBufferRecord command = {0};
+            bool tracked = false;
+            pthread_mutex_lock(&g_lock);
+            CommandBufferRecord* record = find_command_buffer(handle);
+            if (record && record->generation >= 1 &&
+                record->generation <= kStartupAuditGenerationLimit) {
+                command = *record;
+                tracked = true;
+            }
+            pthread_mutex_unlock(&g_lock);
+            if (tracked) {
+                startup_color_detail_log(
+                    "STARTUP_COLOR_SUBMIT: generation=%" PRIu64 " queue=%p"
+                    " submit=%u command_index=%u command_buffer=%p"
+                    " framebuffer=%p signal_count=%u result=%d",
+                    command.generation, (void*)queue, submit_index,
+                    command_index, (void*)handle,
+                    (void*)command.framebuffer,
+                    submits[submit_index].signalSemaphoreCount, result);
+            }
+        }
     }
     return result;
 }
@@ -599,12 +825,16 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
     if (!g_next_queue_present) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    if (startup_audit_finished()) {
+        return g_next_queue_present(queue, present_info);
+    }
     VkResult result = g_next_queue_present(queue, present_info);
     if (!present_info) {
         lifecycle_log("SWAPCHAIN_PRESENT: queue=%p info=NULL result=%d",
                       (void*)queue, result);
         return result;
     }
+    bool finish_startup_audit = false;
     for (uint32_t index = 0; index < present_info->swapchainCount; ++index) {
         const VkSwapchainKHR swapchain = present_info->pSwapchains[index];
         uint64_t generation = 0;
@@ -618,8 +848,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
         pthread_mutex_unlock(&g_lock);
         const VkResult item_result =
             present_info->pResults ? present_info->pResults[index] : result;
+        const bool startup_audit = atomic_load(&g_startup_color_audit);
         if (ordinal <= kFirstPresentationLimit ||
-            result != VK_SUCCESS || item_result != VK_SUCCESS) {
+            (!startup_audit &&
+             (result != VK_SUCCESS || item_result != VK_SUCCESS))) {
             lifecycle_log(
                 "SWAPCHAIN_PRESENT: queue=%p swapchain=%p generation=%" PRIu64
                 " ordinal=%u image_index=%u result=%d item_result=%d",
@@ -628,8 +860,240 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
                     present_info->pImageIndices[index] : UINT32_MAX,
                 result, item_result);
         }
+        if (startup_audit &&
+            generation == kStartupAuditGenerationLimit &&
+            ordinal >= kStartupAuditGeneration2PresentLimit) {
+            finish_startup_audit = true;
+        }
+    }
+    if (finish_startup_audit) {
+        lifecycle_log(
+            "STARTUP_COLOR_AUDIT_FINISH: reason=generation-2-present-limit"
+            " generation=%u ordinal=%u",
+            kStartupAuditGenerationLimit,
+            kStartupAuditGeneration2PresentLimit);
+        atomic_store(&g_startup_color_audit_finished, true);
     }
     return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_begin_render_pass(
+    VkCommandBuffer command_buffer,
+    const VkRenderPassBeginInfo* begin_info,
+    VkSubpassContents contents) {
+    if (!g_next_cmd_begin_render_pass) {
+        lifecycle_log("LIFECYCLE_ERROR: begin render pass target is unset");
+        return;
+    }
+    if (startup_audit_finished()) {
+        g_next_cmd_begin_render_pass(command_buffer, begin_info, contents);
+        return;
+    }
+    g_next_cmd_begin_render_pass(command_buffer, begin_info, contents);
+    if (!atomic_load(&g_startup_color_audit) ||
+        atomic_load(&g_startup_color_audit_finished) || !begin_info) {
+        return;
+    }
+
+    FramebufferRecord framebuffer = {0};
+    RenderPassRecord render_pass = {0};
+    bool tracked = false;
+    pthread_mutex_lock(&g_lock);
+    FramebufferRecord* framebuffer_record =
+        find_framebuffer(begin_info->framebuffer);
+    if (framebuffer_record && framebuffer_record->generation >= 1 &&
+        framebuffer_record->generation <= kStartupAuditGenerationLimit) {
+        framebuffer = *framebuffer_record;
+        RenderPassRecord* render_pass_record =
+            find_render_pass(begin_info->renderPass);
+        if (render_pass_record) {
+            render_pass = *render_pass_record;
+        }
+        set_command_buffer(command_buffer, framebuffer_record);
+        tracked = true;
+    }
+    pthread_mutex_unlock(&g_lock);
+    if (!tracked) {
+        return;
+    }
+
+    startup_color_detail_log(
+        "STARTUP_COLOR_BEGIN: generation=%" PRIu64
+        " command_buffer=%p framebuffer=%p"
+        " render_pass=%p framebuffer_extent=%ux%u"
+        " render_area=%d,%d,%ux%u clear_value_count=%u contents=%d",
+        framebuffer.generation, (void*)command_buffer,
+        (void*)framebuffer.handle,
+        (void*)begin_info->renderPass, framebuffer.width, framebuffer.height,
+        begin_info->renderArea.offset.x, begin_info->renderArea.offset.y,
+        begin_info->renderArea.extent.width,
+        begin_info->renderArea.extent.height, begin_info->clearValueCount,
+        contents);
+    const uint32_t clear_count =
+        begin_info->clearValueCount < render_pass.attachment_count
+            ? begin_info->clearValueCount
+            : render_pass.attachment_count;
+    for (uint32_t attachment = 0;
+         begin_info->pClearValues && attachment < clear_count; ++attachment) {
+        const VkClearValue* value = &begin_info->pClearValues[attachment];
+        if (format_is_depth_or_stencil(
+                render_pass.attachment_formats[attachment])) {
+            startup_color_detail_log(
+                "STARTUP_COLOR_BEGIN_CLEAR: generation=%" PRIu64
+                " attachment=%u"
+                " framebuffer=%p format=%d load_op=%d"
+                " depth=%.9g depth_hex=%a stencil=%u",
+                framebuffer.generation, attachment,
+                (void*)framebuffer.handle,
+                render_pass.attachment_formats[attachment],
+                render_pass.attachment_load_ops[attachment],
+                value->depthStencil.depth,
+                (double)value->depthStencil.depth,
+                value->depthStencil.stencil);
+        } else {
+            startup_color_detail_log(
+                "STARTUP_COLOR_BEGIN_CLEAR: generation=%" PRIu64
+                " attachment=%u"
+                " framebuffer=%p format=%d load_op=%d"
+                " rgba=%.9g,%.9g,%.9g,%.9g"
+                " rgba_hex=%a,%a,%a,%a",
+                framebuffer.generation, attachment,
+                (void*)framebuffer.handle,
+                render_pass.attachment_formats[attachment],
+                render_pass.attachment_load_ops[attachment],
+                value->color.float32[0], value->color.float32[1],
+                value->color.float32[2], value->color.float32[3],
+                (double)value->color.float32[0],
+                (double)value->color.float32[1],
+                (double)value->color.float32[2],
+                (double)value->color.float32[3]);
+        }
+    }
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_end_render_pass(
+    VkCommandBuffer command_buffer) {
+    if (!g_next_cmd_end_render_pass) {
+        lifecycle_log("LIFECYCLE_ERROR: end render pass target is unset");
+        return;
+    }
+    if (startup_audit_finished()) {
+        g_next_cmd_end_render_pass(command_buffer);
+        return;
+    }
+    g_next_cmd_end_render_pass(command_buffer);
+    if (!atomic_load(&g_startup_color_audit) ||
+        atomic_load(&g_startup_color_audit_finished)) {
+        return;
+    }
+    pthread_mutex_lock(&g_lock);
+    CommandBufferRecord* record = find_command_buffer(command_buffer);
+    if (record) {
+        record->in_render_pass = false;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_clear_attachments(
+    VkCommandBuffer command_buffer,
+    uint32_t attachment_count,
+    const VkClearAttachment* attachments,
+    uint32_t rect_count,
+    const VkClearRect* rects) {
+    if (!g_next_cmd_clear_attachments) {
+        lifecycle_log("LIFECYCLE_ERROR: clear attachments target is unset");
+        return;
+    }
+    if (startup_audit_finished()) {
+        g_next_cmd_clear_attachments(
+            command_buffer, attachment_count, attachments, rect_count, rects);
+        return;
+    }
+    g_next_cmd_clear_attachments(
+        command_buffer, attachment_count, attachments, rect_count, rects);
+    if (!atomic_load(&g_startup_color_audit) ||
+        atomic_load(&g_startup_color_audit_finished)) {
+        return;
+    }
+
+    CommandBufferRecord command = {0};
+    bool tracked = false;
+    pthread_mutex_lock(&g_lock);
+    CommandBufferRecord* record = find_command_buffer(command_buffer);
+    if (record && record->generation >= 1 &&
+        record->generation <= kStartupAuditGenerationLimit &&
+        record->in_render_pass) {
+        command = *record;
+        tracked = true;
+    }
+    pthread_mutex_unlock(&g_lock);
+    if (!tracked) {
+        return;
+    }
+
+    const uint32_t logged_attachments =
+        attachment_count < kMaxRenderPassAttachments
+            ? attachment_count
+            : kMaxRenderPassAttachments;
+    for (uint32_t index = 0;
+         attachments && index < logged_attachments; ++index) {
+        const VkClearAttachment* attachment = &attachments[index];
+        if (attachment->aspectMask & VK_IMAGE_ASPECT_COLOR_BIT) {
+            startup_color_detail_log(
+                "STARTUP_COLOR_CLEAR: generation=%" PRIu64
+                " command_buffer=%p"
+                " framebuffer=%p attachment=%u aspect=0x%x"
+                " color_attachment=%u rgba=%.9g,%.9g,%.9g,%.9g"
+                " rgba_hex=%a,%a,%a,%a rect_count=%u",
+                command.generation, (void*)command_buffer,
+                (void*)command.framebuffer, index,
+                attachment->aspectMask, attachment->colorAttachment,
+                attachment->clearValue.color.float32[0],
+                attachment->clearValue.color.float32[1],
+                attachment->clearValue.color.float32[2],
+                attachment->clearValue.color.float32[3],
+                (double)attachment->clearValue.color.float32[0],
+                (double)attachment->clearValue.color.float32[1],
+                (double)attachment->clearValue.color.float32[2],
+                (double)attachment->clearValue.color.float32[3], rect_count);
+        } else {
+            startup_color_detail_log(
+                "STARTUP_COLOR_CLEAR: generation=%" PRIu64
+                " command_buffer=%p"
+                " framebuffer=%p attachment=%u aspect=0x%x"
+                " depth=%.9g depth_hex=%a stencil=%u rect_count=%u",
+                command.generation, (void*)command_buffer,
+                (void*)command.framebuffer, index,
+                attachment->aspectMask,
+                attachment->clearValue.depthStencil.depth,
+                (double)attachment->clearValue.depthStencil.depth,
+                attachment->clearValue.depthStencil.stencil, rect_count);
+        }
+    }
+    const uint32_t logged_rects =
+        rect_count < kMaxRenderPassAttachments
+            ? rect_count
+            : kMaxRenderPassAttachments;
+    for (uint32_t index = 0; rects && index < logged_rects; ++index) {
+        startup_color_detail_log(
+            "STARTUP_COLOR_CLEAR_RECT: generation=%" PRIu64
+            " command_buffer=%p"
+            " framebuffer=%p rect=%u area=%d,%d,%ux%u"
+            " base_layer=%u layer_count=%u",
+            command.generation, (void*)command_buffer,
+            (void*)command.framebuffer, index,
+            rects[index].rect.offset.x, rects[index].rect.offset.y,
+            rects[index].rect.extent.width, rects[index].rect.extent.height,
+            rects[index].baseArrayLayer, rects[index].layerCount);
+    }
+    if (attachment_count > logged_attachments || rect_count > logged_rects) {
+        startup_color_detail_log(
+            "STARTUP_COLOR_TRUNCATED: generation=%" PRIu64
+            " attachments=%u/%u"
+            " rects=%u/%u",
+            command.generation, logged_attachments, attachment_count,
+            logged_rects, rect_count);
+    }
 }
 
 void teso4m4_lifecycle_reset(void) {
@@ -646,16 +1110,24 @@ void teso4m4_lifecycle_reset(void) {
     g_next_destroy_framebuffer = NULL;
     g_next_acquire_next_image = NULL;
     g_next_queue_present = NULL;
+    g_next_queue_submit = NULL;
+    g_next_cmd_begin_render_pass = NULL;
+    g_next_cmd_end_render_pass = NULL;
+    g_next_cmd_clear_attachments = NULL;
     g_logger = NULL;
     memset(g_swapchains, 0, sizeof(g_swapchains));
     memset(g_images, 0, sizeof(g_images));
     memset(g_image_views, 0, sizeof(g_image_views));
     memset(g_render_passes, 0, sizeof(g_render_passes));
     memset(g_framebuffers, 0, sizeof(g_framebuffers));
+    memset(g_command_buffers, 0, sizeof(g_command_buffers));
     g_generation_counter = 0;
     g_wait_counter = 0;
     g_overflow_reported = false;
     g_enabled = true;
+    atomic_store(&g_startup_color_audit, false);
+    atomic_store(&g_startup_color_audit_finished, false);
+    atomic_store(&g_startup_color_detail_count, 0);
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -669,6 +1141,17 @@ void teso4m4_lifecycle_set_enabled(bool enabled) {
     pthread_mutex_lock(&g_lock);
     g_enabled = enabled;
     pthread_mutex_unlock(&g_lock);
+}
+
+void teso4m4_lifecycle_set_startup_color_audit(bool enabled) {
+    atomic_store(&g_startup_color_audit_finished, false);
+    atomic_store(&g_startup_color_detail_count, 0);
+    atomic_store(&g_startup_color_audit, enabled);
+    if (enabled) {
+        lifecycle_log(
+            "STARTUP_COLOR_AUDIT_BEGIN: generation_limit=2"
+            " generation_2_present_limit=180");
+    }
 }
 
 PFN_vkVoidFunction teso4m4_lifecycle_intercept(
@@ -722,6 +1205,20 @@ PFN_vkVoidFunction teso4m4_lifecycle_intercept(
     } else if (strcmp(name, "vkQueuePresentKHR") == 0) {
         g_next_queue_present = (PFN_vkQueuePresentKHR)next_function;
         returned = (PFN_vkVoidFunction)&traced_queue_present;
+    } else if (strcmp(name, "vkQueueSubmit") == 0) {
+        g_next_queue_submit = (PFN_vkQueueSubmit)next_function;
+        returned = (PFN_vkVoidFunction)&traced_queue_submit;
+    } else if (strcmp(name, "vkCmdBeginRenderPass") == 0) {
+        g_next_cmd_begin_render_pass =
+            (PFN_vkCmdBeginRenderPass)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_begin_render_pass;
+    } else if (strcmp(name, "vkCmdEndRenderPass") == 0) {
+        g_next_cmd_end_render_pass = (PFN_vkCmdEndRenderPass)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_end_render_pass;
+    } else if (strcmp(name, "vkCmdClearAttachments") == 0) {
+        g_next_cmd_clear_attachments =
+            (PFN_vkCmdClearAttachments)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_clear_attachments;
     }
     pthread_mutex_unlock(&g_lock);
     return returned;

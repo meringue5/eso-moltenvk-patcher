@@ -25,23 +25,64 @@ removed the prior reset symptom. The 1.4.1 failures remain valid historical
 evidence, but another dedicated reset reproduction is not warranted unless the
 problem recurs.
 
-The remaining visible defect is a roughly one-second full-screen neon-pink or
-hot-pink frame during early startup. Experiment 0022 localizes its lifetime to
-the first 3420 x 2148 backing surface: two independent lifecycle traces show
-exactly one successful present before a 3420 x 2146 replacement, after 796 and
-852 ms. The latest uninstrumented 1.4.2 client log repeats the same reset
-timing at 908 ms. Surface convergence completes before account login.
+The remaining visible defect is a transient full-screen canonical-magenta
+frame during early startup. A user screenshot with embedded Display P3 maps its
+dominant content exactly to sRGB `(255,0,255)` / `#FF00FF`. Its ESO content is
+3420 x 2146, while normally colored macOS overlays remain visible above it;
+this is window/layer content rather than global display corruption.
+
+Experiment 0022 originally associated the user's approximate duration with the
+first 3420 x 2148 backing surface. The lifecycle fact remains: two independent
+traces show exactly one successful generation-1 present before a 3420 x 2146
+replacement after 796 and 852 ms, and another run repeats the reset timing at
+908 ms. The screenshot amendment falsifies the stronger lifetime conclusion.
+Its capture time is approximately 2.645 seconds after the corrected surface
+was ready and 1.503 seconds after `AccountLogin`, so magenta persists or is
+reproduced beyond generation-1 replacement.
 
 Static analysis and proc order place this first frame before ESO's captured
 shader/pipeline/draw path. A non-game 1.4.2 probe also shows that load-only
 drawables start transparent black and opaque-black clears remain black at the
-exact ESO extents. Missing assets, pregame videos, and a MoltenVK automatic
-pink default are therefore excluded as leading explanations. ESO's dynamic
-full-surface clear value is the leading source; application window/layer
-background exposure is secondary. Existing evidence does not capture the
-actual generation-1 clear value, so the exact pixel writer remains the active
-gate. This is a low-impact startup presentation defect, not a gameplay
-blocker.
+exact ESO extents. Pregame videos, global HDR/display mapping,
+overlay-compositor failure, and a MoltenVK automatic pink default are therefore
+excluded as leading explanations. Proc order rules out a shader draw for the
+single generation-1 submission, but the screenshot persists into the later
+shader-capable interval. Moreover, exact `{1,0,1,1}` is loaded by an ESO
+parameter initializer used in code paths that resolve `technique_FXMaterial`
+and `technique_FXMaterialTransparent`. An ESO FX-material default/error color
+is therefore a co-leading application-owned candidate, though it is not yet
+connected to startup. ESO's dynamic full-surface clear and application
+window/layer background exposure remain the other leading mechanisms.
+Official MoltenVK and the installed bridge contain no exact `{1,0,1,1}` float
+constant. Existing evidence still does not capture the submitted clear values
+for both early swapchain generations or connect the FX-material initializer to
+startup presentation, so the exact pixel writer remains the active gate. This
+is a low-impact startup presentation defect, not a gameplay blocker.
+
+Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
+black, and load-only submission with real MoltenVK at the exact ESO surface
+extents. Its generation-1-only stopping rule is now invalidated before
+installation, however: it suppresses logging precisely when the screenshot
+shows further evidence is required. The source build and 98 tests pass, but
+this candidate must not be installed or used for a user run. The installed
+game remains on the prior `performance-aggressive` bridge. The next gate is a
+smaller bounded redesign that covers generation 1 and early generation 2,
+followed by non-game validation; only then can explicit game-bundle approval be
+considered.
+
+Experiment 0024 implements that bounded two-generation redesign locally. It
+finishes at generation-2 present ordinal 180 and independently caps detailed
+color records at 2,048, after which wrappers directly forward. CPU-only,
+official-MoltenVK/AppKit, and full-build validation now pass. Nine GPU control
+processes agree on pixels and recorded operations at small and exact ESO
+extents; only the first eight acquire/present results are logged before a silent
+ordinal-180 finish. All 99 Python tests and static checks pass. The candidate
+remains uninstalled; explicit game-bundle modification approval is the next
+gate.
+
+The screenshot run itself started at 15:16:50 and completed normal Vulkan
+teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
+ordinary use. The transient startup artifact did not prevent that session.
 
 The current full settings file has SHA-256
 `470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`.

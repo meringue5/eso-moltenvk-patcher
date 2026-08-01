@@ -15,6 +15,8 @@ TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_reset(void);
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_logger(
     Teso4m4LifecycleLogFunction logger);
 TESO4M4_LIFECYCLE_HIDDEN void teso4m4_lifecycle_set_enabled(bool enabled);
+TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_startup_color_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN PFN_vkVoidFunction
 teso4m4_lifecycle_intercept(
     const char* name,

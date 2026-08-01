@@ -11,6 +11,10 @@
 
 #include <vulkan/vulkan.h>
 
+extern "C" {
+#include "mvk_lifecycle.h"
+}
+
 extern "C" void VKAPI_CALL vkGetMTLTextureMVK(
     VkImage image, id<MTLTexture>* mtl_texture);
 
@@ -28,6 +32,76 @@ typedef struct {
     uint32_t image_count;
     VkRenderPass render_pass;
 } Generation;
+
+static char g_audit_log[65536];
+static size_t g_audit_log_length;
+static PFN_vkCreateSwapchainKHR g_create_swapchain = vkCreateSwapchainKHR;
+static PFN_vkGetSwapchainImagesKHR g_get_swapchain_images =
+    vkGetSwapchainImagesKHR;
+static PFN_vkCreateImageView g_create_image_view = vkCreateImageView;
+static PFN_vkCreateRenderPass g_create_render_pass = vkCreateRenderPass;
+static PFN_vkCreateFramebuffer g_create_framebuffer = vkCreateFramebuffer;
+static PFN_vkCmdBeginRenderPass g_cmd_begin_render_pass = vkCmdBeginRenderPass;
+static PFN_vkCmdClearAttachments g_cmd_clear_attachments =
+    vkCmdClearAttachments;
+static PFN_vkCmdEndRenderPass g_cmd_end_render_pass = vkCmdEndRenderPass;
+static PFN_vkAcquireNextImageKHR g_acquire_next_image =
+    vkAcquireNextImageKHR;
+static PFN_vkQueuePresentKHR g_queue_present = vkQueuePresentKHR;
+static PFN_vkQueueSubmit g_queue_submit = vkQueueSubmit;
+
+static void audit_log(const char* message) {
+    const int written = snprintf(
+        g_audit_log + g_audit_log_length,
+        sizeof(g_audit_log) - g_audit_log_length, "%s\n", message);
+    if (written > 0 &&
+        (size_t)written < sizeof(g_audit_log) - g_audit_log_length) {
+        g_audit_log_length += (size_t)written;
+    }
+}
+
+static void enable_startup_color_audit(void) {
+    teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_logger(&audit_log);
+    teso4m4_lifecycle_set_startup_color_audit(true);
+    g_create_swapchain = (PFN_vkCreateSwapchainKHR)
+        teso4m4_lifecycle_intercept(
+            "vkCreateSwapchainKHR",
+            (PFN_vkVoidFunction)vkCreateSwapchainKHR);
+    g_get_swapchain_images = (PFN_vkGetSwapchainImagesKHR)
+        teso4m4_lifecycle_intercept(
+            "vkGetSwapchainImagesKHR",
+            (PFN_vkVoidFunction)vkGetSwapchainImagesKHR);
+    g_create_image_view = (PFN_vkCreateImageView)
+        teso4m4_lifecycle_intercept(
+            "vkCreateImageView", (PFN_vkVoidFunction)vkCreateImageView);
+    g_create_render_pass = (PFN_vkCreateRenderPass)
+        teso4m4_lifecycle_intercept(
+            "vkCreateRenderPass", (PFN_vkVoidFunction)vkCreateRenderPass);
+    g_create_framebuffer = (PFN_vkCreateFramebuffer)
+        teso4m4_lifecycle_intercept(
+            "vkCreateFramebuffer", (PFN_vkVoidFunction)vkCreateFramebuffer);
+    g_cmd_begin_render_pass = (PFN_vkCmdBeginRenderPass)
+        teso4m4_lifecycle_intercept(
+            "vkCmdBeginRenderPass", (PFN_vkVoidFunction)vkCmdBeginRenderPass);
+    g_cmd_clear_attachments = (PFN_vkCmdClearAttachments)
+        teso4m4_lifecycle_intercept(
+            "vkCmdClearAttachments",
+            (PFN_vkVoidFunction)vkCmdClearAttachments);
+    g_cmd_end_render_pass = (PFN_vkCmdEndRenderPass)
+        teso4m4_lifecycle_intercept(
+            "vkCmdEndRenderPass", (PFN_vkVoidFunction)vkCmdEndRenderPass);
+    g_acquire_next_image = (PFN_vkAcquireNextImageKHR)
+        teso4m4_lifecycle_intercept(
+            "vkAcquireNextImageKHR",
+            (PFN_vkVoidFunction)vkAcquireNextImageKHR);
+    g_queue_present = (PFN_vkQueuePresentKHR)
+        teso4m4_lifecycle_intercept(
+            "vkQueuePresentKHR", (PFN_vkVoidFunction)vkQueuePresentKHR);
+    g_queue_submit = (PFN_vkQueueSubmit)
+        teso4m4_lifecycle_intercept(
+            "vkQueueSubmit", (PFN_vkVoidFunction)vkQueueSubmit);
+}
 
 static bool vk_ok(VkResult result, const char* operation) {
     if (result == VK_SUCCESS) {
@@ -121,12 +195,12 @@ static bool create_generation(
         .clipped = VK_TRUE,
         .oldSwapchain = old_swapchain,
     };
-    if (!vk_ok(vkCreateSwapchainKHR(
+    if (!vk_ok(g_create_swapchain(
                    device, &swapchain_info, NULL, &generation->swapchain),
                "vkCreateSwapchainKHR")) {
         return false;
     }
-    if (!vk_ok(vkGetSwapchainImagesKHR(
+    if (!vk_ok(g_get_swapchain_images(
                    device, generation->swapchain,
                    &generation->image_count, NULL),
                "vkGetSwapchainImagesKHR(count)")) {
@@ -140,7 +214,7 @@ static bool create_generation(
         generation->image_count, sizeof(*generation->framebuffers));
     if (!generation->images || !generation->views ||
         !generation->framebuffers ||
-        !vk_ok(vkGetSwapchainImagesKHR(
+        !vk_ok(g_get_swapchain_images(
                    device, generation->swapchain,
                    &generation->image_count, generation->images),
                "vkGetSwapchainImagesKHR(data)")) {
@@ -173,7 +247,7 @@ static bool create_generation(
         .subpassCount = 1,
         .pSubpasses = &subpass,
     };
-    if (!vk_ok(vkCreateRenderPass(
+    if (!vk_ok(g_create_render_pass(
                    device, &render_pass_info, NULL,
                    &generation->render_pass),
                "vkCreateRenderPass")) {
@@ -195,7 +269,7 @@ static bool create_generation(
                 VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
             },
         };
-        if (!vk_ok(vkCreateImageView(
+        if (!vk_ok(g_create_image_view(
                        device, &view_info, NULL, &generation->views[index]),
                    "vkCreateImageView")) {
             return false;
@@ -209,7 +283,7 @@ static bool create_generation(
             .height = extent.height,
             .layers = 1,
         };
-        if (!vk_ok(vkCreateFramebuffer(
+        if (!vk_ok(g_create_framebuffer(
                        device, &framebuffer_info, NULL,
                        &generation->framebuffers[index]),
                    "vkCreateFramebuffer")) {
@@ -266,7 +340,7 @@ static bool submit_frame(
         return false;
     }
     uint32_t image_index = 0;
-    VkResult acquire_result = vkAcquireNextImageKHR(
+    VkResult acquire_result = g_acquire_next_image(
         device, generation->swapchain, UINT64_MAX, acquired,
         VK_NULL_HANDLE, &image_index);
     if (acquire_result != VK_SUCCESS &&
@@ -300,7 +374,7 @@ static bool submit_frame(
         .framebuffer = generation->framebuffers[image_index],
         .renderArea = {{0, 0}, extent},
     };
-    vkCmdBeginRenderPass(command, &pass_info, VK_SUBPASS_CONTENTS_INLINE);
+    g_cmd_begin_render_pass(command, &pass_info, VK_SUBPASS_CONTENTS_INLINE);
     if (mode != kLoadOnly) {
         const VkClearAttachment attachment = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -319,9 +393,9 @@ static bool submit_frame(
             .baseArrayLayer = 0,
             .layerCount = 1,
         };
-        vkCmdClearAttachments(command, 1, &attachment, 1, &rect);
+        g_cmd_clear_attachments(command, 1, &attachment, 1, &rect);
     }
-    vkCmdEndRenderPass(command);
+    g_cmd_end_render_pass(command);
     if (!vk_ok(vkEndCommandBuffer(command), "vkEndCommandBuffer")) {
         return false;
     }
@@ -337,7 +411,7 @@ static bool submit_frame(
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = &rendered,
     };
-    if (!vk_ok(vkQueueSubmit(queue, 1, &submit_info, fence),
+    if (!vk_ok(g_queue_submit(queue, 1, &submit_info, fence),
                "vkQueueSubmit") ||
         !vk_ok(vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX),
                "vkWaitForFences")) {
@@ -356,7 +430,7 @@ static bool submit_frame(
         .pSwapchains = &generation->swapchain,
         .pImageIndices = &image_index,
     };
-    VkResult present_result = vkQueuePresentKHR(queue, &present_info);
+    VkResult present_result = g_queue_present(queue, &present_info);
     if (present_result != VK_SUCCESS &&
         present_result != VK_SUBOPTIMAL_KHR) {
         fprintf(stderr, "vkQueuePresentKHR failed: %d\n", present_result);
@@ -366,6 +440,46 @@ static bool submit_frame(
     vkFreeCommandBuffers(device, command_pool, 1, &command);
     vkDestroyFence(device, fence, NULL);
     vkDestroySemaphore(device, rendered, NULL);
+    vkDestroySemaphore(device, acquired, NULL);
+    return true;
+}
+
+static bool present_without_rendering(
+    VkDevice device,
+    VkQueue queue,
+    Generation* generation) {
+    VkSemaphore acquired = VK_NULL_HANDLE;
+    const VkSemaphoreCreateInfo semaphore_info = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
+    if (!vk_ok(vkCreateSemaphore(device, &semaphore_info, NULL, &acquired),
+               "vkCreateSemaphore(audit-bound)")) {
+        return false;
+    }
+    uint32_t image_index = 0;
+    const VkResult acquire_result = g_acquire_next_image(
+        device, generation->swapchain, UINT64_MAX, acquired,
+        VK_NULL_HANDLE, &image_index);
+    if (acquire_result != VK_SUCCESS &&
+        acquire_result != VK_SUBOPTIMAL_KHR) {
+        fprintf(stderr, "audit-bound acquire failed: %d\n", acquire_result);
+        return false;
+    }
+    const VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &acquired,
+        .swapchainCount = 1,
+        .pSwapchains = &generation->swapchain,
+        .pImageIndices = &image_index,
+    };
+    const VkResult present_result = g_queue_present(queue, &present_info);
+    if (present_result != VK_SUCCESS &&
+        present_result != VK_SUBOPTIMAL_KHR) {
+        fprintf(stderr, "audit-bound present failed: %d\n", present_result);
+        return false;
+    }
+    vkQueueWaitIdle(queue);
     vkDestroySemaphore(device, acquired, NULL);
     return true;
 }
@@ -543,6 +657,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        enable_startup_color_audit();
         const VkExtent2D first_extent = {width, first_height};
         Generation first = {};
         if (!create_generation(
@@ -571,6 +686,11 @@ int main(int argc, char** argv) {
                 kClearBlack, corrected_pixel)) {
             return 1;
         }
+        for (uint32_t ordinal = 1; ordinal < 180; ++ordinal) {
+            if (!present_without_rendering(device, queue, &corrected)) {
+                return 1;
+            }
+        }
         printf(
             "mode=%s first=%ux%u pixel-bgra=%u,%u,%u,%u "
             "corrected=%ux%u pixel-bgra=%u,%u,%u,%u\n",
@@ -578,6 +698,7 @@ int main(int argc, char** argv) {
             first_pixel[2], first_pixel[3], width, corrected_height,
             corrected_pixel[0], corrected_pixel[1], corrected_pixel[2],
             corrected_pixel[3]);
+        fputs(g_audit_log, stdout);
 
         vkDeviceWaitIdle(device);
         destroy_generation(device, &corrected);
@@ -604,6 +725,31 @@ int main(int argc, char** argv) {
             first_pixel[0] >= 252 && first_pixel[1] <= 3 &&
             first_pixel[2] >= 252) {
             fprintf(stderr, "load-only first frame unexpectedly matched neon pink\n");
+            return 3;
+        }
+        const bool has_audit_clear =
+            strstr(
+                g_audit_log,
+                "STARTUP_COLOR_CLEAR: generation=1") != NULL;
+        const char* expected_audit_rgba =
+            first_mode == kClearNeonPink
+                ? "rgba=1,0,1,1"
+                : "rgba=0,0,0,1";
+        if (strstr(g_audit_log, "STARTUP_COLOR_BEGIN: generation=1") == NULL ||
+            strstr(g_audit_log, "framebuffer_extent=") == NULL ||
+            strstr(g_audit_log, "STARTUP_COLOR_SUBMIT: generation=1") == NULL ||
+            strstr(g_audit_log, "STARTUP_COLOR_BEGIN: generation=2") == NULL ||
+            strstr(g_audit_log, "STARTUP_COLOR_SUBMIT: generation=2") == NULL ||
+            strstr(g_audit_log,
+                   "STARTUP_COLOR_AUDIT_FINISH: "
+                   "reason=generation-2-present-limit generation=2 "
+                   "ordinal=180") == NULL ||
+            strstr(g_audit_log, " ordinal=9 ") != NULL ||
+            (first_mode == kLoadOnly && has_audit_clear) ||
+            (first_mode != kLoadOnly &&
+             (!has_audit_clear ||
+              strstr(g_audit_log, expected_audit_rgba) == NULL))) {
+            fprintf(stderr, "startup color audit did not classify %s\n", argv[1]);
             return 3;
         }
         if (!(corrected_pixel[0] <= 3 && corrected_pixel[1] <= 3 &&

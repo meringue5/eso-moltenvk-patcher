@@ -358,6 +358,31 @@ class StartupLogTests(unittest.TestCase):
             verdict.reasons,
         )
 
+    def test_accepts_startup_color_audit_with_aggressive_configuration(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: startup color audit enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "generation_limit=2 generation_2_present_limit=180",
+        ).replace(
+            "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=1 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "MOLTENVK_CONFIG: live_resources=0 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=0 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=1",
+        )
+        text += "\n" + record(
+            "STARTUP_COLOR_AUDIT_BEGIN: generation_limit=2 "
+            "generation_2_present_limit=180"
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
     def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
         text = good_log().replace(
             "MODE: descriptor compatibility enabled live_resources=1 "
