@@ -28,16 +28,20 @@ are in [Project status](STATUS.md); completed runs belong in the
   real-MoltenVK/AppKit, and full-build controls pass with pixel/audit agreement,
   a generation-2 ordinal-180 finish, first-eight acquire/present logging, and a
   2,048-detail hard cap.
-- If the two-generation audit records an exact magenta clear, the source is
-  decided. If it records only non-magenta or no submitted clear, do not promote
-  layer background automatically; the next static/bounded gate must distinguish
-  the known FX-material path from window/layer exposure.
+- Preserve Experiment 0024's exact live negative result: the user observed the
+  pink frame while one generation-1 and 180 generation-2 submitted clears were
+  all opaque black. There was no load-op clear. Do not repeat the clear audit.
+- Static inspection shows that the opaque `ZOMetalGameView` fallback paints
+  black and exposes no explicit background-color setter. Treat the known
+  exact-magenta FX-material/draw path as leading, but do not call it confirmed
+  until a bounded presented-pixel or draw association distinguishes it from
+  other application rendering.
 - Keep the redesign isolated from the normal performance path, retain the exact
   aggressive configuration, and keep the incidental build change removed.
-- The approved reversible installation is complete. Request exactly one normal
-  Steam-path startup ending at account login or 30 seconds, analyze only its
-  exact run ID, then restore the normal `performance-aggressive` marker while
-  preserving both caches and settings.
+- The one approved Steam-path startup, exact-run analysis, and restoration to
+  the normal `performance-aggressive` marker are complete. Both caches were
+  preserved. Do not request another user run until the next discriminating
+  candidate has passed its non-game gate.
 - Keep the working 1.4.2 runtime profile and cache state unchanged while
   investigating the startup artifact.
 

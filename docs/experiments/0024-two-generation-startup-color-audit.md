@@ -1,8 +1,8 @@
 # Experiment 0024: two-generation startup color audit redesign
 
 - Date: 2026-08-01
-- Outcome: **two-generation non-game validation passed; approved candidate installed, awaiting one bounded startup**
-- Rollback: **verified available; pristine loader and both cache states were checked before installation**
+- Outcome: **succeeded; the exact pink startup recorded only submitted opaque-black clears**
+- Rollback: **complete; normal `performance-aggressive` marker restored with both caches preserved**
 
 ## Question
 
@@ -154,3 +154,78 @@ hypothesis and leaves the known FX-material and window/layer candidates.
 Missing two-generation submit/present linkage is inconclusive. After evidence
 collection, restore the normal `performance-aggressive` marker and preserve
 both caches.
+
+## User-run result
+
+The user launched ESO through the normal Steam path at approximately 17:30:45
++0900 and directly observed the same full-screen pink startup frame. The exact
+bridge run is `20260801T083045.794452000Z-pid65194`. The bridge reported the
+intended `startup-color-audit` mode and the exact effective aggressive
+configuration:
+
+```text
+live_resources=0 metal_argument_buffers=0 use_mtlheap=1
+synchronous_queue_submits=0 command_pooling=1 prefill=0
+maximize_concurrent_compilation=1
+```
+
+The audit passed its linkage checks and finished once, exactly at generation-2
+present ordinal 180. It recorded no detail-limit event and emitted no bounded
+startup/lifecycle record after the finish gate. The linked color operations
+were:
+
+```text
+generation 1: 1 submitted vkCmdClearAttachments, rgba 0,0,0,1
+generation 2: 180 submitted vkCmdClearAttachments, rgba 0,0,0,1
+render-pass LOAD_OP_CLEAR values: none
+```
+
+All 181 clears covered their complete generation extent. Generation 1 used
+3420 x 2148 and generation 2 used 3420 x 2146. The analyzer verdict is `PASS`.
+
+This falsifies the submitted-clear hypothesis for the exact run in which the
+user saw canonical magenta: neither ESO's swapchain-linked
+`vkCmdClearAttachments` values nor a render-pass load clear supplied magenta.
+It does not by itself prove which later draw supplied the pixels.
+
+Follow-up static inspection further weakens the window/layer-background
+alternative. ESO's concrete `ZOMetalGameView` returns `YES` from `isOpaque`,
+creates a `CAMetalLayer` as its backing layer, and its `drawRect:` obtains
+`NSColor.blackColor` and fills the complete bounds with `NSRectFill`. The
+executable has no `setBackgroundColor:` selector. Together with the exact
+magenta FX-material initializer and the availability of pipeline/draw entry
+points in generation 2, the application-owned FX-material/draw path is now the
+leading source. This remains a strongly supported inference until a presented
+draw or pixel is joined to that material path.
+
+For the fingerprinted executable, the relevant static method implementations
+are `makeBackingLayer` at `0x1035fb764`, `isOpaque` at `0x1035fb8ab`, and
+`drawRect:` at `0x1035fb8dd`. The latter resolves the `blackColor` and `set`
+selectors, obtains the view bounds, and calls the `_NSRectFill` stub. These are
+static file addresses, not a live-process trace.
+
+ESO had exited when post-run analysis began. The only Steam-named process was
+an orphaned `ipcserver` with parent PID 1; `steam_osx`, ESO, and the launcher
+were absent, and `lsof` showed that the helper held no ESO bundle file open.
+The normal installation safety gate was therefore satisfied.
+
+At approximately 17:39 +0900, a cache-preserving restore returned the active
+loader to the pristine Bink and displaced the diagnostic marker. A subsequent
+cache-preserving install restored the `performance-aggressive` marker. Final
+verification reports the recognized ESO target, current official MoltenVK
+1.4.2, current bridge target, and installed proxy SHA-256
+`766526a899c07523790ac753959ab99a522af5b6e8993e1cadd690094ec8cc71`,
+which matches the validated build byte-for-byte.
+
+ESO updated the active 1.4.2 cache during the user run while retaining its
+7,977,079-byte size. Its pre-rollback and post-reinstall SHA-256 are both
+`498afb3db97c57c6fe6b0baef5307bf0c6a9330a73478519caa6cf659474a55b`.
+The old-backup cache remained 6,800,792 bytes with SHA-256
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+No cache was deleted, renamed, or substituted by rollback.
+
+The game itself rewrote `UserSettings.txt` at 17:31, before rollback. Its full
+post-run hash is
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`,
+while every one of the 48 allowlisted standard graphics/display/performance
+values is unchanged. The restore and installer do not write that file.

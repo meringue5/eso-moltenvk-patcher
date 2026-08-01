@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -198,10 +199,12 @@ def main() -> int:
     args = parser.parse_args()
     result = analyze_audit(args.log.read_text(errors="replace"), args.run_id)
     print(f"classification: {result.classification}")
-    for generation, rgba in result.generation_rgba_values:
+    rgba_counts = Counter(result.generation_rgba_values)
+    for (generation, rgba), count in sorted(rgba_counts.items()):
         print(
             f"generation={generation} rgba: "
             + ",".join(f"{channel:.9g}" for channel in rgba)
+            + f" count={count}"
         )
     print("verdict: " + ("PASS" if result.passed else "INCONCLUSIVE"))
     for reason in result.reasons:

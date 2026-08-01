@@ -431,6 +431,25 @@ for both early generations or connect the material initializer to a presented
 draw, so the precise pixel writer is not yet confirmed. A generation-1-only
 diagnostic is insufficient.
 
+Experiment 0024 closes the dynamic-clear branch with an exact live result. In
+the run where the user again observed canonical magenta, the two-generation
+audit linked one generation-1 and 180 generation-2 full-surface
+`vkCmdClearAttachments` operations to successful submits and presents. Every
+RGBA was opaque black `(0,0,0,1)`; no swapchain-linked render pass used
+`LOAD_OP_CLEAR`. The audit finished exactly at generation-2 ordinal 180 without
+reaching its detail cap, and the analyzer passed. A submitted Vulkan clear did
+not supply the observed magenta pixels.
+
+The remaining background alternative is also less consistent with the static
+application code than previously known. ESO's `ZOMetalGameView` is opaque,
+constructs a `CAMetalLayer`, and its `drawRect:` fills the view bounds with
+`NSColor.blackColor` through `NSRectFill`. The executable contains no
+`setBackgroundColor:` selector. Combined with the application-owned exact
+magenta FX-material initializer and generation-2 pipeline/draw availability,
+an ESO FX-material or related application draw is now the leading source. It
+remains an inference rather than a confirmed writer until a presented draw or
+pixel is directly associated with that path.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

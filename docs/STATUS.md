@@ -6,10 +6,10 @@ Last updated: 2026-08-01
 
 The validated gameplay baseline remains official MoltenVK 1.4.2 with the
 `performance-aggressive` profile for ESO 12.0.7, databuild `3281538`. The
-currently installed bridge is the explicitly approved, temporary
-`startup-color-audit` diagnostic, which retains the same effective aggressive
-MoltenVK configuration. The update check, executable fingerprint, installed
-runtime hash, and 1.4.2 pipeline-cache UUID all remain current.
+temporary audit has been removed and the verified `performance-aggressive`
+marker is installed again. The update check, executable fingerprint, installed
+runtime hash, bridge/build byte comparison, and 1.4.2 pipeline-cache UUID all
+remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -52,14 +52,13 @@ single generation-1 submission, but the screenshot persists into the later
 shader-capable interval. Moreover, exact `{1,0,1,1}` is loaded by an ESO
 parameter initializer used in code paths that resolve `technique_FXMaterial`
 and `technique_FXMaterialTransparent`. An ESO FX-material default/error color
-is therefore a co-leading application-owned candidate, though it is not yet
-connected to startup. ESO's dynamic full-surface clear and application
-window/layer background exposure remain the other leading mechanisms.
-Official MoltenVK and the installed bridge contain no exact `{1,0,1,1}` float
-constant. Existing evidence still does not capture the submitted clear values
-for both early swapchain generations or connect the FX-material initializer to
-startup presentation, so the exact pixel writer remains the active gate. This
-is a low-impact startup presentation defect, not a gameplay blocker.
+is therefore an application-owned candidate, though it is not yet connected
+to startup. Experiment 0024 subsequently excluded the dynamic full-surface
+clear, and the opaque view's black fallback weakened window/layer background
+exposure. Official MoltenVK and the installed bridge contain no exact
+`{1,0,1,1}` float constant. The exact-magenta FX-material or related ESO draw
+is now leading, but the exact presented pixel writer remains the active gate.
+This is a low-impact startup presentation defect, not a gameplay blocker.
 
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface
@@ -69,33 +68,51 @@ shows further evidence is required. The source build and 98 tests pass, but
 that candidate was not installed or used for a user run. It was superseded by
 the smaller bounded redesign that covers generation 1 and early generation 2.
 
-Experiment 0024 implements that bounded two-generation redesign locally. It
-finishes at generation-2 present ordinal 180 and independently caps detailed
-color records at 2,048, after which wrappers directly forward. CPU-only,
-official-MoltenVK/AppKit, and full-build validation now pass. Nine GPU control
-processes agree on pixels and recorded operations at small and exact ESO
-extents; only the first eight acquire/present results are logged before a silent
-ordinal-180 finish. All 99 Python tests and static checks pass. Explicit
-game-bundle modification approval was received, and the exact built bridge was
-installed at 17:24 in `startup-color-audit` mode after a cache-preserving
-restore. The next gate is one bounded Steam-path startup followed by exact-run
-analysis and restoration to the normal `performance-aggressive` marker.
+Experiment 0024 completed that bounded two-generation audit in the exact user
+run `20260801T083045.794452000Z-pid65194`. The user observed the same pink
+frame, while the audit linked one generation-1 and 180 generation-2 submitted
+full-surface clears, all opaque black `(0,0,0,1)`. There was no render-pass
+load clear, detail-limit event, or record after the exact ordinal-180 finish;
+the analyzer passed. A submitted Vulkan clear is therefore excluded for the
+observed frame.
+
+Static inspection also shows that ESO's concrete opaque `ZOMetalGameView`
+creates the backing `CAMetalLayer`, while its fallback `drawRect:` fills the
+complete bounds with `NSColor.blackColor`; no `setBackgroundColor:` selector is
+present. This weakens window/layer background exposure. The known ESO
+exact-magenta FX-material default and a generation-2 draw are now the leading
+source, but no presented draw has yet been joined to that material, so this is
+not yet a confirmed pixel-writer trace.
+
+The apparent remaining Steam process was an orphaned `ipcserver` with parent
+PID 1; neither `steam_osx`, ESO, nor the launcher was running, and it held no
+ESO bundle file open. A cache-preserving restore and reinstall then returned
+the marker to `performance-aggressive`. The installed proxy SHA-256 is
+`766526a899c07523790ac753959ab99a522af5b6e8993e1cadd690094ec8cc71`
+and matches the validated build byte-for-byte. No further user run is justified
+until a bounded candidate can associate a presented draw or pixel with the
+FX-material path.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
 ordinary use. The transient startup artifact did not prevent that session.
 
-The current full settings file has SHA-256
-`470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`.
-Only its 48 allowlisted graphics, display, and performance values are committed
-as the
+The game rewrote the current full settings file at 17:31 during the
+user-controlled run; its post-run SHA-256 is
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+All 48 allowlisted graphics, display, and performance values still match the
+committed
 [M4/MoltenVK 1.4.2 standard template](../config/usersettings-m4-moltenvk-1.4.2-standard.txt).
 The full settings and latest logs remain ignored evidence at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`.
 
 The active 1.4.2 cache is 7,977,079 bytes, has UUID
 `db6602241a0502090000000100000000`, and SHA-256
-`8316fda8dae6a03ac2c62cb40986ce0ae3ef08703f9c21d911760b88c096ba45`.
+`498afb3db97c57c6fe6b0baef5307bf0c6a9330a73478519caa6cf659474a55b`.
+ESO updated its contents during the user run without changing its size; the
+hash remained identical across the later restore/reinstall. The old-backup
+cache likewise remained
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 The preserved 1.4.1 runtime/cache and older cache remain available.
 
 ## Historical safety record
