@@ -223,6 +223,13 @@ static void remember_signaled_semaphore(VkSemaphore handle, VkQueue queue) {
     report_overflow("signaled-semaphore");
 }
 
+static void forget_signaled_semaphore(VkSemaphore handle) {
+    SignaledSemaphoreRecord* existing = find_signaled_semaphore(handle);
+    if (existing) {
+        existing->occupied = false;
+    }
+}
+
 static ImageViewRecord* find_image_view(VkImageView handle) {
     for (size_t index = 0; index < kMaxImageViews; ++index) {
         if (g_image_views[index].alive &&
@@ -434,11 +441,23 @@ static bool should_sample_present_pixel(
     }
     switch (ordinal) {
         case 1:
+        case 10:
+        case 20:
         case 30:
+        case 40:
+        case 50:
         case 60:
+        case 70:
+        case 80:
         case 90:
+        case 100:
+        case 110:
         case 120:
+        case 130:
+        case 140:
         case 150:
+        case 160:
+        case 170:
         case 180:
             return true;
         default:
@@ -880,6 +899,12 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_submit(
         pthread_mutex_lock(&g_lock);
         for (uint32_t submit_index = 0; submit_index < submit_count;
              ++submit_index) {
+            for (uint32_t wait_index = 0;
+                 wait_index < submits[submit_index].waitSemaphoreCount;
+                 ++wait_index) {
+                forget_signaled_semaphore(
+                    submits[submit_index].pWaitSemaphores[wait_index]);
+            }
             for (uint32_t signal_index = 0;
                  signal_index < submits[submit_index].signalSemaphoreCount;
                  ++signal_index) {
@@ -1347,7 +1372,8 @@ void teso4m4_lifecycle_set_startup_present_pixel_audit(bool enabled) {
     if (enabled) {
         lifecycle_log(
             "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1"
-            " generation_2_samples=1,30,60,90,120,150,180");
+            " generation_2_samples=1,10,20,30,40,50,60,70,80,90,100,"
+            "110,120,130,140,150,160,170,180");
     }
 }
 

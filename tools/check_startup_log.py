@@ -183,7 +183,7 @@ def evaluate_startup_log(
         "MODE: startup present pixel audit enabled live_resources=0 "
         "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
         "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
-        "generation_limit=2 generation_2_present_limit=180 pixel_samples=8"
+        "generation_limit=2 generation_2_present_limit=180 pixel_samples=20"
     )
     matched_modes = [
         mode
@@ -351,11 +351,12 @@ def evaluate_startup_log(
     if startup_present_pixel_audit_mode in matched_modes:
         pixel_begin = (
             "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1 "
-            "generation_2_samples=1,30,60,90,120,150,180"
+            "generation_2_samples=1,10,20,30,40,50,60,70,80,90,100,"
+            "110,120,130,140,150,160,170,180"
         )
         pixel_ready = (
             "STARTUP_PRESENT_PIXEL_READY: synchronization=queue-wait-idle "
-            "samples=8 points_per_sample=5"
+            "samples=20 points_per_sample=5"
         )
         if pixel_begin not in lines:
             reasons.append("startup present pixel schedule was not armed exactly")

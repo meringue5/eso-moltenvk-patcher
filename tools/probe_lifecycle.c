@@ -16,6 +16,10 @@ static VkImage g_swapchain_images[] = {
     HANDLE(VkImage, 0x201),
     HANDLE(VkImage, 0x202),
 };
+static uint32_t g_present_pixel_sample_count;
+static uint64_t g_present_pixel_generations[32];
+static uint32_t g_present_pixel_ordinals[32];
+static bool g_present_pixel_arguments_valid;
 
 static void test_log(const char* message) {
     const int written = snprintf(
@@ -212,6 +216,220 @@ static uint64_t monotonic_nanoseconds(void) {
     }
     return (uint64_t)value.tv_sec * 1000000000ULL +
            (uint64_t)value.tv_nsec;
+}
+
+static bool fake_present_pixel_sampler(
+    VkQueue queue,
+    VkImage image,
+    VkFormat format,
+    uint32_t width,
+    uint32_t height,
+    uint64_t generation,
+    uint32_t ordinal,
+    uint32_t image_index) {
+    const bool extent_valid =
+        (generation == 1 && width == 3420 && height == 2148) ||
+        (generation == 2 && width == 3420 && height == 2146);
+    g_present_pixel_arguments_valid &=
+        queue == HANDLE(VkQueue, 0x82) &&
+        image == g_swapchain_images[0] &&
+        format == VK_FORMAT_B8G8R8A8_UNORM && extent_valid &&
+        image_index == 0;
+    if (g_present_pixel_sample_count < 32) {
+        g_present_pixel_generations[g_present_pixel_sample_count] = generation;
+        g_present_pixel_ordinals[g_present_pixel_sample_count] = ordinal;
+    }
+    ++g_present_pixel_sample_count;
+    return true;
+}
+
+static bool run_present_pixel_schedule_case(void) {
+    g_log_length = 0;
+    g_log[0] = '\0';
+    g_present_pixel_sample_count = 0;
+    memset(g_present_pixel_generations, 0, sizeof(g_present_pixel_generations));
+    memset(g_present_pixel_ordinals, 0, sizeof(g_present_pixel_ordinals));
+    g_present_pixel_arguments_valid = true;
+    teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_logger(&test_log);
+    teso4m4_lifecycle_set_present_pixel_sampler(
+        &fake_present_pixel_sampler);
+    teso4m4_lifecycle_set_startup_color_audit(true);
+    teso4m4_lifecycle_set_startup_present_pixel_audit(true);
+
+    PFN_vkCreateSwapchainKHR create_swapchain = (PFN_vkCreateSwapchainKHR)
+        teso4m4_lifecycle_intercept(
+            "vkCreateSwapchainKHR",
+            (PFN_vkVoidFunction)&fake_create_swapchain);
+    PFN_vkGetSwapchainImagesKHR get_images = (PFN_vkGetSwapchainImagesKHR)
+        teso4m4_lifecycle_intercept(
+            "vkGetSwapchainImagesKHR",
+            (PFN_vkVoidFunction)&fake_get_swapchain_images);
+    PFN_vkQueueSubmit submit = (PFN_vkQueueSubmit)
+        teso4m4_lifecycle_intercept(
+            "vkQueueSubmit", (PFN_vkVoidFunction)&fake_queue_submit);
+    PFN_vkQueuePresentKHR present = (PFN_vkQueuePresentKHR)
+        teso4m4_lifecycle_intercept(
+            "vkQueuePresentKHR", (PFN_vkVoidFunction)&fake_queue_present);
+
+    const VkDevice device = HANDLE(VkDevice, 0x81);
+    const VkQueue queue = HANDLE(VkQueue, 0x82);
+    VkSwapchainCreateInfoKHR create_info = {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .minImageCount = 2,
+        .imageFormat = VK_FORMAT_B8G8R8A8_UNORM,
+        .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+        .imageExtent = {3420, 2148},
+        .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+    };
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    if (create_swapchain(device, &create_info, NULL, &swapchain) != VK_SUCCESS) {
+        return check(false, "pixel schedule first swapchain creation failed");
+    }
+    uint32_t image_count = 2;
+    VkImage images[2] = {0};
+    if (get_images(device, swapchain, &image_count, images) != VK_SUCCESS) {
+        return check(false, "pixel schedule first image query failed");
+    }
+    uint32_t image_index = 0;
+    VkSemaphore signal = HANDLE(VkSemaphore, 0x900);
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &signal,
+    };
+    VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &signal,
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain,
+        .pImageIndices = &image_index,
+    };
+    if (submit(queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS ||
+        present(queue, &present_info) != VK_SUCCESS) {
+        return check(false, "pixel schedule first present failed");
+    }
+
+    create_info.oldSwapchain = swapchain;
+    create_info.imageExtent.height = 2146;
+    if (create_swapchain(device, &create_info, NULL, &swapchain) != VK_SUCCESS) {
+        return check(false, "pixel schedule replacement creation failed");
+    }
+    image_count = 2;
+    memset(images, 0, sizeof(images));
+    if (get_images(device, swapchain, &image_count, images) != VK_SUCCESS) {
+        return check(false, "pixel schedule replacement image query failed");
+    }
+    present_info.pSwapchains = &swapchain;
+    for (uint32_t ordinal = 1; ordinal <= 180; ++ordinal) {
+        signal = HANDLE(VkSemaphore, 0x900 + ordinal);
+        if (submit(queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS ||
+            present(queue, &present_info) != VK_SUCCESS) {
+            return check(false, "pixel schedule replacement present failed");
+        }
+    }
+
+    const uint32_t expected_ordinals[] = {
+        1, 10, 20, 30, 40, 50, 60, 70, 80, 90,
+        100, 110, 120, 130, 140, 150, 160, 170, 180,
+    };
+    bool schedule_valid =
+        g_present_pixel_sample_count == 20 &&
+        g_present_pixel_generations[0] == 1 &&
+        g_present_pixel_ordinals[0] == 1;
+    for (size_t index = 0;
+         index < sizeof(expected_ordinals) / sizeof(expected_ordinals[0]);
+         ++index) {
+        schedule_valid &=
+            g_present_pixel_generations[index + 1] == 2 &&
+            g_present_pixel_ordinals[index + 1] == expected_ordinals[index];
+    }
+    return check(
+        schedule_valid && g_present_pixel_arguments_valid &&
+            strstr(g_log, "STARTUP_PRESENT_PIXEL_SKIP:") == NULL &&
+            strstr(
+                g_log,
+                "STARTUP_COLOR_AUDIT_FINISH: "
+                "reason=generation-2-present-limit generation=2 ordinal=180") != NULL,
+        "present pixel audit must sample the exact complete schedule");
+}
+
+static bool run_consumed_semaphore_case(void) {
+    g_log_length = 0;
+    g_log[0] = '\0';
+    g_present_pixel_sample_count = 0;
+    g_present_pixel_arguments_valid = true;
+    teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_logger(&test_log);
+    teso4m4_lifecycle_set_present_pixel_sampler(
+        &fake_present_pixel_sampler);
+    teso4m4_lifecycle_set_startup_color_audit(true);
+    teso4m4_lifecycle_set_startup_present_pixel_audit(true);
+
+    PFN_vkCreateSwapchainKHR create_swapchain = (PFN_vkCreateSwapchainKHR)
+        teso4m4_lifecycle_intercept(
+            "vkCreateSwapchainKHR",
+            (PFN_vkVoidFunction)&fake_create_swapchain);
+    PFN_vkGetSwapchainImagesKHR get_images = (PFN_vkGetSwapchainImagesKHR)
+        teso4m4_lifecycle_intercept(
+            "vkGetSwapchainImagesKHR",
+            (PFN_vkVoidFunction)&fake_get_swapchain_images);
+    PFN_vkQueueSubmit submit = (PFN_vkQueueSubmit)
+        teso4m4_lifecycle_intercept(
+            "vkQueueSubmit", (PFN_vkVoidFunction)&fake_queue_submit);
+    PFN_vkQueuePresentKHR present = (PFN_vkQueuePresentKHR)
+        teso4m4_lifecycle_intercept(
+            "vkQueuePresentKHR", (PFN_vkVoidFunction)&fake_queue_present);
+
+    const VkDevice device = HANDLE(VkDevice, 0x81);
+    const VkQueue queue = HANDLE(VkQueue, 0x82);
+    const VkSwapchainCreateInfoKHR create_info = {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .minImageCount = 2,
+        .imageFormat = VK_FORMAT_B8G8R8A8_UNORM,
+        .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+        .imageExtent = {3420, 2148},
+        .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+    };
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    uint32_t image_count = 2;
+    VkImage images[2] = {0};
+    if (create_swapchain(device, &create_info, NULL, &swapchain) != VK_SUCCESS ||
+        get_images(device, swapchain, &image_count, images) != VK_SUCCESS) {
+        return check(false, "consumed semaphore setup failed");
+    }
+    VkSemaphore semaphore = HANDLE(VkSemaphore, 0xa00);
+    const VkSubmitInfo signal_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &semaphore,
+    };
+    VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    const VkSubmitInfo consume_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &semaphore,
+        .pWaitDstStageMask = &wait_stage,
+    };
+    uint32_t image_index = 0;
+    const VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &semaphore,
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain,
+        .pImageIndices = &image_index,
+    };
+    if (submit(queue, 1, &signal_info, VK_NULL_HANDLE) != VK_SUCCESS ||
+        submit(queue, 1, &consume_info, VK_NULL_HANDLE) != VK_SUCCESS ||
+        present(queue, &present_info) != VK_SUCCESS) {
+        return check(false, "consumed semaphore forwarding failed");
+    }
+    return check(
+        g_present_pixel_sample_count == 0 &&
+            strstr(g_log, "synchronization=unconfirmed") != NULL,
+        "a submit-consumed semaphore must not authorize pixel readback");
 }
 
 static bool run_startup_color_case(
@@ -697,9 +915,14 @@ int main(void) {
             0.0f, 0.0f, 0.0f, 0.0f, NULL)) {
         return 1;
     }
+    if (!run_present_pixel_schedule_case() ||
+        !run_consumed_semaphore_case()) {
+        return 1;
+    }
 
     printf(
-        "Lifecycle trace smoke: yes startup_color_cases=3 steady_pair_ns=%" PRIu64 "\n",
+        "Lifecycle trace smoke: yes startup_color_cases=3 "
+        "present_pixel_cases=2 steady_pair_ns=%" PRIu64 "\n",
         pair_nanoseconds);
     return 0;
 }

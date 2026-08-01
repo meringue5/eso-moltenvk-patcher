@@ -433,7 +433,7 @@ class StartupLogTests(unittest.TestCase):
             "MODE: startup present pixel audit enabled live_resources=0 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
             "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
-            "generation_limit=2 generation_2_present_limit=180 pixel_samples=8",
+            "generation_limit=2 generation_2_present_limit=180 pixel_samples=20",
         ).replace(
             "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
             "use_mtlheap=1 synchronous_queue_submits=1 "
@@ -450,11 +450,12 @@ class StartupLogTests(unittest.TestCase):
         )
         text += "\n" + record(
             "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1 "
-            "generation_2_samples=1,30,60,90,120,150,180"
+            "generation_2_samples=1,10,20,30,40,50,60,70,80,90,100,"
+            "110,120,130,140,150,160,170,180"
         )
         text += "\n" + record(
             "STARTUP_PRESENT_PIXEL_READY: synchronization=queue-wait-idle "
-            "samples=8 points_per_sample=5"
+            "samples=20 points_per_sample=5"
         )
         verdict = evaluate_startup_log(text)
         self.assertTrue(verdict.passed, verdict.reasons)

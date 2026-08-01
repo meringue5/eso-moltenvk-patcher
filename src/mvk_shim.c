@@ -597,7 +597,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
             "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
             "generation_limit=2 generation_2_present_limit=180 "
-            "pixel_samples=8");
+            "pixel_samples=20");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "
@@ -644,7 +644,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             &teso4m4_present_pixel_sample);
         log_message(
             "STARTUP_PRESENT_PIXEL_READY: synchronization=queue-wait-idle "
-            "samples=8 points_per_sample=5");
+            "samples=20 points_per_sample=5");
     }
     if (!install_patches(header, moltenvk)) {
         log_message("ERROR: patch transaction aborted");

@@ -6,7 +6,7 @@ from analyze_startup_present_pixels import BEGIN, FINISH, MODE, READY, analyze
 
 
 RUN = "20260801T130000.000000000Z-pid42"
-SCHEDULE = ((1, 1), (2, 1), (2, 30), (2, 60), (2, 90), (2, 120), (2, 150), (2, 180))
+SCHEDULE = ((1, 1), (2, 1), *((2, ordinal) for ordinal in range(10, 181, 10)))
 
 
 def log(*, magenta_at: tuple[int, int] | None = None, skip: bool = False) -> str:

@@ -29,8 +29,8 @@ The isolated `startup-present-pixel-audit` mode retains the exact effective
 official MoltenVK 1.4.2 `performance-aggressive` configuration and the existing
 two-generation ordinal-180 bound. It adds no render or color mutation.
 
-For generation 1 ordinal 1 and generation 2 ordinals 1, 30, 60, 90, 120, 150,
-and 180, the lifecycle wrapper:
+For generation 1 ordinal 1 and generation 2 ordinal 1 plus every tenth ordinal
+from 10 through 180, the lifecycle wrapper:
 
 1. resolves the exact swapchain image by swapchain and image index;
 2. proves every present wait semaphore was most recently signaled by a submit
@@ -47,9 +47,10 @@ explicitly converts BGRA storage to RGBA. Unsupported formats, missing image
 mapping, unconfirmed synchronization, failed queue waits, Metal errors, a
 missing sample, or a missing finish all fail closed as `INCONCLUSIVE`.
 
-The eight queue-idle points can perturb startup timing, so this mode is a
+The twenty queue-idle points can perturb startup timing, so this mode is a
 one-run diagnostic and is never enabled by normal `performance-aggressive`.
-It does not alter caches, settings, render commands, or pixel contents.
+At 60 FPS, the maximum sampling gap is about 167 ms; even at 30 FPS it is about
+333 ms. It does not alter caches, settings, render commands, or pixel contents.
 
 ## Non-game validation
 
@@ -73,6 +74,11 @@ startup-present-pixel-audit MoltenVK configuration probe: PASS
 python compileall, shell syntax, and git diff check: PASS
 ```
 
+The lifecycle smoke additionally proves the exact 20-sample generation/ordinal
+sequence and verifies that a semaphore signaled by one submit and consumed by a
+later submit cannot authorize a pre-present read. This closes the stale
+semaphore-provenance ambiguity before installation.
+
 The ordinary `scripts/build.sh` correctly refused to reuse an installed bridge
 as its source. A complete bridge was therefore linked only under `/tmp` from
 the preserved renamed original for compile/link validation; no installed file
@@ -82,13 +88,13 @@ deferred to the explicit installation gate.
 ## One-run decision table
 
 `tools/analyze_startup_present_pixels.py` selects the newest exact-mode run and
-requires all eight summaries, five points each, exact format 44, no skip/error,
+requires all twenty summaries, five points each, exact format 44, no skip/error,
 and the ordinal-180 finish.
 
 | User sees pink in the exact run | Pre-present sample contains magenta | Verdict |
 |---|---:|---|
 | yes | yes | `SWAPCHAIN-MAGENTA-CONFIRMED`: the color already exists in final ESO/MoltenVK image content |
-| yes | no, with all eight samples complete | `POST-SWAPCHAIN-MAGENTA`: prioritize presentation/layer/compositor processing |
+| yes | no, with all twenty samples complete | `POST-SWAPCHAIN-MAGENTA`: prioritize presentation/layer/compositor processing |
 | no | yes | `SWAPCHAIN-MAGENTA-NOT-DISPLAYED`: image content and visible result diverged |
 | no | no | `NO-PINK-CONTROL`: the recurring symptom was not exercised in this run |
 | either | missing, skipped, failed, or unbounded | `INCONCLUSIVE` |

@@ -128,9 +128,11 @@ justified until that successor passes its non-game gate.
 
 Experiment 0026 now supplies that successor at the final swapchain boundary.
 Its isolated `startup-present-pixel-audit` mode reads, but never changes, five
-points from eight scheduled final swapchain images immediately before the real
+points from twenty scheduled final swapchain images immediately before the real
 present. Same-queue semaphore provenance plus a scheduled `vkQueueWaitIdle`
-prevents reading unfinished rendering. The real MoltenVK/AppKit controls
+prevents reading unfinished rendering; semaphore waits consumed by intervening
+queue submissions are invalidated before later presentation checks. The real
+MoltenVK/AppKit controls
 distinguish exact RGBA `(255,0,255,255)` from opaque black at both small and
 exact ESO extents; the temporary complete bridge link, lifecycle/reset probes,
 and all 108 Python tests pass. A complete exact run will therefore choose

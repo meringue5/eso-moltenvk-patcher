@@ -14,15 +14,16 @@ MODE = (
     "MODE: startup present pixel audit enabled live_resources=0 "
     "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
     "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
-    "generation_limit=2 generation_2_present_limit=180 pixel_samples=8"
+    "generation_limit=2 generation_2_present_limit=180 pixel_samples=20"
 )
 BEGIN = (
     "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1 "
-    "generation_2_samples=1,30,60,90,120,150,180"
+    "generation_2_samples=1,10,20,30,40,50,60,70,80,90,100,110,120,"
+    "130,140,150,160,170,180"
 )
 READY = (
     "STARTUP_PRESENT_PIXEL_READY: synchronization=queue-wait-idle "
-    "samples=8 points_per_sample=5"
+    "samples=20 points_per_sample=5"
 )
 FINISH = (
     "STARTUP_COLOR_AUDIT_FINISH: reason=generation-2-present-limit "
@@ -35,7 +36,7 @@ SUMMARY = re.compile(
     r"samples=(?P<samples>\d+) exact_magenta=(?P<exact>\d+) "
     r"near_magenta=(?P<near>\d+) black=(?P<black>\d+)$"
 )
-EXPECTED = {(1, 1)} | {(2, value) for value in (1, 30, 60, 90, 120, 150, 180)}
+EXPECTED = {(1, 1)} | {(2, value) for value in (1, *range(10, 181, 10))}
 
 
 def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
@@ -54,7 +55,7 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
     )
     reasons: list[str] = []
     if lines.count(BEGIN) != 1:
-        reasons.append("the exact eight-frame sampling schedule was not armed")
+        reasons.append("the exact twenty-frame sampling schedule was not armed")
     if lines.count(READY) != 1:
         reasons.append("the Metal texture sampler was not ready exactly once")
     if lines.count(FINISH) != 1:
@@ -74,7 +75,7 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
         for match in summaries
     }
     if keys != EXPECTED or len(summaries) != len(EXPECTED):
-        reasons.append("the audit did not retain exactly all eight scheduled frames")
+        reasons.append("the audit did not retain exactly all twenty scheduled frames")
     if any(int(match.group("samples")) != 5 for match in summaries):
         reasons.append("a scheduled frame did not retain all five pixel points")
     if any(
