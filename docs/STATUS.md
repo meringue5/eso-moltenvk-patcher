@@ -1,18 +1,19 @@
 # Project status
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 ## Current production baseline
 
 `teso4m4` was promoted to production on 2026-08-01. The validated gameplay
 baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
 for ESO 12.0.7, databuild `3281538`.
-Experiment 0027 is complete. Experiment 0028's narrower draw-input candidate
-has passed its static, synthetic, real MoltenVK/AppKit, analyzer, and clean
-build gates and is installed as `startup-input-audit`. Its fresh evidence
-boundary is ready for one user-controlled normal Steam-path startup. The
-update check, executable fingerprint, official runtime hash, installed/build
-byte comparisons, settings hash, and 1.4.2 pipeline-cache UUID remain current.
+Experiment 0028's live input audit is complete. The exact run isolates a
+descriptor-update transition while the pipeline, draw, layout, bound set
+objects, and push state remain fixed. ESO is closed, but Steam PID 429 remains
+open; the safety gate therefore leaves `startup-input-audit` installed until a
+cache-preserving rollback can restore `performance-aggressive`. The update
+check, executable fingerprint, official runtime hash, settings hash, and 1.4.2
+pipeline-cache UUID remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -262,7 +263,25 @@ the installed official MoltenVK remains
 Both match the verified clean build. The evidence boundary
 `experiment-0028-20260801T153500Z` started at `2026-08-01T11:46:03Z` from
 commit `4ee8194` with a current eight-repository launcher snapshot. One
-user-controlled startup and subsequent restoration remain.
+user-controlled startup completed in exact run
+`20260801T160428.543259000Z-pid786`; restoration remains.
+
+All twenty input samples completed without a skip, overflow, lifecycle error,
+or provenance gap. The target pipeline layout contains two required sets:
+set 0 has three buffer descriptors, while set 1 has two image and three buffer
+descriptors. Across every exact-magenta sample and every later normal-scene
+sample, the set count, layout signature, bound-set-handle signature, and zero
+push state were stable. The descriptor-update signature alone changed from
+`01922f8394b93e32` to `a7d448d22e640458`. The analyzer verdict is
+`DESCRIPTOR-STATE-CHANGE-CANDIDATE`.
+
+This result excludes a push-constant explanation and weakens a pure in-place
+texture/buffer-content transition. The next gate is a narrow per-set and
+per-descriptor-class split that distinguishes the buffer-only set from the
+mixed image/buffer set. Do not repeat the current aggregate input audit. The
+settings and old-backup cache remain unchanged; the active cache updated
+normally to
+`234dc3189fcd2156e9de984a8aec5d5b87a66e8a6e39f7b4f081df851019a7b8`.
 The full settings and latest logs remain ignored evidence at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`.
 

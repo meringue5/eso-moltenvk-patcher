@@ -1,8 +1,8 @@
 # Experiment 0028: bounded startup draw-input provenance audit
 
 - Date: 2026-08-01
-- Outcome: **running; candidate installed and evidence boundary prepared**
-- Rollback: **pending after the single user-controlled startup**
+- Outcome: **succeeded; descriptor-state transition isolated**
+- Rollback: **pending because Steam remains open after evidence collection**
 
 ## Question
 
@@ -167,3 +167,67 @@ The ignored evidence boundary
 `noUpdateRequired`, within the fixed 3,600-second gate. No Steam, launcher, or
 ESO process was launched by the agent. One user-controlled normal Steam-path
 startup is now justified; its evidence and restoration remain pending.
+
+## Result
+
+The user completed one normal Steam-path startup and reported that the pink
+frame remained visible. Exact run `20260801T160428.543259000Z-pid786`
+completed all twenty scheduled pixel, draw, pipeline, and input summaries
+through generation-2 ordinal 180. There was no skipped pixel read, lifecycle
+error, table overflow, pipeline overflow, input-provenance gap, or crash
+report.
+
+The nine samples through generation-2 ordinal 70 remained opaque black with
+no draw. Ordinals 80 through 140 were exact RGBA `(255,0,255,255)` and used
+the same one indexed draw and pipeline from Experiment 0027. Ordinals 150
+through 180 contained normal scene colors with that draw and pipeline still
+unchanged.
+
+The target pipeline layout is `d175d2c1daed112d`. It has two ordered
+descriptor-set layouts and no push-constant range:
+
+```text
+set 0: e3c2499a89df1706, 3 descriptors, 0 images, 3 buffers
+set 1: d0edad262f8c4230, 5 descriptors, 2 images, 3 buffers
+total: 8 descriptors, 2 images, 6 buffers, push bytes 0
+```
+
+Across all seven magenta and four normal-scene samples, the required set count,
+pipeline layout, bound descriptor-set handles, and absence of push constants
+were stable. Only the latest descriptor-update state changed:
+
+```text
+bound sets:                  2 -> 2
+layout signature:            53353b05ed5272e3 -> 53353b05ed5272e3
+descriptor-handle signature: 28fac876bb1f8a25 -> 28fac876bb1f8a25
+descriptor-update signature: 01922f8394b93e32 -> a7d448d22e640458
+push signature:              0000000000000000 -> 0000000000000000
+```
+
+The dedicated analyzer verdict is
+`DESCRIPTOR-STATE-CHANGE-CANDIDATE`. This excludes a push-constant transition
+and weakens a pure in-place resource-content transition: ESO changes an image
+view/sampler/layout, buffer handle/offset/range, texel-buffer view, or another
+captured descriptor update while retaining the same two descriptor-set
+objects. The current aggregate does not yet identify whether the changing
+update belongs to the buffer-only set 0 or the mixed image/buffer set 1.
+
+The next discriminating gate is a per-required-set, per-descriptor-class split
+for this exact pipeline. It should identify image versus buffer state without
+reintroducing the broad render audit. No new user run is justified until that
+bounded successor passes static, synthetic, and real non-game validation.
+
+The generic startup checker reported `FAIL` only because it does not recognize
+this isolated diagnostic mode as a supported compatibility mode. The dedicated
+analyzer independently required the exact mode/configuration, twenty aligned
+samples, complete input provenance, and bounded finish before returning its
+verdict.
+
+Evidence collection preserved the settings at
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c` and
+the old-backup cache at
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+The active 1.4.2 cache updated normally to
+`234dc3189fcd2156e9de984a8aec5d5b87a66e8a6e39f7b4f081df851019a7b8`.
+ESO is closed, but Steam PID 429 remains open, so the safety gate correctly
+defers the cache-preserving rollback until the user exits Steam completely.

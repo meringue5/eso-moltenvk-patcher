@@ -525,6 +525,24 @@ content, uniform or push values, or another input can change without changing
 the recorded pipeline. Descriptor/resource provenance for this exact identity
 is the remaining causal boundary.
 
+Experiment 0028 crosses that boundary at aggregate descriptor-update level.
+In the exact run where the user again observed pink, all twenty scheduled
+input samples completed with exact submit-semaphore provenance. The target
+pipeline declares two descriptor sets containing two sampled-image descriptors
+and six buffer descriptors in total, with no push-constant range. The pipeline
+layout, required set count, bound descriptor-set handle signature, and zero
+push state were identical across all seven exact-magenta and four later
+normal-scene samples. Only the latest descriptor-update signature changed,
+from `01922f8394b93e32` to `a7d448d22e640458`.
+
+This establishes a descriptor-state transition, not merely a changing
+pipeline or push value, at the magenta-to-scene boundary. The fingerprints
+cover image view/sampler/layout and buffer handle/offset/range identities but
+not resource memory contents. The result therefore weakens a pure in-place
+content-fill explanation without proving which descriptor changed. The exact
+remaining boundary is between the buffer-only three-descriptor set and the
+mixed set containing two images and three buffers.
+
 The target vertex hash is not material-specific: the same 17,392-byte module
 was created 69 times in the bounded run. The target 18,280-byte fragment module
 was created once immediately before the two target pipeline handles. Neither

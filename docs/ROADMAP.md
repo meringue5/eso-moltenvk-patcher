@@ -95,12 +95,16 @@ are in [Project status](STATUS.md); completed runs belong in the
   the proven submit-semaphore/present chain. Its synthetic sampled-image case,
   real MoltenVK/AppKit pipeline case, clean build, and fail-closed analyzer
   controls pass.
-- The approved `startup-input-audit` mode is now installed with both caches and
-  settings preserved, and exact installed/build byte verification passes. One
-  user-controlled Steam-path startup may now distinguish descriptor-state
-  change, push-constant change, and stable bindings that select resource
-  contents as the next gate. Restore `performance-aggressive` after the
-  evidence is read.
+- Preserve Experiment 0028's exact result: the pipeline layout has one
+  three-buffer set and one set with two images plus three buffers. Magenta and
+  scene samples retain the same pipeline, draw, set objects, layout, and zero
+  push state, while the descriptor-update signature changes. Do not repeat the
+  aggregate input audit.
+- Restore `performance-aggressive` with both caches preserved as soon as Steam
+  exits. Then design a bounded per-required-set and per-descriptor-class
+  successor for the exact pipeline. It should distinguish image from buffer
+  state without the broad render audit's overhead. Complete static, synthetic,
+  and real non-game gates before another user-controlled startup.
 
 ### Superseded reset-investigation record
 
