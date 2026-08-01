@@ -42,6 +42,13 @@ The current source scripts are developer and maintenance tooling, not the
 end-user installer. Their explicit control gates remain in place while the
 signed GitHub Release installer is designed and built.
 
+An idle Steam client is not a dependency of bundle installation or
+restoration and need not be closed. Maintenance tooling instead blocks when
+ESO or the ZeniMax launcher is running, Steam reports ESO update/download
+activity, any process holds a file inside the target `eso.app`, or one of those
+checks is indeterminate. This keeps the production gate tied to the actual
+bundle race rather than the presence of the authentication client.
+
 ## Product commitments
 
 - Never patch an unrecognized client build.

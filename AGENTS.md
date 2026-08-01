@@ -54,6 +54,10 @@ amendments; do not rewrite the original observation.
 
 - Never launch ESO, Steam, or the launcher on the user's behalf. The user owns
   login and interactive game control.
+- An idle Steam client is not itself an install/restore blocker. Use the shared
+  bundle-idle gate: block ESO, the ZeniMax launcher, active Steam ESO
+  download/update state, any process holding a file in the target `eso.app`, or
+  an indeterminate check. Do not reintroduce a blanket `steam_osx` prohibition.
 - Never install the bridge or modify the game bundle without explicit approval.
 - Never bypass the Steam authentication path or launch `eso.app` directly as a
   substitute for a Steam test.

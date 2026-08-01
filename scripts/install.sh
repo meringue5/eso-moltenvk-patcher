@@ -51,12 +51,7 @@ EXPECTED_MVK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1
 MVK_141_SHA="d3ee87b2d98c0b7d5db7bcd1e51b010fe998f755f26c09a83768275499b7a398"
 MVK_141_CACHE_UUID="db445ff21a0502090000000100000000"
 
-if pgrep -x eso >/dev/null 2>&1 \
-  || pgrep -f '/ZeniMax Online Studios Launcher' >/dev/null 2>&1 \
-  || pgrep -f '/Steam/Contents/MacOS/steam_osx' >/dev/null 2>&1; then
-  echo "ESO, Steam, or the launcher is running. Exit all three before installation."
-  exit 1
-fi
+teso4m4_require_bundle_idle "$ESO_APP"
 if [[ -n "$PRESERVE_CACHE_STATE" && "$PRESERVE_CACHE_STATE" != "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
   echo "Unsupported TESO4M4_PRESERVE_CACHE_STATE value."
   exit 1

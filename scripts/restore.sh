@@ -17,12 +17,7 @@ MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 PRESERVE_CACHE_STATE="${TESO4M4_PRESERVE_CACHE_STATE:-}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
-if pgrep -x eso >/dev/null 2>&1 \
-  || pgrep -f '/ZeniMax Online Studios Launcher' >/dev/null 2>&1 \
-  || pgrep -f '/Steam/Contents/MacOS/steam_osx' >/dev/null 2>&1; then
-  echo "ESO, Steam, or the launcher is running. Exit all three before restoring."
-  exit 1
-fi
+teso4m4_require_bundle_idle "$ESO_APP"
 [[ -f "$PRISTINE" ]] || { echo "Pristine Bink backup is missing."; exit 1; }
 EXPECTED_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "$MANIFEST")"
 ACTUAL_SHA="$(shasum -a 256 "$ESO" | awk '{print $1}')"
