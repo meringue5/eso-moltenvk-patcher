@@ -9,10 +9,10 @@ baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
 for ESO 12.0.7, databuild `3281538`.
 Experiment 0027 is complete. Experiment 0028's narrower draw-input candidate
 has passed its static, synthetic, real MoltenVK/AppKit, analyzer, and clean
-build gates. The original loader is temporarily restored for the required
-source rebuild; the approved `startup-input-audit` installation is the next
-operation. The update check, executable fingerprint, official runtime hash,
-and 1.4.2 pipeline-cache UUID remain current.
+build gates and is installed as `startup-input-audit`. Its fresh evidence
+boundary is ready for one user-controlled normal Steam-path startup. The
+update check, executable fingerprint, official runtime hash, installed/build
+byte comparisons, settings hash, and 1.4.2 pipeline-cache UUID remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -254,9 +254,15 @@ old-backup cache
 `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`,
 and settings
 `297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`
-were recorded before the cache-preserving restore and clean build. The
-approved experimental install and exact installed-state verification remain
-before any user startup.
+were recorded before the cache-preserving restore and clean build, and remain
+identical afterward. The installed proxy is
+`80a34e90ac4be479f02ab57cf131e1185ed30010c5e826cbc7734193ac7bbc9e`;
+the installed official MoltenVK remains
+`aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f`.
+Both match the verified clean build. The evidence boundary
+`experiment-0028-20260801T153500Z` started at `2026-08-01T11:46:03Z` from
+commit `4ee8194` with a current eight-repository launcher snapshot. One
+user-controlled startup and subsequent restoration remain.
 The full settings and latest logs remain ignored evidence at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`.
 

@@ -95,11 +95,12 @@ are in [Project status](STATUS.md); completed runs belong in the
   the proven submit-semaphore/present chain. Its synthetic sampled-image case,
   real MoltenVK/AppKit pipeline case, clean build, and fail-closed analyzer
   controls pass.
-- Install only the approved `startup-input-audit` mode with both caches and
-  settings preserved. After exact installed-state verification, one
-  user-controlled Steam-path startup may distinguish descriptor-state change,
-  push-constant change, and stable bindings that select resource contents as
-  the next gate. Restore `performance-aggressive` after the evidence is read.
+- The approved `startup-input-audit` mode is now installed with both caches and
+  settings preserved, and exact installed/build byte verification passes. One
+  user-controlled Steam-path startup may now distinguish descriptor-state
+  change, push-constant change, and stable bindings that select resource
+  contents as the next gate. Restore `performance-aggressive` after the
+  evidence is read.
 
 ### Superseded reset-investigation record
 

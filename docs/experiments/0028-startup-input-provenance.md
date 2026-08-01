@@ -1,8 +1,8 @@
 # Experiment 0028: bounded startup draw-input provenance audit
 
 - Date: 2026-08-01
-- Outcome: **candidate passed the non-game gate; approved installation pending**
-- Rollback: **original loader restored for the clean build; installation not yet performed**
+- Outcome: **running; candidate installed and evidence boundary prepared**
+- Rollback: **pending after the single user-controlled startup**
 
 ## Question
 
@@ -134,3 +134,36 @@ Only after those checks pass is one user-controlled normal Steam-path startup
 justified. The user only needs to report whether the pink frame appeared; the
 dedicated analyzer will classify the exact run. Restore
 `performance-aggressive` immediately after evidence collection.
+
+## Approved installation checkpoint
+
+After source checkpoint `4ee8194`, the process gate found neither `steam_osx`,
+the launcher, nor ESO. The remaining Steam `ipcserver` had parent PID 1 and no
+open ESO bundle file. A cache-preserving restore and fresh full source build
+preceded installation of only `startup-input-audit`.
+
+The installed proxy, renamed original, and official MoltenVK match the clean
+build byte for byte:
+
+```text
+proxy SHA-256:     80a34e90ac4be479f02ab57cf131e1185ed30010c5e826cbc7734193ac7bbc9e
+MoltenVK SHA-256:  aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+mode marker:       startup-input-audit
+```
+
+Installation preserved both caches and settings exactly. The active cache is
+`a9a4ee5112466265c233e2561bb6c284032bfa30f077c0227259f09db682a063`,
+the old-backup cache is
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`,
+and `UserSettings.txt` is
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+The update check is `CURRENT` for ESO 12.0.7/databuild `3281538`; all three
+pipeline-cache UUID checks pass.
+
+The ignored evidence boundary
+`artifacts/experiment-0028-20260801T153500Z` began at
+`2026-08-01T11:46:03Z` from source commit `4ee8194`. Its launcher snapshot was
+1,796 seconds old, matched all eight repositories, and reported
+`noUpdateRequired`, within the fixed 3,600-second gate. No Steam, launcher, or
+ESO process was launched by the agent. One user-controlled normal Steam-path
+startup is now justified; its evidence and restoration remain pending.
