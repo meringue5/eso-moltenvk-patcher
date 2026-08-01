@@ -65,12 +65,14 @@ The public project should therefore use two separate scope statements:
 
 1. **Technical target:** the exact ESO macOS `eso.app` executable and its
    statically embedded MoltenVK runtime.
-2. **Currently supported and validated distribution:** the Steam macOS
-   installation and its normal Steam-authenticated launcher path.
+2. **Observed authentication path:** the Steam macOS installation and its
+   normal Steam-authenticated launcher path. A direct installation is handled
+   by the same release policy when its selected `eso.app` matches the exact
+   supported profile; the launcher path is not a patch prerequisite.
 
-Do not claim direct-launcher support until a current non-Steam `eso.app` is
-fingerprinted and shown to match a supported target or receives its own exact
-manifest and installation-path validation.
+Do not assume a path is safe. A direct-launcher user is supported when the
+current selected `eso.app` is fingerprinted and shown to match a supported
+target (or receives its own exact manifest); an unmatched client fails closed.
 
 ## Public-release implication
 
@@ -92,8 +94,9 @@ The production installation policy should require the selected ESO client and
 its launcher to be closed before a file change. It should not make a blanket
 request to close Steam: if Steam does not hold the selected files, it is not a
 necessary installation blocker. This is a proposed user-experience policy; it
-requires implementation and direct-launcher validation before being presented
-as a supported release behavior.
+requires implementation before being presented as a supported release
+behavior. A direct-path gameplay run remains valuable compatibility evidence,
+but is separate from recognizing an identical exact client.
 
 ## Search limitation
 

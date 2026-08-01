@@ -42,10 +42,14 @@ not an unresolved correctness result for this checkpoint.
 
 ## Supported scope today
 
-The production baseline is verified for the Steam macOS installation and its
-normal authenticated launch path. The technical target is the exact `eso.app`,
-not Steam itself. Direct ZeniMax-launcher support remains pending equivalent
-client identity, install/restore, update, and normal-launch validation.
+The production gameplay baseline was observed through the Steam-authenticated
+launch path. The technical target, and the release install criterion, is the
+exact `eso.app` executable—not Steam itself. A direct ZeniMax-launcher
+installation is eligible when the selected bundle passes the same exact
+client-profile, restore, and bundle-idle checks; it keeps its normal ZeniMax
+authentication and launch path. A direct-path gameplay run remains additional
+compatibility evidence, rather than a prerequisite for safely recognizing an
+identical client.
 
 The current source scripts are developer and maintenance tooling, not the
 end-user installer. Their explicit control gates remain in place while the

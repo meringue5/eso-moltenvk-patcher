@@ -19,6 +19,7 @@ claims belong in `PRODUCTION.md`, `STATUS.md`, and the top-level README.
 | How does the bridge work? | [Architecture](ARCHITECTURE.md) |
 | How is a launcher update checked and rebased? | [Update runbook](UPDATES.md) |
 | What does the production bridge log? | [Logging policy](LOGGING.md) |
+| How is the public DMG built and released? | [Release packaging](RELEASE.md) |
 | What happened in a specific run? | [Experiment index](experiments/README.md) |
 | What do comparable external projects teach us? | [Research index](research/README.md) |
 | Which unscheduled ideas are worth retaining? | [Miscellaneous notes](misc.md) |

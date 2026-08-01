@@ -108,27 +108,30 @@ The distinction for this repository is operational:
 
 - **Technical target:** the exact ESO macOS `eso.app` and its statically linked
   MoltenVK runtime.
-- **Supported release today:** the Steam macOS installation, exact ESO 12.0.7
-  target, and normal Steam-authenticated launch path used for every validation.
-- **Not yet claimed:** the direct website-launcher installation. It is likely
-  to share the same game client, but a current non-Steam binary has not been
-  fingerprinted or passed this installer's complete path and restore checks.
+- **Observed production path:** Steam macOS installation, exact ESO 12.0.7
+  target, and normal Steam-authenticated launch used for gameplay evidence.
+- **Release eligibility:** Steam and direct website-launcher installations are
+  handled identically when the selected `eso.app` matches an exact supported
+  profile and passes the same layout, backup, and bundle-idle checks. An
+  unknown client fails closed; a direct-path gameplay run remains additional
+  compatibility evidence, not an installation prerequisite for an identical
+  executable.
 
 See the [macOS client scope review](docs/research/eso-macos-client-scope.md) for
 the source record and limits of that conclusion.
 
-### Planned public release
+### Public release package
 
 `teso4m4` is **not** an ESO add-on. It cannot be installed in the game's
 `AddOns` folder because it changes the runtime path inside the macOS game
 client. A folder-copy add-on release would therefore be misleading and would
 not work.
 
-The public-release target is a small signed and notarized **installer/manager
-app** distributed in a GitHub Release disk image. It is an installation tool,
-not an app that must stay running while ESO is played. It will bundle the
+The release package is **ESO MoltenVK Patcher.app**, distributed in a GitHub
+Release disk image. It is an installation tool, not an app that must stay
+running while ESO is played. It bundles the
 verified bridge and runtime so players do not need Python, Xcode, or build
-scripts. Its user-facing actions will be **Install**, **Check**, **Repair**,
+scripts. Its user-facing actions are **Install**, **Check**, **Repair**,
 and **Remove**.
 
 The installer will be edition-neutral:
@@ -143,15 +146,15 @@ The installer will be edition-neutral:
 5. leave launching and authentication to the player's usual Steam or official
    ESO launcher path.
 
-An unknown client build or an unverified direct-launcher installation must stop
-safely rather than receive a best-effort patch. The release installer should
-require ESO and its launcher to be closed before it changes their files, but
+An unknown client build must stop safely rather than receive a best-effort
+patch. The release installer requires ESO and its launcher to be closed before
+it changes their files, but
 Steam itself should not be treated as a required installation dependency or be
 asked to quit unless it is actually blocking access to the selected game files.
 
-This release format is planned; it does not exist yet. Until a direct-launcher
-client has passed the same identity, install/restore, and normal-launch tests,
-the only supported public claim remains the validated Steam installation above.
+The repository can assemble an ad-hoc-signed development DMG. Publication
+still requires a Developer ID signature, notarization, and a clean-machine
+Gatekeeper check; see [Release packaging](docs/RELEASE.md).
 
 ## Production baseline
 
@@ -234,6 +237,8 @@ modifying the game bundle. See the [update runbook](docs/UPDATES.md).
 - [Current verified status](docs/STATUS.md)
 - [Durable findings](docs/FINDINGS.md)
 - [Bridge architecture](docs/ARCHITECTURE.md)
+- [Release packaging](docs/RELEASE.md)
+- [Production logging policy](docs/LOGGING.md)
 - [Experiment history](docs/experiments/README.md)
 - [Settings and operational guidance](docs/SETTINGS.md)
 - [Documentation guide](docs/README.md)

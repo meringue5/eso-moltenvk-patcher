@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added the native **ESO MoltenVK Patcher.app** release candidate, with
+  client discovery, exact-profile validation, backup, install, repair, remove,
+  and reproducible DMG assembly.
+- Added production log levels and moved routine bridge logs to the user's
+  Library Logs directory; detailed Vulkan tracing is opt-in.
 - Promoted the verified MoltenVK 1.4.2 `performance-aggressive` checkpoint to
   **Production Baseline 2026-08-01** for Steam macOS ESO 12.0.7, databuild
   `3281538`.
