@@ -2,7 +2,10 @@
 
 This directory is the durable history of controlled research runs. Experiment
 records own run-specific intent, procedure, evidence, results, interpretation,
-and rollback state. Current project state belongs in `docs/STATUS.md`.
+and rollback state. `teso4m4` was promoted to production on 2026-08-01; these
+records remain historical evidence and do not describe the current product
+classification. Current project state belongs in `docs/STATUS.md` and the
+production scope belongs in `docs/PRODUCTION.md`.
 
 ## Records
 

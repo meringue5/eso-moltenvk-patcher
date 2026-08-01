@@ -129,7 +129,7 @@ and the launcher stopped, the existing guarded sequence still applies:
 3. Fetch the pinned MoltenVK release and rebuild from source.
 4. Run the full non-game probes and static checks.
 5. Prepare fresh evidence.
-6. Install only under the explicit experimental installation gate.
+6. Install only under the explicit source-tool installation gate.
 7. Ask the user for the bounded Steam-path runtime test.
 
 The fast path does not prove lobby or world rendering and cannot authorize a

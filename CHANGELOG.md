@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Promoted the verified MoltenVK 1.4.2 `performance-aggressive` checkpoint to
+  **Production Baseline 2026-08-01** for Steam macOS ESO 12.0.7, databuild
+  `3281538`.
+- Added the production-scope record and separated the supported production
+  baseline from the preserved pre-promotion research history.
 - Added a fail-closed local ESO update checker with current-target selection.
 - Added an exact static-profile audit for unchanged-layout target rebases.
 - Recorded patch-site bytes, embedded archive members, Vulkan reference shape,

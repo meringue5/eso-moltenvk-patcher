@@ -6,12 +6,14 @@ than accumulating it here.
 
 ## Mission
 
-`teso4m4` investigates Steam ESO behavior and performance on Apple Silicon,
-including ways to replace or bridge its statically linked MoltenVK runtime
-without breaking Steam launch and authentication.
+`teso4m4` is a production macOS runtime patch for ESO on Apple Silicon. It
+bridges the game's statically linked MoltenVK runtime while preserving the
+user's normal launcher and authentication path. The project was promoted from
+research to production on 2026-08-01; see `docs/PRODUCTION.md` for the exact
+baseline and supported scope.
 
-This is a research project, not a working gameplay mod. Accuracy, reversibility,
-and evidence preservation take priority over obtaining a quick FPS result.
+Production reliability, reversibility, and evidence preservation take priority
+over broadening support or pursuing a quick FPS result.
 
 ## Start every task here
 
@@ -116,14 +118,16 @@ TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK
 That environment variable is not standing user approval. An agent must still
 receive explicit approval for each modification of the game bundle.
 
-Consult `docs/STATUS.md` for the current experimental mode and known failure
-state. Do not describe an unproven mode as a fix.
+This is a source-tool safeguard while the end-user installer is not yet built.
+Consult `docs/STATUS.md` and `docs/PRODUCTION.md` for the current production
+baseline and known limitations. Do not describe an unproven maintenance mode as
+a supported fix.
 
 ## Evidence standards
 
 - Separate confirmed observation, inference, and hypothesis in documentation.
 - Record exact build hashes, runtime versions, timestamps, and test modes.
-- Treat user-controlled launches and gameplay as scarce experimental actions.
+- Treat user-controlled launches and gameplay as scarce validation actions.
   Exhaust source analysis, non-game probes, static checks, and local log
   inspection before requesting one. Every request must state the unresolved
   question, exact hypothesis, why agent-only evidence is insufficient, maximum

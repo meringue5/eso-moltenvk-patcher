@@ -3,7 +3,7 @@
 ## Why a proxy is needed
 
 ESO loads `@executable_path/libBink2Macx64.dylib` dynamically, while MoltenVK is
-statically linked into the main executable. The prototype replaces the Bink
+statically linked into the main executable. The production bridge replaces the Bink
 library with a small x86_64 proxy that:
 
 1. Re-exports every symbol from a renamed pristine Bink library.
@@ -15,7 +15,7 @@ library with a small x86_64 proxy that:
    enumeration, and device creation through a narrow compatibility layer.
 
 Mach-O text pages do not accept added write permission through ordinary
-`mprotect`. The prototype uses `mach_vm_protect` with `VM_PROT_COPY`, writes to a
+`mprotect`. The bridge uses `mach_vm_protect` with `VM_PROT_COPY`, writes to a
 private page copy, clears the instruction cache, and restores RX permission.
 This mechanism was independently verified under Rosetta.
 

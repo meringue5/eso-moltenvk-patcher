@@ -4,10 +4,15 @@ This directory separates current project state from accumulated research
 history. Read documents according to the question being answered instead of
 treating every old result as current.
 
+The project was promoted to production on 2026-08-01. Earlier research and
+experiment documents remain immutable historical evidence; current production
+claims belong in `PRODUCTION.md`, `STATUS.md`, and the top-level README.
+
 ## Where information belongs
 
 | Question | Authoritative document |
 |---|---|
+| What is the supported production release baseline? | [Production baseline](PRODUCTION.md) |
 | What is safe and active right now? | [Project status](STATUS.md) |
 | What should happen next? | [Roadmap](ROADMAP.md) |
 | What has been established across experiments? | [Findings](FINDINGS.md) |

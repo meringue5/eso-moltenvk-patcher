@@ -4,10 +4,10 @@ This document is forward-looking. The current safety state and active blocker
 are in [Project status](STATUS.md); completed runs belong in the
 [experiment index](experiments/README.md).
 
-## P0: preserve the validated 1.4.2 gameplay checkpoint
+## P0: preserve the 1.4.2 production baseline
 
 - Treat official MoltenVK 1.4.2 plus `performance-aggressive` as the current
-  tested baseline. Extended ordinary play, relatively high settings, and live
+  production baseline. Extended ordinary play, relatively high settings, and live
   resolution/graphics resets now render correctly on the tested M4 MacBook Air.
 - Preserve the 48-key sanitized standard settings asset and its source hash.
   Do not commit or distribute the complete `UserSettings.txt`.

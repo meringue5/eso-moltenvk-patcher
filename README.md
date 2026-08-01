@@ -153,7 +153,11 @@ This release format is planned; it does not exist yet. Until a direct-launcher
 client has passed the same identity, install/restore, and normal-launch tests,
 the only supported public claim remains the validated Steam installation above.
 
-## Validated checkpoint
+## Production baseline
+
+`teso4m4` was promoted from research to a production runtime patch on
+2026-08-01. The exact supported scope, promotion boundary, and remaining
+limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 
 | Component | Verified value |
 |---|---|
@@ -184,12 +188,13 @@ clears before normal UI and gameplay and had no observed effect on the validated
 session. Its investigation is tracked separately in the
 [current project status](docs/STATUS.md).
 
-## Source build and research installation
+## Source build and maintenance installation
 
-The following path is for contributors and controlled research, not for a
-future end-user release. It currently requires macOS, Xcode command-line tools,
-Python 3, and the validated Steam installation of ESO. No ESO executable, Bink
-binary, credentials, or cache is distributed by this repository.
+The following path is for contributors and production maintenance, not for the
+future end-user release installer. It currently requires macOS, Xcode
+command-line tools, Python 3, and the validated Steam installation of ESO. No
+ESO executable, Bink binary, credentials, or cache is distributed by this
+repository.
 
 Fetch the pinned official MoltenVK release and build the bridge:
 

@@ -2,10 +2,11 @@
 
 Last updated: 2026-08-01
 
-## Current verified checkpoint
+## Current production baseline
 
-The validated gameplay baseline remains official MoltenVK 1.4.2 with the
-`performance-aggressive` profile for ESO 12.0.7, databuild `3281538`.
+`teso4m4` was promoted to production on 2026-08-01. The validated gameplay
+baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
+for ESO 12.0.7, databuild `3281538`.
 Experiment 0026 is complete and the normal marker is restored. The update
 check, executable fingerprint, installed runtime hash, bridge/build byte
 comparison, and 1.4.2 pipeline-cache UUID all remain current.
@@ -29,14 +30,14 @@ report; the 60 FPS result is a direct user observation. It applies to the
 combined runtime, profile, settings, and cache checkpoint on the tested M4, not
 as a guarantee for another machine or an attribution to one MoltenVK change.
 
-This establishes the current 1.4.2 checkpoint as a successful gameplay build
+This establishes the current 1.4.2 baseline as a successful production gameplay build
 on the tested Apple M4 MacBook Air. It does not isolate which 1.4.2 change,
 fresh 1.4.2 cache state, or interaction with the existing performance profile
 removed the prior reset symptom. The 1.4.1 failures remain valid historical
 evidence, but another dedicated reset reproduction is not warranted unless the
 problem recurs.
 
-The remaining visible defect is a transient full-screen canonical-magenta
+The remaining visible maintenance defect is a transient full-screen canonical-magenta
 frame during early startup. A user screenshot with embedded Display P3 maps its
 dominant content exactly to sRGB `(255,0,255)` / `#FF00FF`. Its ESO content is
 3420 x 2146, while normally colored macOS overlays remain visible above it;
