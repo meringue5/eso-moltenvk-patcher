@@ -16,6 +16,7 @@ ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
 MVK_141_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-mvk-1.4.1-backup"
+PRODUCTION_LOG="${TESO4M4_LOG_PATH:-$HOME/Library/Logs/ESO MoltenVK Patcher/bridge.log}"
 
 echo "ESO app: $ESO_APP"
 echo "ESO SHA-256: $ACTUAL_SHA"
@@ -56,7 +57,10 @@ for cache in "$PIPELINE_CACHE" "$OLD_PIPELINE_CACHE" "$MVK_141_PIPELINE_CACHE"; 
     echo "Pipeline cache ${cache:t}: absent"
   fi
 done
-if [[ -f /tmp/teso4m4.log ]]; then
+if [[ -f "$PRODUCTION_LOG" ]]; then
   echo "--- recent bridge log ---"
+  tail -30 "$PRODUCTION_LOG"
+elif [[ -f /tmp/teso4m4.log ]]; then
+  echo "--- recent legacy bridge log ---"
   tail -30 /tmp/teso4m4.log
 fi

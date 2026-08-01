@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include <vulkan/vulkan.h>
@@ -42,6 +43,16 @@ static bool g_startup_draw_audit_enabled;
 static bool g_startup_input_audit_enabled;
 static bool g_startup_compositor_audit_enabled;
 static bool g_startup_compositor_neutralize_enabled;
+
+typedef enum {
+    TESO4M4_LOG_ERROR = 0,
+    TESO4M4_LOG_WARN,
+    TESO4M4_LOG_INFO,
+    TESO4M4_LOG_DEBUG,
+    TESO4M4_LOG_TRACE,
+} Teso4m4LogLevel;
+
+static Teso4m4LogLevel g_log_level = TESO4M4_LOG_INFO;
 
 typedef enum {
     TESO4M4_MODE_DISABLED = 0,
@@ -77,16 +88,113 @@ static void initialize_run_id(void) {
              now.tv_nsec, (long)getpid());
 }
 
+static const char* log_level_name(Teso4m4LogLevel level) {
+    switch (level) {
+        case TESO4M4_LOG_ERROR:
+            return "error";
+        case TESO4M4_LOG_WARN:
+            return "warn";
+        case TESO4M4_LOG_INFO:
+            return "info";
+        case TESO4M4_LOG_DEBUG:
+            return "debug";
+        case TESO4M4_LOG_TRACE:
+            return "trace";
+    }
+    return "info";
+}
+
+static void configure_log_level(void) {
+    const char* requested = getenv("TESO4M4_LOG_LEVEL");
+    if (!requested || strcmp(requested, "") == 0 ||
+        strcmp(requested, "info") == 0) {
+        return;
+    }
+    if (strcmp(requested, "error") == 0) {
+        g_log_level = TESO4M4_LOG_ERROR;
+    } else if (strcmp(requested, "warn") == 0) {
+        g_log_level = TESO4M4_LOG_WARN;
+    } else if (strcmp(requested, "debug") == 0) {
+        g_log_level = TESO4M4_LOG_DEBUG;
+    } else if (strcmp(requested, "trace") == 0) {
+        g_log_level = TESO4M4_LOG_TRACE;
+    }
+}
+
+static bool starts_with(const char* message, const char* prefix) {
+    return strncmp(message, prefix, strlen(prefix)) == 0;
+}
+
+static Teso4m4LogLevel classify_log_message(const char* message) {
+    if (starts_with(message, "ERROR:") || starts_with(message, "FATAL:") ||
+        starts_with(message, "GIPA_ERROR:") ||
+        starts_with(message, "GDPA_ERROR:") ||
+        strstr(message, "_ERROR:") != NULL) {
+        return TESO4M4_LOG_ERROR;
+    }
+    if (starts_with(message, "SKIP:")) {
+        return TESO4M4_LOG_WARN;
+    }
+    if (starts_with(message, "GIPA:") || starts_with(message, "GDPA:") ||
+        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS:") ||
+        starts_with(message, "STARTUP_COLOR_")) {
+        return TESO4M4_LOG_TRACE;
+    }
+    if (starts_with(message, "RUN_START:") || starts_with(message, "MODE:") ||
+        starts_with(message, "MOLTENVK_CONFIG:") ||
+        starts_with(message, "MOLTENVK:") || starts_with(message, "HDR_") ||
+        starts_with(message, "ACTIVE:") ||
+        starts_with(message, "ESO SHA-256:") ||
+        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") ||
+        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")) {
+        return TESO4M4_LOG_INFO;
+    }
+    return TESO4M4_LOG_DEBUG;
+}
+
+static FILE* open_production_log(void) {
+    const char* home = getenv("HOME");
+    if (home && home[0] != '\0') {
+        char library[4096];
+        char logs[4096];
+        char product[4096];
+        char path[4096];
+        if (snprintf(library, sizeof(library), "%s/Library", home) <
+                (int)sizeof(library) &&
+            snprintf(logs, sizeof(logs), "%s/Logs", library) <
+                (int)sizeof(logs) &&
+            snprintf(product, sizeof(product), "%s/ESO MoltenVK Patcher", logs) <
+                (int)sizeof(product) &&
+            snprintf(path, sizeof(path), "%s/bridge.log", product) <
+                (int)sizeof(path)) {
+            if ((mkdir(library, 0700) == 0 || errno == EEXIST) &&
+                (mkdir(logs, 0700) == 0 || errno == EEXIST) &&
+                (mkdir(product, 0700) == 0 || errno == EEXIST)) {
+                FILE* file = fopen(path, "a");
+                if (file) {
+                    return file;
+                }
+            }
+        }
+    }
+    return fopen("/tmp/teso4m4.log", "a");
+}
+
 static void log_message(const char* format, ...) {
     if (!g_log) {
         return;
     }
-    flockfile(g_log);
-    fprintf(g_log, "[run=%s] ", g_run_id);
+    char message[4096];
     va_list arguments;
     va_start(arguments, format);
-    vfprintf(g_log, format, arguments);
+    vsnprintf(message, sizeof(message), format, arguments);
     va_end(arguments);
+    if (classify_log_message(message) > g_log_level) {
+        return;
+    }
+    flockfile(g_log);
+    fprintf(g_log, "[run=%s] ", g_run_id);
+    fputs(message, g_log);
     fputc('\n', g_log);
     fflush(g_log);
     funlockfile(g_log);
@@ -475,7 +583,8 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
 
 __attribute__((constructor)) static void teso4m4_init(void) {
     initialize_run_id();
-    g_log = fopen("/tmp/teso4m4.log", "a");
+    configure_log_level();
+    g_log = open_production_log();
     if (!g_log) {
         return;
     }
@@ -499,7 +608,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_startup_input_audit_enabled = false;
     g_startup_compositor_audit_enabled = false;
     g_startup_compositor_neutralize_enabled = false;
-    log_message("RUN_START: bridge starting pid=%ld", (long)getpid());
+    log_message("RUN_START: bridge starting log_level=%s",
+                log_level_name(g_log_level));
 
     char directory[4096];
     if (!own_directory(directory, sizeof(directory))) {
