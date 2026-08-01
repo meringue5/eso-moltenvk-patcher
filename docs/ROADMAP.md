@@ -4,7 +4,28 @@ This document is forward-looking. The current safety state and active blocker
 are in [Project status](STATUS.md); completed runs belong in the
 [experiment index](experiments/README.md).
 
-## P0: restore rendering correctness after the startup fix
+## P0: preserve the validated 1.4.2 gameplay checkpoint
+
+- Treat official MoltenVK 1.4.2 plus `performance-aggressive` as the current
+  tested baseline. Extended ordinary play, relatively high settings, and live
+  resolution/graphics resets now render correctly on the tested M4 MacBook Air.
+- Preserve the 48-key sanitized standard settings asset and its source hash.
+  Do not commit or distribute the complete `UserSettings.txt`.
+- Do not request another dedicated graphics-reset run. Reopen that category
+  only if the symptom recurs, and preserve the prior 1.4.1 failures as valid
+  historical evidence rather than re-running old configuration A/B tests.
+- Treat the roughly one-second hot-pink startup frame as the remaining visual
+  defect. It is low impact and occurs before normal UI/gameplay. Investigate
+  pre-UI surface clear/load and first-presentation behavior through static
+  analysis and non-game probes before considering any user run.
+- Keep the working 1.4.2 runtime profile and cache state unchanged while
+  investigating the startup artifact.
+
+### Superseded reset-investigation record
+
+The completed items below preserve the path to the current result. They are no
+longer active instructions; their detailed evidence belongs to the linked
+experiment records.
 
 - Experiment 0004 was preserved until restoration became technically necessary
   for the Experiment 0005 clean rebuild; retain its verified evidence, displaced

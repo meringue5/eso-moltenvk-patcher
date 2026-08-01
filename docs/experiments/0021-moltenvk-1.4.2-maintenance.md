@@ -1,7 +1,7 @@
 # Experiment 0021: official MoltenVK 1.4.2 maintenance adoption
 
 - Date: 2026-07-26
-- Outcome: **installed; all source, non-game, transition, and post-install gates passed**
+- Outcome: **succeeded in ordinary high-settings gameplay; live resets render correctly**
 - Rollback: **1.4.1 runtime, its active cache, pristine loader, and older cache remain preserved**
 
 ## Question
@@ -194,3 +194,45 @@ This result proves the requested installation and non-game compatibility
 boundary. It does not claim that 1.4.2 fixes the known loaded-world
 graphics-reset corruption. No dedicated user run is required for Experiment
 0021; the next ordinary game session can serve as maintenance validation.
+
+## 2026-08-01 ordinary-play validation amendment
+
+The deferred ordinary-use boundary has now passed. The user reports extended
+normal play at relatively high graphics settings, with no gameplay-limiting
+performance problem. Unlike every prior 1.4.1 reset checkpoint, live resolution
+and graphics-setting changes completed without persistent solid-color,
+black-output, or frozen-frame rendering.
+
+The latest preserved run is
+`20260731T114051.034860000Z-pid30867`. Independent log facts are:
+
+- automatic bridge-startup verdict: PASS;
+- exact official MoltenVK 1.4.2 `performance-aggressive` configuration;
+- six complete `DeviceWaitIdle` / swapchain / `OnDeviceReset` sequences;
+- zero reset error markers;
+- repeated `Systems Loaded And Not Waiting For Teleport` records;
+- zero ESO crash reports after the run start.
+
+The logs prove that resets occurred and completed without a recorded API error.
+The user's direct observation supplies the fact that correct scene rendering
+continued afterward. This is strong evidence that the former reset corruption
+does not reproduce on the current 1.4.2 checkpoint, but it does not isolate a
+specific upstream change or exclude an interaction with the fresh 1.4.2 cache.
+
+One presentation artifact remains: a full-screen hot-pink frame appears for
+roughly one second during early startup and then disappears. It has no reported
+gameplay impact and persists with `SkipPregameVideos=1`, so the earlier video-
+bypass hypothesis remains excluded.
+
+The exact full settings file is preserved only in ignored evidence. Its
+SHA-256 is
+`470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`;
+the committed 48-key sanitized counterpart is
+[`config/usersettings-m4-moltenvk-1.4.2-standard.txt`](../../config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+The active 1.4.2 pipeline cache is 7,754,395 bytes with UUID
+`db6602241a0502090000000100000000` and SHA-256
+`3bbd27ad1e37fce3981f8c7dc7dae419791149b147445d38cd9fab04d03413df`.
+
+All raw checkpoint checksums verify at
+`artifacts/experiment-0021-post-validation-20260801T052538Z`. The Experiment
+0021 outcome is amended to **succeeded in ordinary high-settings gameplay**.

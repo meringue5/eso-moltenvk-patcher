@@ -4,29 +4,14 @@ Experimental macOS performance research and runtime tooling for the Steam build
 of **The Elder Scrolls Online** on Apple Silicon.
 
 > [!WARNING]
-> The MoltenVK bridge is a research prototype. Experiment 0004 loaded MoltenVK
-> 1.4.1, successfully hid the new HDR device extension, and still crashed at
-> the confirmed NULL HDR-metadata call. That failed state was preserved until
-> restoration became necessary for the next clean rebuild. The Experiment 0005
-> surface-format filter then prevented that call and completed its approved
-> character-selection test without a crash, but produced severe transient pink
-> output and persistent black-layer/shadow flicker. The installed Experiment
-> 0006 candidate disabled Metal argument buffers, removed that flicker, and
-> reached the world. Enabling SSAO during play then reduced output to changing
-> solid colors without crashing. That exact settings state is preserved, and
-> the active file has been returned to the verified SSAO-disabled baseline.
-> Opening the launcher before the planned repeat installed ESO 12.0.7 and
-> changed the executable fingerprint. The bridge has now been statically
-> rebased, rebuilt, validated without the game, and reinstalled for that exact
-> target. A subsequent launch passed the automatic bridge-startup checks and
-> exited without a crash, but server maintenance prevented character selection
-> or world entry. A later short repeat reached Auridon, rendered correctly, and
-> produced no perceptible stuttering or crash. The pre-UI solid-color frame
-> persisted. A one-line pregame-video bypass skipped the logged logo/video
-> states but did not remove that frame. A later live resolution change produced
-> the same solid-color corruption seen after the earlier SSAO toggle, moving the
-> active blocker to ESO's loaded-world device-reset path. See the
-> [current status](docs/STATUS.md).
+> The bridge remains an exact-build research prototype, not a generally
+> supported game patch. The current Apple M4 checkpoint uses official MoltenVK
+> 1.4.2 and has passed extended ordinary play at relatively high settings,
+> including user-controlled resolution and graphics resets that previously
+> corrupted output on 1.4.1. A roughly one-second full-screen hot-pink frame
+> still appears during startup, before normal UI rendering, but has no observed
+> gameplay impact. See the [current status](docs/STATUS.md) and the
+> [sanitized standard settings](config/usersettings-m4-moltenvk-1.4.2-standard.txt).
 
 `teso4m4` documents reproducible findings, conservative graphics settings, and
 an experimental method for redirecting ESO's statically linked MoltenVK 1.0.18
@@ -109,5 +94,7 @@ operate.
 ## 한국어 요약
 
 Steam판 ESO의 macOS 성능 저하와 종료 크래시를 조사하고, 오래된 정적
-MoltenVK를 최신 런타임으로 우회하는 실험 프로젝트입니다. 현재 설정 및
-분석 자료는 유효하지만 MoltenVK 브리지는 아직 플레이용이 아닙니다.
+MoltenVK를 최신 런타임으로 우회하는 실험 프로젝트입니다. 현재 Apple M4
+체크포인트는 공식 MoltenVK 1.4.2와 비교적 높은 그래픽 설정으로 장시간
+플레이 및 설정·해상도 변경을 통과했습니다. 시작 직후 약 1초간 전체 화면이
+핫핑크로 보이는 글리치는 남아 있습니다.

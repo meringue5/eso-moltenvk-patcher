@@ -1,0 +1,61 @@
+# Sanitized standard graphics checkpoint captured on 2026-08-01.
+#
+# Validated context:
+# - Apple M4 MacBook Air
+# - Steam ESO 12.0.7, databuild 3281538
+# - official MoltenVK 1.4.2
+# - teso4m4 performance-aggressive mode
+# - source UserSettings.txt SHA-256:
+#   470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382
+#
+# These are only allowlisted graphics, display, and performance settings.
+# This is documentation and a merge template, not a complete UserSettings.txt
+# replacement. Back up the live file and apply keys selectively.
+SET CHARACTER_RESOLUTION "2"
+SET OCCLUSION_CULLING_ENABLED "1"
+SET DistantFoliageEnabled "1"
+SET PFX_SUPPRESS_DISTANCE "35.00000000"
+SET PFX_GLOBAL_MAXIMUM "768"
+SET SUB_SAMPLING "1"
+SET PLANAR_WATER_REFLECTION_QUALITY "2"
+SET SCREENSPACE_WATER_REFLECTION_QUALITY "1"
+SET REFLECTION_QUALITY "0"
+SET PARTICLE_DENSITY "2"
+SET HIGH_RESOLUTION_SHADOWS "1"
+SET SHADOWS "2"
+SET VIEW_DISTANCE "1.03999996"
+SET GPUSmoothingFrames "10"
+SET MIP_LOAD_SKIP_LEVELS "0"
+SET RAIN_WETNESS "1"
+SET LENS_FLARE "1"
+SET GOD_RAYS "0"
+SET ANTIALIASING_TYPE "0"
+SET ANTI_ALIASING "0"
+SET AMBIENT_OCCLUSION_TYPE "1"
+SET COLOR_GRADING "0"
+SET BLOOM "0"
+SET DEPTH_OF_FIELD_MODE "0"
+SET DEPTH_OF_FIELD "1"
+SET COLOR_CORRECTION "1"
+SET SOFT_ALPHA "1"
+SET DISTORTION "0"
+SET CHARACTER_LIGHTING "1"
+SET DETAIL_MAPS "1"
+SET CLUTTER_2D_QUALITY "2"
+SET CLUTTER_2D "1"
+SET WATER_FOAM "1"
+SET RENDERTHREAD "1"
+SET VSYNC_INTERVAL "1"
+SET VSYNC "1"
+SET PreferMaximizedWindow "0"
+SET PreferExclusiveFullscreen "1"
+SET FULLSCREEN "2"
+SET FullscreenHeight "1280"
+SET FullscreenWidth "2048"
+SET WindowedHeight "768"
+SET WindowedWidth "1024"
+SET MinFrameTime.2 "0.01000000"
+SET VIDEO_ENABLED "1"
+SET AMBIENT_ENABLED "1"
+SET SkipPregameVideos "1"
+SET MaxCoresToUse.4 "-1"

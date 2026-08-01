@@ -353,6 +353,25 @@ preserved under versioned names, the older cache remains untouched, and 1.4.2
 starts without an active cache. This establishes a reversible maintenance
 baseline, not a demonstrated repair for the graphics-reset corruption.
 
+## The current 1.4.2 checkpoint no longer reproduces reset corruption
+
+Post-install ordinary play materially changes the current operational result
+without invalidating the earlier 1.4.1 failures. The latest preserved 1.4.2 run
+passed bridge startup, logged six complete graphics-device reset sequences with
+zero error markers, repeatedly completed world loading, and produced no crash
+report. The user directly observed normal scene rendering after resolution and
+graphics-setting changes and comfortable play at relatively high settings.
+
+This establishes successful reset behavior for the combined official 1.4.2,
+`performance-aggressive`, and 1.4.2-cache checkpoint. The evidence does not
+attribute the improvement to a particular 1.4.2 fix, nor does it prove that the
+same behavior generalizes to another ESO build or Apple GPU.
+
+The transient full-screen hot-pink startup frame persists for roughly one
+second and then disappears before normal UI/gameplay. `SkipPregameVideos=1`
+removes the logged video/logo states but not this frame, so the artifact remains
+a separate low-impact early-presentation defect.
+
 Experiment 0018 then exposed exactly the embedded 18-feature profile to ESO
 and validated that device creation enabled those 18 with no prohibited field.
 One loaded-world resolution reset still produced solid-color output while 313

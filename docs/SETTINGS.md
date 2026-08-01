@@ -2,7 +2,44 @@
 
 This document separates observed behavior from unverified internet advice.
 
-## Current sanitized snapshot
+## Current M4/MoltenVK 1.4.2 standard
+
+The current sanitized template is
+[`config/usersettings-m4-moltenvk-1.4.2-standard.txt`](../config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+It contains 48 allowlisted graphics, display, and performance keys copied
+exactly from the stable 2026-08-01 checkpoint. It deliberately excludes
+account, input, audio, UI, add-on, and machine-specific state and is not a
+complete replacement for `UserSettings.txt`.
+
+Validated context:
+
+| Item | Value |
+|---|---:|
+| Hardware | Apple M4 MacBook Air |
+| ESO | 12.0.7, databuild 3281538 |
+| Runtime | official MoltenVK 1.4.2 |
+| Bridge mode | `performance-aggressive` |
+| Display | exclusive fullscreen, 2048 x 1280 |
+| Character resolution | `2` |
+| Subsampling | `1` |
+| Shadows / high-resolution shadows | `2` / `1` |
+| Planar / screen-space water reflections | `2` / `1` |
+| Ambient occlusion | `1` |
+| View distance | `1.03999996` |
+| VSync | `1` |
+
+The source full-file SHA-256 is
+`470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`.
+The user reports normal rendering after live resolution and graphics-setting
+changes and comfortable gameplay at these relatively high settings. The latest
+client log independently confirms six completed reset sequences with zero
+error markers; visual correctness after those resets is the user's observation.
+
+The roughly one-second hot-pink startup frame remains with this template and
+with `SkipPregameVideos=1`. The template records that known state; it does not
+claim to repair the startup artifact.
+
+## Historical Experiment 0003 snapshot
 
 The relevant values preserved after the Experiment 0003 long baseline session
 are stored in
@@ -48,7 +85,7 @@ Notable values:
   in-game slider numerically. ESO rewrote the manually tested `0.80` value after
   later in-game changes.
 
-The current full settings file and 6.8 MB pipeline cache are retained only in
+The historical full settings file and 6.8 MB pipeline cache are retained only in
 ignored Experiment 0003 evidence. Their committed counterpart is this sanitized
 setting subset; neither the raw settings nor the cache belongs in Git.
 
@@ -96,3 +133,18 @@ The lower resolution remains in the active file and has not yet been validated
 from a cold start. Until reset instrumentation is ready, do not change
 resolution, ambient occlusion, or other reset-triggering graphics options
 during a correctness or performance run.
+
+## 2026-08-01 MoltenVK 1.4.2 amendment
+
+The Experiment 0006 and 0009 warnings above remain accurate for their MoltenVK
+1.4.1 checkpoints but are no longer the current operational restriction. With
+official MoltenVK 1.4.2, the unchanged `performance-aggressive` bridge profile,
+and the new 1.4.2 cache identity, the user has changed graphics settings and
+resolution without persistent solid-color or frozen-frame output. Ambient
+occlusion is now `1`, fullscreen resolution is 2048 x 1280, and subsequent
+play remained normal.
+
+This later observation does not prove which internal change repaired the
+behavior. It does establish the committed 1.4.2 template as the current tested
+standard and removes the old “do not change graphics settings” restriction for
+this exact checkpoint.

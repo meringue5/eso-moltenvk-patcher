@@ -1,11 +1,54 @@
 # Project status
 
-Last updated: 2026-07-26
+Last updated: 2026-08-01
 
-## Safety state
+## Current verified checkpoint
 
-The experimental MoltenVK bridge is validated only for a short world interval
-with ambient occlusion disabled; it is not yet a general gameplay build.
+The installed bridge remains exact for ESO 12.0.7, databuild `3281538`, and
+loads official MoltenVK 1.4.2 in `performance-aggressive` mode. The update
+check, executable fingerprint, installed runtime hash, and 1.4.2 pipeline-cache
+UUID all remain current.
+
+The user's post-install ordinary play now supplies the missing runtime
+validation. The latest preserved run,
+`20260731T114051.034860000Z-pid30867`, passed the automatic bridge-startup
+verdict. Its client log contains six complete graphics-device reset sequences,
+zero reset error markers, repeated loaded-world completions, and no subsequent
+ESO crash report. The user reports that resolution and graphics-setting
+changes now return to correct scene rendering and that relatively high settings
+remain comfortably playable.
+
+This establishes the current 1.4.2 checkpoint as a successful gameplay build
+on the tested Apple M4 MacBook Air. It does not isolate which 1.4.2 change,
+fresh 1.4.2 cache state, or interaction with the existing performance profile
+removed the prior reset symptom. The 1.4.1 failures remain valid historical
+evidence, but another dedicated reset reproduction is not warranted unless the
+problem recurs.
+
+The remaining visible defect is a roughly one-second full-screen hot-pink
+frame during early startup. It disappears before normal UI/gameplay, has no
+reported gameplay effect, and still occurs with `SkipPregameVideos=1`; it is
+therefore a low-impact startup presentation glitch, not the active gameplay
+blocker.
+
+The current full settings file has SHA-256
+`470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`.
+Only its 48 allowlisted graphics, display, and performance values are committed
+as the
+[M4/MoltenVK 1.4.2 standard template](../config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+The full settings and latest logs remain ignored evidence at
+`artifacts/experiment-0021-post-validation-20260801T052538Z`.
+
+The active 1.4.2 cache is 7,754,395 bytes, has UUID
+`db6602241a0502090000000100000000`, and SHA-256
+`3bbd27ad1e37fce3981f8c7dc7dae419791149b147445d38cd9fab04d03413df`.
+The preserved 1.4.1 runtime/cache and older cache remain available.
+
+## Historical safety record
+
+The following entries preserve the earlier investigation state and must not be
+read as the current recommendation. At the start of this record, the bridge was
+validated only for a short world interval with ambient occlusion disabled.
 Experiments
 0001 and 0002 activated MoltenVK 1.4.1 and then crashed during early graphics
 startup. Experiment 0002 added complete proc tracing and is documented in its
