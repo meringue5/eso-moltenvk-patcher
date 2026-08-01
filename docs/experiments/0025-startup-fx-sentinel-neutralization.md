@@ -1,8 +1,8 @@
 # Experiment 0025: bounded startup FX-sentinel neutralization
 
 - Date: 2026-08-01
-- Outcome: **discriminating candidate prepared; not installed or user-tested**
-- Rollback: **not required; installed game remains `performance-aggressive`**
+- Outcome: **candidate installed; awaiting one user-controlled startup**
+- Rollback: **available and preflight-checked; not yet performed**
 
 ## Question
 
@@ -109,11 +109,34 @@ frame appeared; the bridge log supplies the remaining classification.
 installed-patch record, contiguous matched calls from a profiled caller, and
 the generation-2 ordinal-180 finish.
 
-## Installation gate
+## Installation checkpoint
 
-The candidate is complete enough to request one scarce startup, but this
-record does not authorize modifying the game bundle. Installation requires a
-new explicit user approval for `startup-fx-neutralize`, with Steam, the
-launcher, and ESO stopped. The installer must preserve both caches and the
-current settings. After the run and evidence collection, restore the normal
-`performance-aggressive` marker and verify installed hashes and cache state.
+The user explicitly approved `startup-fx-neutralize` installation. The update
+gate recognized the exact ESO 12.0.7 executable and databuild. The existing
+bridge was restored to the pristine Bink loader with cache preservation, then
+the new source build was installed with the same preservation gate. Both
+process checks completed without finding ESO, the launcher, or Steam.
+
+Post-install verification establishes:
+
+```text
+marker: startup-fx-neutralize
+installed proxy/build SHA-256: fc95d3c84d16609d5bd7e300a2753babc7ea262b72dca3681d19cf6c293e1aaf
+installed MoltenVK/build SHA-256: aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+active 1.4.2 cache SHA-256: 498afb3db97c57c6fe6b0baef5307bf0c6a9330a73478519caa6cf659474a55b
+old-backup cache SHA-256: 72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+settings SHA-256: 297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c
+```
+
+The cache and settings hashes match the prepared pre-install boundary exactly.
+The ignored evidence boundary is
+`artifacts/experiment-0025-20260801T090413Z`. No agent launched Steam, the
+launcher, or ESO.
+
+## User-run gate
+
+One normal Steam-path startup is now justified. Observe only through account
+login plus approximately 30 seconds, then quit normally. Stop earlier for a
+crash, hang, or unexpected rendering. Report whether pink remained unchanged
+or instead disappeared/changed to black. After evidence collection, restore
+the normal `performance-aggressive` marker and verify all preserved hashes.

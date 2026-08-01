@@ -48,9 +48,9 @@ are in [Project status](STATUS.md); completed runs belong in the
   and hooks the exact `FXMaterial` initializer only in the two-generation audit
   window, runs the original initializer, and changes only three exact magenta
   vectors to black while preserving alpha. Its synthetic trampoline, bounded
-  window, full build, configuration, and 104-test gates pass. It is not
-  installed; obtain a new explicit approval for `startup-fx-neutralize` before
-  changing the game bundle.
+  window, full build, configuration, and 104-test gates pass. The explicitly
+  approved `startup-fx-neutralize` installation now matches the build, while
+  both caches and settings retain their pre-install hashes.
 - One matched, bounded startup decides this branch: disappearance/change to
   black confirms the sentinel as causal; unchanged pink excludes it. Missing
   initializer evidence or a missing ordinal-180 finish is inconclusive. After

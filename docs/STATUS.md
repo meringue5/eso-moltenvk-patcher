@@ -106,12 +106,13 @@ changes those exact matches to black while preserving alpha. Normal
 The synthetic executable-trampoline probe, exact-byte/constant/caller target
 generation, full source build, effective aggressive configuration check, and
 104 Python tests pass. The fast update-rebase path now fails closed when an
-experimental target is present. No installed file, cache, or setting was
-changed. This candidate is sufficiently discriminating for one startup, but
-it is not installed: the active gate is a new explicit user approval for
-`startup-fx-neutralize`. A matched unchanged-pink run excludes this exact
-sentinel; a matched disappearance or change to black establishes causality;
-missing hook evidence or bounded finish is inconclusive.
+experimental target is present. The user then explicitly approved installation.
+The current marker is `startup-fx-neutralize`; installed proxy and MoltenVK
+match the validated build. Active-cache, old-backup-cache, and settings hashes
+remain exactly equal to the prepared pre-install boundary. The active gate is
+one user-controlled normal Steam-path startup. A matched unchanged-pink run
+excludes this exact sentinel; a matched disappearance or change to black
+establishes causality; missing hook evidence or bounded finish is inconclusive.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
