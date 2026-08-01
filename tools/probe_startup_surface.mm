@@ -53,6 +53,8 @@ static PFN_vkQueuePresentKHR g_queue_present = vkQueuePresentKHR;
 static PFN_vkQueueSubmit g_queue_submit = vkQueueSubmit;
 static PFN_vkBeginCommandBuffer g_begin_command_buffer = vkBeginCommandBuffer;
 static PFN_vkCreateShaderModule g_create_shader_module = vkCreateShaderModule;
+static PFN_vkCreatePipelineLayout g_create_pipeline_layout =
+    vkCreatePipelineLayout;
 static PFN_vkCreateGraphicsPipelines g_create_graphics_pipelines =
     vkCreateGraphicsPipelines;
 static PFN_vkCmdBindPipeline g_cmd_bind_pipeline = vkCmdBindPipeline;
@@ -84,6 +86,7 @@ static void enable_startup_color_audit(void) {
     teso4m4_lifecycle_set_startup_color_audit(true);
     teso4m4_lifecycle_set_startup_present_pixel_audit(true);
     teso4m4_lifecycle_set_startup_draw_audit(true);
+    teso4m4_lifecycle_set_startup_input_audit(true);
     g_create_swapchain = (PFN_vkCreateSwapchainKHR)
         teso4m4_lifecycle_intercept(
             "vkCreateSwapchainKHR",
@@ -129,6 +132,10 @@ static void enable_startup_color_audit(void) {
         teso4m4_lifecycle_intercept(
             "vkCreateShaderModule",
             (PFN_vkVoidFunction)vkCreateShaderModule);
+    g_create_pipeline_layout = (PFN_vkCreatePipelineLayout)
+        teso4m4_lifecycle_intercept(
+            "vkCreatePipelineLayout",
+            (PFN_vkVoidFunction)vkCreatePipelineLayout);
     g_create_graphics_pipelines = (PFN_vkCreateGraphicsPipelines)
         teso4m4_lifecycle_intercept(
             "vkCreateGraphicsPipelines",
@@ -412,7 +419,7 @@ static VkPipeline create_magenta_pipeline(
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
     };
     if (!vk_ok(
-            vkCreatePipelineLayout(device, &layout_info, NULL, layout),
+            g_create_pipeline_layout(device, &layout_info, NULL, layout),
             "vkCreatePipelineLayout")) {
         return VK_NULL_HANDLE;
     }
@@ -998,7 +1005,19 @@ int main(int argc, char** argv) {
                  g_audit_log,
                  "STARTUP_PRESENT_DRAW_PIPELINE: generation=1 ordinal=1") ||
              !strstr(g_audit_log, "shader_hash_complete=yes") ||
-             !strstr(g_audit_log, "pipeline_state=tracked"))) {
+             !strstr(g_audit_log, "pipeline_state=tracked") ||
+             !strstr(
+                 g_audit_log,
+                 "STARTUP_PRESENT_INPUT_PIPELINE: generation=1 ordinal=1") ||
+             !strstr(
+                 g_audit_log,
+                 "set_layouts=0 descriptors=0 images=0 buffers=0") ||
+             !strstr(g_audit_log, "push_bytes=0 layout_complete=yes") ||
+             !strstr(
+                 g_audit_log,
+                 "STARTUP_PRESENT_DRAW_INPUT: generation=1 ordinal=1") ||
+             !strstr(g_audit_log, "bound_sets=0") ||
+             !strstr(g_audit_log, "input_complete=yes"))) {
             fprintf(stderr, "draw provenance did not match magenta frame\n");
             return 3;
         }

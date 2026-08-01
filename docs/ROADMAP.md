@@ -88,6 +88,18 @@ are in [Project status](STATUS.md); completed runs belong in the
   distinguish a sampled image/texture from a uniform or push-value source and
   remain bounded to the already proven black-to-magenta interval. Request no
   user startup until that candidate passes its non-game gate.
+- Experiment 0028 implements that successor and has passed its non-game gate.
+  It compares only descriptor sets required by the exact bound pipeline,
+  fingerprints the latest descriptor update batch without accumulating normal
+  repeated-call counts, captures push constants, and carries the result through
+  the proven submit-semaphore/present chain. Its synthetic sampled-image case,
+  real MoltenVK/AppKit pipeline case, clean build, and fail-closed analyzer
+  controls pass.
+- Install only the approved `startup-input-audit` mode with both caches and
+  settings preserved. After exact installed-state verification, one
+  user-controlled Steam-path startup may distinguish descriptor-state change,
+  push-constant change, and stable bindings that select resource contents as
+  the next gate. Restore `performance-aggressive` after the evidence is read.
 
 ### Superseded reset-investigation record
 

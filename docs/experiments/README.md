@@ -38,6 +38,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0025 | 2026-08-01 | Bounded startup FX-sentinel neutralization | Inconclusive; exact hook installed but initializer had zero calls, normal profile restored | [Run](0025-startup-fx-sentinel-neutralization.md) |
 | 0026 | 2026-08-01 | Bounded startup pre-present pixel audit | Succeeded; exact magenta confirmed in final swapchain content before present, normal profile restored | [Run](0026-startup-present-pixel-audit.md) |
 | 0027 | 2026-08-01 | Bounded startup presented-draw audit | Succeeded; isolated the sole indexed draw/pipeline writing both magenta and later scene frames, normal profile restored | [Run](0027-startup-draw-audit.md) |
+| 0028 | 2026-08-01 | Bounded startup draw-input provenance audit | Candidate passed static, synthetic, and real MoltenVK non-game gates; approved installation pending | [Run](0028-startup-input-provenance.md) |
 
 ## Recording policy
 

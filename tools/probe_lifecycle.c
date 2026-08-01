@@ -222,6 +222,55 @@ static VkResult VKAPI_CALL fake_create_shader_module(
     return VK_SUCCESS;
 }
 
+static VkResult VKAPI_CALL fake_create_descriptor_set_layout(
+    VkDevice device,
+    const VkDescriptorSetLayoutCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkDescriptorSetLayout* set_layout) {
+    (void)device;
+    (void)create_info;
+    (void)allocator;
+    *set_layout = HANDLE(VkDescriptorSetLayout, ++g_next_handle);
+    return VK_SUCCESS;
+}
+
+static VkResult VKAPI_CALL fake_create_pipeline_layout(
+    VkDevice device,
+    const VkPipelineLayoutCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkPipelineLayout* pipeline_layout) {
+    (void)device;
+    (void)create_info;
+    (void)allocator;
+    *pipeline_layout = HANDLE(VkPipelineLayout, ++g_next_handle);
+    return VK_SUCCESS;
+}
+
+static VkResult VKAPI_CALL fake_allocate_descriptor_sets(
+    VkDevice device,
+    const VkDescriptorSetAllocateInfo* allocate_info,
+    VkDescriptorSet* descriptor_sets) {
+    (void)device;
+    for (uint32_t index = 0; index < allocate_info->descriptorSetCount;
+         ++index) {
+        descriptor_sets[index] = HANDLE(VkDescriptorSet, ++g_next_handle);
+    }
+    return VK_SUCCESS;
+}
+
+static void VKAPI_CALL fake_update_descriptor_sets(
+    VkDevice device,
+    uint32_t write_count,
+    const VkWriteDescriptorSet* writes,
+    uint32_t copy_count,
+    const VkCopyDescriptorSet* copies) {
+    (void)device;
+    (void)write_count;
+    (void)writes;
+    (void)copy_count;
+    (void)copies;
+}
+
 static VkResult VKAPI_CALL fake_create_graphics_pipelines(
     VkDevice device,
     VkPipelineCache pipeline_cache,
@@ -246,6 +295,40 @@ static void VKAPI_CALL fake_cmd_bind_pipeline(
     (void)command_buffer;
     (void)pipeline_bind_point;
     (void)pipeline;
+}
+
+static void VKAPI_CALL fake_cmd_bind_descriptor_sets(
+    VkCommandBuffer command_buffer,
+    VkPipelineBindPoint pipeline_bind_point,
+    VkPipelineLayout layout,
+    uint32_t first_set,
+    uint32_t descriptor_set_count,
+    const VkDescriptorSet* descriptor_sets,
+    uint32_t dynamic_offset_count,
+    const uint32_t* dynamic_offsets) {
+    (void)command_buffer;
+    (void)pipeline_bind_point;
+    (void)layout;
+    (void)first_set;
+    (void)descriptor_set_count;
+    (void)descriptor_sets;
+    (void)dynamic_offset_count;
+    (void)dynamic_offsets;
+}
+
+static void VKAPI_CALL fake_cmd_push_constants(
+    VkCommandBuffer command_buffer,
+    VkPipelineLayout layout,
+    VkShaderStageFlags stage_flags,
+    uint32_t offset,
+    uint32_t size,
+    const void* values) {
+    (void)command_buffer;
+    (void)layout;
+    (void)stage_flags;
+    (void)offset;
+    (void)size;
+    (void)values;
 }
 
 static void VKAPI_CALL fake_cmd_draw_indexed(
@@ -505,6 +588,7 @@ static bool run_startup_draw_provenance_case(void) {
     teso4m4_lifecycle_set_startup_color_audit(true);
     teso4m4_lifecycle_set_startup_present_pixel_audit(true);
     teso4m4_lifecycle_set_startup_draw_audit(true);
+    teso4m4_lifecycle_set_startup_input_audit(true);
 
     PFN_vkCreateSwapchainKHR create_swapchain = (PFN_vkCreateSwapchainKHR)
         teso4m4_lifecycle_intercept(
@@ -541,6 +625,22 @@ static bool run_startup_draw_provenance_case(void) {
         teso4m4_lifecycle_intercept(
             "vkCreateShaderModule",
             (PFN_vkVoidFunction)&fake_create_shader_module);
+    PFN_vkCreateDescriptorSetLayout create_set_layout =
+        (PFN_vkCreateDescriptorSetLayout)teso4m4_lifecycle_intercept(
+            "vkCreateDescriptorSetLayout",
+            (PFN_vkVoidFunction)&fake_create_descriptor_set_layout);
+    PFN_vkCreatePipelineLayout create_pipeline_layout =
+        (PFN_vkCreatePipelineLayout)teso4m4_lifecycle_intercept(
+            "vkCreatePipelineLayout",
+            (PFN_vkVoidFunction)&fake_create_pipeline_layout);
+    PFN_vkAllocateDescriptorSets allocate_descriptor_sets =
+        (PFN_vkAllocateDescriptorSets)teso4m4_lifecycle_intercept(
+            "vkAllocateDescriptorSets",
+            (PFN_vkVoidFunction)&fake_allocate_descriptor_sets);
+    PFN_vkUpdateDescriptorSets update_descriptor_sets =
+        (PFN_vkUpdateDescriptorSets)teso4m4_lifecycle_intercept(
+            "vkUpdateDescriptorSets",
+            (PFN_vkVoidFunction)&fake_update_descriptor_sets);
     PFN_vkCreateGraphicsPipelines create_graphics_pipelines =
         (PFN_vkCreateGraphicsPipelines)teso4m4_lifecycle_intercept(
             "vkCreateGraphicsPipelines",
@@ -549,6 +649,14 @@ static bool run_startup_draw_provenance_case(void) {
         teso4m4_lifecycle_intercept(
             "vkCmdBindPipeline",
             (PFN_vkVoidFunction)&fake_cmd_bind_pipeline);
+    PFN_vkCmdBindDescriptorSets bind_descriptor_sets =
+        (PFN_vkCmdBindDescriptorSets)teso4m4_lifecycle_intercept(
+            "vkCmdBindDescriptorSets",
+            (PFN_vkVoidFunction)&fake_cmd_bind_descriptor_sets);
+    PFN_vkCmdPushConstants push_constants = (PFN_vkCmdPushConstants)
+        teso4m4_lifecycle_intercept(
+            "vkCmdPushConstants",
+            (PFN_vkVoidFunction)&fake_cmd_push_constants);
     PFN_vkCmdDrawIndexed draw_indexed = (PFN_vkCmdDrawIndexed)
         teso4m4_lifecycle_intercept(
             "vkCmdDrawIndexed",
@@ -622,6 +730,66 @@ static bool run_startup_draw_provenance_case(void) {
         return check(false, "draw provenance framebuffer setup failed");
     }
 
+    const VkDescriptorSetLayoutBinding set_binding = {
+        .binding = 0,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptorCount = 1,
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+    };
+    const VkDescriptorSetLayoutCreateInfo set_layout_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = 1,
+        .pBindings = &set_binding,
+    };
+    VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
+    if (create_set_layout(
+            device, &set_layout_info, NULL, &set_layout) != VK_SUCCESS) {
+        return check(false, "input provenance set layout setup failed");
+    }
+    const VkPushConstantRange push_range = {
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .offset = 0,
+        .size = 16,
+    };
+    const VkPipelineLayoutCreateInfo pipeline_layout_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = 1,
+        .pSetLayouts = &set_layout,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &push_range,
+    };
+    VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
+    if (create_pipeline_layout(
+            device, &pipeline_layout_info, NULL, &pipeline_layout) !=
+        VK_SUCCESS) {
+        return check(false, "input provenance pipeline layout setup failed");
+    }
+    const VkDescriptorSetAllocateInfo set_allocate_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = HANDLE(VkDescriptorPool, 0xd00),
+        .descriptorSetCount = 1,
+        .pSetLayouts = &set_layout,
+    };
+    VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
+    if (allocate_descriptor_sets(
+            device, &set_allocate_info, &descriptor_set) != VK_SUCCESS) {
+        return check(false, "input provenance descriptor set setup failed");
+    }
+    const VkDescriptorImageInfo descriptor_image = {
+        .sampler = HANDLE(VkSampler, 0xd01),
+        .imageView = HANDLE(VkImageView, 0xd02),
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+    const VkWriteDescriptorSet descriptor_write = {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = descriptor_set,
+        .dstBinding = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo = &descriptor_image,
+    };
+    update_descriptor_sets(device, 1, &descriptor_write, 0, NULL);
+
     const uint32_t vertex_code[] = {0x07230203, 0x00010000};
     const uint32_t fragment_code[] = {0x07230203, 0x00010001};
     VkShaderModuleCreateInfo shader_info = {
@@ -659,6 +827,7 @@ static bool run_startup_draw_provenance_case(void) {
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .stageCount = 2,
         .pStages = stages,
+        .layout = pipeline_layout,
         .renderPass = render_pass,
     };
     VkPipeline pipeline = VK_NULL_HANDLE;
@@ -682,6 +851,15 @@ static bool run_startup_draw_provenance_case(void) {
     }
     begin_render_pass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
     bind_pipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    bind_descriptor_sets(
+        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+        0, 1, &descriptor_set, 0, NULL);
+    const uint32_t push_values[] = {
+        0x3f800000, 0, 0x3f800000, 0x3f800000,
+    };
+    push_constants(
+        command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+        0, sizeof(push_values), push_values);
     draw_indexed(command_buffer, 6, 1, 0, 0, 0);
     end_render_pass(command_buffer);
 
@@ -716,7 +894,13 @@ static bool run_startup_draw_provenance_case(void) {
             strstr(g_log, "draw_count=1 indexed_draw_count=1") != NULL &&
             strstr(g_log, "distinct_pipelines=1 pipeline_overflow=no") != NULL &&
             strstr(g_log, "STARTUP_PRESENT_DRAW_PIPELINE: generation=1") != NULL &&
-            strstr(g_log, "pipeline_state=tracked") != NULL,
+            strstr(g_log, "pipeline_state=tracked") != NULL &&
+            strstr(g_log, "STARTUP_PRESENT_INPUT_PIPELINE: generation=1") != NULL &&
+            strstr(g_log, "descriptors=1 images=1 buffers=0") != NULL &&
+            strstr(g_log, "push_bytes=16 layout_complete=yes") != NULL &&
+            strstr(g_log, "STARTUP_PRESENT_DRAW_INPUT: generation=1") != NULL &&
+            strstr(g_log, "bound_sets=1") != NULL &&
+            strstr(g_log, "input_complete=yes") != NULL,
         "present sample must retain exact draw and pipeline provenance");
 }
 
@@ -1211,7 +1395,8 @@ int main(void) {
 
     printf(
         "Lifecycle trace smoke: yes startup_color_cases=3 "
-        "present_pixel_cases=2 startup_draw_cases=1 steady_pair_ns=%" PRIu64 "\n",
+        "present_pixel_cases=2 startup_draw_cases=1 startup_input_cases=1 "
+        "steady_pair_ns=%" PRIu64 "\n",
         pair_nanoseconds);
     return 0;
 }

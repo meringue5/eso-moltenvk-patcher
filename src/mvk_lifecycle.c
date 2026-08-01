@@ -19,6 +19,10 @@ enum {
     kMaxSignaledSemaphores = 512,
     kMaxShaderModules = 4096,
     kMaxGraphicsPipelines = 4096,
+    kMaxDescriptorSetLayouts = 2048,
+    kMaxPipelineLayouts = 2048,
+    kMaxDescriptorSets = 131072,
+    kMaxBoundDescriptorSets = 16,
     kMaxDrawPipelines = 8,
     kMaxRenderPassAttachments = 16,
     kFirstPresentationLimit = 8,
@@ -61,6 +65,13 @@ typedef struct {
     uint64_t first_pipeline_signature;
     uint64_t last_pipeline_signature;
     bool pipeline_overflow;
+    uint32_t bound_set_count;
+    uint64_t descriptor_layout_signature;
+    uint64_t descriptor_handle_signature;
+    uint64_t descriptor_update_signature;
+    uint64_t push_constant_signature;
+    uint32_t push_constant_bytes;
+    bool input_complete;
     bool occupied;
 } SignaledSemaphoreRecord;
 
@@ -72,13 +83,64 @@ typedef struct {
 } ShaderModuleRecord;
 
 typedef struct {
+    VkDescriptorSetLayout handle;
+    uint64_t signature;
+    uint32_t binding_count;
+    uint32_t descriptor_count;
+    uint32_t image_count;
+    uint32_t buffer_count;
+    uint32_t sampler_count;
+    uint32_t input_attachment_count;
+    bool alive;
+} DescriptorSetLayoutRecord;
+
+typedef struct {
+    VkPipelineLayout handle;
+    uint64_t signature;
+    uint32_t set_layout_count;
+    uint64_t set_layout_signatures[kMaxBoundDescriptorSets];
+    uint32_t set_descriptor_counts[kMaxBoundDescriptorSets];
+    uint32_t descriptor_count;
+    uint32_t image_count;
+    uint32_t buffer_count;
+    uint32_t sampler_count;
+    uint32_t input_attachment_count;
+    uint32_t push_constant_bytes;
+    bool complete;
+    bool alive;
+} PipelineLayoutRecord;
+
+typedef struct {
+    VkDescriptorSet handle;
+    VkDescriptorPool pool;
+    uint64_t layout_signature;
+    uint64_t update_signature;
+    uint64_t update_count;
+    uint64_t last_update_call;
+    bool occupied;
+    bool alive;
+} DescriptorSetRecord;
+
+typedef struct {
     VkPipeline handle;
     uint64_t signature;
     uint64_t vertex_shader_hash;
     uint64_t fragment_shader_hash;
+    VkPipelineLayout layout;
+    uint64_t layout_signature;
+    uint32_t set_layout_count;
+    uint64_t set_layout_signatures[kMaxBoundDescriptorSets];
+    uint32_t set_descriptor_counts[kMaxBoundDescriptorSets];
+    uint32_t descriptor_count;
+    uint32_t image_count;
+    uint32_t buffer_count;
+    uint32_t sampler_count;
+    uint32_t input_attachment_count;
+    uint32_t push_constant_bytes;
     VkRenderPass render_pass;
     uint32_t subpass;
     bool shader_hash_complete;
+    bool layout_complete;
     bool alive;
 } GraphicsPipelineRecord;
 
@@ -95,6 +157,13 @@ typedef struct {
     uint64_t first_pipeline_signature;
     uint64_t last_pipeline_signature;
     bool pipeline_overflow;
+    uint32_t bound_set_count;
+    uint64_t descriptor_layout_signature;
+    uint64_t descriptor_handle_signature;
+    uint64_t descriptor_update_signature;
+    uint64_t push_constant_signature;
+    uint32_t push_constant_bytes;
+    bool input_complete;
 } DrawSubmissionSummary;
 
 typedef struct {
@@ -138,7 +207,28 @@ typedef struct {
     uint64_t first_pipeline_signature;
     uint64_t last_pipeline_signature;
     uint64_t bound_pipeline_signature;
+    uint64_t bound_pipeline_layout_signature;
+    uint32_t bound_pipeline_set_layout_count;
+    uint64_t
+        bound_pipeline_set_layout_signatures[kMaxBoundDescriptorSets];
+    uint32_t
+        bound_pipeline_set_descriptor_counts[kMaxBoundDescriptorSets];
+    uint32_t bound_pipeline_push_constant_bytes;
+    bool bound_pipeline_layout_complete;
     bool pipeline_overflow;
+    VkDescriptorSet bound_sets[kMaxBoundDescriptorSets];
+    uint32_t bound_set_count;
+    uint64_t dynamic_offset_signature;
+    uint64_t push_constant_signature;
+    uint32_t push_constant_bytes;
+    uint32_t push_constant_calls;
+    uint64_t draw_descriptor_layout_signature;
+    uint64_t draw_descriptor_handle_signature;
+    uint64_t draw_descriptor_update_signature;
+    uint64_t draw_push_constant_signature;
+    uint32_t draw_push_constant_bytes;
+    uint32_t draw_bound_set_count;
+    bool draw_input_complete;
 } CommandBufferRecord;
 
 static PFN_vkDeviceWaitIdle g_next_device_wait_idle;
@@ -165,6 +255,17 @@ static PFN_vkDestroyPipeline g_next_destroy_pipeline;
 static PFN_vkCmdBindPipeline g_next_cmd_bind_pipeline;
 static PFN_vkCmdDraw g_next_cmd_draw;
 static PFN_vkCmdDrawIndexed g_next_cmd_draw_indexed;
+static PFN_vkCreateDescriptorSetLayout g_next_create_descriptor_set_layout;
+static PFN_vkDestroyDescriptorSetLayout g_next_destroy_descriptor_set_layout;
+static PFN_vkCreatePipelineLayout g_next_create_pipeline_layout;
+static PFN_vkDestroyPipelineLayout g_next_destroy_pipeline_layout;
+static PFN_vkAllocateDescriptorSets g_next_allocate_descriptor_sets;
+static PFN_vkFreeDescriptorSets g_next_free_descriptor_sets;
+static PFN_vkResetDescriptorPool g_next_reset_descriptor_pool;
+static PFN_vkDestroyDescriptorPool g_next_destroy_descriptor_pool;
+static PFN_vkUpdateDescriptorSets g_next_update_descriptor_sets;
+static PFN_vkCmdBindDescriptorSets g_next_cmd_bind_descriptor_sets;
+static PFN_vkCmdPushConstants g_next_cmd_push_constants;
 
 static Teso4m4LifecycleLogFunction g_logger;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -177,13 +278,19 @@ static CommandBufferRecord g_command_buffers[kMaxCommandBuffers];
 static SignaledSemaphoreRecord g_signaled_semaphores[kMaxSignaledSemaphores];
 static ShaderModuleRecord g_shader_modules[kMaxShaderModules];
 static GraphicsPipelineRecord g_graphics_pipelines[kMaxGraphicsPipelines];
+static DescriptorSetLayoutRecord
+    g_descriptor_set_layouts[kMaxDescriptorSetLayouts];
+static PipelineLayoutRecord g_pipeline_layouts[kMaxPipelineLayouts];
+static DescriptorSetRecord g_descriptor_sets[kMaxDescriptorSets];
 static uint64_t g_generation_counter;
 static uint64_t g_wait_counter;
+static uint64_t g_descriptor_update_call_counter;
 static bool g_overflow_reported;
 static bool g_enabled = true;
 static atomic_bool g_startup_color_audit;
 static atomic_bool g_startup_present_pixel_audit;
 static atomic_bool g_startup_draw_audit;
+static atomic_bool g_startup_input_audit;
 static atomic_bool g_startup_color_audit_finished;
 static atomic_uint g_startup_color_detail_count;
 static Teso4m4PresentPixelSampler g_present_pixel_sampler;
@@ -311,6 +418,17 @@ static void remember_signaled_semaphore(
         existing->last_pipeline_signature =
             summary->last_pipeline_signature;
         existing->pipeline_overflow = summary->pipeline_overflow;
+        existing->bound_set_count = summary->bound_set_count;
+        existing->descriptor_layout_signature =
+            summary->descriptor_layout_signature;
+        existing->descriptor_handle_signature =
+            summary->descriptor_handle_signature;
+        existing->descriptor_update_signature =
+            summary->descriptor_update_signature;
+        existing->push_constant_signature =
+            summary->push_constant_signature;
+        existing->push_constant_bytes = summary->push_constant_bytes;
+        existing->input_complete = summary->input_complete;
     }
 }
 
@@ -492,6 +610,160 @@ static uint64_t hash_mix(uint64_t hash, uint64_t value) {
     return hash;
 }
 
+static bool descriptor_type_is_image(VkDescriptorType type) {
+    return type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+           type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+           type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
+           type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+}
+
+static bool descriptor_type_is_buffer(VkDescriptorType type) {
+    return type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+           type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+           type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+           type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC ||
+           type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
+           type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+}
+
+static DescriptorSetLayoutRecord* find_descriptor_set_layout(
+    VkDescriptorSetLayout handle) {
+    for (size_t index = 0; index < kMaxDescriptorSetLayouts; ++index) {
+        if (g_descriptor_set_layouts[index].alive &&
+            g_descriptor_set_layouts[index].handle == handle) {
+            return &g_descriptor_set_layouts[index];
+        }
+    }
+    return NULL;
+}
+
+static DescriptorSetLayoutRecord* add_descriptor_set_layout(
+    VkDescriptorSetLayout handle) {
+    DescriptorSetLayoutRecord* existing = find_descriptor_set_layout(handle);
+    if (existing) {
+        return existing;
+    }
+    for (size_t index = 0; index < kMaxDescriptorSetLayouts; ++index) {
+        if (!g_descriptor_set_layouts[index].alive) {
+            g_descriptor_set_layouts[index] = (DescriptorSetLayoutRecord){
+                .handle = handle,
+                .alive = true,
+            };
+            return &g_descriptor_set_layouts[index];
+        }
+    }
+    report_overflow("descriptor-set-layout");
+    return NULL;
+}
+
+static PipelineLayoutRecord* find_pipeline_layout(VkPipelineLayout handle) {
+    for (size_t index = 0; index < kMaxPipelineLayouts; ++index) {
+        if (g_pipeline_layouts[index].alive &&
+            g_pipeline_layouts[index].handle == handle) {
+            return &g_pipeline_layouts[index];
+        }
+    }
+    return NULL;
+}
+
+static PipelineLayoutRecord* add_pipeline_layout(VkPipelineLayout handle) {
+    PipelineLayoutRecord* existing = find_pipeline_layout(handle);
+    if (existing) {
+        return existing;
+    }
+    for (size_t index = 0; index < kMaxPipelineLayouts; ++index) {
+        if (!g_pipeline_layouts[index].alive) {
+            g_pipeline_layouts[index] = (PipelineLayoutRecord){
+                .handle = handle,
+                .alive = true,
+            };
+            return &g_pipeline_layouts[index];
+        }
+    }
+    report_overflow("pipeline-layout");
+    return NULL;
+}
+
+static size_t descriptor_set_start(VkDescriptorSet handle) {
+    uintptr_t value = (uintptr_t)handle;
+    value ^= value >> 17;
+    value *= UINT64_C(0xed5ad4bb);
+    value ^= value >> 11;
+    return (size_t)value & (kMaxDescriptorSets - 1);
+}
+
+static DescriptorSetRecord* find_descriptor_set(
+    VkDescriptorSet handle,
+    bool create) {
+    const size_t start = descriptor_set_start(handle);
+    DescriptorSetRecord* reusable = NULL;
+    for (size_t probe = 0; probe < kMaxDescriptorSets; ++probe) {
+        DescriptorSetRecord* record =
+            &g_descriptor_sets[(start + probe) & (kMaxDescriptorSets - 1)];
+        if (record->occupied && record->handle == handle) {
+            return record;
+        }
+        if (!record->occupied) {
+            if (!create) {
+                return NULL;
+            }
+            reusable = record;
+            break;
+        }
+        if (!record->alive && !reusable) {
+            reusable = record;
+        }
+    }
+    if (!create || !reusable) {
+        if (create) {
+            report_overflow("descriptor-set");
+        }
+        return NULL;
+    }
+    *reusable = (DescriptorSetRecord){
+        .handle = handle,
+        .occupied = true,
+        .alive = true,
+    };
+    return reusable;
+}
+
+static uint64_t descriptor_write_signature(
+    const VkWriteDescriptorSet* write) {
+    uint64_t hash = UINT64_C(1469598103934665603);
+    if (!write) {
+        return 0;
+    }
+    hash = hash_mix(hash, write->dstBinding);
+    hash = hash_mix(hash, write->dstArrayElement);
+    hash = hash_mix(hash, write->descriptorCount);
+    hash = hash_mix(hash, write->descriptorType);
+    for (uint32_t index = 0; index < write->descriptorCount; ++index) {
+        if ((descriptor_type_is_image(write->descriptorType) ||
+             write->descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER) &&
+            write->pImageInfo) {
+            hash = hash_mix(
+                hash, (uint64_t)(uintptr_t)write->pImageInfo[index].sampler);
+            hash = hash_mix(
+                hash, (uint64_t)(uintptr_t)write->pImageInfo[index].imageView);
+            hash = hash_mix(hash, write->pImageInfo[index].imageLayout);
+        } else if (descriptor_type_is_buffer(write->descriptorType) &&
+                   write->pBufferInfo) {
+            hash = hash_mix(
+                hash, (uint64_t)(uintptr_t)write->pBufferInfo[index].buffer);
+            hash = hash_mix(hash, write->pBufferInfo[index].offset);
+            hash = hash_mix(hash, write->pBufferInfo[index].range);
+        } else if (write->pTexelBufferView) {
+            hash = hash_mix(
+                hash,
+                (uint64_t)(uintptr_t)write->pTexelBufferView[index]);
+        } else {
+            hash = hash_mix(hash, UINT64_MAX);
+        }
+    }
+    return hash;
+}
+
 static ShaderModuleRecord* find_shader_module(VkShaderModule handle) {
     for (size_t index = 0; index < kMaxShaderModules; ++index) {
         if (g_shader_modules[index].alive &&
@@ -581,8 +853,36 @@ static void merge_submission_command(
         summary->framebuffer = command->framebuffer;
         summary->first_pipeline_signature =
             command->first_pipeline_signature;
+        summary->bound_set_count = command->draw_bound_set_count;
+        summary->descriptor_layout_signature =
+            command->draw_descriptor_layout_signature;
+        summary->descriptor_handle_signature =
+            command->draw_descriptor_handle_signature;
+        summary->descriptor_update_signature =
+            command->draw_descriptor_update_signature;
+        summary->push_constant_signature =
+            command->draw_push_constant_signature;
+        summary->push_constant_bytes = command->draw_push_constant_bytes;
+        summary->input_complete = command->draw_input_complete;
     } else if (summary->generation != command->generation) {
         summary->generation = 0;
+        summary->input_complete = false;
+    } else {
+        summary->bound_set_count += command->draw_bound_set_count;
+        summary->descriptor_layout_signature = hash_mix(
+            summary->descriptor_layout_signature,
+            command->draw_descriptor_layout_signature);
+        summary->descriptor_handle_signature = hash_mix(
+            summary->descriptor_handle_signature,
+            command->draw_descriptor_handle_signature);
+        summary->descriptor_update_signature = hash_mix(
+            summary->descriptor_update_signature,
+            command->draw_descriptor_update_signature);
+        summary->push_constant_signature = hash_mix(
+            summary->push_constant_signature,
+            command->draw_push_constant_signature);
+        summary->push_constant_bytes += command->draw_push_constant_bytes;
+        summary->input_complete &= command->draw_input_complete;
     }
     summary->draw_count += command->draw_count;
     summary->indexed_draw_count += command->indexed_draw_count;
@@ -629,8 +929,36 @@ static void merge_present_signal(
         summary->framebuffer = signal->framebuffer;
         summary->first_pipeline_signature =
             signal->first_pipeline_signature;
+        summary->bound_set_count = signal->bound_set_count;
+        summary->descriptor_layout_signature =
+            signal->descriptor_layout_signature;
+        summary->descriptor_handle_signature =
+            signal->descriptor_handle_signature;
+        summary->descriptor_update_signature =
+            signal->descriptor_update_signature;
+        summary->push_constant_signature =
+            signal->push_constant_signature;
+        summary->push_constant_bytes = signal->push_constant_bytes;
+        summary->input_complete = signal->input_complete;
     } else if (summary->generation != signal->generation) {
         summary->generation = 0;
+        summary->input_complete = false;
+    } else {
+        summary->bound_set_count += signal->bound_set_count;
+        summary->descriptor_layout_signature = hash_mix(
+            summary->descriptor_layout_signature,
+            signal->descriptor_layout_signature);
+        summary->descriptor_handle_signature = hash_mix(
+            summary->descriptor_handle_signature,
+            signal->descriptor_handle_signature);
+        summary->descriptor_update_signature = hash_mix(
+            summary->descriptor_update_signature,
+            signal->descriptor_update_signature);
+        summary->push_constant_signature = hash_mix(
+            summary->push_constant_signature,
+            signal->push_constant_signature);
+        summary->push_constant_bytes += signal->push_constant_bytes;
+        summary->input_complete &= signal->input_complete;
     }
     summary->tracked_command_count += signal->tracked_command_count;
     summary->draw_count += signal->draw_count;
@@ -781,6 +1109,431 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_begin_command_buffer(
     return result;
 }
 
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_descriptor_set_layout(
+    VkDevice device,
+    const VkDescriptorSetLayoutCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkDescriptorSetLayout* set_layout) {
+    if (!g_next_create_descriptor_set_layout) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_descriptor_set_layout(
+        device, create_info, allocator, set_layout);
+    if (result != VK_SUCCESS || !set_layout ||
+        *set_layout == VK_NULL_HANDLE ||
+        !atomic_load(&g_startup_input_audit) || startup_audit_finished()) {
+        return result;
+    }
+    DescriptorSetLayoutRecord snapshot = {0};
+    pthread_mutex_lock(&g_lock);
+    DescriptorSetLayoutRecord* record =
+        add_descriptor_set_layout(*set_layout);
+    if (record) {
+        record->signature = UINT64_C(1469598103934665603);
+        record->binding_count = create_info ? create_info->bindingCount : 0;
+        for (uint32_t index = 0;
+             create_info && create_info->pBindings &&
+             index < create_info->bindingCount; ++index) {
+            const VkDescriptorSetLayoutBinding* binding =
+                &create_info->pBindings[index];
+            record->signature = hash_mix(record->signature, binding->binding);
+            record->signature = hash_mix(
+                record->signature, binding->descriptorType);
+            record->signature = hash_mix(
+                record->signature, binding->descriptorCount);
+            record->signature = hash_mix(
+                record->signature, binding->stageFlags);
+            record->signature = hash_mix(
+                record->signature, binding->pImmutableSamplers ? 1 : 0);
+            record->descriptor_count += binding->descriptorCount;
+            if (descriptor_type_is_image(binding->descriptorType)) {
+                record->image_count += binding->descriptorCount;
+            } else if (descriptor_type_is_buffer(binding->descriptorType)) {
+                record->buffer_count += binding->descriptorCount;
+            } else if (binding->descriptorType ==
+                       VK_DESCRIPTOR_TYPE_SAMPLER) {
+                record->sampler_count += binding->descriptorCount;
+            } else if (binding->descriptorType ==
+                       VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) {
+                record->input_attachment_count += binding->descriptorCount;
+            }
+        }
+        snapshot = *record;
+    }
+    pthread_mutex_unlock(&g_lock);
+    lifecycle_log(
+        "STARTUP_INPUT_SET_LAYOUT: layout=%p signature=%016" PRIx64
+        " bindings=%u descriptors=%u images=%u buffers=%u samplers=%u"
+        " input_attachments=%u result=%d",
+        (void*)*set_layout, snapshot.signature, snapshot.binding_count,
+        snapshot.descriptor_count, snapshot.image_count,
+        snapshot.buffer_count, snapshot.sampler_count,
+        snapshot.input_attachment_count, result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_descriptor_set_layout(
+    VkDevice device,
+    VkDescriptorSetLayout set_layout,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_descriptor_set_layout) {
+        return;
+    }
+    g_next_destroy_descriptor_set_layout(device, set_layout, allocator);
+    if (!atomic_load(&g_startup_input_audit)) {
+        return;
+    }
+    pthread_mutex_lock(&g_lock);
+    DescriptorSetLayoutRecord* record =
+        find_descriptor_set_layout(set_layout);
+    if (record) {
+        record->alive = false;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_pipeline_layout(
+    VkDevice device,
+    const VkPipelineLayoutCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkPipelineLayout* pipeline_layout) {
+    if (!g_next_create_pipeline_layout) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_pipeline_layout(
+        device, create_info, allocator, pipeline_layout);
+    if (result != VK_SUCCESS || !pipeline_layout ||
+        *pipeline_layout == VK_NULL_HANDLE ||
+        !atomic_load(&g_startup_input_audit) || startup_audit_finished()) {
+        return result;
+    }
+    PipelineLayoutRecord snapshot = {0};
+    pthread_mutex_lock(&g_lock);
+    PipelineLayoutRecord* record = add_pipeline_layout(*pipeline_layout);
+    if (record) {
+        record->signature = UINT64_C(1469598103934665603);
+        record->set_layout_count = create_info ? create_info->setLayoutCount : 0;
+        record->complete = true;
+        if (record->set_layout_count > kMaxBoundDescriptorSets) {
+            record->complete = false;
+            report_overflow("pipeline-layout-set-count");
+        }
+        for (uint32_t index = 0;
+             create_info && create_info->pSetLayouts &&
+             index < create_info->setLayoutCount; ++index) {
+            DescriptorSetLayoutRecord* set_layout =
+                find_descriptor_set_layout(create_info->pSetLayouts[index]);
+            if (!set_layout) {
+                record->complete = false;
+                record->signature = hash_mix(record->signature, 0);
+                continue;
+            }
+            record->signature = hash_mix(
+                record->signature, set_layout->signature);
+            if (index < kMaxBoundDescriptorSets) {
+                record->set_layout_signatures[index] =
+                    set_layout->signature;
+                record->set_descriptor_counts[index] =
+                    set_layout->descriptor_count;
+            }
+            record->descriptor_count += set_layout->descriptor_count;
+            record->image_count += set_layout->image_count;
+            record->buffer_count += set_layout->buffer_count;
+            record->sampler_count += set_layout->sampler_count;
+            record->input_attachment_count +=
+                set_layout->input_attachment_count;
+        }
+        for (uint32_t index = 0;
+             create_info && create_info->pPushConstantRanges &&
+             index < create_info->pushConstantRangeCount; ++index) {
+            const VkPushConstantRange* range =
+                &create_info->pPushConstantRanges[index];
+            record->signature = hash_mix(record->signature, range->stageFlags);
+            record->signature = hash_mix(record->signature, range->offset);
+            record->signature = hash_mix(record->signature, range->size);
+            const uint64_t end = (uint64_t)range->offset + range->size;
+            if (end > record->push_constant_bytes) {
+                record->push_constant_bytes =
+                    end > UINT32_MAX ? UINT32_MAX : (uint32_t)end;
+            }
+        }
+        snapshot = *record;
+    }
+    pthread_mutex_unlock(&g_lock);
+    lifecycle_log(
+        "STARTUP_INPUT_PIPELINE_LAYOUT: layout=%p signature=%016" PRIx64
+        " set_layouts=%u descriptors=%u images=%u buffers=%u samplers=%u"
+        " input_attachments=%u push_bytes=%u complete=%s result=%d",
+        (void*)*pipeline_layout, snapshot.signature,
+        snapshot.set_layout_count, snapshot.descriptor_count,
+        snapshot.image_count, snapshot.buffer_count,
+        snapshot.sampler_count, snapshot.input_attachment_count,
+        snapshot.push_constant_bytes, snapshot.complete ? "yes" : "no",
+        result);
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_pipeline_layout(
+    VkDevice device,
+    VkPipelineLayout pipeline_layout,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_pipeline_layout) {
+        return;
+    }
+    g_next_destroy_pipeline_layout(device, pipeline_layout, allocator);
+    if (!atomic_load(&g_startup_input_audit)) {
+        return;
+    }
+    pthread_mutex_lock(&g_lock);
+    PipelineLayoutRecord* record = find_pipeline_layout(pipeline_layout);
+    if (record) {
+        record->alive = false;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_allocate_descriptor_sets(
+    VkDevice device,
+    const VkDescriptorSetAllocateInfo* allocate_info,
+    VkDescriptorSet* descriptor_sets) {
+    if (!g_next_allocate_descriptor_sets) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_allocate_descriptor_sets(
+        device, allocate_info, descriptor_sets);
+    if (result != VK_SUCCESS || !allocate_info || !descriptor_sets ||
+        !atomic_load(&g_startup_input_audit) || startup_audit_finished()) {
+        return result;
+    }
+    pthread_mutex_lock(&g_lock);
+    for (uint32_t index = 0; index < allocate_info->descriptorSetCount;
+         ++index) {
+        DescriptorSetRecord* record =
+            find_descriptor_set(descriptor_sets[index], true);
+        DescriptorSetLayoutRecord* layout = find_descriptor_set_layout(
+            allocate_info->pSetLayouts[index]);
+        if (record) {
+            record->pool = allocate_info->descriptorPool;
+            record->layout_signature = layout ? layout->signature : 0;
+            record->update_signature = 0;
+            record->update_count = 0;
+            record->last_update_call = 0;
+            record->alive = true;
+        }
+    }
+    pthread_mutex_unlock(&g_lock);
+    return result;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_free_descriptor_sets(
+    VkDevice device,
+    VkDescriptorPool pool,
+    uint32_t descriptor_set_count,
+    const VkDescriptorSet* descriptor_sets) {
+    if (!g_next_free_descriptor_sets) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_free_descriptor_sets(
+        device, pool, descriptor_set_count, descriptor_sets);
+    if (result == VK_SUCCESS && descriptor_sets &&
+        atomic_load(&g_startup_input_audit)) {
+        pthread_mutex_lock(&g_lock);
+        for (uint32_t index = 0; index < descriptor_set_count; ++index) {
+            DescriptorSetRecord* record =
+                find_descriptor_set(descriptor_sets[index], false);
+            if (record) {
+                record->alive = false;
+            }
+        }
+        pthread_mutex_unlock(&g_lock);
+    }
+    return result;
+}
+
+static void forget_descriptor_pool(VkDescriptorPool pool) {
+    for (size_t index = 0; index < kMaxDescriptorSets; ++index) {
+        if (g_descriptor_sets[index].occupied &&
+            g_descriptor_sets[index].pool == pool) {
+            g_descriptor_sets[index].alive = false;
+        }
+    }
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_reset_descriptor_pool(
+    VkDevice device,
+    VkDescriptorPool pool,
+    VkDescriptorPoolResetFlags flags) {
+    if (!g_next_reset_descriptor_pool) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_reset_descriptor_pool(device, pool, flags);
+    if (result == VK_SUCCESS && atomic_load(&g_startup_input_audit)) {
+        pthread_mutex_lock(&g_lock);
+        forget_descriptor_pool(pool);
+        pthread_mutex_unlock(&g_lock);
+    }
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_descriptor_pool(
+    VkDevice device,
+    VkDescriptorPool pool,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_descriptor_pool) {
+        return;
+    }
+    g_next_destroy_descriptor_pool(device, pool, allocator);
+    if (atomic_load(&g_startup_input_audit)) {
+        pthread_mutex_lock(&g_lock);
+        forget_descriptor_pool(pool);
+        pthread_mutex_unlock(&g_lock);
+    }
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_update_descriptor_sets(
+    VkDevice device,
+    uint32_t write_count,
+    const VkWriteDescriptorSet* writes,
+    uint32_t copy_count,
+    const VkCopyDescriptorSet* copies) {
+    if (!g_next_update_descriptor_sets) {
+        return;
+    }
+    g_next_update_descriptor_sets(
+        device, write_count, writes, copy_count, copies);
+    if (!atomic_load(&g_startup_input_audit) || startup_audit_finished()) {
+        return;
+    }
+    pthread_mutex_lock(&g_lock);
+    const uint64_t update_call = ++g_descriptor_update_call_counter;
+    for (uint32_t index = 0; writes && index < write_count; ++index) {
+        DescriptorSetRecord* record =
+            find_descriptor_set(writes[index].dstSet, false);
+        if (record && record->alive) {
+            if (record->last_update_call != update_call) {
+                record->update_signature =
+                    UINT64_C(1469598103934665603);
+                record->update_count = 0;
+                record->last_update_call = update_call;
+            }
+            record->update_signature = hash_mix(
+                record->update_signature,
+                descriptor_write_signature(&writes[index]));
+            ++record->update_count;
+        }
+    }
+    for (uint32_t index = 0; copies && index < copy_count; ++index) {
+        DescriptorSetRecord* source =
+            find_descriptor_set(copies[index].srcSet, false);
+        DescriptorSetRecord* destination =
+            find_descriptor_set(copies[index].dstSet, false);
+        if (destination && destination->alive) {
+            if (destination->last_update_call != update_call) {
+                destination->update_signature =
+                    UINT64_C(1469598103934665603);
+                destination->update_count = 0;
+                destination->last_update_call = update_call;
+            }
+            uint64_t signature = UINT64_C(1469598103934665603);
+            signature = hash_mix(
+                signature, source ? source->update_signature : 0);
+            signature = hash_mix(signature, copies[index].srcBinding);
+            signature = hash_mix(signature, copies[index].srcArrayElement);
+            signature = hash_mix(signature, copies[index].dstBinding);
+            signature = hash_mix(signature, copies[index].dstArrayElement);
+            signature = hash_mix(signature, copies[index].descriptorCount);
+            destination->update_signature = hash_mix(
+                destination->update_signature,
+                signature);
+            ++destination->update_count;
+        }
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_bind_descriptor_sets(
+    VkCommandBuffer command_buffer,
+    VkPipelineBindPoint pipeline_bind_point,
+    VkPipelineLayout layout,
+    uint32_t first_set,
+    uint32_t descriptor_set_count,
+    const VkDescriptorSet* descriptor_sets,
+    uint32_t dynamic_offset_count,
+    const uint32_t* dynamic_offsets) {
+    if (!g_next_cmd_bind_descriptor_sets) {
+        return;
+    }
+    g_next_cmd_bind_descriptor_sets(
+        command_buffer, pipeline_bind_point, layout, first_set,
+        descriptor_set_count, descriptor_sets, dynamic_offset_count,
+        dynamic_offsets);
+    if (!atomic_load(&g_startup_input_audit) || startup_audit_finished() ||
+        pipeline_bind_point != VK_PIPELINE_BIND_POINT_GRAPHICS) {
+        return;
+    }
+    pthread_mutex_lock(&g_lock);
+    CommandBufferRecord* command = find_command_buffer(command_buffer);
+    if (command) {
+        for (uint32_t index = 0; descriptor_sets &&
+             index < descriptor_set_count; ++index) {
+            const uint32_t slot = first_set + index;
+            if (slot >= kMaxBoundDescriptorSets) {
+                command->draw_input_complete = false;
+                report_overflow("bound-descriptor-set");
+                continue;
+            }
+            command->bound_sets[slot] = descriptor_sets[index];
+            if (slot + 1 > command->bound_set_count) {
+                command->bound_set_count = slot + 1;
+            }
+        }
+        for (uint32_t index = 0; dynamic_offsets &&
+             index < dynamic_offset_count; ++index) {
+            command->dynamic_offset_signature = hash_mix(
+                command->dynamic_offset_signature == 0
+                    ? UINT64_C(1469598103934665603)
+                    : command->dynamic_offset_signature,
+                dynamic_offsets[index]);
+        }
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_push_constants(
+    VkCommandBuffer command_buffer,
+    VkPipelineLayout layout,
+    VkShaderStageFlags stage_flags,
+    uint32_t offset,
+    uint32_t size,
+    const void* values) {
+    if (!g_next_cmd_push_constants) {
+        return;
+    }
+    g_next_cmd_push_constants(
+        command_buffer, layout, stage_flags, offset, size, values);
+    if (!atomic_load(&g_startup_input_audit) || startup_audit_finished()) {
+        return;
+    }
+    pthread_mutex_lock(&g_lock);
+    CommandBufferRecord* command = find_command_buffer(command_buffer);
+    if (command) {
+        uint64_t signature = UINT64_C(1469598103934665603);
+        signature = hash_mix(signature, (uint64_t)(uintptr_t)layout);
+        signature = hash_mix(signature, stage_flags);
+        signature = hash_mix(signature, offset);
+        signature = hash_mix(signature, size);
+        signature = hash_mix(signature, hash_bytes(values, size));
+        command->push_constant_signature = hash_mix(
+            command->push_constant_signature == 0
+                ? UINT64_C(1469598103934665603)
+                : command->push_constant_signature,
+            signature);
+        command->push_constant_bytes += size;
+        ++command->push_constant_calls;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
 static VKAPI_ATTR VkResult VKAPI_CALL traced_create_shader_module(
     VkDevice device,
     const VkShaderModuleCreateInfo* create_info,
@@ -927,19 +1680,45 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_graphics_pipelines(
         uint64_t fragment_hash = 0;
         uint64_t signature = 0;
         bool shader_hash_complete = false;
+        PipelineLayoutRecord layout_snapshot = {0};
         pthread_mutex_lock(&g_lock);
         signature = pipeline_signature_locked(
             &create_infos[index], &vertex_hash, &fragment_hash,
             &shader_hash_complete);
         GraphicsPipelineRecord* record =
             add_graphics_pipeline(pipelines[index]);
+        PipelineLayoutRecord* layout =
+            find_pipeline_layout(create_infos[index].layout);
+        if (layout) {
+            layout_snapshot = *layout;
+        }
         if (record) {
             record->signature = signature;
             record->vertex_shader_hash = vertex_hash;
             record->fragment_shader_hash = fragment_hash;
+            record->layout = create_infos[index].layout;
+            record->layout_signature = layout_snapshot.signature;
+            record->set_layout_count = layout_snapshot.set_layout_count;
+            memcpy(
+                record->set_layout_signatures,
+                layout_snapshot.set_layout_signatures,
+                sizeof(record->set_layout_signatures));
+            memcpy(
+                record->set_descriptor_counts,
+                layout_snapshot.set_descriptor_counts,
+                sizeof(record->set_descriptor_counts));
+            record->descriptor_count = layout_snapshot.descriptor_count;
+            record->image_count = layout_snapshot.image_count;
+            record->buffer_count = layout_snapshot.buffer_count;
+            record->sampler_count = layout_snapshot.sampler_count;
+            record->input_attachment_count =
+                layout_snapshot.input_attachment_count;
+            record->push_constant_bytes =
+                layout_snapshot.push_constant_bytes;
             record->render_pass = create_infos[index].renderPass;
             record->subpass = create_infos[index].subpass;
             record->shader_hash_complete = shader_hash_complete;
+            record->layout_complete = layout && layout->complete;
         }
         pthread_mutex_unlock(&g_lock);
         lifecycle_log(
@@ -952,6 +1731,22 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_graphics_pipelines(
             create_infos[index].stageCount,
             (void*)create_infos[index].renderPass,
             create_infos[index].subpass, result);
+        if (atomic_load(&g_startup_input_audit)) {
+            lifecycle_log(
+                "STARTUP_INPUT_PIPELINE: pipeline=%p"
+                " pipeline_signature=%016" PRIx64
+                " layout_signature=%016" PRIx64
+                " set_layouts=%u descriptors=%u images=%u buffers=%u"
+                " samplers=%u input_attachments=%u push_bytes=%u"
+                " layout_complete=%s",
+                (void*)pipelines[index], signature,
+                layout_snapshot.signature, layout_snapshot.set_layout_count,
+                layout_snapshot.descriptor_count, layout_snapshot.image_count,
+                layout_snapshot.buffer_count, layout_snapshot.sampler_count,
+                layout_snapshot.input_attachment_count,
+                layout_snapshot.push_constant_bytes,
+                layout && layout->complete ? "yes" : "no");
+        }
     }
     return result;
 }
@@ -989,6 +1784,31 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_bind_pipeline(
     GraphicsPipelineRecord* record = find_graphics_pipeline(pipeline);
     if (command && command->in_render_pass) {
         command->bound_pipeline_signature = record ? record->signature : 0;
+        command->bound_pipeline_layout_signature =
+            record ? record->layout_signature : 0;
+        command->bound_pipeline_set_layout_count =
+            record ? record->set_layout_count : 0;
+        command->bound_pipeline_push_constant_bytes =
+            record ? record->push_constant_bytes : 0;
+        if (record) {
+            memcpy(
+                command->bound_pipeline_set_layout_signatures,
+                record->set_layout_signatures,
+                sizeof(command->bound_pipeline_set_layout_signatures));
+            memcpy(
+                command->bound_pipeline_set_descriptor_counts,
+                record->set_descriptor_counts,
+                sizeof(command->bound_pipeline_set_descriptor_counts));
+        } else {
+            memset(
+                command->bound_pipeline_set_layout_signatures, 0,
+                sizeof(command->bound_pipeline_set_layout_signatures));
+            memset(
+                command->bound_pipeline_set_descriptor_counts, 0,
+                sizeof(command->bound_pipeline_set_descriptor_counts));
+        }
+        command->bound_pipeline_layout_complete =
+            record && record->layout_complete;
     }
     pthread_mutex_unlock(&g_lock);
 }
@@ -1025,6 +1845,60 @@ static void record_draw_locked(
     signature = hash_mix(signature, (uint32_t)vertex_offset);
     signature = hash_mix(signature, first_instance);
     command->draw_signature = signature;
+    if (atomic_load(&g_startup_input_audit)) {
+        uint64_t layout_signature = UINT64_C(1469598103934665603);
+        uint64_t handle_signature = UINT64_C(1469598103934665603);
+        uint64_t update_signature = UINT64_C(1469598103934665603);
+        bool complete = command->bound_pipeline_layout_complete;
+        uint32_t bound_count = 0;
+        const uint32_t required_set_count =
+            command->bound_pipeline_set_layout_count;
+        if (required_set_count > kMaxBoundDescriptorSets) {
+            complete = false;
+        }
+        const uint32_t tracked_set_count =
+            required_set_count < kMaxBoundDescriptorSets
+                ? required_set_count
+                : kMaxBoundDescriptorSets;
+        for (uint32_t slot = 0; slot < tracked_set_count; ++slot) {
+            DescriptorSetRecord* set =
+                find_descriptor_set(command->bound_sets[slot], false);
+            const bool known = set && set->alive;
+            const uint64_t set_layout = known ? set->layout_signature : 0;
+            const uint64_t set_update = known ? set->update_signature : 0;
+            layout_signature = hash_mix(layout_signature, slot);
+            layout_signature = hash_mix(layout_signature, set_layout);
+            handle_signature = hash_mix(handle_signature, slot);
+            handle_signature = hash_mix(
+                handle_signature,
+                (uint64_t)(uintptr_t)command->bound_sets[slot]);
+            update_signature = hash_mix(update_signature, slot);
+            update_signature = hash_mix(update_signature, set_update);
+            update_signature = hash_mix(
+                update_signature, known ? set->update_count : 0);
+            complete &=
+                known && set_layout != 0 &&
+                set_layout ==
+                    command->bound_pipeline_set_layout_signatures[slot] &&
+                (command->bound_pipeline_set_descriptor_counts[slot] == 0 ||
+                 set_update != 0);
+            ++bound_count;
+        }
+        complete &=
+            command->bound_pipeline_push_constant_bytes == 0 ||
+            command->push_constant_signature != 0;
+        handle_signature = hash_mix(
+            handle_signature, command->dynamic_offset_signature);
+        command->draw_descriptor_layout_signature = hash_mix(
+            command->bound_pipeline_layout_signature, layout_signature);
+        command->draw_descriptor_handle_signature = handle_signature;
+        command->draw_descriptor_update_signature = update_signature;
+        command->draw_push_constant_signature =
+            command->push_constant_signature;
+        command->draw_push_constant_bytes = command->push_constant_bytes;
+        command->draw_bound_set_count = bound_count;
+        command->draw_input_complete = complete;
+    }
 }
 
 static VKAPI_ATTR void VKAPI_CALL traced_cmd_draw(
@@ -1690,6 +2564,47 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
                         found_pipeline && pipeline_snapshot.shader_hash_complete
                             ? "yes" : "no",
                         found_pipeline ? "tracked" : "missing");
+                    if (atomic_load(&g_startup_input_audit)) {
+                        lifecycle_log(
+                            "STARTUP_PRESENT_INPUT_PIPELINE: generation=%" PRIu64
+                            " ordinal=%u pipeline_index=%u"
+                            " pipeline_signature=%016" PRIx64
+                            " layout_signature=%016" PRIx64
+                            " set_layouts=%u descriptors=%u images=%u"
+                            " buffers=%u samplers=%u input_attachments=%u"
+                            " push_bytes=%u layout_complete=%s",
+                            swapchain_snapshot.generation, ordinal,
+                            pipeline_index,
+                            present_draw.pipeline_signatures[pipeline_index],
+                            pipeline_snapshot.layout_signature,
+                            pipeline_snapshot.set_layout_count,
+                            pipeline_snapshot.descriptor_count,
+                            pipeline_snapshot.image_count,
+                            pipeline_snapshot.buffer_count,
+                            pipeline_snapshot.sampler_count,
+                            pipeline_snapshot.input_attachment_count,
+                            pipeline_snapshot.push_constant_bytes,
+                            found_pipeline && pipeline_snapshot.layout_complete
+                                ? "yes" : "no");
+                    }
+                }
+                if (atomic_load(&g_startup_input_audit)) {
+                    lifecycle_log(
+                        "STARTUP_PRESENT_DRAW_INPUT: generation=%" PRIu64
+                        " ordinal=%u bound_sets=%u"
+                        " descriptor_layout_signature=%016" PRIx64
+                        " descriptor_handle_signature=%016" PRIx64
+                        " descriptor_update_signature=%016" PRIx64
+                        " push_signature=%016" PRIx64
+                        " push_bytes=%u input_complete=%s",
+                        swapchain_snapshot.generation, ordinal,
+                        present_draw.bound_set_count,
+                        present_draw.descriptor_layout_signature,
+                        present_draw.descriptor_handle_signature,
+                        present_draw.descriptor_update_signature,
+                        present_draw.push_constant_signature,
+                        present_draw.push_constant_bytes,
+                        present_draw.input_complete ? "yes" : "no");
                 }
             }
             if (!sampler(
@@ -2008,6 +2923,17 @@ void teso4m4_lifecycle_reset(void) {
     g_next_cmd_bind_pipeline = NULL;
     g_next_cmd_draw = NULL;
     g_next_cmd_draw_indexed = NULL;
+    g_next_create_descriptor_set_layout = NULL;
+    g_next_destroy_descriptor_set_layout = NULL;
+    g_next_create_pipeline_layout = NULL;
+    g_next_destroy_pipeline_layout = NULL;
+    g_next_allocate_descriptor_sets = NULL;
+    g_next_free_descriptor_sets = NULL;
+    g_next_reset_descriptor_pool = NULL;
+    g_next_destroy_descriptor_pool = NULL;
+    g_next_update_descriptor_sets = NULL;
+    g_next_cmd_bind_descriptor_sets = NULL;
+    g_next_cmd_push_constants = NULL;
     g_logger = NULL;
     memset(g_swapchains, 0, sizeof(g_swapchains));
     memset(g_images, 0, sizeof(g_images));
@@ -2018,13 +2944,18 @@ void teso4m4_lifecycle_reset(void) {
     memset(g_signaled_semaphores, 0, sizeof(g_signaled_semaphores));
     memset(g_shader_modules, 0, sizeof(g_shader_modules));
     memset(g_graphics_pipelines, 0, sizeof(g_graphics_pipelines));
+    memset(g_descriptor_set_layouts, 0, sizeof(g_descriptor_set_layouts));
+    memset(g_pipeline_layouts, 0, sizeof(g_pipeline_layouts));
+    memset(g_descriptor_sets, 0, sizeof(g_descriptor_sets));
     g_generation_counter = 0;
     g_wait_counter = 0;
+    g_descriptor_update_call_counter = 0;
     g_overflow_reported = false;
     g_enabled = true;
     atomic_store(&g_startup_color_audit, false);
     atomic_store(&g_startup_present_pixel_audit, false);
     atomic_store(&g_startup_draw_audit, false);
+    atomic_store(&g_startup_input_audit, false);
     atomic_store(&g_startup_color_audit_finished, false);
     atomic_store(&g_startup_color_detail_count, 0);
     g_present_pixel_sampler = NULL;
@@ -2071,6 +3002,17 @@ void teso4m4_lifecycle_set_startup_draw_audit(bool enabled) {
             "STARTUP_DRAW_AUDIT_BEGIN: generation_limit=2"
             " generation_2_present_limit=180"
             " max_distinct_pipelines_per_submit=8");
+    }
+}
+
+void teso4m4_lifecycle_set_startup_input_audit(bool enabled) {
+    atomic_store(&g_startup_input_audit, enabled);
+    if (enabled) {
+        lifecycle_log(
+            "STARTUP_INPUT_AUDIT_BEGIN: generation_limit=2"
+            " generation_2_present_limit=180"
+            " max_descriptor_set_layouts=2048 max_pipeline_layouts=2048"
+            " max_descriptor_sets=131072 max_bound_sets=16");
     }
 }
 
@@ -2179,6 +3121,63 @@ PFN_vkVoidFunction teso4m4_lifecycle_intercept(
     } else if (strcmp(name, "vkCmdDrawIndexed") == 0) {
         g_next_cmd_draw_indexed = (PFN_vkCmdDrawIndexed)next_function;
         returned = (PFN_vkVoidFunction)&traced_cmd_draw_indexed;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkCreateDescriptorSetLayout") == 0) {
+        g_next_create_descriptor_set_layout =
+            (PFN_vkCreateDescriptorSetLayout)next_function;
+        returned =
+            (PFN_vkVoidFunction)&traced_create_descriptor_set_layout;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkDestroyDescriptorSetLayout") == 0) {
+        g_next_destroy_descriptor_set_layout =
+            (PFN_vkDestroyDescriptorSetLayout)next_function;
+        returned =
+            (PFN_vkVoidFunction)&traced_destroy_descriptor_set_layout;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkCreatePipelineLayout") == 0) {
+        g_next_create_pipeline_layout =
+            (PFN_vkCreatePipelineLayout)next_function;
+        returned = (PFN_vkVoidFunction)&traced_create_pipeline_layout;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkDestroyPipelineLayout") == 0) {
+        g_next_destroy_pipeline_layout =
+            (PFN_vkDestroyPipelineLayout)next_function;
+        returned = (PFN_vkVoidFunction)&traced_destroy_pipeline_layout;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkAllocateDescriptorSets") == 0) {
+        g_next_allocate_descriptor_sets =
+            (PFN_vkAllocateDescriptorSets)next_function;
+        returned = (PFN_vkVoidFunction)&traced_allocate_descriptor_sets;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkFreeDescriptorSets") == 0) {
+        g_next_free_descriptor_sets =
+            (PFN_vkFreeDescriptorSets)next_function;
+        returned = (PFN_vkVoidFunction)&traced_free_descriptor_sets;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkResetDescriptorPool") == 0) {
+        g_next_reset_descriptor_pool =
+            (PFN_vkResetDescriptorPool)next_function;
+        returned = (PFN_vkVoidFunction)&traced_reset_descriptor_pool;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkDestroyDescriptorPool") == 0) {
+        g_next_destroy_descriptor_pool =
+            (PFN_vkDestroyDescriptorPool)next_function;
+        returned = (PFN_vkVoidFunction)&traced_destroy_descriptor_pool;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkUpdateDescriptorSets") == 0) {
+        g_next_update_descriptor_sets =
+            (PFN_vkUpdateDescriptorSets)next_function;
+        returned = (PFN_vkVoidFunction)&traced_update_descriptor_sets;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkCmdBindDescriptorSets") == 0) {
+        g_next_cmd_bind_descriptor_sets =
+            (PFN_vkCmdBindDescriptorSets)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_bind_descriptor_sets;
+    } else if (atomic_load(&g_startup_input_audit) &&
+               strcmp(name, "vkCmdPushConstants") == 0) {
+        g_next_cmd_push_constants =
+            (PFN_vkCmdPushConstants)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_push_constants;
     }
     pthread_mutex_unlock(&g_lock);
     return returned;

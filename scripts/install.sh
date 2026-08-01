@@ -25,7 +25,8 @@ MODE="${TESO4M4_MODE:-descriptor-compat}"
   || "$MODE" == "startup-color-audit" \
   || "$MODE" == "startup-fx-neutralize" \
   || "$MODE" == "startup-present-pixel-audit" \
-  || "$MODE" == "startup-draw-audit" ]] || {
+  || "$MODE" == "startup-draw-audit" \
+  || "$MODE" == "startup-input-audit" ]] || {
   echo "Unsupported experiment mode: $MODE"
   exit 1
 }

@@ -7,9 +7,12 @@ Last updated: 2026-08-01
 `teso4m4` was promoted to production on 2026-08-01. The validated gameplay
 baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
 for ESO 12.0.7, databuild `3281538`.
-Experiment 0027 is complete and the normal marker is restored. The update
-check, executable fingerprint, installed runtime hash, bridge/build byte
-comparison, and 1.4.2 pipeline-cache UUID all remain current.
+Experiment 0027 is complete. Experiment 0028's narrower draw-input candidate
+has passed its static, synthetic, real MoltenVK/AppKit, analyzer, and clean
+build gates. The original loader is temporarily restored for the required
+source rebuild; the approved `startup-input-audit` installation is the next
+operation. The update check, executable fingerprint, official runtime hash,
+and 1.4.2 pipeline-cache UUID remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -233,6 +236,27 @@ user-controlled run; its post-run SHA-256 is
 All 48 allowlisted graphics, display, and performance values still match the
 committed
 [M4/MoltenVK 1.4.2 standard template](../config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+
+Experiment 0028 now implements the bounded input-provenance successor. It
+retains the exact aggressive profile and the twenty pixel/draw samples while
+adding ordered descriptor-layout identity, required bound-set handles, the
+latest descriptor update batch, dynamic offsets, and push-constant hashes to
+the same submit-semaphore/present provenance chain. Identical repeated updates
+remain identical; missing required updates, layouts, pushes, capacity, or
+present provenance fail closed.
+
+The synthetic sampled-image/push case, real official MoltenVK/AppKit
+zero-input pipeline at small and exact ESO extents, dedicated analyzer
+controls, clean full bridge build, configuration probe, and all 114 Python
+tests pass. No game process was launched. The active cache
+`a9a4ee5112466265c233e2561bb6c284032bfa30f077c0227259f09db682a063`,
+old-backup cache
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`,
+and settings
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`
+were recorded before the cache-preserving restore and clean build. The
+approved experimental install and exact installed-state verification remain
+before any user startup.
 The full settings and latest logs remain ignored evidence at
 `artifacts/experiment-0021-post-validation-20260801T052538Z`.
 
