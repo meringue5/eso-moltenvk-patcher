@@ -34,7 +34,7 @@ and rollback state. Current project state belongs in `docs/STATUS.md`.
 | 0024 | 2026-08-01 | Two-generation startup color audit redesign | Succeeded; exact pink run contained only opaque-black clears, normal profile restored | [Run](0024-two-generation-startup-color-audit.md) |
 | 0025 | 2026-08-01 | Bounded startup FX-sentinel neutralization | Inconclusive; exact hook installed but initializer had zero calls, normal profile restored | [Run](0025-startup-fx-sentinel-neutralization.md) |
 | 0026 | 2026-08-01 | Bounded startup pre-present pixel audit | Succeeded; exact magenta confirmed in final swapchain content before present, normal profile restored | [Run](0026-startup-present-pixel-audit.md) |
-| 0027 | 2026-08-01 | Bounded startup presented-draw audit | Candidate ready; real MoltenVK magenta draw/pipeline correlation passes, installation unapproved | [Run](0027-startup-draw-audit.md) |
+| 0027 | 2026-08-01 | Bounded startup presented-draw audit | Running; approved audit installed and fresh evidence boundary prepared | [Run](0027-startup-draw-audit.md) |
 
 ## Recording policy
 

@@ -175,7 +175,8 @@ the old-backup cache remains unchanged at
 The cache-preserving rollback restored `performance-aggressive`; official
 MoltenVK and the installed proxy still match their verified build artifacts.
 
-Experiment 0027 is now the next bounded candidate, but it is not installed.
+Experiment 0027 is now the active bounded audit and is installed with the
+user's explicit approval.
 Its `startup-draw-audit` mode retains Experiment 0026's exact pixel sampler and
 adds submit-semaphore provenance for each sampled frame: draw counts, ordered
 draw signature, at most eight stable graphics-pipeline signatures, and separate
@@ -189,10 +190,15 @@ one graphics draw at both small and exact ESO extents; the pre-present sample
 contains five exact magenta points and the same signal semaphore resolves to
 one complete pipeline with stable vertex and fragment hashes. The complete
 temporary bridge link, exact aggressive configuration probe, lifecycle smoke,
-and all 111 Python tests pass. The active gate is new explicit approval naming
-`startup-draw-audit`; prior installation approvals do not apply. Until then,
-the installed marker remains normal `performance-aggressive` and no user test
-is requested.
+and all 111 Python tests pass. A cache-preserving restore, clean source build,
+and approved install completed with Steam, the launcher, and ESO closed. The
+installed proxy and MoltenVK match the clean build byte for byte; both cache
+hashes and the settings hash remained unchanged. The fresh evidence boundary
+`experiment-0027-20260801T111424Z` began at `2026-08-01T11:14:26Z` from commit
+`b29e6dd`. The active gate is exactly one user-controlled normal Steam-path
+startup, reporting only whether pink appeared. Collection, draw-correlation
+analysis, and immediate restoration to `performance-aggressive` follow that
+single run.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of

@@ -1,8 +1,8 @@
 # Experiment 0027: bounded startup presented-draw audit
 
 - Date: 2026-08-01
-- Outcome: **candidate ready; non-game discrimination passed, installation not approved**
-- Rollback: **not applicable; normal `performance-aggressive` remains installed**
+- Outcome: **running; approved audit installed and fresh evidence boundary prepared**
+- Rollback: **pending the single user-controlled startup; restore path checked**
 
 ## Question
 
@@ -121,3 +121,35 @@ startup justified. The user only needs to report whether the pink frame was
 visible; the analyzer then uses the same run's exact pixels and draw
 provenance. Restore `performance-aggressive` immediately after evidence
 collection.
+
+## Approved installation checkpoint
+
+The user explicitly approved `startup-draw-audit`. With `steam_osx`, the
+launcher, and ESO absent, the remaining parentless Steam `ipcserver` was
+verified not to hold an ESO bundle file open. A cache-preserving restore then
+re-established the pristine loader, followed by a clean source build and the
+approved experimental installation.
+
+The installed proxy and official MoltenVK match the clean build byte for byte:
+
+```text
+proxy SHA-256:     03988f2df27da9ce653087ec4b2f30a4b53de6ab7e09b0117c273e79621e0a27
+MoltenVK SHA-256:  aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+mode marker:       startup-draw-audit
+```
+
+The install preserved both caches and settings exactly. The active cache is
+`8b061e93fa21d2b687ec7eef5bafa363c04418e468928bdaee3a687585773de7`,
+the old-backup cache is
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`,
+and `UserSettings.txt` is
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+The update and launcher checks report `READY` for ESO 12.0.7/databuild
+`3281538`.
+
+The fresh ignored evidence boundary
+`artifacts/experiment-0027-20260801T111424Z` started at
+`2026-08-01T11:14:26Z` from source commit `b29e6dd`. No game process was
+launched by the agent. Exactly one user-controlled normal Steam-path startup
+is now authorized; evidence collection and immediate restoration remain
+pending.

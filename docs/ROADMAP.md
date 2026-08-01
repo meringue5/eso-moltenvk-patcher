@@ -75,11 +75,14 @@ are in [Project status](STATUS.md); completed runs belong in the
   hashes to the exact signal semaphore; the real MoltenVK/AppKit control joins
   a full-surface magenta draw to five exact pre-present magenta pixels at both
   small and ESO extents. All missing-provenance and capacity cases fail closed.
-- Do not install Experiment 0027 without new explicit approval naming
-  `startup-draw-audit`. If approved, preserve both caches and settings through
-  restore/build/install, prepare one fresh evidence boundary, and request only
-  one user-controlled Steam-path startup. Restore `performance-aggressive`
-  immediately after evidence collection.
+- Experiment 0027 received explicit `startup-draw-audit` approval. Its
+  cache-preserving restore, clean rebuild, byte-exact install verification, and
+  fresh evidence boundary are complete; both caches and settings remain
+  unchanged.
+- Request exactly one user-controlled normal Steam-path startup and only the
+  visible-pink yes/no observation. Then collect the bounded pixels and draw
+  provenance, run the fail-closed analyzer, and restore
+  `performance-aggressive` immediately.
 
 ### Superseded reset-investigation record
 
