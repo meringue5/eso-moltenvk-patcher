@@ -1,8 +1,8 @@
 # Experiment 0026: bounded startup pre-present pixel audit
 
 - Date: 2026-08-01
-- Outcome: **prepared; non-game discrimination passes, installation awaits explicit approval**
-- Rollback: **not applicable; the installed `performance-aggressive` bridge, caches, and settings remain unchanged**
+- Outcome: **running; exact audit installed and verified, user-controlled startup pending**
+- Rollback: **pending after the one-run evidence collection**
 
 ## Question
 
@@ -117,3 +117,37 @@ Installation requires one explicit approval naming
 ESO are closed; perform a cache-preserving restore; rebuild from source;
 install the exact mode with cache preservation; verify installed/build bytes
 and all three hashes; then stop for one user-controlled Steam-path startup.
+
+## Approval and installation checkpoint
+
+The user explicitly approved `startup-present-pixel-audit` installation. The
+exact ESO 12.0.7 executable, UUID, databuild, and content profile remained
+current. The cache-preserving restore completed only after the process guard
+found Steam, the launcher, and ESO closed. A clean source build then passed all
+bridge smoke probes, the two present-pixel lifecycle cases, all effective
+MoltenVK configuration probes, 108 Python tests, compileall, shell syntax, and
+the diff check.
+
+The approved cache-preserving install completed and post-install comparison
+establishes:
+
+```text
+marker: startup-present-pixel-audit
+installed/build proxy SHA-256: 7f4cb42e4a0cf1726aef8bf1f220067cb9fd828781e8c5e3da3aad9102290d00
+installed/build MoltenVK SHA-256: aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+active cache SHA-256: aed8bce13b26a8d2760b69d34440d27b1bdf244b4cdee6490bd847f759b904ba
+old-backup cache SHA-256: 72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+settings SHA-256: 297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c
+```
+
+The proxy, renamed original, and MoltenVK each match their clean build
+byte-for-byte. The three state hashes are identical to the pre-restore and
+pre-install boundary. No agent launched Steam, the launcher, or ESO.
+
+The first evidence-preparation attempt stopped before creating an artifact
+directory because the launcher repository snapshot was 5,888 seconds old,
+exceeding the fixed 3,600-second gate. All eight repository IDs still matched
+and the launcher verdict remained `noUpdateRequired`, but the age requirement
+will not be relaxed. The user must open the normal Steam launcher and allow its
+update check to complete without pressing Play; evidence preparation can then
+establish a fresh start epoch before the one ESO launch.

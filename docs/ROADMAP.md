@@ -69,11 +69,15 @@ are in [Project status](STATUS.md); completed runs belong in the
   complete temporary bridge link and 108 Python tests. The lifecycle smoke also
   proves the exact 20-sample schedule and rejects submit-consumed semaphore
   evidence.
-- Obtain explicit approval naming `startup-present-pixel-audit`, then perform
-  the cache-preserving restore, clean source build, and exact-mode install.
-  Do not launch any user process. One user-controlled normal Steam-path startup
-  then decides whether the remaining source is inside final swapchain content
-  or after that boundary. Missing any of twenty samples is inconclusive.
+- The explicit `startup-present-pixel-audit` approval, cache-preserving restore,
+  clean source build, exact-mode install, and byte/hash verification are
+  complete. The installed diagnostic retains both caches and settings.
+- Refresh the stale launcher state through the user-controlled normal Steam
+  launcher without pressing Play. Do not weaken the 3,600-second evidence gate.
+  Once a fresh evidence start boundary is prepared, one user-controlled normal
+  Steam-path startup decides whether the remaining source is inside final
+  swapchain content or after that boundary. Missing any of twenty samples is
+  inconclusive.
 
 ### Superseded reset-investigation record
 

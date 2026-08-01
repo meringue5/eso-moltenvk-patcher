@@ -6,10 +6,11 @@ Last updated: 2026-08-01
 
 The validated gameplay baseline remains official MoltenVK 1.4.2 with the
 `performance-aggressive` profile for ESO 12.0.7, databuild `3281538`. The
-temporary audit has been removed and the verified `performance-aggressive`
-marker is installed again. The update check, executable fingerprint, installed
-runtime hash, bridge/build byte comparison, and 1.4.2 pipeline-cache UUID all
-remain current.
+temporary Experiment 0026 `startup-present-pixel-audit` is currently installed
+for one bounded startup; it retains the exact effective aggressive profile but
+is a diagnostic, not the validated normal marker. The update check, executable
+fingerprint, installed runtime hash, bridge/build byte comparison, and 1.4.2
+pipeline-cache UUID all remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -139,12 +140,14 @@ and all 108 Python tests pass. A complete exact run will therefore choose
 between magenta already present in final image content and a post-swapchain
 presentation/layer/compositor source.
 
-No game file was changed: the system correctly rejected restoration because
-the prior experimental approvals do not cover this new mode. The installed
-marker remains normal `performance-aggressive`, and active cache, backup cache,
-and settings hashes remain unchanged. The active gate is one explicit
-`startup-present-pixel-audit` installation approval; only after a clean
-cache-preserving rebuild/install is one user-controlled startup justified.
+The user explicitly approved the new mode. Cache-preserving restoration, a
+clean source build, and installation completed with Steam, the launcher, and
+ESO closed. The installed proxy and MoltenVK match the clean build byte for
+byte; active cache, backup cache, and settings hashes remain unchanged. The
+first evidence-preparation attempt correctly stopped because the otherwise
+matching launcher snapshot was 5,888 seconds old, beyond the fixed 3,600-second
+gate. The active gate is now a user-opened normal Steam launcher update check;
+do not press Play until a fresh evidence start boundary is prepared.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
