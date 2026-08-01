@@ -299,3 +299,41 @@ experiment records.
   trim releases the accumulated state.
 - Search for safe engine commands or API paths before considering invasive
   runtime state destruction.
+
+## P4: plan for restricted Rosetta availability
+
+- Treat Rosetta as an explicit upstream production dependency. The bridge
+  replaces ESO's statically linked MoltenVK path, but it does not translate the
+  x86_64 game executable to Apple Silicon. If macOS cannot start ESO through
+  Rosetta, no MoltenVK redirect or compatibility profile in this repository can
+  repair that earlier boundary.
+- Track Apple's published support horizon: general Rosetta functionality is
+  available through macOS 27, while macOS 28 limits it to certain older,
+  unmaintained games that depend on Intel frameworks. Do not assume that ESO
+  qualifies for that exception until Apple or a release-candidate test provides
+  direct evidence. Preserve the wording and source in the
+  [Apple support notice](https://support.apple.com/ko-kr/102527).
+- Keep production claims split by operating-system boundary. Continue normal
+  supported-profile maintenance on macOS releases with general Rosetta
+  availability; classify macOS 28 and later as unverified until ESO startup,
+  Steam authentication, bridge activation, rendering, restore, and update-gate
+  behavior pass on that exact release.
+- Before macOS 28, preserve a reproducible macOS 27 production checkpoint,
+  including the supported ESO profile, installer/restore assets, official
+  MoltenVK artifact identity, settings reference, update checks, and sanitized
+  validation evidence. Do not treat pinning macOS 27 as a permanent security or
+  support solution; document it only as a bounded compatibility checkpoint.
+- Evaluate macOS 28 beta or release candidates first with non-game Rosetta and
+  bridge probes. A user-controlled Steam launch is justified only after those
+  probes establish that the x86_64 process and patch mechanism still operate.
+  If Rosetta rejects ESO, record that as a platform boundary and do not weaken
+  executable, patch-site, authentication, or restore checks in an attempt to
+  bypass it.
+- Treat any Apple-Silicon-native ESO client, third-party x86 translation path,
+  or Windows-client compatibility route as a separate target requiring its own
+  architecture, safety model, authentication review, and validation. The
+  current production baseline must not be generalized to those paths.
+- Reassess large, architecture-specific performance investments against this
+  support horizon. Prioritize installer reliability, reversible maintenance,
+  update handling, and preservation of the proven production baseline before
+  work whose value depends on unrestricted Rosetta beyond macOS 27.
