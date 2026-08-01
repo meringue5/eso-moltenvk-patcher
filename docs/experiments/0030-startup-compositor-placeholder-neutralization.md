@@ -2,7 +2,7 @@
 
 - Date: 2026-08-02
 - Outcome: **failed**
-- Rollback: **not started; candidate installed**
+- Rollback: **complete; displaced by Experiment 0031 with caches and settings preserved**
 
 ## Question
 
@@ -187,10 +187,12 @@ justify changing assets, shaders, settings, or caches.
 
 ## Rollback
 
-Not started. The candidate is installed. The pristine loader and
-cache-preserving restore path were checked immediately before installation;
-the production `performance-aggressive` marker can be restored without
-changing either retained cache or settings state.
+Complete. After Experiment 0031 passed its source and non-game gates, the
+shared bundle-idle gate passed with idle Steam open and no ESO file or update
+activity. The pristine loader was restored with every cache retained in place;
+the Experiment 0031 fixed-window candidate was then rebuilt and installed.
+Settings remained `297f8558...`, the active 1.4.2 cache remained `ad3f6ba0...`,
+and the old backup remained `72ac0b0d...` across the restore/install cycle.
 
 ## Follow-up
 

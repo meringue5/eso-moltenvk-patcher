@@ -127,11 +127,15 @@ are in [Project status](STATUS.md); completed runs belong in the
   and forwards at 150. The synthetic lifecycle control, dedicated analyzer,
   clean build/configuration matrix, 133 tests, static checks, and official
   MoltenVK/AppKit/Metal control pass without a game-bundle change.
-- Checkpoint the exact source, then require explicit Experiment 0031 install
-  approval. Under the bundle-idle gate, restore the failed 0030 candidate,
-  rebuild the checkpoint, install the fixed-window candidate with caches and
-  settings preserved, and verify one fresh evidence boundary before requesting
-  the single user-controlled startup.
+- Preserve the exact Experiment 0031 installation: the bundle-idle restore,
+  clean rebuild, install, proxy/runtime identity checks, `READY` quick gate,
+  and cache/settings preservation all pass. Standing authorization for future
+  verified cache-preserving installs is recorded in `AGENTS.md`; do not pause
+  for another per-install confirmation inside that scope.
+- The active gate is one user-controlled ordinary Steam-path startup. Request
+  only whether pink appeared; no gameplay, setting change, screenshot, or
+  extended duration is needed. Then collect the prepared Experiment 0031
+  evidence and restore/promote according to the exact visual and log result.
 - If the exact fixed-window log spans ordinals 80--140, forwards at 150, and
   pink still appears, close the repair as failed and use Experiment 0029 or a
   bounded pre-present exact-pixel replacement. Do not add per-frame readback

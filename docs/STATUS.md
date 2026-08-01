@@ -81,8 +81,8 @@ of the two inputs supplies it, and whether the transition replaces a descriptor
 or fills a stable image, remain unproven. This is a low-impact startup
 presentation defect, not a gameplay blocker.
 
-Experiment 0030 failed to cover the target interval and remains installed
-pending a bundle-idle rollback. In exact run
+Experiment 0030 failed to cover the target interval and its rollback is now
+complete. In exact run
 `20260801T172806.047658000Z-pid17050`, it suppressed one exact compositor draw
 at generation-2 ordinal 71, then treated a new draw-recording-time descriptor
 signature at ordinal 72 as the scene transition and permanently forwarded.
@@ -110,12 +110,16 @@ readback or queue wait.
 The complete build/configuration matrix, synthetic descriptor-churn and
 fail-open controls, 133 Python tests, compiler/static checks, and official
 MoltenVK 1.4.2/AppKit/Metal small and exact-ESO surface controls pass. The
-prepared proxy is `4c1c69fd86bf...`; the game bundle was not changed. A
+prepared proxy is `4c1c69fd86bf...`. After the user approved installation, the
+bundle-idle gate passed with idle Steam open; a cache-preserving restore, clean
+rebuild, and fixed-window installation completed. Installed and built proxy
+bytes match, the marker is `startup-compositor-neutralize`, the quick update
+gate is `READY`, and settings plus both caches are unchanged. A
 pre-present exact-magenta detector was rejected for this candidate because it
 would add queue-idle/readback synchronization to dozens of startup frames.
 Experiment 0029 remains the diagnostic fallback if a mechanically complete
-window still leaves pink. The next gate is source checkpointing followed by
-explicit installation approval and the shared bundle-idle restore/install.
+window still leaves pink. One user-controlled startup with only a pink/no-pink
+report is now the active gate; no gameplay or setting change is requested.
 
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface

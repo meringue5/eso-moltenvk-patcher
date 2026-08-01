@@ -1,8 +1,8 @@
 # Experiment 0031: fixed-window startup compositor neutralization
 
 - Date: 2026-08-02
-- Outcome: **planned; source candidate validated**
-- Rollback: **not applicable; game bundle unchanged by this candidate**
+- Outcome: **running; candidate installed**
+- Rollback: **not started; pristine restore path checked**
 
 ## Question
 
@@ -108,7 +108,28 @@ selects Experiment 0029 or the pre-present exact-pixel alternative.
 
 ## Installation state
 
-Not approved or started. The currently installed game bundle still contains
-the failed Experiment 0030 candidate. Its restoration is the next bundle write
-once the idle gate passes; this source work does not grant installation
-approval. The exact prepared source checkpoint is commit `1dacfd2`.
+The user approved installation and also established standing project
+authorization for future verified cache-preserving restore/install cycles.
+That rule is committed in `AGENTS.md`; interactive Steam/launcher/ESO launches
+remain user-owned.
+
+Evidence boundary `artifacts/experiment-0031-20260801T174431Z` was prepared
+from repository commit `5b152fe`, containing exact bridge source checkpoint
+`1dacfd2`. The bundle-idle gate passed with idle Steam open and no ESO file or
+update activity. A cache-preserving pristine restore, clean rebuild, and
+`startup-compositor-neutralize` installation then completed.
+
+Installed and built proxy SHA-256 values match exactly at
+`4c1c69fd86bfba13a20f218e072092df8082dc8920e8607895358e85770c49d2`.
+The official MoltenVK remains `aef00b13...`; the quick gate is `READY` and all
+three pipeline-cache identities pass. Installation preserved:
+
+```text
+settings:     297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c
+active cache: ad3f6ba04c03e685d89c1f3806fb48f17ac9d521ea041331a1e286d4b23711bb
+old backup:   72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+```
+
+No Steam, launcher, or ESO process was launched by the agent. One bounded
+user-controlled startup is now the active gate; gameplay and settings changes
+are not required.

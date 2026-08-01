@@ -40,8 +40,8 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0027 | 2026-08-01 | Bounded startup presented-draw audit | Succeeded; isolated the sole indexed draw/pipeline writing both magenta and later scene frames, normal profile restored | [Run](0027-startup-draw-audit.md) |
 | 0028 | 2026-08-01 / 2026-08-02 | Bounded startup draw-input provenance audit | Succeeded; stable sets/layout/push but descriptor update changed from magenta to scene, normal profile restored with caches and settings preserved | [Run](0028-startup-input-provenance.md) |
 | 0029 | 2026-08-02 | Bounded startup scene/GUI compositor input audit | Planned; source and non-game gates pass, production profile unchanged | [Run](0029-startup-compositor-input-audit.md) |
-| 0030 | 2026-08-02 | Bounded startup compositor placeholder neutralization | Failed coverage; latched at ordinal 72 before the proven magenta interval, rollback pending | [Run](0030-startup-compositor-placeholder-neutralization.md) |
-| 0031 | 2026-08-02 | Fixed-window startup compositor neutralization | Source candidate passes all non-game gates; installation not approved or started | [Run](0031-startup-compositor-window-neutralization.md) |
+| 0030 | 2026-08-02 | Bounded startup compositor placeholder neutralization | Failed coverage; latched at ordinal 72 before the proven magenta interval, rollback complete | [Run](0030-startup-compositor-placeholder-neutralization.md) |
+| 0031 | 2026-08-02 | Fixed-window startup compositor neutralization | Running; exact candidate installed with settings/caches preserved, one bounded startup pending | [Run](0031-startup-compositor-window-neutralization.md) |
 
 ## Recording policy
 
