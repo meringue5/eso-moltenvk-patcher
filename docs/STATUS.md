@@ -175,6 +175,25 @@ the old-backup cache remains unchanged at
 The cache-preserving rollback restored `performance-aggressive`; official
 MoltenVK and the installed proxy still match their verified build artifacts.
 
+Experiment 0027 is now the next bounded candidate, but it is not installed.
+Its `startup-draw-audit` mode retains Experiment 0026's exact pixel sampler and
+adds submit-semaphore provenance for each sampled frame: draw counts, ordered
+draw signature, at most eight stable graphics-pipeline signatures, and separate
+vertex/fragment shader hashes. Only command buffers inside a swapchain-linked
+render pass contribute. Consumed semaphores, missing identities, capacity
+overflow, and incomplete sampling fail closed.
+
+The synthetic draw/submit/present case and fail-closed analyzer controls pass.
+A real official MoltenVK 1.4.2/AppKit probe also renders canonical magenta with
+one graphics draw at both small and exact ESO extents; the pre-present sample
+contains five exact magenta points and the same signal semaphore resolves to
+one complete pipeline with stable vertex and fragment hashes. The complete
+temporary bridge link, exact aggressive configuration probe, lifecycle smoke,
+and all 111 Python tests pass. The active gate is new explicit approval naming
+`startup-draw-audit`; prior installation approvals do not apply. Until then,
+the installed marker remains normal `performance-aggressive` and no user test
+is requested.
+
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of
 ordinary use. The transient startup artifact did not prevent that session.

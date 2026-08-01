@@ -29,6 +29,8 @@ teso4m4_lifecycle_set_startup_color_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_startup_present_pixel_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_startup_draw_audit(bool enabled);
+TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_present_pixel_sampler(
     Teso4m4PresentPixelSampler sampler);
 TESO4M4_LIFECYCLE_HIDDEN bool

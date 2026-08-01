@@ -17,6 +17,9 @@ enum {
     kMaxFramebuffers = 512,
     kMaxCommandBuffers = 512,
     kMaxSignaledSemaphores = 512,
+    kMaxShaderModules = 4096,
+    kMaxGraphicsPipelines = 4096,
+    kMaxDrawPipelines = 8,
     kMaxRenderPassAttachments = 16,
     kFirstPresentationLimit = 8,
     kStartupAuditGenerationLimit = 2,
@@ -46,8 +49,53 @@ typedef struct {
 typedef struct {
     VkSemaphore handle;
     VkQueue queue;
+    uint64_t generation;
+    VkCommandBuffer command_buffer;
+    VkFramebuffer framebuffer;
+    uint32_t tracked_command_count;
+    uint32_t draw_count;
+    uint32_t indexed_draw_count;
+    uint32_t distinct_pipeline_count;
+    uint64_t pipeline_signatures[kMaxDrawPipelines];
+    uint64_t draw_signature;
+    uint64_t first_pipeline_signature;
+    uint64_t last_pipeline_signature;
+    bool pipeline_overflow;
     bool occupied;
 } SignaledSemaphoreRecord;
+
+typedef struct {
+    VkShaderModule handle;
+    uint64_t code_hash;
+    size_t code_size;
+    bool alive;
+} ShaderModuleRecord;
+
+typedef struct {
+    VkPipeline handle;
+    uint64_t signature;
+    uint64_t vertex_shader_hash;
+    uint64_t fragment_shader_hash;
+    VkRenderPass render_pass;
+    uint32_t subpass;
+    bool shader_hash_complete;
+    bool alive;
+} GraphicsPipelineRecord;
+
+typedef struct {
+    uint64_t generation;
+    VkCommandBuffer command_buffer;
+    VkFramebuffer framebuffer;
+    uint32_t tracked_command_count;
+    uint32_t draw_count;
+    uint32_t indexed_draw_count;
+    uint32_t distinct_pipeline_count;
+    uint64_t pipeline_signatures[kMaxDrawPipelines];
+    uint64_t draw_signature;
+    uint64_t first_pipeline_signature;
+    uint64_t last_pipeline_signature;
+    bool pipeline_overflow;
+} DrawSubmissionSummary;
 
 typedef struct {
     VkImageView handle;
@@ -82,6 +130,15 @@ typedef struct {
     uint64_t generation;
     bool occupied;
     bool in_render_pass;
+    uint32_t draw_count;
+    uint32_t indexed_draw_count;
+    uint32_t distinct_pipeline_count;
+    uint64_t pipeline_signatures[kMaxDrawPipelines];
+    uint64_t draw_signature;
+    uint64_t first_pipeline_signature;
+    uint64_t last_pipeline_signature;
+    uint64_t bound_pipeline_signature;
+    bool pipeline_overflow;
 } CommandBufferRecord;
 
 static PFN_vkDeviceWaitIdle g_next_device_wait_idle;
@@ -100,6 +157,14 @@ static PFN_vkQueueSubmit g_next_queue_submit;
 static PFN_vkCmdBeginRenderPass g_next_cmd_begin_render_pass;
 static PFN_vkCmdEndRenderPass g_next_cmd_end_render_pass;
 static PFN_vkCmdClearAttachments g_next_cmd_clear_attachments;
+static PFN_vkBeginCommandBuffer g_next_begin_command_buffer;
+static PFN_vkCreateShaderModule g_next_create_shader_module;
+static PFN_vkDestroyShaderModule g_next_destroy_shader_module;
+static PFN_vkCreateGraphicsPipelines g_next_create_graphics_pipelines;
+static PFN_vkDestroyPipeline g_next_destroy_pipeline;
+static PFN_vkCmdBindPipeline g_next_cmd_bind_pipeline;
+static PFN_vkCmdDraw g_next_cmd_draw;
+static PFN_vkCmdDrawIndexed g_next_cmd_draw_indexed;
 
 static Teso4m4LifecycleLogFunction g_logger;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -110,12 +175,15 @@ static RenderPassRecord g_render_passes[kMaxRenderPasses];
 static FramebufferRecord g_framebuffers[kMaxFramebuffers];
 static CommandBufferRecord g_command_buffers[kMaxCommandBuffers];
 static SignaledSemaphoreRecord g_signaled_semaphores[kMaxSignaledSemaphores];
+static ShaderModuleRecord g_shader_modules[kMaxShaderModules];
+static GraphicsPipelineRecord g_graphics_pipelines[kMaxGraphicsPipelines];
 static uint64_t g_generation_counter;
 static uint64_t g_wait_counter;
 static bool g_overflow_reported;
 static bool g_enabled = true;
 static atomic_bool g_startup_color_audit;
 static atomic_bool g_startup_present_pixel_audit;
+static atomic_bool g_startup_draw_audit;
 static atomic_bool g_startup_color_audit_finished;
 static atomic_uint g_startup_color_detail_count;
 static Teso4m4PresentPixelSampler g_present_pixel_sampler;
@@ -204,23 +272,46 @@ static SignaledSemaphoreRecord* find_signaled_semaphore(
     return NULL;
 }
 
-static void remember_signaled_semaphore(VkSemaphore handle, VkQueue queue) {
+static void remember_signaled_semaphore(
+    VkSemaphore handle,
+    VkQueue queue,
+    const DrawSubmissionSummary* summary) {
     SignaledSemaphoreRecord* existing = find_signaled_semaphore(handle);
-    if (existing) {
-        existing->queue = queue;
-        return;
-    }
-    for (size_t index = 0; index < kMaxSignaledSemaphores; ++index) {
-        if (!g_signaled_semaphores[index].occupied) {
-            g_signaled_semaphores[index] = (SignaledSemaphoreRecord){
-                .handle = handle,
-                .queue = queue,
-                .occupied = true,
-            };
-            return;
+    if (!existing) {
+        for (size_t index = 0; index < kMaxSignaledSemaphores; ++index) {
+            if (!g_signaled_semaphores[index].occupied) {
+                existing = &g_signaled_semaphores[index];
+                break;
+            }
         }
     }
-    report_overflow("signaled-semaphore");
+    if (!existing) {
+        report_overflow("signaled-semaphore");
+        return;
+    }
+    memset(existing, 0, sizeof(*existing));
+    existing->handle = handle;
+    existing->queue = queue;
+    existing->occupied = true;
+    if (summary) {
+        existing->generation = summary->generation;
+        existing->command_buffer = summary->command_buffer;
+        existing->framebuffer = summary->framebuffer;
+        existing->tracked_command_count = summary->tracked_command_count;
+        existing->draw_count = summary->draw_count;
+        existing->indexed_draw_count = summary->indexed_draw_count;
+        existing->distinct_pipeline_count =
+            summary->distinct_pipeline_count;
+        memcpy(
+            existing->pipeline_signatures, summary->pipeline_signatures,
+            sizeof(existing->pipeline_signatures));
+        existing->draw_signature = summary->draw_signature;
+        existing->first_pipeline_signature =
+            summary->first_pipeline_signature;
+        existing->last_pipeline_signature =
+            summary->last_pipeline_signature;
+        existing->pipeline_overflow = summary->pipeline_overflow;
+    }
 }
 
 static void forget_signaled_semaphore(VkSemaphore handle) {
@@ -383,6 +474,198 @@ static CommandBufferRecord* find_command_buffer(VkCommandBuffer handle) {
     return NULL;
 }
 
+static uint64_t hash_bytes(const void* bytes, size_t size) {
+    const uint8_t* cursor = bytes;
+    uint64_t hash = UINT64_C(1469598103934665603);
+    for (size_t index = 0; cursor && index < size; ++index) {
+        hash ^= cursor[index];
+        hash *= UINT64_C(1099511628211);
+    }
+    return hash;
+}
+
+static uint64_t hash_mix(uint64_t hash, uint64_t value) {
+    for (size_t byte = 0; byte < sizeof(value); ++byte) {
+        hash ^= (value >> (byte * 8)) & UINT64_C(0xff);
+        hash *= UINT64_C(1099511628211);
+    }
+    return hash;
+}
+
+static ShaderModuleRecord* find_shader_module(VkShaderModule handle) {
+    for (size_t index = 0; index < kMaxShaderModules; ++index) {
+        if (g_shader_modules[index].alive &&
+            g_shader_modules[index].handle == handle) {
+            return &g_shader_modules[index];
+        }
+    }
+    return NULL;
+}
+
+static ShaderModuleRecord* add_shader_module(VkShaderModule handle) {
+    ShaderModuleRecord* existing = find_shader_module(handle);
+    if (existing) {
+        return existing;
+    }
+    for (size_t index = 0; index < kMaxShaderModules; ++index) {
+        if (!g_shader_modules[index].alive) {
+            g_shader_modules[index] = (ShaderModuleRecord){
+                .handle = handle,
+                .alive = true,
+            };
+            return &g_shader_modules[index];
+        }
+    }
+    report_overflow("shader-module");
+    return NULL;
+}
+
+static GraphicsPipelineRecord* find_graphics_pipeline(VkPipeline handle) {
+    for (size_t index = 0; index < kMaxGraphicsPipelines; ++index) {
+        if (g_graphics_pipelines[index].alive &&
+            g_graphics_pipelines[index].handle == handle) {
+            return &g_graphics_pipelines[index];
+        }
+    }
+    return NULL;
+}
+
+static GraphicsPipelineRecord* add_graphics_pipeline(VkPipeline handle) {
+    GraphicsPipelineRecord* existing = find_graphics_pipeline(handle);
+    if (existing) {
+        return existing;
+    }
+    for (size_t index = 0; index < kMaxGraphicsPipelines; ++index) {
+        if (!g_graphics_pipelines[index].alive) {
+            g_graphics_pipelines[index] = (GraphicsPipelineRecord){
+                .handle = handle,
+                .alive = true,
+            };
+            return &g_graphics_pipelines[index];
+        }
+    }
+    report_overflow("graphics-pipeline");
+    return NULL;
+}
+
+static void add_command_pipeline_signature(
+    CommandBufferRecord* command,
+    uint64_t signature) {
+    if (!command || signature == 0) {
+        return;
+    }
+    for (uint32_t index = 0;
+         index < command->distinct_pipeline_count; ++index) {
+        if (command->pipeline_signatures[index] == signature) {
+            return;
+        }
+    }
+    if (command->distinct_pipeline_count >= kMaxDrawPipelines) {
+        command->pipeline_overflow = true;
+        return;
+    }
+    command->pipeline_signatures[command->distinct_pipeline_count++] =
+        signature;
+}
+
+static void merge_submission_command(
+    DrawSubmissionSummary* summary,
+    const CommandBufferRecord* command) {
+    if (!summary || !command || command->generation == 0) {
+        return;
+    }
+    ++summary->tracked_command_count;
+    if (summary->tracked_command_count == 1) {
+        summary->generation = command->generation;
+        summary->command_buffer = command->handle;
+        summary->framebuffer = command->framebuffer;
+        summary->first_pipeline_signature =
+            command->first_pipeline_signature;
+    } else if (summary->generation != command->generation) {
+        summary->generation = 0;
+    }
+    summary->draw_count += command->draw_count;
+    summary->indexed_draw_count += command->indexed_draw_count;
+    summary->last_pipeline_signature = command->last_pipeline_signature;
+    summary->draw_signature = hash_mix(
+        summary->draw_signature == 0
+            ? UINT64_C(1469598103934665603)
+            : summary->draw_signature,
+        command->draw_signature);
+    summary->pipeline_overflow |= command->pipeline_overflow;
+    for (uint32_t pipeline = 0;
+         pipeline < command->distinct_pipeline_count; ++pipeline) {
+        bool found = false;
+        for (uint32_t existing = 0;
+             existing < summary->distinct_pipeline_count; ++existing) {
+            if (summary->pipeline_signatures[existing] ==
+                command->pipeline_signatures[pipeline]) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            continue;
+        }
+        if (summary->distinct_pipeline_count >= kMaxDrawPipelines) {
+            summary->pipeline_overflow = true;
+            continue;
+        }
+        summary->pipeline_signatures[
+            summary->distinct_pipeline_count++] =
+                command->pipeline_signatures[pipeline];
+    }
+}
+
+static void merge_present_signal(
+    DrawSubmissionSummary* summary,
+    const SignaledSemaphoreRecord* signal) {
+    if (!summary || !signal || signal->tracked_command_count == 0) {
+        return;
+    }
+    if (summary->tracked_command_count == 0) {
+        summary->generation = signal->generation;
+        summary->command_buffer = signal->command_buffer;
+        summary->framebuffer = signal->framebuffer;
+        summary->first_pipeline_signature =
+            signal->first_pipeline_signature;
+    } else if (summary->generation != signal->generation) {
+        summary->generation = 0;
+    }
+    summary->tracked_command_count += signal->tracked_command_count;
+    summary->draw_count += signal->draw_count;
+    summary->indexed_draw_count += signal->indexed_draw_count;
+    summary->last_pipeline_signature = signal->last_pipeline_signature;
+    summary->draw_signature = hash_mix(
+        summary->draw_signature == 0
+            ? UINT64_C(1469598103934665603)
+            : summary->draw_signature,
+        signal->draw_signature);
+    summary->pipeline_overflow |= signal->pipeline_overflow;
+    for (uint32_t pipeline = 0;
+         pipeline < signal->distinct_pipeline_count; ++pipeline) {
+        bool found = false;
+        for (uint32_t existing = 0;
+             existing < summary->distinct_pipeline_count; ++existing) {
+            if (summary->pipeline_signatures[existing] ==
+                signal->pipeline_signatures[pipeline]) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            continue;
+        }
+        if (summary->distinct_pipeline_count >= kMaxDrawPipelines) {
+            summary->pipeline_overflow = true;
+            continue;
+        }
+        summary->pipeline_signatures[
+            summary->distinct_pipeline_count++] =
+                signal->pipeline_signatures[pipeline];
+    }
+}
+
 static CommandBufferRecord* set_command_buffer(
     VkCommandBuffer handle,
     const FramebufferRecord* framebuffer) {
@@ -399,14 +682,16 @@ static CommandBufferRecord* set_command_buffer(
         report_overflow("command-buffer");
         return NULL;
     }
-    *record = (CommandBufferRecord){
-        .handle = handle,
-        .framebuffer = framebuffer->handle,
-        .render_pass = framebuffer->render_pass,
-        .generation = framebuffer->generation,
-        .occupied = true,
-        .in_render_pass = true,
-    };
+    if (!record->occupied) {
+        *record = (CommandBufferRecord){
+            .handle = handle,
+            .occupied = true,
+        };
+    }
+    record->framebuffer = framebuffer->handle;
+    record->render_pass = framebuffer->render_pass;
+    record->generation = framebuffer->generation;
+    record->in_render_pass = true;
     return record;
 }
 
@@ -462,6 +747,326 @@ static bool should_sample_present_pixel(
             return true;
         default:
             return false;
+    }
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_begin_command_buffer(
+    VkCommandBuffer command_buffer,
+    const VkCommandBufferBeginInfo* begin_info) {
+    if (!g_next_begin_command_buffer) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_begin_command_buffer(command_buffer, begin_info);
+    if (result == VK_SUCCESS && atomic_load(&g_startup_draw_audit) &&
+        !startup_audit_finished()) {
+        pthread_mutex_lock(&g_lock);
+        CommandBufferRecord* record = find_command_buffer(command_buffer);
+        if (!record) {
+            for (size_t index = 0; index < kMaxCommandBuffers; ++index) {
+                if (!g_command_buffers[index].occupied) {
+                    record = &g_command_buffers[index];
+                    break;
+                }
+            }
+        }
+        if (record) {
+            memset(record, 0, sizeof(*record));
+            record->handle = command_buffer;
+            record->occupied = true;
+        } else {
+            report_overflow("command-buffer");
+        }
+        pthread_mutex_unlock(&g_lock);
+    }
+    return result;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_shader_module(
+    VkDevice device,
+    const VkShaderModuleCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkShaderModule* shader_module) {
+    if (!g_next_create_shader_module) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    const uint64_t code_hash = create_info
+        ? hash_bytes(create_info->pCode, create_info->codeSize)
+        : 0;
+    VkResult result = g_next_create_shader_module(
+        device, create_info, allocator, shader_module);
+    if (result == VK_SUCCESS && shader_module &&
+        *shader_module != VK_NULL_HANDLE &&
+        atomic_load(&g_startup_draw_audit) && !startup_audit_finished()) {
+        pthread_mutex_lock(&g_lock);
+        ShaderModuleRecord* record = add_shader_module(*shader_module);
+        if (record) {
+            record->code_hash = code_hash;
+            record->code_size = create_info ? create_info->codeSize : 0;
+        }
+        pthread_mutex_unlock(&g_lock);
+        lifecycle_log(
+            "STARTUP_DRAW_SHADER: module=%p code_size=%zu code_hash=%016" PRIx64,
+            (void*)*shader_module,
+            create_info ? create_info->codeSize : 0, code_hash);
+    }
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_shader_module(
+    VkDevice device,
+    VkShaderModule shader_module,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_shader_module) {
+        return;
+    }
+    g_next_destroy_shader_module(device, shader_module, allocator);
+    pthread_mutex_lock(&g_lock);
+    ShaderModuleRecord* record = find_shader_module(shader_module);
+    if (record) {
+        record->alive = false;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static uint64_t pipeline_signature_locked(
+    const VkGraphicsPipelineCreateInfo* info,
+    uint64_t* vertex_shader_hash,
+    uint64_t* fragment_shader_hash,
+    bool* shader_hash_complete) {
+    uint64_t hash = UINT64_C(1469598103934665603);
+    *vertex_shader_hash = 0;
+    *fragment_shader_hash = 0;
+    *shader_hash_complete = info && info->stageCount > 0;
+    if (!info) {
+        return 0;
+    }
+    hash = hash_mix(hash, info->flags);
+    hash = hash_mix(hash, info->stageCount);
+    hash = hash_mix(hash, info->subpass);
+    for (uint32_t stage_index = 0;
+         stage_index < info->stageCount; ++stage_index) {
+        const VkPipelineShaderStageCreateInfo* stage =
+            &info->pStages[stage_index];
+        ShaderModuleRecord* module = find_shader_module(stage->module);
+        const uint64_t module_hash = module ? module->code_hash : 0;
+        *shader_hash_complete &= module_hash != 0;
+        if (stage->stage == VK_SHADER_STAGE_VERTEX_BIT) {
+            *vertex_shader_hash = module_hash;
+        } else if (stage->stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
+            *fragment_shader_hash = module_hash;
+        }
+        hash = hash_mix(hash, stage->stage);
+        hash = hash_mix(hash, module_hash);
+        if (stage->pName) {
+            hash = hash_mix(hash, hash_bytes(stage->pName, strlen(stage->pName)));
+        }
+    }
+    if (info->pInputAssemblyState) {
+        hash = hash_mix(hash, info->pInputAssemblyState->topology);
+        hash = hash_mix(hash, info->pInputAssemblyState->primitiveRestartEnable);
+    }
+    if (info->pRasterizationState) {
+        hash = hash_mix(hash, info->pRasterizationState->polygonMode);
+        hash = hash_mix(hash, info->pRasterizationState->cullMode);
+        hash = hash_mix(hash, info->pRasterizationState->frontFace);
+        hash = hash_mix(hash, info->pRasterizationState->rasterizerDiscardEnable);
+    }
+    if (info->pMultisampleState) {
+        hash = hash_mix(hash, info->pMultisampleState->rasterizationSamples);
+    }
+    if (info->pDepthStencilState) {
+        hash = hash_mix(hash, info->pDepthStencilState->depthTestEnable);
+        hash = hash_mix(hash, info->pDepthStencilState->depthWriteEnable);
+        hash = hash_mix(hash, info->pDepthStencilState->depthCompareOp);
+        hash = hash_mix(hash, info->pDepthStencilState->stencilTestEnable);
+    }
+    if (info->pColorBlendState) {
+        hash = hash_mix(hash, info->pColorBlendState->logicOpEnable);
+        hash = hash_mix(hash, info->pColorBlendState->logicOp);
+        hash = hash_mix(hash, info->pColorBlendState->attachmentCount);
+        for (uint32_t attachment = 0;
+             attachment < info->pColorBlendState->attachmentCount;
+             ++attachment) {
+            const VkPipelineColorBlendAttachmentState* blend =
+                &info->pColorBlendState->pAttachments[attachment];
+            hash = hash_mix(hash, blend->blendEnable);
+            hash = hash_mix(hash, blend->srcColorBlendFactor);
+            hash = hash_mix(hash, blend->dstColorBlendFactor);
+            hash = hash_mix(hash, blend->colorBlendOp);
+            hash = hash_mix(hash, blend->srcAlphaBlendFactor);
+            hash = hash_mix(hash, blend->dstAlphaBlendFactor);
+            hash = hash_mix(hash, blend->alphaBlendOp);
+            hash = hash_mix(hash, blend->colorWriteMask);
+        }
+    }
+    return hash;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL traced_create_graphics_pipelines(
+    VkDevice device,
+    VkPipelineCache pipeline_cache,
+    uint32_t create_info_count,
+    const VkGraphicsPipelineCreateInfo* create_infos,
+    const VkAllocationCallbacks* allocator,
+    VkPipeline* pipelines) {
+    if (!g_next_create_graphics_pipelines) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    VkResult result = g_next_create_graphics_pipelines(
+        device, pipeline_cache, create_info_count, create_infos,
+        allocator, pipelines);
+    if (!atomic_load(&g_startup_draw_audit) || startup_audit_finished() ||
+        !create_infos || !pipelines) {
+        return result;
+    }
+    for (uint32_t index = 0; index < create_info_count; ++index) {
+        if (pipelines[index] == VK_NULL_HANDLE) {
+            continue;
+        }
+        uint64_t vertex_hash = 0;
+        uint64_t fragment_hash = 0;
+        uint64_t signature = 0;
+        bool shader_hash_complete = false;
+        pthread_mutex_lock(&g_lock);
+        signature = pipeline_signature_locked(
+            &create_infos[index], &vertex_hash, &fragment_hash,
+            &shader_hash_complete);
+        GraphicsPipelineRecord* record =
+            add_graphics_pipeline(pipelines[index]);
+        if (record) {
+            record->signature = signature;
+            record->vertex_shader_hash = vertex_hash;
+            record->fragment_shader_hash = fragment_hash;
+            record->render_pass = create_infos[index].renderPass;
+            record->subpass = create_infos[index].subpass;
+            record->shader_hash_complete = shader_hash_complete;
+        }
+        pthread_mutex_unlock(&g_lock);
+        lifecycle_log(
+            "STARTUP_DRAW_PIPELINE_CREATE: pipeline=%p signature=%016" PRIx64
+            " vertex_hash=%016" PRIx64 " fragment_hash=%016" PRIx64
+            " shader_hash_complete=%s stages=%u render_pass=%p subpass=%u"
+            " result=%d",
+            (void*)pipelines[index], signature, vertex_hash, fragment_hash,
+            shader_hash_complete ? "yes" : "no",
+            create_infos[index].stageCount,
+            (void*)create_infos[index].renderPass,
+            create_infos[index].subpass, result);
+    }
+    return result;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_destroy_pipeline(
+    VkDevice device,
+    VkPipeline pipeline,
+    const VkAllocationCallbacks* allocator) {
+    if (!g_next_destroy_pipeline) {
+        return;
+    }
+    g_next_destroy_pipeline(device, pipeline, allocator);
+    pthread_mutex_lock(&g_lock);
+    GraphicsPipelineRecord* record = find_graphics_pipeline(pipeline);
+    if (record) {
+        record->alive = false;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_bind_pipeline(
+    VkCommandBuffer command_buffer,
+    VkPipelineBindPoint pipeline_bind_point,
+    VkPipeline pipeline) {
+    if (!g_next_cmd_bind_pipeline) {
+        return;
+    }
+    g_next_cmd_bind_pipeline(command_buffer, pipeline_bind_point, pipeline);
+    if (!atomic_load(&g_startup_draw_audit) || startup_audit_finished() ||
+        pipeline_bind_point != VK_PIPELINE_BIND_POINT_GRAPHICS) {
+        return;
+    }
+    pthread_mutex_lock(&g_lock);
+    CommandBufferRecord* command = find_command_buffer(command_buffer);
+    GraphicsPipelineRecord* record = find_graphics_pipeline(pipeline);
+    if (command && command->in_render_pass) {
+        command->bound_pipeline_signature = record ? record->signature : 0;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
+static void record_draw_locked(
+    VkCommandBuffer command_buffer,
+    bool indexed,
+    uint32_t count,
+    uint32_t instance_count,
+    uint32_t first,
+    int32_t vertex_offset,
+    uint32_t first_instance) {
+    CommandBufferRecord* command = find_command_buffer(command_buffer);
+    if (!command || !command->in_render_pass || command->generation == 0) {
+        return;
+    }
+    ++command->draw_count;
+    command->indexed_draw_count += indexed ? 1 : 0;
+    if (command->first_pipeline_signature == 0) {
+        command->first_pipeline_signature =
+            command->bound_pipeline_signature;
+    }
+    command->last_pipeline_signature = command->bound_pipeline_signature;
+    add_command_pipeline_signature(
+        command, command->bound_pipeline_signature);
+    uint64_t signature = command->draw_signature == 0
+        ? UINT64_C(1469598103934665603)
+        : command->draw_signature;
+    signature = hash_mix(signature, indexed ? 1 : 0);
+    signature = hash_mix(signature, command->bound_pipeline_signature);
+    signature = hash_mix(signature, count);
+    signature = hash_mix(signature, instance_count);
+    signature = hash_mix(signature, first);
+    signature = hash_mix(signature, (uint32_t)vertex_offset);
+    signature = hash_mix(signature, first_instance);
+    command->draw_signature = signature;
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_draw(
+    VkCommandBuffer command_buffer,
+    uint32_t vertex_count,
+    uint32_t instance_count,
+    uint32_t first_vertex,
+    uint32_t first_instance) {
+    if (!g_next_cmd_draw) {
+        return;
+    }
+    g_next_cmd_draw(
+        command_buffer, vertex_count, instance_count,
+        first_vertex, first_instance);
+    if (atomic_load(&g_startup_draw_audit) && !startup_audit_finished()) {
+        pthread_mutex_lock(&g_lock);
+        record_draw_locked(
+            command_buffer, false, vertex_count, instance_count,
+            first_vertex, 0, first_instance);
+        pthread_mutex_unlock(&g_lock);
+    }
+}
+
+static VKAPI_ATTR void VKAPI_CALL traced_cmd_draw_indexed(
+    VkCommandBuffer command_buffer,
+    uint32_t index_count,
+    uint32_t instance_count,
+    uint32_t first_index,
+    int32_t vertex_offset,
+    uint32_t first_instance) {
+    if (!g_next_cmd_draw_indexed) {
+        return;
+    }
+    g_next_cmd_draw_indexed(
+        command_buffer, index_count, instance_count, first_index,
+        vertex_offset, first_instance);
+    if (atomic_load(&g_startup_draw_audit) && !startup_audit_finished()) {
+        pthread_mutex_lock(&g_lock);
+        record_draw_locked(
+            command_buffer, true, index_count, instance_count,
+            first_index, vertex_offset, first_instance);
+        pthread_mutex_unlock(&g_lock);
     }
 }
 
@@ -899,6 +1504,16 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_submit(
         pthread_mutex_lock(&g_lock);
         for (uint32_t submit_index = 0; submit_index < submit_count;
              ++submit_index) {
+            DrawSubmissionSummary draw_summary = {0};
+            for (uint32_t command_index = 0;
+                 command_index < submits[submit_index].commandBufferCount;
+                 ++command_index) {
+                CommandBufferRecord* command = find_command_buffer(
+                    submits[submit_index].pCommandBuffers[command_index]);
+                if (command) {
+                    merge_submission_command(&draw_summary, command);
+                }
+            }
             for (uint32_t wait_index = 0;
                  wait_index < submits[submit_index].waitSemaphoreCount;
                  ++wait_index) {
@@ -910,7 +1525,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_submit(
                  ++signal_index) {
                 remember_signaled_semaphore(
                     submits[submit_index].pSignalSemaphores[signal_index],
-                    queue);
+                    queue, &draw_summary);
             }
         }
         pthread_mutex_unlock(&g_lock);
@@ -972,6 +1587,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
             bool found_swapchain = false;
             bool found_image = false;
             bool same_queue_ready = true;
+            uint32_t matched_signals = 0;
+            DrawSubmissionSummary present_draw = {0};
             Teso4m4PresentPixelSampler sampler = NULL;
             pthread_mutex_lock(&g_lock);
             SwapchainRecord* record = find_swapchain(swapchain);
@@ -994,6 +1611,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
                     same_queue_ready = false;
                     break;
                 }
+                ++matched_signals;
+                merge_present_signal(&present_draw, signal);
             }
             sampler = g_present_pixel_sampler;
             pthread_mutex_unlock(&g_lock);
@@ -1015,6 +1634,63 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
                     same_queue_ready ? "same-queue" : "unconfirmed",
                     sampler ? "ready" : "missing");
                 continue;
+            }
+            if (atomic_load(&g_startup_draw_audit)) {
+                lifecycle_log(
+                    "STARTUP_PRESENT_DRAW_SUMMARY: generation=%" PRIu64
+                    " ordinal=%u image_index=%u wait_count=%u"
+                    " matched_signals=%u tracked_commands=%u"
+                    " draw_count=%u indexed_draw_count=%u"
+                    " distinct_pipelines=%u pipeline_overflow=%s"
+                    " draw_signature=%016" PRIx64
+                    " first_pipeline=%016" PRIx64
+                    " last_pipeline=%016" PRIx64
+                    " command_buffer=%p framebuffer=%p",
+                    swapchain_snapshot.generation, ordinal, image_index,
+                    present_info->waitSemaphoreCount, matched_signals,
+                    present_draw.tracked_command_count,
+                    present_draw.draw_count,
+                    present_draw.indexed_draw_count,
+                    present_draw.distinct_pipeline_count,
+                    present_draw.pipeline_overflow ? "yes" : "no",
+                    present_draw.draw_signature,
+                    present_draw.first_pipeline_signature,
+                    present_draw.last_pipeline_signature,
+                    (void*)present_draw.command_buffer,
+                    (void*)present_draw.framebuffer);
+                for (uint32_t pipeline_index = 0;
+                     pipeline_index < present_draw.distinct_pipeline_count;
+                     ++pipeline_index) {
+                    GraphicsPipelineRecord pipeline_snapshot = {0};
+                    bool found_pipeline = false;
+                    pthread_mutex_lock(&g_lock);
+                    for (size_t pipeline = 0;
+                         pipeline < kMaxGraphicsPipelines; ++pipeline) {
+                        if (g_graphics_pipelines[pipeline].alive &&
+                            g_graphics_pipelines[pipeline].signature ==
+                                present_draw.pipeline_signatures[
+                                    pipeline_index]) {
+                            pipeline_snapshot = g_graphics_pipelines[pipeline];
+                            found_pipeline = true;
+                            break;
+                        }
+                    }
+                    pthread_mutex_unlock(&g_lock);
+                    lifecycle_log(
+                        "STARTUP_PRESENT_DRAW_PIPELINE: generation=%" PRIu64
+                        " ordinal=%u pipeline_index=%u signature=%016" PRIx64
+                        " vertex_hash=%016" PRIx64
+                        " fragment_hash=%016" PRIx64
+                        " shader_hash_complete=%s pipeline_state=%s",
+                        swapchain_snapshot.generation, ordinal,
+                        pipeline_index,
+                        present_draw.pipeline_signatures[pipeline_index],
+                        pipeline_snapshot.vertex_shader_hash,
+                        pipeline_snapshot.fragment_shader_hash,
+                        found_pipeline && pipeline_snapshot.shader_hash_complete
+                            ? "yes" : "no",
+                        found_pipeline ? "tracked" : "missing");
+                }
             }
             if (!sampler(
                     queue, image_snapshot.handle, swapchain_snapshot.format,
@@ -1324,6 +2000,14 @@ void teso4m4_lifecycle_reset(void) {
     g_next_cmd_begin_render_pass = NULL;
     g_next_cmd_end_render_pass = NULL;
     g_next_cmd_clear_attachments = NULL;
+    g_next_begin_command_buffer = NULL;
+    g_next_create_shader_module = NULL;
+    g_next_destroy_shader_module = NULL;
+    g_next_create_graphics_pipelines = NULL;
+    g_next_destroy_pipeline = NULL;
+    g_next_cmd_bind_pipeline = NULL;
+    g_next_cmd_draw = NULL;
+    g_next_cmd_draw_indexed = NULL;
     g_logger = NULL;
     memset(g_swapchains, 0, sizeof(g_swapchains));
     memset(g_images, 0, sizeof(g_images));
@@ -1332,12 +2016,15 @@ void teso4m4_lifecycle_reset(void) {
     memset(g_framebuffers, 0, sizeof(g_framebuffers));
     memset(g_command_buffers, 0, sizeof(g_command_buffers));
     memset(g_signaled_semaphores, 0, sizeof(g_signaled_semaphores));
+    memset(g_shader_modules, 0, sizeof(g_shader_modules));
+    memset(g_graphics_pipelines, 0, sizeof(g_graphics_pipelines));
     g_generation_counter = 0;
     g_wait_counter = 0;
     g_overflow_reported = false;
     g_enabled = true;
     atomic_store(&g_startup_color_audit, false);
     atomic_store(&g_startup_present_pixel_audit, false);
+    atomic_store(&g_startup_draw_audit, false);
     atomic_store(&g_startup_color_audit_finished, false);
     atomic_store(&g_startup_color_detail_count, 0);
     g_present_pixel_sampler = NULL;
@@ -1374,6 +2061,16 @@ void teso4m4_lifecycle_set_startup_present_pixel_audit(bool enabled) {
             "STARTUP_PRESENT_PIXEL_AUDIT_BEGIN: generation_1_samples=1"
             " generation_2_samples=1,10,20,30,40,50,60,70,80,90,100,"
             "110,120,130,140,150,160,170,180");
+    }
+}
+
+void teso4m4_lifecycle_set_startup_draw_audit(bool enabled) {
+    atomic_store(&g_startup_draw_audit, enabled);
+    if (enabled) {
+        lifecycle_log(
+            "STARTUP_DRAW_AUDIT_BEGIN: generation_limit=2"
+            " generation_2_present_limit=180"
+            " max_distinct_pipelines_per_submit=8");
     }
 }
 
@@ -1454,6 +2151,34 @@ PFN_vkVoidFunction teso4m4_lifecycle_intercept(
         g_next_cmd_clear_attachments =
             (PFN_vkCmdClearAttachments)next_function;
         returned = (PFN_vkVoidFunction)&traced_cmd_clear_attachments;
+    } else if (strcmp(name, "vkBeginCommandBuffer") == 0) {
+        g_next_begin_command_buffer =
+            (PFN_vkBeginCommandBuffer)next_function;
+        returned = (PFN_vkVoidFunction)&traced_begin_command_buffer;
+    } else if (strcmp(name, "vkCreateShaderModule") == 0) {
+        g_next_create_shader_module =
+            (PFN_vkCreateShaderModule)next_function;
+        returned = (PFN_vkVoidFunction)&traced_create_shader_module;
+    } else if (strcmp(name, "vkDestroyShaderModule") == 0) {
+        g_next_destroy_shader_module =
+            (PFN_vkDestroyShaderModule)next_function;
+        returned = (PFN_vkVoidFunction)&traced_destroy_shader_module;
+    } else if (strcmp(name, "vkCreateGraphicsPipelines") == 0) {
+        g_next_create_graphics_pipelines =
+            (PFN_vkCreateGraphicsPipelines)next_function;
+        returned = (PFN_vkVoidFunction)&traced_create_graphics_pipelines;
+    } else if (strcmp(name, "vkDestroyPipeline") == 0) {
+        g_next_destroy_pipeline = (PFN_vkDestroyPipeline)next_function;
+        returned = (PFN_vkVoidFunction)&traced_destroy_pipeline;
+    } else if (strcmp(name, "vkCmdBindPipeline") == 0) {
+        g_next_cmd_bind_pipeline = (PFN_vkCmdBindPipeline)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_bind_pipeline;
+    } else if (strcmp(name, "vkCmdDraw") == 0) {
+        g_next_cmd_draw = (PFN_vkCmdDraw)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_draw;
+    } else if (strcmp(name, "vkCmdDrawIndexed") == 0) {
+        g_next_cmd_draw_indexed = (PFN_vkCmdDrawIndexed)next_function;
+        returned = (PFN_vkVoidFunction)&traced_cmd_draw_indexed;
     }
     pthread_mutex_unlock(&g_lock);
     return returned;

@@ -202,6 +202,67 @@ static void VKAPI_CALL fake_cmd_clear_attachments(
     (void)rects;
 }
 
+static VkResult VKAPI_CALL fake_begin_command_buffer(
+    VkCommandBuffer command_buffer,
+    const VkCommandBufferBeginInfo* begin_info) {
+    (void)command_buffer;
+    (void)begin_info;
+    return VK_SUCCESS;
+}
+
+static VkResult VKAPI_CALL fake_create_shader_module(
+    VkDevice device,
+    const VkShaderModuleCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkShaderModule* shader_module) {
+    (void)device;
+    (void)create_info;
+    (void)allocator;
+    *shader_module = HANDLE(VkShaderModule, ++g_next_handle);
+    return VK_SUCCESS;
+}
+
+static VkResult VKAPI_CALL fake_create_graphics_pipelines(
+    VkDevice device,
+    VkPipelineCache pipeline_cache,
+    uint32_t create_info_count,
+    const VkGraphicsPipelineCreateInfo* create_infos,
+    const VkAllocationCallbacks* allocator,
+    VkPipeline* pipelines) {
+    (void)device;
+    (void)pipeline_cache;
+    (void)create_infos;
+    (void)allocator;
+    for (uint32_t index = 0; index < create_info_count; ++index) {
+        pipelines[index] = HANDLE(VkPipeline, ++g_next_handle);
+    }
+    return VK_SUCCESS;
+}
+
+static void VKAPI_CALL fake_cmd_bind_pipeline(
+    VkCommandBuffer command_buffer,
+    VkPipelineBindPoint pipeline_bind_point,
+    VkPipeline pipeline) {
+    (void)command_buffer;
+    (void)pipeline_bind_point;
+    (void)pipeline;
+}
+
+static void VKAPI_CALL fake_cmd_draw_indexed(
+    VkCommandBuffer command_buffer,
+    uint32_t index_count,
+    uint32_t instance_count,
+    uint32_t first_index,
+    int32_t vertex_offset,
+    uint32_t first_instance) {
+    (void)command_buffer;
+    (void)index_count;
+    (void)instance_count;
+    (void)first_index;
+    (void)vertex_offset;
+    (void)first_instance;
+}
+
 static bool check(bool condition, const char* message) {
     if (!condition) {
         fprintf(stderr, "Lifecycle probe failed: %s\n%s", message, g_log);
@@ -430,6 +491,233 @@ static bool run_consumed_semaphore_case(void) {
         g_present_pixel_sample_count == 0 &&
             strstr(g_log, "synchronization=unconfirmed") != NULL,
         "a submit-consumed semaphore must not authorize pixel readback");
+}
+
+static bool run_startup_draw_provenance_case(void) {
+    g_log_length = 0;
+    g_log[0] = '\0';
+    g_present_pixel_sample_count = 0;
+    g_present_pixel_arguments_valid = true;
+    teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_logger(&test_log);
+    teso4m4_lifecycle_set_present_pixel_sampler(
+        &fake_present_pixel_sampler);
+    teso4m4_lifecycle_set_startup_color_audit(true);
+    teso4m4_lifecycle_set_startup_present_pixel_audit(true);
+    teso4m4_lifecycle_set_startup_draw_audit(true);
+
+    PFN_vkCreateSwapchainKHR create_swapchain = (PFN_vkCreateSwapchainKHR)
+        teso4m4_lifecycle_intercept(
+            "vkCreateSwapchainKHR",
+            (PFN_vkVoidFunction)&fake_create_swapchain);
+    PFN_vkGetSwapchainImagesKHR get_images = (PFN_vkGetSwapchainImagesKHR)
+        teso4m4_lifecycle_intercept(
+            "vkGetSwapchainImagesKHR",
+            (PFN_vkVoidFunction)&fake_get_swapchain_images);
+    PFN_vkCreateImageView create_image_view = (PFN_vkCreateImageView)
+        teso4m4_lifecycle_intercept(
+            "vkCreateImageView", (PFN_vkVoidFunction)&fake_create_image_view);
+    PFN_vkCreateRenderPass create_render_pass = (PFN_vkCreateRenderPass)
+        teso4m4_lifecycle_intercept(
+            "vkCreateRenderPass",
+            (PFN_vkVoidFunction)&fake_create_render_pass);
+    PFN_vkCreateFramebuffer create_framebuffer = (PFN_vkCreateFramebuffer)
+        teso4m4_lifecycle_intercept(
+            "vkCreateFramebuffer",
+            (PFN_vkVoidFunction)&fake_create_framebuffer);
+    PFN_vkBeginCommandBuffer begin_command_buffer = (PFN_vkBeginCommandBuffer)
+        teso4m4_lifecycle_intercept(
+            "vkBeginCommandBuffer",
+            (PFN_vkVoidFunction)&fake_begin_command_buffer);
+    PFN_vkCmdBeginRenderPass begin_render_pass = (PFN_vkCmdBeginRenderPass)
+        teso4m4_lifecycle_intercept(
+            "vkCmdBeginRenderPass",
+            (PFN_vkVoidFunction)&fake_cmd_begin_render_pass);
+    PFN_vkCmdEndRenderPass end_render_pass = (PFN_vkCmdEndRenderPass)
+        teso4m4_lifecycle_intercept(
+            "vkCmdEndRenderPass",
+            (PFN_vkVoidFunction)&fake_cmd_end_render_pass);
+    PFN_vkCreateShaderModule create_shader_module = (PFN_vkCreateShaderModule)
+        teso4m4_lifecycle_intercept(
+            "vkCreateShaderModule",
+            (PFN_vkVoidFunction)&fake_create_shader_module);
+    PFN_vkCreateGraphicsPipelines create_graphics_pipelines =
+        (PFN_vkCreateGraphicsPipelines)teso4m4_lifecycle_intercept(
+            "vkCreateGraphicsPipelines",
+            (PFN_vkVoidFunction)&fake_create_graphics_pipelines);
+    PFN_vkCmdBindPipeline bind_pipeline = (PFN_vkCmdBindPipeline)
+        teso4m4_lifecycle_intercept(
+            "vkCmdBindPipeline",
+            (PFN_vkVoidFunction)&fake_cmd_bind_pipeline);
+    PFN_vkCmdDrawIndexed draw_indexed = (PFN_vkCmdDrawIndexed)
+        teso4m4_lifecycle_intercept(
+            "vkCmdDrawIndexed",
+            (PFN_vkVoidFunction)&fake_cmd_draw_indexed);
+    PFN_vkQueueSubmit submit = (PFN_vkQueueSubmit)
+        teso4m4_lifecycle_intercept(
+            "vkQueueSubmit", (PFN_vkVoidFunction)&fake_queue_submit);
+    PFN_vkQueuePresentKHR present = (PFN_vkQueuePresentKHR)
+        teso4m4_lifecycle_intercept(
+            "vkQueuePresentKHR", (PFN_vkVoidFunction)&fake_queue_present);
+
+    const VkDevice device = HANDLE(VkDevice, 0x81);
+    const VkQueue queue = HANDLE(VkQueue, 0x82);
+    const VkCommandBuffer command_buffer = HANDLE(VkCommandBuffer, 0x83);
+    const VkSwapchainCreateInfoKHR swapchain_info = {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .minImageCount = 2,
+        .imageFormat = VK_FORMAT_B8G8R8A8_UNORM,
+        .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+        .imageExtent = {3420, 2148},
+        .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+    };
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    uint32_t image_count = 2;
+    VkImage images[2] = {0};
+    if (create_swapchain(device, &swapchain_info, NULL, &swapchain) !=
+            VK_SUCCESS ||
+        get_images(device, swapchain, &image_count, images) != VK_SUCCESS) {
+        return check(false, "draw provenance swapchain setup failed");
+    }
+    const VkImageViewCreateInfo view_info = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = images[0],
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = VK_FORMAT_B8G8R8A8_UNORM,
+    };
+    VkImageView view = VK_NULL_HANDLE;
+    if (create_image_view(device, &view_info, NULL, &view) != VK_SUCCESS) {
+        return check(false, "draw provenance image view setup failed");
+    }
+    const VkAttachmentDescription attachment = {
+        .format = VK_FORMAT_B8G8R8A8_UNORM,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .initialLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
+    };
+    const VkRenderPassCreateInfo render_pass_info = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = 1,
+        .pAttachments = &attachment,
+    };
+    VkRenderPass render_pass = VK_NULL_HANDLE;
+    if (create_render_pass(
+            device, &render_pass_info, NULL, &render_pass) != VK_SUCCESS) {
+        return check(false, "draw provenance render pass setup failed");
+    }
+    const VkFramebufferCreateInfo framebuffer_info = {
+        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .renderPass = render_pass,
+        .attachmentCount = 1,
+        .pAttachments = &view,
+        .width = 3420,
+        .height = 2148,
+        .layers = 1,
+    };
+    VkFramebuffer framebuffer = VK_NULL_HANDLE;
+    if (create_framebuffer(
+            device, &framebuffer_info, NULL, &framebuffer) != VK_SUCCESS) {
+        return check(false, "draw provenance framebuffer setup failed");
+    }
+
+    const uint32_t vertex_code[] = {0x07230203, 0x00010000};
+    const uint32_t fragment_code[] = {0x07230203, 0x00010001};
+    VkShaderModuleCreateInfo shader_info = {
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = sizeof(vertex_code),
+        .pCode = vertex_code,
+    };
+    VkShaderModule vertex_module = VK_NULL_HANDLE;
+    VkShaderModule fragment_module = VK_NULL_HANDLE;
+    if (create_shader_module(
+            device, &shader_info, NULL, &vertex_module) != VK_SUCCESS) {
+        return check(false, "draw provenance vertex shader setup failed");
+    }
+    shader_info.codeSize = sizeof(fragment_code);
+    shader_info.pCode = fragment_code;
+    if (create_shader_module(
+            device, &shader_info, NULL, &fragment_module) != VK_SUCCESS) {
+        return check(false, "draw provenance fragment shader setup failed");
+    }
+    const VkPipelineShaderStageCreateInfo stages[] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = vertex_module,
+            .pName = "main",
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = fragment_module,
+            .pName = "main",
+        },
+    };
+    const VkGraphicsPipelineCreateInfo pipeline_info = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .stageCount = 2,
+        .pStages = stages,
+        .renderPass = render_pass,
+    };
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    if (create_graphics_pipelines(
+            device, VK_NULL_HANDLE, 1, &pipeline_info, NULL, &pipeline) !=
+        VK_SUCCESS) {
+        return check(false, "draw provenance pipeline setup failed");
+    }
+
+    const VkCommandBufferBeginInfo command_begin = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    };
+    const VkRenderPassBeginInfo begin_info = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = render_pass,
+        .framebuffer = framebuffer,
+        .renderArea = {{0, 0}, {3420, 2148}},
+    };
+    if (begin_command_buffer(command_buffer, &command_begin) != VK_SUCCESS) {
+        return check(false, "draw provenance command begin failed");
+    }
+    begin_render_pass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    bind_pipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    draw_indexed(command_buffer, 6, 1, 0, 0, 0);
+    end_render_pass(command_buffer);
+
+    VkSemaphore signal = HANDLE(VkSemaphore, 0xb00);
+    const VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command_buffer,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &signal,
+    };
+    uint32_t image_index = 0;
+    const VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &signal,
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain,
+        .pImageIndices = &image_index,
+    };
+    if (submit(queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS ||
+        present(queue, &present_info) != VK_SUCCESS) {
+        return check(false, "draw provenance submit/present failed");
+    }
+    return check(
+        g_present_pixel_sample_count == 1 &&
+            strstr(g_log, "STARTUP_DRAW_SHADER:") != NULL &&
+            strstr(g_log, "STARTUP_DRAW_PIPELINE_CREATE:") != NULL &&
+            strstr(g_log, "shader_hash_complete=yes") != NULL &&
+            strstr(g_log, "STARTUP_PRESENT_DRAW_SUMMARY: generation=1") != NULL &&
+            strstr(g_log, "matched_signals=1 tracked_commands=1") != NULL &&
+            strstr(g_log, "draw_count=1 indexed_draw_count=1") != NULL &&
+            strstr(g_log, "distinct_pipelines=1 pipeline_overflow=no") != NULL &&
+            strstr(g_log, "STARTUP_PRESENT_DRAW_PIPELINE: generation=1") != NULL &&
+            strstr(g_log, "pipeline_state=tracked") != NULL,
+        "present sample must retain exact draw and pipeline provenance");
 }
 
 static bool run_startup_color_case(
@@ -916,13 +1204,14 @@ int main(void) {
         return 1;
     }
     if (!run_present_pixel_schedule_case() ||
-        !run_consumed_semaphore_case()) {
+        !run_consumed_semaphore_case() ||
+        !run_startup_draw_provenance_case()) {
         return 1;
     }
 
     printf(
         "Lifecycle trace smoke: yes startup_color_cases=3 "
-        "present_pixel_cases=2 steady_pair_ns=%" PRIu64 "\n",
+        "present_pixel_cases=2 startup_draw_cases=1 steady_pair_ns=%" PRIu64 "\n",
         pair_nanoseconds);
     return 0;
 }

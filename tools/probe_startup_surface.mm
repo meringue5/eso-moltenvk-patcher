@@ -23,6 +23,7 @@ typedef enum {
     kLoadOnly,
     kClearBlack,
     kClearNeonPink,
+    kDrawNeonPink,
 } FirstFrameMode;
 
 typedef struct {
@@ -50,6 +51,12 @@ static PFN_vkAcquireNextImageKHR g_acquire_next_image =
     vkAcquireNextImageKHR;
 static PFN_vkQueuePresentKHR g_queue_present = vkQueuePresentKHR;
 static PFN_vkQueueSubmit g_queue_submit = vkQueueSubmit;
+static PFN_vkBeginCommandBuffer g_begin_command_buffer = vkBeginCommandBuffer;
+static PFN_vkCreateShaderModule g_create_shader_module = vkCreateShaderModule;
+static PFN_vkCreateGraphicsPipelines g_create_graphics_pipelines =
+    vkCreateGraphicsPipelines;
+static PFN_vkCmdBindPipeline g_cmd_bind_pipeline = vkCmdBindPipeline;
+static PFN_vkCmdDraw g_cmd_draw = vkCmdDraw;
 
 static void audit_log(const char* message) {
     const int written = snprintf(
@@ -76,6 +83,7 @@ static void enable_startup_color_audit(void) {
         &teso4m4_present_pixel_sample);
     teso4m4_lifecycle_set_startup_color_audit(true);
     teso4m4_lifecycle_set_startup_present_pixel_audit(true);
+    teso4m4_lifecycle_set_startup_draw_audit(true);
     g_create_swapchain = (PFN_vkCreateSwapchainKHR)
         teso4m4_lifecycle_intercept(
             "vkCreateSwapchainKHR",
@@ -113,6 +121,25 @@ static void enable_startup_color_audit(void) {
     g_queue_submit = (PFN_vkQueueSubmit)
         teso4m4_lifecycle_intercept(
             "vkQueueSubmit", (PFN_vkVoidFunction)vkQueueSubmit);
+    g_begin_command_buffer = (PFN_vkBeginCommandBuffer)
+        teso4m4_lifecycle_intercept(
+            "vkBeginCommandBuffer",
+            (PFN_vkVoidFunction)vkBeginCommandBuffer);
+    g_create_shader_module = (PFN_vkCreateShaderModule)
+        teso4m4_lifecycle_intercept(
+            "vkCreateShaderModule",
+            (PFN_vkVoidFunction)vkCreateShaderModule);
+    g_create_graphics_pipelines = (PFN_vkCreateGraphicsPipelines)
+        teso4m4_lifecycle_intercept(
+            "vkCreateGraphicsPipelines",
+            (PFN_vkVoidFunction)vkCreateGraphicsPipelines);
+    g_cmd_bind_pipeline = (PFN_vkCmdBindPipeline)
+        teso4m4_lifecycle_intercept(
+            "vkCmdBindPipeline",
+            (PFN_vkVoidFunction)vkCmdBindPipeline);
+    g_cmd_draw = (PFN_vkCmdDraw)
+        teso4m4_lifecycle_intercept(
+            "vkCmdDraw", (PFN_vkVoidFunction)vkCmdDraw);
 }
 
 static bool vk_ok(VkResult result, const char* operation) {
@@ -326,6 +353,147 @@ static void destroy_generation(VkDevice device, Generation* generation) {
     *generation = {};
 }
 
+static VkShaderModule load_shader_module(
+    VkDevice device, const char* environment_name) {
+    const char* path = getenv(environment_name);
+    if (!path) {
+        fprintf(stderr, "%s is unset\n", environment_name);
+        return VK_NULL_HANDLE;
+    }
+    FILE* file = fopen(path, "rb");
+    if (!file || fseek(file, 0, SEEK_END) != 0) {
+        if (file) {
+            fclose(file);
+        }
+        fprintf(stderr, "could not open shader: %s\n", path);
+        return VK_NULL_HANDLE;
+    }
+    const long length = ftell(file);
+    if (length <= 0 || (length % 4) != 0 || fseek(file, 0, SEEK_SET) != 0) {
+        fclose(file);
+        fprintf(stderr, "invalid shader: %s\n", path);
+        return VK_NULL_HANDLE;
+    }
+    uint32_t* code = (uint32_t*)malloc((size_t)length);
+    if (!code || fread(code, 1, (size_t)length, file) != (size_t)length) {
+        free(code);
+        fclose(file);
+        fprintf(stderr, "could not read shader: %s\n", path);
+        return VK_NULL_HANDLE;
+    }
+    fclose(file);
+    const VkShaderModuleCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = (size_t)length,
+        .pCode = code,
+    };
+    VkShaderModule module = VK_NULL_HANDLE;
+    const VkResult result =
+        g_create_shader_module(device, &info, NULL, &module);
+    free(code);
+    return vk_ok(result, "vkCreateShaderModule")
+        ? module
+        : VK_NULL_HANDLE;
+}
+
+static VkPipeline create_magenta_pipeline(
+    VkDevice device,
+    VkRenderPass render_pass,
+    VkExtent2D extent,
+    VkPipelineLayout* layout,
+    VkShaderModule* vertex,
+    VkShaderModule* fragment) {
+    *vertex = load_shader_module(device, "TESO4M4_STARTUP_VERTEX_SPV");
+    *fragment = load_shader_module(device, "TESO4M4_STARTUP_FRAGMENT_SPV");
+    if (!*vertex || !*fragment) {
+        return VK_NULL_HANDLE;
+    }
+    const VkPipelineLayoutCreateInfo layout_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    };
+    if (!vk_ok(
+            vkCreatePipelineLayout(device, &layout_info, NULL, layout),
+            "vkCreatePipelineLayout")) {
+        return VK_NULL_HANDLE;
+    }
+    const VkPipelineShaderStageCreateInfo stages[] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = *vertex,
+            .pName = "main",
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = *fragment,
+            .pName = "main",
+        },
+    };
+    const VkPipelineVertexInputStateCreateInfo vertex_input = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+    };
+    const VkPipelineInputAssemblyStateCreateInfo assembly = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    };
+    const VkViewport viewport = {
+        .x = 0,
+        .y = 0,
+        .width = (float)extent.width,
+        .height = (float)extent.height,
+        .minDepth = 0,
+        .maxDepth = 1,
+    };
+    const VkRect2D scissor = {{0, 0}, extent};
+    const VkPipelineViewportStateCreateInfo viewport_state = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .viewportCount = 1,
+        .pViewports = &viewport,
+        .scissorCount = 1,
+        .pScissors = &scissor,
+    };
+    const VkPipelineRasterizationStateCreateInfo rasterization = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .polygonMode = VK_POLYGON_MODE_FILL,
+        .cullMode = VK_CULL_MODE_NONE,
+        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .lineWidth = 1,
+    };
+    const VkPipelineMultisampleStateCreateInfo multisample = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+    };
+    const VkPipelineColorBlendAttachmentState blend_attachment = {
+        .colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
+    const VkPipelineColorBlendStateCreateInfo blend = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .attachmentCount = 1,
+        .pAttachments = &blend_attachment,
+    };
+    const VkGraphicsPipelineCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .stageCount = 2,
+        .pStages = stages,
+        .pVertexInputState = &vertex_input,
+        .pInputAssemblyState = &assembly,
+        .pViewportState = &viewport_state,
+        .pRasterizationState = &rasterization,
+        .pMultisampleState = &multisample,
+        .pColorBlendState = &blend,
+        .layout = *layout,
+        .renderPass = render_pass,
+    };
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    return vk_ok(
+        g_create_graphics_pipelines(
+            device, VK_NULL_HANDLE, 1, &info, NULL, &pipeline),
+        "vkCreateGraphicsPipelines") ? pipeline : VK_NULL_HANDLE;
+}
+
 static bool submit_frame(
     VkDevice device,
     VkQueue queue,
@@ -362,6 +530,10 @@ static bool submit_frame(
     }
 
     VkCommandBuffer command = VK_NULL_HANDLE;
+    VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
+    VkShaderModule vertex = VK_NULL_HANDLE;
+    VkShaderModule fragment = VK_NULL_HANDLE;
+    VkPipeline pipeline = VK_NULL_HANDLE;
     const VkCommandBufferAllocateInfo allocation_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = command_pool,
@@ -376,7 +548,15 @@ static bool submit_frame(
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
-    if (!vk_ok(vkBeginCommandBuffer(command, &begin_info),
+    if (mode == kDrawNeonPink) {
+        pipeline = create_magenta_pipeline(
+            device, generation->render_pass, extent, &pipeline_layout,
+            &vertex, &fragment);
+        if (!pipeline) {
+            return false;
+        }
+    }
+    if (!vk_ok(g_begin_command_buffer(command, &begin_info),
                "vkBeginCommandBuffer")) {
         return false;
     }
@@ -387,7 +567,11 @@ static bool submit_frame(
         .renderArea = {{0, 0}, extent},
     };
     g_cmd_begin_render_pass(command, &pass_info, VK_SUBPASS_CONTENTS_INLINE);
-    if (mode != kLoadOnly) {
+    if (mode == kDrawNeonPink) {
+        g_cmd_bind_pipeline(
+            command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        g_cmd_draw(command, 3, 1, 0, 0);
+    } else if (mode != kLoadOnly) {
         const VkClearAttachment attachment = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .colorAttachment = 0,
@@ -449,6 +633,18 @@ static bool submit_frame(
         return false;
     }
     vkQueueWaitIdle(queue);
+    if (pipeline) {
+        vkDestroyPipeline(device, pipeline, NULL);
+    }
+    if (pipeline_layout) {
+        vkDestroyPipelineLayout(device, pipeline_layout, NULL);
+    }
+    if (fragment) {
+        vkDestroyShaderModule(device, fragment, NULL);
+    }
+    if (vertex) {
+        vkDestroyShaderModule(device, vertex, NULL);
+    }
     vkFreeCommandBuffers(device, command_pool, 1, &command);
     vkDestroyFence(device, fence, NULL);
     vkDestroySemaphore(device, rendered, NULL);
@@ -506,7 +702,12 @@ static FirstFrameMode parse_mode(const char* value) {
     if (strcmp(value, "neon-pink") == 0) {
         return kClearNeonPink;
     }
-    fprintf(stderr, "mode must be load, black, or neon-pink\n");
+    if (strcmp(value, "draw-neon-pink") == 0) {
+        return kDrawNeonPink;
+    }
+    fprintf(
+        stderr,
+        "mode must be load, black, neon-pink, or draw-neon-pink\n");
     exit(2);
 }
 
@@ -515,7 +716,8 @@ int main(int argc, char** argv) {
         if (argc != 2 && argc != 4) {
             fprintf(
                 stderr,
-                "usage: %s load|black|neon-pink [width corrected-height]\n",
+                "usage: %s load|black|neon-pink|draw-neon-pink "
+                "[width corrected-height]\n",
                 argv[0]);
             return 2;
         }
@@ -721,7 +923,8 @@ int main(int argc, char** argv) {
         vkDestroyInstance(instance, NULL);
         [window orderOut:nil];
 
-        if (first_mode == kClearNeonPink &&
+        if ((first_mode == kClearNeonPink ||
+             first_mode == kDrawNeonPink) &&
             !(first_pixel[0] >= 252 && first_pixel[1] <= 3 &&
               first_pixel[2] >= 252 && first_pixel[3] >= 252)) {
             fprintf(stderr, "neon-pink control did not produce BGRA 255,0,255,255\n");
@@ -757,26 +960,46 @@ int main(int argc, char** argv) {
                    "reason=generation-2-present-limit generation=2 "
                    "ordinal=180") == NULL ||
             strstr(g_audit_log, " ordinal=9 ") != NULL ||
-            (first_mode == kLoadOnly && has_audit_clear) ||
-            (first_mode != kLoadOnly &&
+            ((first_mode == kLoadOnly || first_mode == kDrawNeonPink) &&
+             has_audit_clear) ||
+            ((first_mode == kClearBlack ||
+              first_mode == kClearNeonPink) &&
              (!has_audit_clear ||
               strstr(g_audit_log, expected_audit_rgba) == NULL))) {
             fprintf(stderr, "startup color audit did not classify %s\n", argv[1]);
             return 3;
         }
         const char* expected_pixel_summary =
-            first_mode == kClearNeonPink
+            (first_mode == kClearNeonPink ||
+             first_mode == kDrawNeonPink)
                 ? "STARTUP_PRESENT_PIXEL_SUMMARY: generation=1 ordinal=1"
                   " image_index="
                 : "STARTUP_PRESENT_PIXEL_SUMMARY: generation=2 ordinal=1"
                   " image_index=";
         const char* expected_pixel_class =
-            first_mode == kClearNeonPink
+            (first_mode == kClearNeonPink ||
+             first_mode == kDrawNeonPink)
                 ? "exact_magenta=5 near_magenta=5 black=0"
                 : "exact_magenta=0 near_magenta=0 black=5";
         const char* summary = strstr(g_audit_log, expected_pixel_summary);
         if (!summary || !strstr(summary, expected_pixel_class)) {
             fprintf(stderr, "present pixel audit did not classify %s\n", argv[1]);
+            return 3;
+        }
+        if (first_mode == kDrawNeonPink &&
+            (!strstr(
+                 g_audit_log,
+                 "STARTUP_PRESENT_DRAW_SUMMARY: generation=1 ordinal=1") ||
+             !strstr(
+                 g_audit_log,
+                 "draw_count=1 indexed_draw_count=0 distinct_pipelines=1 "
+                 "pipeline_overflow=no") ||
+             !strstr(
+                 g_audit_log,
+                 "STARTUP_PRESENT_DRAW_PIPELINE: generation=1 ordinal=1") ||
+             !strstr(g_audit_log, "shader_hash_complete=yes") ||
+             !strstr(g_audit_log, "pipeline_state=tracked"))) {
+            fprintf(stderr, "draw provenance did not match magenta frame\n");
             return 3;
         }
         if (!(corrected_pixel[0] <= 3 && corrected_pixel[1] <= 3 &&

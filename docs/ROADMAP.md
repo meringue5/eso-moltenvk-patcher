@@ -70,6 +70,16 @@ are in [Project status](STATUS.md); completed runs belong in the
   existing pre-present pixel classification so timing shifts do not invalidate
   the correlation. Complete static, synthetic, and real non-game validation
   before requesting another user-controlled startup.
+- Experiment 0027 now implements that bounded correlation and has completed its
+  non-game gate. The synthetic case joins an indexed draw and complete shader
+  hashes to the exact signal semaphore; the real MoltenVK/AppKit control joins
+  a full-surface magenta draw to five exact pre-present magenta pixels at both
+  small and ESO extents. All missing-provenance and capacity cases fail closed.
+- Do not install Experiment 0027 without new explicit approval naming
+  `startup-draw-audit`. If approved, preserve both caches and settings through
+  restore/build/install, prepare one fresh evidence boundary, and request only
+  one user-controlled Steam-path startup. Restore `performance-aggressive`
+  immediately after evidence collection.
 
 ### Superseded reset-investigation record
 
