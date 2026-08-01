@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added the no-membership public release path: a prebuilt GitHub Release ZIP
+  with exact-profile `check`, `install`, and `remove` commands, automatic
+  Steam/ZeniMax path discovery, explicit custom-path support, and SHA-256
+  checksums. Players do not need Python or Xcode.
 - Added the native **ESO MoltenVK Patcher.app** release candidate, with
   client discovery, exact-profile validation, backup, install, repair, remove,
   and reproducible DMG assembly.

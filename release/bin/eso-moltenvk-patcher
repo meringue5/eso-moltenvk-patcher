@@ -1,0 +1,165 @@
+#!/bin/zsh
+set -euo pipefail
+
+ROOT="${0:A:h:h}"
+PAYLOAD="$ROOT/payload"
+source "$PAYLOAD/target-profile.env"
+
+die() { print -u2 -- "$*"; exit 1; }
+sha256() { shasum -a 256 "$1" | awk '{print $1}'; }
+
+usage() {
+  cat <<'EOF'
+Usage: eso-moltenvk-patcher <check|install|remove|repair> [--eso-app PATH]
+
+PATH may be eso.app itself or an ESO Launcher.app containing game_mac.
+No game, Steam, or launcher is started by this tool.
+EOF
+}
+
+command_name="${1:-}"
+[[ -n "$command_name" ]] || { usage; exit 2; }
+shift || true
+selected="${ESO_APP:-}"
+while (( $# )); do
+  case "$1" in
+    --eso-app) (( $# >= 2 )) || die "--eso-app needs a path"; selected="$2"; shift 2 ;;
+    --help|-h) usage; exit 0 ;;
+    *) die "Unknown argument: $1" ;;
+  esac
+done
+
+resolve_target() {
+  local home_dir="$HOME"
+  local -a candidates=(
+    "$home_dir/Library/Application Support/Steam/steamapps/common/Zenimax Online/The Elder Scrolls Online/game_mac/pubplayerclient/eso.app"
+    "/Applications/ZeniMax Online/Launcher.app/game_mac/pubplayerclient/eso.app"
+  )
+  if [[ -z "$selected" ]]; then
+    local candidate
+    for candidate in "${candidates[@]}"; do
+      [[ -d "$candidate" ]] && { selected="$candidate"; break; }
+    done
+  fi
+  [[ -n "$selected" ]] || die "ESO was not found. Re-run with --eso-app '/path/to/eso.app'."
+  if [[ "${selected:t}" == "eso.app" ]]; then
+    ESO_APP="${selected:A}"
+  else
+    ESO_APP="${selected:A}/game_mac/pubplayerclient/eso.app"
+  fi
+  GAME_MAC="$ESO_APP/Contents/MacOS"
+  ESO="$GAME_MAC/eso"
+  BINK="$GAME_MAC/libBink2Macx64.dylib"
+  MARKER="$GAME_MAC/.teso4m4-enable"
+  RENAMED="$GAME_MAC/libBink2Macx64.teso4m4-original.dylib"
+  MVK="$GAME_MAC/libMoltenVK.teso4m4.dylib"
+  [[ -f "$ESO" && -f "$BINK" ]] || die "This path does not contain an ESO macOS client."
+}
+
+state_directory() {
+  local id
+  id="$(print -rn -- "$ESO_APP" | shasum -a 256 | awk '{print $1}')"
+  STATE_DIR="$HOME/Library/Application Support/ESO MoltenVK Patcher/Installations/$id"
+  BACKUP="$STATE_DIR/original-libBink2Macx64.dylib"
+  STATE="$STATE_DIR/install-state.env"
+}
+
+require_supported_original() {
+  [[ "$(sha256 "$ESO")" == "$EXPECTED_ESO_SHA256" ]] || die "Unsupported ESO executable. No files were changed."
+  [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The Bink library is not the exact original expected by this release. No files were changed."
+}
+
+require_idle() {
+  pgrep -x eso >/dev/null 2>&1 && die "Quit ESO before changing its files."
+  pgrep -f '/ZeniMax Online Studios Launcher' >/dev/null 2>&1 && die "Quit the ZeniMax launcher before changing ESO files."
+  command -v lsof >/dev/null 2>&1 || die "lsof is required to check that the ESO bundle is idle."
+  local open_files="" lsof_status=0
+  open_files="$(lsof -Fn +D "$ESO_APP" 2>/dev/null)" || lsof_status=$?
+  [[ -z "$open_files" && "$lsof_status" -eq 1 ]] || die "A process is using this ESO bundle, or its idle state could not be verified."
+  local marker="/steamapps/common/"
+  [[ "$ESO_APP" == *"$marker"* ]] || return 0
+  local steamapps="${ESO_APP%%$marker*}/steamapps"
+  local manifest="$steamapps/appmanifest_306130.acf"
+  [[ -f "$manifest" ]] || return 0
+  local flags total done
+  flags="$(awk -F'"' '$2 == "StateFlags" {print $4; exit}' "$manifest")"
+  total="$(awk -F'"' '$2 == "BytesToDownload" {print $4; exit}' "$manifest")"
+  done="$(awk -F'"' '$2 == "BytesDownloaded" {print $4; exit}' "$manifest")"
+  [[ "$flags" == "4" && -n "$total" && "$total" == "$done" ]] || die "Steam reports ESO as updating or incomplete."
+  [[ ! -d "$steamapps/downloading/306130" || -z "$(find "$steamapps/downloading/306130" -mindepth 1 -print -quit 2>/dev/null)" ]] || die "Steam has staged ESO download content."
+}
+
+write_command() {
+  local directory="$1"
+  shift
+  if [[ -w "$directory" ]]; then "$@"; else sudo "$@"; fi
+}
+
+copy_verified() {
+  local source="$1" destination="$2" temporary="${2}.eso-moltenvk-patcher-installing"
+  write_command "${temporary:h}" rm -f "$temporary"
+  write_command "${temporary:h}" cp -p "$source" "$temporary"
+  [[ "$(sha256 "$source")" == "$(sha256 "$temporary")" ]] || die "Copy verification failed for ${destination:t}."
+  write_command "${destination:h}" rm -f "$destination"
+  write_command "${destination:h}" mv "$temporary" "$destination"
+}
+
+retag_original() {
+  write_command "${RENAMED:h}" /usr/bin/install_name_tool -id \
+    '@loader_path/libBink2Macx64.teso4m4-original.dylib' "$RENAMED"
+}
+
+check() {
+  resolve_target
+  local executable_hash="$(sha256 "$ESO")"
+  [[ "$executable_hash" == "$EXPECTED_ESO_SHA256" ]] || die "Unsupported ESO executable: $executable_hash"
+  if [[ -e "$MARKER" ]]; then
+    [[ "$(sha256 "$BINK")" == "$(sha256 "$PAYLOAD/libBink2Macx64.dylib")" ]] || die "Incomplete patch state: marker and bridge differ. Run remove."
+    print -- "Supported ESO client; patch installed."
+  else
+    [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "Unsupported or already-modified Bink library."
+    print -- "Supported ESO client; patch not installed."
+  fi
+  print -- "Location: $ESO_APP"
+}
+
+install() {
+  resolve_target; state_directory; require_supported_original; require_idle
+  [[ ! -e "$MARKER" && ! -e "$RENAMED" && ! -e "$MVK" ]] || die "A patch or incomplete attempt already exists. Run remove first."
+  mkdir -p "$STATE_DIR"
+  chmod 700 "$STATE_DIR"
+  if [[ -e "$BACKUP" || -e "$STATE" ]]; then
+    [[ -f "$BACKUP" && -f "$STATE" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The existing restore record is incomplete or does not match this client."
+  else
+    copy_verified "$BINK" "$BACKUP"
+  fi
+  copy_verified "$BINK" "$RENAMED"
+  retag_original
+  copy_verified "$PAYLOAD/libBink2Macx64.dylib" "$BINK"
+  copy_verified "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$MVK"
+  print -r -- "executable_sha256=$EXPECTED_ESO_SHA256" > "$STATE"
+  print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
+  print -r -- "installed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
+  print -r -- 'startup-compositor-neutralize' > "$MARKER.installing"
+  write_command "${MARKER:h}" mv "$MARKER.installing" "$MARKER"
+  print -- "Installed. Start ESO through your usual Steam or ZeniMax launcher."
+}
+
+remove() {
+  resolve_target; state_directory; require_idle
+  [[ -f "$BACKUP" && -f "$STATE" ]] || die "A verified restore record was not found. No files were changed."
+  source "$STATE"
+  [[ "${executable_sha256:-}" == "$EXPECTED_ESO_SHA256" && "$(sha256 "$ESO")" == "$EXPECTED_ESO_SHA256" ]] || die "The selected ESO executable changed. No files were changed."
+  [[ "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The restore backup does not match the supported original."
+  copy_verified "$BACKUP" "$BINK"
+  write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
+  print -- "Removed. The original Bink library is restored; the verified backup remains in Application Support."
+}
+
+case "$command_name" in
+  check) check ;;
+  install) install ;;
+  remove) remove ;;
+  repair) remove; install ;;
+  *) usage; exit 2 ;;
+esac

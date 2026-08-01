@@ -127,12 +127,12 @@ the source record and limits of that conclusion.
 client. A folder-copy add-on release would therefore be misleading and would
 not work.
 
-The release package is **ESO MoltenVK Patcher.app**, distributed in a GitHub
-Release disk image. It is an installation tool, not an app that must stay
-running while ESO is played. It bundles the
+The initial release package is a GitHub Release ZIP containing prebuilt bridge
+payloads and **Check**, **Install**, and **Remove** command scripts. It is an
+installation tool, not an app that must stay running while ESO is played. It bundles the
 verified bridge and runtime so players do not need Python, Xcode, or build
-scripts. Its user-facing actions are **Install**, **Check**, **Repair**,
-and **Remove**.
+scripts. A signed **ESO MoltenVK Patcher.app** DMG remains the future polished
+distribution option.
 
 The installer will be edition-neutral:
 

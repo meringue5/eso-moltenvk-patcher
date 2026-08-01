@@ -1,25 +1,32 @@
 # ESO MoltenVK Patcher release packaging
 
-The public artifact is **ESO MoltenVK Patcher.app** in a compressed DMG. It is
-an installer and maintenance tool, not a game launcher. It locates a Steam or
-ZeniMax ESO client, or lets the player select one, then patches only an exact
-supported executable profile.
+The release artifact available without an Apple Developer membership is
+**ESO-MoltenVK-Patcher-<version>.zip**. It contains prebuilt payloads plus
+`check.command`, `install.command`, and `remove.command`; it is an installer
+and maintenance tool, not a game launcher. A signed **ESO MoltenVK Patcher.app**
+in a compressed DMG remains the future polished distribution channel.
 
 ## Build a release candidate
 
 ```sh
-./scripts/package-dmg.sh 0.1.0
+./scripts/package-release-zip.sh 0.1.0
 ```
 
-The command rebuilds the bridge, runs its non-game gates, compiles the native
-macOS installer app, embeds only the bridge, MoltenVK runtime, and current
-target profile, verifies the app signature, and emits a DMG under `dist/`.
-Neither Python nor a source checkout is required by players who use the DMG.
+The command rebuilds the bridge, runs its non-game gates, embeds only the
+bridge, MoltenVK runtime, and current target profile, writes a SHA-256 manifest,
+and emits a ZIP under `dist/`. Python and Xcode are release-author tooling only:
+players need neither of them, nor a source checkout.
+
+Players run `check.command`, `install.command`, or `remove.command`. If Finder
+does not permit a downloaded command to run directly, they can drag it into a
+Terminal window or run `zsh install.command`; this is the unsigned-release
+tradeoff. Do not ask users to run a remote `curl | sh` command.
 
 ## Installer behavior
 
 - Searches the known Steam and ZeniMax launcher client locations.
-- Accepts a player-selected `eso.app` or launcher location.
+- Accepts `--eso-app` with an `eso.app` or launcher location when the client is
+  installed elsewhere.
 - Checks the exact ESO executable SHA-256 before any file change.
 - Checks the matching original Bink-library SHA-256, then gives the player's
   private copied original the bridge's loader identity; no proprietary Bink
@@ -35,6 +42,11 @@ Neither Python nor a source checkout is required by players who use the DMG.
 An unrecognized client build fails closed. This permits a shared Steam/direct
 client profile when its exact executable matches, without assuming that either
 path is trustworthy.
+
+## Optional signed DMG
+
+`./scripts/package-dmg.sh 0.1.0` still assembles the native app DMG for a
+future signed release. It is not the unsigned public-release artifact.
 
 ## Signing and notarization gate
 
