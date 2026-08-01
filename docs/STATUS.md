@@ -5,12 +5,10 @@ Last updated: 2026-08-01
 ## Current verified checkpoint
 
 The validated gameplay baseline remains official MoltenVK 1.4.2 with the
-`performance-aggressive` profile for ESO 12.0.7, databuild `3281538`. The
-temporary Experiment 0026 `startup-present-pixel-audit` is currently installed
-for one bounded startup; it retains the exact effective aggressive profile but
-is a diagnostic, not the validated normal marker. The update check, executable
-fingerprint, installed runtime hash, bridge/build byte comparison, and 1.4.2
-pipeline-cache UUID all remain current.
+`performance-aggressive` profile for ESO 12.0.7, databuild `3281538`.
+Experiment 0026 is complete and the normal marker is restored. The update
+check, executable fingerprint, installed runtime hash, bridge/build byte
+comparison, and 1.4.2 pipeline-cache UUID all remain current.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
@@ -127,7 +125,7 @@ must target a later parameter copy/use or presented draw and account for a
 possible object created before the bridge constructor. No further user run is
 justified until that successor passes its non-game gate.
 
-Experiment 0026 now supplies that successor at the final swapchain boundary.
+Experiment 0026 supplied that successor at the final swapchain boundary.
 Its isolated `startup-present-pixel-audit` mode reads, but never changes, five
 points from twenty scheduled final swapchain images immediately before the real
 present. Same-queue semaphore provenance plus a scheduled `vkQueueWaitIdle`
@@ -136,7 +134,7 @@ queue submissions are invalidated before later presentation checks. The real
 MoltenVK/AppKit controls
 distinguish exact RGBA `(255,0,255,255)` from opaque black at both small and
 exact ESO extents; the temporary complete bridge link, lifecycle/reset probes,
-and all 108 Python tests pass. A complete exact run will therefore choose
+and all 108 Python tests pass. A complete exact run could therefore choose
 between magenta already present in final image content and a post-swapchain
 presentation/layer/compositor source.
 
@@ -146,8 +144,36 @@ ESO closed. The installed proxy and MoltenVK match the clean build byte for
 byte; active cache, backup cache, and settings hashes remain unchanged. The
 first evidence-preparation attempt correctly stopped because the otherwise
 matching launcher snapshot was 5,888 seconds old, beyond the fixed 3,600-second
-gate. The active gate is now a user-opened normal Steam launcher update check;
-do not press Play until a fresh evidence start boundary is prepared.
+gate. The user refreshed the normal launcher without pressing Play, and the
+fresh evidence boundary then passed all eight repository comparisons.
+
+In exact run `20260801T105310.069752000Z-pid86806`, the user observed the pink
+frame and all twenty scheduled pre-present summaries completed. Generation 1
+ordinal 1 and generation 2 through ordinal 70 were opaque black at all five
+points. Generation 2 ordinals 80 through 140 were exact RGBA
+`(255,0,255,255)` at all five points. Ordinals 150 through 180 were ordinary
+nonblack, nonmagenta scene colors. The analyzer verdict is therefore
+`SWAPCHAIN-MAGENTA-CONFIRMED`: ESO/MoltenVK final swapchain content is already
+canonical magenta before `vkQueuePresentKHR`. Post-swapchain layer, compositor,
+overlay, HDR, and display mapping are excluded as the source.
+
+Experiment 0024 proves the submitted full-surface clear is black throughout
+the same bounded interval. Immediately after the last sampled black frame at
+ordinal 70, the proc trace first obtains descriptor, graphics-pipeline,
+pipeline-bind, vertex/index-bind, and `vkCmdDrawIndexed` entry points; ordinal
+80 is the first sampled exact-magenta frame. The active blocker is now to
+associate the presented black/magenta/normal frames with their exact draw and
+pipeline signatures. No further user run is justified until a bounded
+swapchain-linked draw audit passes its non-game gate.
+
+The exact run produced no crash report and left the settings file byte-identical
+at SHA-256 `297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+The active 1.4.2 cache updated normally to
+`8b061e93fa21d2b687ec7eef5bafa363c04418e468928bdaee3a687585773de7`;
+the old-backup cache remains unchanged at
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+The cache-preserving rollback restored `performance-aggressive`; official
+MoltenVK and the installed proxy still match their verified build artifacts.
 
 The screenshot run itself started at 15:16:50 and completed normal Vulkan
 teardown at approximately 16:50:16, for about 1 hour 33 minutes 26 seconds of

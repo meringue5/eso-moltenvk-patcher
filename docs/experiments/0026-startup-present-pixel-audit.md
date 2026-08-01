@@ -1,8 +1,8 @@
 # Experiment 0026: bounded startup pre-present pixel audit
 
 - Date: 2026-08-01
-- Outcome: **running; exact audit installed and verified, user-controlled startup pending**
-- Rollback: **pending after the one-run evidence collection**
+- Outcome: **succeeded; exact pre-present swapchain magenta confirmed**
+- Rollback: **complete; normal `performance-aggressive` marker restored with caches and settings preserved**
 
 ## Question
 
@@ -148,6 +148,65 @@ The first evidence-preparation attempt stopped before creating an artifact
 directory because the launcher repository snapshot was 5,888 seconds old,
 exceeding the fixed 3,600-second gate. All eight repository IDs still matched
 and the launcher verdict remained `noUpdateRequired`, but the age requirement
-will not be relaxed. The user must open the normal Steam launcher and allow its
-update check to complete without pressing Play; evidence preparation can then
-establish a fresh start epoch before the one ESO launch.
+was not relaxed. The user opened the normal Steam launcher without pressing
+Play. Its update check refreshed successfully, all eight repository IDs still
+matched, and a new evidence boundary was established at
+`2026-08-01T10:52:42Z`.
+
+## Exact user run and result
+
+The user then performed one normal Steam-path startup and reported that the
+pink frame appeared. The exact run was:
+
+```text
+run: 20260801T105310.069752000Z-pid86806
+startup bridge verdict: PASS
+scheduled summaries: 20/20
+pixel skips/errors: 0
+generation 1 ordinal 1: five opaque-black points
+generation 2 ordinals 1,10,...,70: five opaque-black points each
+generation 2 ordinals 80,90,...,140: five exact RGBA (255,0,255,255) points each
+generation 2 ordinals 150,160,170,180: five nonblack, nonmagenta scene points each
+finish: generation-2-present-limit at ordinal 180
+verdict: SWAPCHAIN-MAGENTA-CONFIRMED
+```
+
+Canonical magenta therefore exists across the sampled final swapchain image
+before the real `vkQueuePresentKHR`. Post-swapchain presentation,
+`CAMetalLayer`, CoreAnimation, display/HDR mapping, and overlay composition
+cannot be the source of this exact frame. Experiment 0024 independently shows
+that every linked full-surface clear in this same bounded startup interval is
+opaque black. A draw or equivalent application render operation after that
+black clear is now the remaining pixel-writer class.
+
+The same log places the black-to-magenta transition more narrowly. Immediately
+after the ordinal-70 black sample, ESO first obtains descriptor-set and
+pipeline-layout functions, `vkCreateGraphicsPipelines`, pipeline binding,
+viewport/scissor and vertex/index binding functions, and
+`vkCmdDrawIndexed`. The first sampled exact-magenta frame is ordinal 80. This
+ordering does not yet identify one pipeline or shader, but it joins the visual
+transition to the first indexed-draw-capable interval and supersedes the broad
+post-swapchain branch.
+
+No ESO crash report followed the run. The complete settings file was
+byte-identical before and after, with SHA-256
+`297f855804d9af13544331152976c468bc5a2f269daaeefaa9357353ecfacf2c`.
+The active 1.4.2 cache was allowed to update normally and now has SHA-256
+`8b061e93fa21d2b687ec7eef5bafa363c04418e468928bdaee3a687585773de7`;
+the old-backup cache remains
+`72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+
+After evidence collection, a cache-preserving restore and reinstall returned
+the marker to `performance-aggressive`. The installed proxy remains the
+verified build byte-for-byte, official MoltenVK remains
+`aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f`,
+and the exact ESO update profile remains current. No agent launched Steam, the
+launcher, or ESO.
+
+## Next gate
+
+Do not repeat the pixel audit. A successor must associate each presented
+black, magenta, and normal frame with the swapchain-linked draw sequence and
+graphics-pipeline identity, preferably in the same bounded pre-present audit.
+It must pass static, synthetic, and real non-game controls before another
+user-controlled startup is justified.

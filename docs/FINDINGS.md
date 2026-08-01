@@ -478,6 +478,25 @@ RGBA was opaque black `(0,0,0,1)`; no swapchain-linked render pass used
 reaching its detail cap, and the analyzer passed. A submitted Vulkan clear did
 not supply the observed magenta pixels.
 
+Experiment 0026 closes the post-swapchain branch with a direct final-image
+read. In the exact run where the user observed pink, all twenty scheduled
+samples completed before `vkQueuePresentKHR`. Generation 1 ordinal 1 and
+generation 2 through ordinal 70 were opaque black at all five sampled points;
+generation 2 ordinals 80 through 140 were exact RGBA `(255,0,255,255)` at all
+five points; ordinals 150 through 180 contained ordinary scene colors. The
+canonical magenta is therefore rendered into the final swapchain image. It is
+not introduced by `CAMetalLayer`, CoreAnimation, overlay composition, HDR, or
+display color mapping.
+
+The same run narrows the application interval without yet naming one writer.
+Immediately after the ordinal-70 black sample, ESO first obtains its descriptor
+and graphics-pipeline functions, pipeline and vertex/index binding functions,
+and `vkCmdDrawIndexed`; ordinal 80 is the first sampled magenta frame. Combined
+with Experiment 0024's all-black submitted clears, a draw after the black clear
+is the remaining writer class. The next evidence must identify the exact
+swapchain-linked draw/pipeline signature; the prior FX-material initializer is
+still only a candidate and is not promoted to a confirmed cause.
+
 The remaining background alternative is also less consistent with the static
 application code than previously known. ESO's `ZOMetalGameView` is opaque,
 constructs a `CAMetalLayer`, and its `drawRect:` fills the view bounds with

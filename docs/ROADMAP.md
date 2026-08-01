@@ -44,40 +44,32 @@ are in [Project status](STATUS.md); completed runs belong in the
   candidate has passed its non-game gate.
 - Keep the working 1.4.2 runtime profile and cache state unchanged while
   investigating the startup artifact.
-- Experiment 0025 now supplies the next discriminating candidate. It validates
-  and hooks the exact `FXMaterial` initializer only in the two-generation audit
-  window, runs the original initializer, and changes only three exact magenta
-  vectors to black while preserving alpha. Its synthetic trampoline, bounded
-  window, full build, configuration, and 104-test gates pass. The explicitly
-  approved `startup-fx-neutralize` installation now matches the build, while
-  both caches and settings retain their pre-install hashes.
-- One matched, bounded startup decides this branch: disappearance/change to
-  black confirms the sentinel as causal; unchanged pink excludes it. Missing
-  initializer evidence or a missing ordinal-180 finish is inconclusive. After
-  evidence collection, restore `performance-aggressive` and preserve both
-  caches and settings.
 - Preserve Experiment 0025 as inconclusive and do not repeat it. The user saw
   unchanged pink, the exact hook and ordinal-180 finish were present, but the
   initializer produced zero calls inside the window, so no value was actually
   neutralized. The normal `performance-aggressive` profile is restored. A
   successor must intercept a later parameter copy/use or presented draw and
   account for any object created before the bridge constructor.
-- Experiment 0026 is the completed non-game successor candidate. It samples
+- Preserve Experiment 0026 as the completed final-swapchain result. It sampled
   five points from twenty final swapchain images immediately before present,
   requires same-queue semaphore provenance, and never changes pixels. Exact
   magenta and black controls pass at ESO's format and extents, along with the
   complete temporary bridge link and 108 Python tests. The lifecycle smoke also
   proves the exact 20-sample schedule and rejects submit-consumed semaphore
   evidence.
-- The explicit `startup-present-pixel-audit` approval, cache-preserving restore,
-  clean source build, exact-mode install, and byte/hash verification are
-  complete. The installed diagnostic retains both caches and settings.
-- Refresh the stale launcher state through the user-controlled normal Steam
-  launcher without pressing Play. Do not weaken the 3,600-second evidence gate.
-  Once a fresh evidence start boundary is prepared, one user-controlled normal
-  Steam-path startup decides whether the remaining source is inside final
-  swapchain content or after that boundary. Missing any of twenty samples is
-  inconclusive.
+- The exact run completed all twenty samples while the user saw pink. Five
+  points in every sampled generation-2 frame from ordinal 80 through 140 were
+  exact RGBA `(255,0,255,255)` before present; earlier samples were black and
+  later samples were normal scene colors. The source is inside final swapchain
+  rendering, not the presentation/layer/compositor/display path. Do not repeat
+  this audit.
+- Correlate the black-to-magenta interval with the first graphics-pipeline and
+  indexed-draw activity already visible in the proc log. Design a bounded
+  successor that associates each sampled presented frame with its exact
+  swapchain-linked pipeline/draw signature and shader-module hash. Reuse the
+  existing pre-present pixel classification so timing shifts do not invalidate
+  the correlation. Complete static, synthetic, and real non-game validation
+  before requesting another user-controlled startup.
 
 ### Superseded reset-investigation record
 
