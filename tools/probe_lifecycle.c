@@ -22,6 +22,8 @@ static uint32_t g_present_pixel_ordinals[32];
 static bool g_present_pixel_arguments_valid;
 static uint32_t g_compositor_image_sample_count;
 static bool g_compositor_image_arguments_valid;
+static uint32_t g_cmd_draw_indexed_forward_count;
+static uint32_t g_cmd_clear_attachments_count;
 
 static void test_log(const char* message) {
     const int written = snprintf(
@@ -202,6 +204,7 @@ static void VKAPI_CALL fake_cmd_clear_attachments(
     (void)attachments;
     (void)rect_count;
     (void)rects;
+    ++g_cmd_clear_attachments_count;
 }
 
 static VkResult VKAPI_CALL fake_begin_command_buffer(
@@ -346,6 +349,7 @@ static void VKAPI_CALL fake_cmd_draw_indexed(
     (void)first_index;
     (void)vertex_offset;
     (void)first_instance;
+    ++g_cmd_draw_indexed_forward_count;
 }
 
 static bool check(bool condition, const char* message) {
@@ -532,6 +536,8 @@ static bool run_consumed_semaphore_case(void) {
     g_present_pixel_arguments_valid = true;
     g_compositor_image_sample_count = 0;
     g_compositor_image_arguments_valid = true;
+    g_cmd_draw_indexed_forward_count = 0;
+    g_cmd_clear_attachments_count = 0;
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&test_log);
     teso4m4_lifecycle_set_present_pixel_sampler(
@@ -611,6 +617,8 @@ static bool run_startup_draw_provenance_case(void) {
     g_present_pixel_arguments_valid = true;
     g_compositor_image_sample_count = 0;
     g_compositor_image_arguments_valid = true;
+    g_cmd_draw_indexed_forward_count = 0;
+    g_cmd_clear_attachments_count = 0;
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&test_log);
     teso4m4_lifecycle_set_present_pixel_sampler(
@@ -654,6 +662,9 @@ static bool run_startup_draw_provenance_case(void) {
         teso4m4_lifecycle_intercept(
             "vkCmdEndRenderPass",
             (PFN_vkVoidFunction)&fake_cmd_end_render_pass);
+    (void)teso4m4_lifecycle_intercept(
+        "vkCmdClearAttachments",
+        (PFN_vkVoidFunction)&fake_cmd_clear_attachments);
     PFN_vkCreateShaderModule create_shader_module = (PFN_vkCreateShaderModule)
         teso4m4_lifecycle_intercept(
             "vkCreateShaderModule",
@@ -959,7 +970,7 @@ static bool run_startup_draw_provenance_case(void) {
         present(queue, &present_info) != VK_SUCCESS) {
         return check(false, "draw provenance submit/present failed");
     }
-    return check(
+    const bool provenance_ok = check(
         g_present_pixel_sample_count == 1 &&
             g_compositor_image_sample_count == 1 &&
             g_compositor_image_arguments_valid &&
@@ -992,6 +1003,98 @@ static bool run_startup_draw_provenance_case(void) {
                 " ordinal=1 set_slot=0 image_ordinal=0 binding=0") != NULL &&
             strstr(g_log, "format=97 view_type=1 mip=1 layer=2") != NULL,
         "present sample must retain exact draw and pipeline provenance");
+    if (!provenance_ok || g_cmd_draw_indexed_forward_count != 1) {
+        return false;
+    }
+
+    teso4m4_lifecycle_set_compositor_neutralize_test_pipeline(pipeline);
+    teso4m4_lifecycle_set_startup_compositor_neutralize(true);
+    if (begin_command_buffer(command_buffer, &command_begin) != VK_SUCCESS) {
+        return check(false, "neutralizer fail-open command begin failed");
+    }
+    begin_render_pass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    bind_pipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    draw_indexed(command_buffer, 6, 1, 0, 0, 0);
+    end_render_pass(command_buffer);
+    if (g_cmd_draw_indexed_forward_count != 2 ||
+        g_cmd_clear_attachments_count != 0 ||
+        strstr(
+            g_log,
+            "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH: action=abort"
+            " reason=incomplete-target-state") == NULL) {
+        return check(
+            false,
+            "neutralizer must forward an incomplete target draw unchanged");
+    }
+    teso4m4_lifecycle_set_startup_compositor_neutralize(false);
+    teso4m4_lifecycle_set_startup_compositor_neutralize(true);
+    if (begin_command_buffer(command_buffer, &command_begin) != VK_SUCCESS) {
+        return check(false, "neutralizer placeholder command begin failed");
+    }
+    begin_render_pass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    bind_pipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    bind_descriptor_sets(
+        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+        0, 1, &descriptor_set, 0, NULL);
+    draw_indexed(command_buffer, 6, 1, 0, 0, 0);
+    end_render_pass(command_buffer);
+    if (g_cmd_draw_indexed_forward_count != 2 ||
+        g_cmd_clear_attachments_count != 1 ||
+        strstr(g_log, "STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS:") == NULL) {
+        return check(
+            false,
+            "neutralizer must replace the stable placeholder draw with black");
+    }
+
+    const VkImageViewCreateInfo transitioned_view_info = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = HANDLE(VkImage, 0xd05),
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = VK_FORMAT_R16G16B16A16_SFLOAT,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .levelCount = 1,
+            .layerCount = 1,
+        },
+    };
+    VkImageView transitioned_view = VK_NULL_HANDLE;
+    if (create_image_view(
+            device, &transitioned_view_info, NULL,
+            &transitioned_view) != VK_SUCCESS) {
+        return check(false, "neutralizer transition view setup failed");
+    }
+    const VkDescriptorImageInfo transitioned_image = {
+        .sampler = HANDLE(VkSampler, 0xd01),
+        .imageView = transitioned_view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+    const VkWriteDescriptorSet transitioned_write = {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = descriptor_set,
+        .dstBinding = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo = &transitioned_image,
+    };
+    update_descriptor_sets(device, 1, &transitioned_write, 0, NULL);
+    if (begin_command_buffer(command_buffer, &command_begin) != VK_SUCCESS) {
+        return check(false, "neutralizer transition command begin failed");
+    }
+    begin_render_pass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    bind_pipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    bind_descriptor_sets(
+        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+        0, 1, &descriptor_set, 0, NULL);
+    draw_indexed(command_buffer, 6, 1, 0, 0, 0);
+    end_render_pass(command_buffer);
+    return check(
+        g_cmd_draw_indexed_forward_count == 3 &&
+            g_cmd_clear_attachments_count == 1 &&
+            strstr(
+                g_log,
+                "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH: action=forward"
+                " reason=descriptor-transition") != NULL,
+        "neutralizer must forward the first transitioned compositor draw");
 }
 
 static bool run_startup_color_case(

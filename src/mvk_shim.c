@@ -41,6 +41,7 @@ static bool g_startup_present_pixel_audit_enabled;
 static bool g_startup_draw_audit_enabled;
 static bool g_startup_input_audit_enabled;
 static bool g_startup_compositor_audit_enabled;
+static bool g_startup_compositor_neutralize_enabled;
 
 typedef enum {
     TESO4M4_MODE_DISABLED = 0,
@@ -61,6 +62,7 @@ typedef enum {
     TESO4M4_MODE_STARTUP_DRAW_AUDIT,
     TESO4M4_MODE_STARTUP_INPUT_AUDIT,
     TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT,
+    TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -261,6 +263,9 @@ static Teso4m4Mode marker_mode(const char* directory) {
     if (strcmp(mode, "startup-compositor-audit") == 0) {
         return TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
     }
+    if (strcmp(mode, "startup-compositor-neutralize") == 0) {
+        return TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -311,7 +316,8 @@ static bool verify_moltenvk_configuration(
         mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     const VkBool32 expected_live_resources =
         (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
          mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
@@ -319,7 +325,8 @@ static bool verify_moltenvk_configuration(
          mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
          mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
          mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT)
+         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE)
             ? VK_FALSE
             : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
@@ -491,6 +498,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_startup_draw_audit_enabled = false;
     g_startup_input_audit_enabled = false;
     g_startup_compositor_audit_enabled = false;
+    g_startup_compositor_neutralize_enabled = false;
     log_message("RUN_START: bridge starting pid=%ld", (long)getpid());
 
     char directory[4096];
@@ -522,7 +530,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_present_pixel_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
@@ -531,12 +540,16 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_startup_draw_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_input_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_compositor_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+    g_startup_compositor_neutralize_enabled =
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
         mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
@@ -545,7 +558,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     teso4m4_lifecycle_set_enabled(
         !performance_mode || g_startup_color_audit_enabled);
     teso4m4_lifecycle_set_startup_color_audit(
@@ -558,6 +572,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         g_startup_input_audit_enabled);
     teso4m4_lifecycle_set_startup_compositor_audit(
         g_startup_compositor_audit_enabled);
+    teso4m4_lifecycle_set_startup_compositor_neutralize(
+        g_startup_compositor_neutralize_enabled);
     teso4m4_reset_trace_set_pipeline_cache_bypass(
         mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE);
     teso4m4_reset_trace_set_full_lifetime_audit(
@@ -570,7 +586,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
              mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
              mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
              mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-             mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT) ? "0" : "1",
+             mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+             mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE) ? "0" : "1",
             1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -672,6 +689,14 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             "generation_limit=2 generation_2_present_limit=180 "
             "pixel_samples=20 draw_provenance=enabled "
             "input_provenance=enabled descriptor_classes=enabled");
+    } else if (mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE) {
+        log_message(
+            "MODE: startup compositor neutralize enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "generation_limit=2 generation_2_present_limit=180 "
+            "draw_provenance=enabled input_provenance=enabled "
+            "pixel_readback=disabled fallback=forward");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "

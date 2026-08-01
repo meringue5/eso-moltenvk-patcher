@@ -113,6 +113,9 @@ production baseline; the prepared build has not entered the game bundle.
 
 ## Follow-up
 
-Implement the smallest startup-only neutralization selected by the result. It
-must latch permanently to direct forwarding at the first valid input and must
-not retain readback in production mode.
+2026-08-02 amendment: Experiment 0028 already proves a stable aggregate
+descriptor state across magenta samples and a changed state at the first normal
+scene sample. Experiment 0030 therefore implements a smaller bounded
+descriptor-transition neutralizer without requiring this readback-only run.
+Retain Experiment 0029 as a diagnostic fallback if 0030 fails open or the
+artifact persists; do not install it first merely to name the scene/GUI input.

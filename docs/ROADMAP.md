@@ -113,14 +113,26 @@ are in [Project status](STATUS.md); completed runs belong in the
   `Sampler1` (GUI), carries image-view/base-subresource identity to present,
   samples both inputs, and distinguishes descriptor replacement from in-place
   content. Synthetic fail-closed controls, the complete build, and real
-  MoltenVK/AppKit BGRA8 plus RGBA16F mip/layer controls pass. The production
-  profile remains installed; one bounded startup is justified only after
-  explicit installation approval.
-- After identifying the offending input, prefer a startup-only neutralization
-  of the application placeholder or its presentation. It must latch permanently
-  back to direct forwarding at the first valid compositor input, add no
-  steady-state readback, and preserve the production profile, settings, and
-  caches.
+  MoltenVK/AppKit BGRA8 plus RGBA16F mip/layer controls pass. Retain it as a
+  fallback only; the already proven aggregate descriptor transition permits a
+  narrower repair trial without another readback-only startup.
+- Experiment 0030 implements that startup-only repair. It matches the exact
+  indexed pipeline, pipeline layout, two ordered set layouts, zero-push state,
+  and bounded generation-2 interval. It replaces only the stable first target
+  descriptor state with opaque black, forwards the first changed-state draw,
+  and permanently latches to forwarding. Incomplete state, unexpected use,
+  ordinal/draw deadline, or identity mismatch fails open. It adds no pixel
+  readback and changes no cache, setting, shader, or asset.
+- The synthetic suppression, descriptor-transition, and fail-open controls,
+  complete build/configuration matrix, 129 Python tests, and official 1.4.2
+  AppKit/Metal surface controls pass. The production profile remains installed.
+  The next gate is one explicitly approved installation and user-controlled
+  startup; no gameplay duration or setting change is required.
+- If the artifact disappears and the log records the exact transition latch,
+  promote the bounded behavior into the packaged aggressive profile. If it
+  fails open or pink persists, restore `performance-aggressive` and use
+  Experiment 0029 to distinguish the scene and GUI inputs; do not broaden the
+  intervention speculatively.
 
 ### Superseded reset-investigation record
 

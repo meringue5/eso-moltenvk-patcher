@@ -48,6 +48,11 @@ teso4m4_lifecycle_set_startup_input_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_startup_compositor_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_startup_compositor_neutralize(bool enabled);
+TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_compositor_neutralize_test_pipeline(
+    VkPipeline pipeline);
+TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_present_pixel_sampler(
     Teso4m4PresentPixelSampler sampler);
 TESO4M4_LIFECYCLE_HIDDEN void

@@ -30,6 +30,19 @@ enum {
     kStartupAuditGenerationLimit = 2,
     kStartupAuditGeneration2PresentLimit = 180,
     kStartupAuditDetailLimit = 2048,
+    kCompositorNeutralizeFirstPresent = 60,
+    kCompositorNeutralizeLastPresent = 150,
+    kCompositorNeutralizeMaxSuppressedDraws = 96,
+};
+
+/* Experiment 0028 identities for ESO 12.0.7's final scene/GUI compositor. */
+static const uint64_t kCompositorPipelineSignature =
+    UINT64_C(0xc43e4410d3b33fe7);
+static const uint64_t kCompositorPipelineLayoutSignature =
+    UINT64_C(0xd175d2c1daed112d);
+static const uint64_t kCompositorSetLayoutSignatures[] = {
+    UINT64_C(0xe3c2499a89df1706),
+    UINT64_C(0xd0edad262f8c4230),
 };
 
 typedef struct {
@@ -262,6 +275,7 @@ typedef struct {
     uint64_t draw_signature;
     uint64_t first_pipeline_signature;
     uint64_t last_pipeline_signature;
+    VkPipeline bound_pipeline;
     uint64_t bound_pipeline_signature;
     uint64_t bound_pipeline_layout_signature;
     uint32_t bound_pipeline_set_layout_count;
@@ -360,10 +374,22 @@ static atomic_bool g_startup_present_pixel_audit;
 static atomic_bool g_startup_draw_audit;
 static atomic_bool g_startup_input_audit;
 static atomic_bool g_startup_compositor_audit;
+static atomic_bool g_startup_compositor_neutralize;
 static atomic_bool g_startup_color_audit_finished;
 static atomic_uint g_startup_color_detail_count;
 static Teso4m4PresentPixelSampler g_present_pixel_sampler;
 static Teso4m4CompositorImageSampler g_compositor_image_sampler;
+typedef enum {
+    TESO4M4_COMPOSITOR_NEUTRALIZE_INACTIVE = 0,
+    TESO4M4_COMPOSITOR_NEUTRALIZE_ARMED,
+    TESO4M4_COMPOSITOR_NEUTRALIZE_SUPPRESSING,
+    TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING,
+    TESO4M4_COMPOSITOR_NEUTRALIZE_ABORTED,
+} CompositorNeutralizeState;
+static CompositorNeutralizeState g_compositor_neutralize_state;
+static uint64_t g_compositor_placeholder_signature;
+static uint32_t g_compositor_suppressed_draw_count;
+static VkPipeline g_compositor_neutralize_test_pipeline;
 static bool g_reset_has_run;
 
 static void lifecycle_log(const char* format, ...) {
@@ -2100,6 +2126,7 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_bind_pipeline(
     CommandBufferRecord* command = find_command_buffer(command_buffer);
     GraphicsPipelineRecord* record = find_graphics_pipeline(pipeline);
     if (command && command->in_render_pass) {
+        command->bound_pipeline = pipeline;
         command->bound_pipeline_signature = record ? record->signature : 0;
         command->bound_pipeline_layout_signature =
             record ? record->layout_signature : 0;
@@ -2128,6 +2155,194 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_bind_pipeline(
             record && record->layout_complete;
     }
     pthread_mutex_unlock(&g_lock);
+}
+
+static uint32_t next_present_ordinal_for_generation_locked(
+    uint64_t generation) {
+    uint32_t present_count = 0;
+    for (size_t index = 0; index < kMaxSwapchains; ++index) {
+        if (g_swapchains[index].alive &&
+            g_swapchains[index].generation == generation &&
+            g_swapchains[index].present_count > present_count) {
+            present_count = g_swapchains[index].present_count;
+        }
+    }
+    return present_count + 1;
+}
+
+static bool compositor_descriptor_signature_locked(
+    const CommandBufferRecord* command,
+    bool test_override,
+    uint64_t* signature_out) {
+    if (!command || !signature_out ||
+        !command->bound_pipeline_layout_complete) {
+        return false;
+    }
+    const uint32_t required_set_count =
+        command->bound_pipeline_set_layout_count;
+    if (required_set_count == 0 ||
+        required_set_count > kMaxBoundDescriptorSets ||
+        (!test_override && required_set_count != 2) ||
+        (!test_override &&
+         command->bound_pipeline_push_constant_bytes != 0)) {
+        return false;
+    }
+    uint64_t signature = UINT64_C(1469598103934665603);
+    for (uint32_t slot = 0; slot < required_set_count; ++slot) {
+        DescriptorSetRecord* set =
+            find_descriptor_set(command->bound_sets[slot], false);
+        if (!set || !set->alive || set->layout_signature == 0 ||
+            set->layout_signature !=
+                command->bound_pipeline_set_layout_signatures[slot] ||
+            (command->bound_pipeline_set_descriptor_counts[slot] != 0 &&
+             set->update_signature == 0) ||
+            !set->class_complete ||
+            (set->expected_image_count != 0 &&
+             set->image_update_signature == 0) ||
+            (set->expected_buffer_count != 0 &&
+             set->buffer_update_signature == 0)) {
+            return false;
+        }
+        if (!test_override) {
+            if (set->layout_signature !=
+                    kCompositorSetLayoutSignatures[slot] ||
+                set->expected_image_count != (slot == 0 ? 0u : 2u) ||
+                set->expected_buffer_count != 3) {
+                return false;
+            }
+        }
+        signature = hash_mix(signature, slot);
+        signature = hash_mix(signature, set->update_signature);
+        signature = hash_mix(signature, set->update_count);
+    }
+    *signature_out = signature;
+    return true;
+}
+
+static void compositor_neutralize_latch_locked(
+    CompositorNeutralizeState state,
+    const char* reason,
+    const CommandBufferRecord* command,
+    uint32_t ordinal,
+    uint64_t descriptor_signature) {
+    g_compositor_neutralize_state = state;
+    startup_color_detail_log(
+        "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH: action=%s reason=%s"
+        " generation=%" PRIu64 " ordinal=%u pipeline=%016" PRIx64
+        " descriptor_update_signature=%016" PRIx64
+        " suppressed_draws=%u",
+        state == TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING
+            ? "forward"
+            : "abort",
+        reason,
+        command ? command->generation : 0,
+        ordinal,
+        command ? command->bound_pipeline_signature : 0,
+        descriptor_signature,
+        g_compositor_suppressed_draw_count);
+}
+
+static bool should_suppress_compositor_draw_locked(
+    VkCommandBuffer command_buffer,
+    bool indexed,
+    uint32_t* width_out,
+    uint32_t* height_out) {
+    if (!atomic_load(&g_startup_compositor_neutralize) ||
+        g_compositor_neutralize_state ==
+            TESO4M4_COMPOSITOR_NEUTRALIZE_INACTIVE ||
+        g_compositor_neutralize_state ==
+            TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING ||
+        g_compositor_neutralize_state ==
+            TESO4M4_COMPOSITOR_NEUTRALIZE_ABORTED) {
+        return false;
+    }
+    CommandBufferRecord* command = find_command_buffer(command_buffer);
+    if (!command || !command->in_render_pass) {
+        return false;
+    }
+    const bool test_override =
+        g_compositor_neutralize_test_pipeline != VK_NULL_HANDLE;
+    const bool target = test_override
+        ? command->bound_pipeline == g_compositor_neutralize_test_pipeline
+        : command->bound_pipeline_signature ==
+              kCompositorPipelineSignature &&
+          command->bound_pipeline_layout_signature ==
+              kCompositorPipelineLayoutSignature;
+    if (!target) {
+        return false;
+    }
+    const uint32_t ordinal =
+        next_present_ordinal_for_generation_locked(command->generation);
+    if (!test_override &&
+        (command->generation != 2 ||
+         ordinal < kCompositorNeutralizeFirstPresent)) {
+        return false;
+    }
+    if (!indexed) {
+        compositor_neutralize_latch_locked(
+            TESO4M4_COMPOSITOR_NEUTRALIZE_ABORTED,
+            "unexpected-non-indexed-target", command, ordinal, 0);
+        return false;
+    }
+    if (!test_override && ordinal > kCompositorNeutralizeLastPresent) {
+        if (g_compositor_neutralize_state ==
+            TESO4M4_COMPOSITOR_NEUTRALIZE_SUPPRESSING) {
+            compositor_neutralize_latch_locked(
+                TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING,
+                "present-deadline", command, ordinal,
+                g_compositor_placeholder_signature);
+        }
+        return false;
+    }
+    FramebufferRecord* framebuffer = find_framebuffer(command->framebuffer);
+    uint64_t descriptor_signature = 0;
+    if (!g_next_cmd_clear_attachments || !framebuffer ||
+        framebuffer->width == 0 || framebuffer->height == 0 ||
+        !compositor_descriptor_signature_locked(
+            command, test_override, &descriptor_signature)) {
+        compositor_neutralize_latch_locked(
+            TESO4M4_COMPOSITOR_NEUTRALIZE_ABORTED,
+            "incomplete-target-state", command, ordinal,
+            descriptor_signature);
+        return false;
+    }
+    /* The first complete target state is the bounded placeholder baseline. */
+    if (g_compositor_neutralize_state ==
+        TESO4M4_COMPOSITOR_NEUTRALIZE_ARMED) {
+        g_compositor_placeholder_signature = descriptor_signature;
+        g_compositor_neutralize_state =
+            TESO4M4_COMPOSITOR_NEUTRALIZE_SUPPRESSING;
+    } else if (descriptor_signature !=
+               g_compositor_placeholder_signature) {
+        compositor_neutralize_latch_locked(
+            TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING,
+            "descriptor-transition", command, ordinal,
+            descriptor_signature);
+        return false;
+    }
+    if (g_compositor_suppressed_draw_count >=
+            kCompositorNeutralizeMaxSuppressedDraws ||
+        (!test_override &&
+         ordinal >= kCompositorNeutralizeLastPresent)) {
+        compositor_neutralize_latch_locked(
+            TESO4M4_COMPOSITOR_NEUTRALIZE_FORWARDING,
+            "suppression-deadline", command, ordinal,
+            descriptor_signature);
+        return false;
+    }
+    ++g_compositor_suppressed_draw_count;
+    *width_out = framebuffer->width;
+    *height_out = framebuffer->height;
+    startup_color_detail_log(
+        "STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS: generation=%" PRIu64
+        " ordinal=%u pipeline=%016" PRIx64
+        " descriptor_update_signature=%016" PRIx64 " draw=%u",
+        command->generation,
+        ordinal,
+        command->bound_pipeline_signature,
+        descriptor_signature,
+        g_compositor_suppressed_draw_count);
+    return true;
 }
 
 static void record_draw_locked(
@@ -2293,6 +2508,15 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_draw(
     if (!g_next_cmd_draw) {
         return;
     }
+    if (atomic_load(&g_startup_compositor_neutralize) &&
+        !startup_audit_finished()) {
+        uint32_t ignored_width = 0;
+        uint32_t ignored_height = 0;
+        pthread_mutex_lock(&g_lock);
+        (void)should_suppress_compositor_draw_locked(
+            command_buffer, false, &ignored_width, &ignored_height);
+        pthread_mutex_unlock(&g_lock);
+    }
     g_next_cmd_draw(
         command_buffer, vertex_count, instance_count,
         first_vertex, first_instance);
@@ -2314,6 +2538,30 @@ static VKAPI_ATTR void VKAPI_CALL traced_cmd_draw_indexed(
     uint32_t first_instance) {
     if (!g_next_cmd_draw_indexed) {
         return;
+    }
+    if (atomic_load(&g_startup_compositor_neutralize) &&
+        !startup_audit_finished()) {
+        uint32_t width = 0;
+        uint32_t height = 0;
+        pthread_mutex_lock(&g_lock);
+        const bool suppress = should_suppress_compositor_draw_locked(
+            command_buffer, true, &width, &height);
+        pthread_mutex_unlock(&g_lock);
+        if (suppress) {
+            const VkClearAttachment attachment = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .colorAttachment = 0,
+                .clearValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}},
+            };
+            const VkClearRect rect = {
+                .rect = {{0, 0}, {width, height}},
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            };
+            g_next_cmd_clear_attachments(
+                command_buffer, 1, &attachment, 1, &rect);
+            return;
+        }
     }
     g_next_cmd_draw_indexed(
         command_buffer, index_count, instance_count, first_index,
@@ -3464,10 +3712,16 @@ void teso4m4_lifecycle_reset(void) {
     atomic_store(&g_startup_draw_audit, false);
     atomic_store(&g_startup_input_audit, false);
     atomic_store(&g_startup_compositor_audit, false);
+    atomic_store(&g_startup_compositor_neutralize, false);
     atomic_store(&g_startup_color_audit_finished, false);
     atomic_store(&g_startup_color_detail_count, 0);
     g_present_pixel_sampler = NULL;
     g_compositor_image_sampler = NULL;
+    g_compositor_neutralize_state =
+        TESO4M4_COMPOSITOR_NEUTRALIZE_INACTIVE;
+    g_compositor_placeholder_signature = 0;
+    g_compositor_suppressed_draw_count = 0;
+    g_compositor_neutralize_test_pipeline = VK_NULL_HANDLE;
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -3532,6 +3786,30 @@ void teso4m4_lifecycle_set_startup_compositor_audit(bool enabled) {
             "STARTUP_COMPOSITOR_AUDIT_BEGIN: image_bindings_per_set=2"
             " sampled_subresources=base-mip-base-layer");
     }
+}
+
+void teso4m4_lifecycle_set_startup_compositor_neutralize(bool enabled) {
+    pthread_mutex_lock(&g_lock);
+    atomic_store(&g_startup_compositor_neutralize, enabled);
+    g_compositor_neutralize_state = enabled
+        ? TESO4M4_COMPOSITOR_NEUTRALIZE_ARMED
+        : TESO4M4_COMPOSITOR_NEUTRALIZE_INACTIVE;
+    g_compositor_placeholder_signature = 0;
+    g_compositor_suppressed_draw_count = 0;
+    pthread_mutex_unlock(&g_lock);
+    if (enabled) {
+        lifecycle_log(
+            "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2"
+            " first_present=60 last_present=150"
+            " max_suppressed_draws=96 fallback=forward");
+    }
+}
+
+void teso4m4_lifecycle_set_compositor_neutralize_test_pipeline(
+    VkPipeline pipeline) {
+    pthread_mutex_lock(&g_lock);
+    g_compositor_neutralize_test_pipeline = pipeline;
+    pthread_mutex_unlock(&g_lock);
 }
 
 void teso4m4_lifecycle_set_present_pixel_sampler(

@@ -139,4 +139,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-draw-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-input-audit
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-audit
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-neutralize
 echo "Built teso4m4 artifacts in $BUILD"

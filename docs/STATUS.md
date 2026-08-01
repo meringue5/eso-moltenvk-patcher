@@ -81,23 +81,29 @@ of the two inputs supplies it, and whether the transition replaces a descriptor
 or fills a stable image, remain unproven. This is a low-impact startup
 presentation defect, not a gameplay blocker.
 
-Experiment 0029 is the prepared bounded successor. Its isolated
-`startup-compositor-audit` mode carries each of the two mixed-set image
-bindings, image views, base mip/layer, and update signatures through the
-existing draw-submit-semaphore-present chain, then samples both offscreen
-inputs at the same twenty pre-present checkpoints. The analyzer maps ordered
-MSL `Sampler0` to scene and `Sampler1` to GUI and distinguishes descriptor
-replacement from an in-place content transition. Missing/copy state,
-unsupported view/format, synchronization loss, or readback failure is
-inconclusive.
+Experiment 0030 is now the prepared production-repair candidate. It uses the
+already proven descriptor transition instead of spending another startup on
+input readback. Only the exact indexed compositor pipeline, pipeline layout,
+ordered two-set structure, generation-2 window, and complete descriptor state
+can arm it. While the first target descriptor signature remains stable, the
+bridge replaces that draw with an opaque-black full-frame clear. The first
+changed descriptor state is forwarded and permanently latches direct
+forwarding. Ordinal 150, 96 suppressed draws, missing state, or any unexpected
+target use fails open to the application command. There is no pixel readback,
+shader/asset replacement, settings change, or cache change.
 
-The complete bridge build, configuration matrix, lifecycle/subresource probe,
-125 Python tests, warnings-as-errors, and Clang static analysis pass. The real
-official MoltenVK/AppKit gate passes BGRA8 controls at small and exact ESO
-extents and a separate RGBA16F array-image control at mip 1/layer 2. No game
-process or bundle was touched. The installed mode is still
-`performance-aggressive`; Experiment 0029 awaits explicit installation
-approval and one bounded user-controlled startup.
+The complete bridge build and configuration matrix pass. Synthetic lifecycle
+controls prove stable-state suppression, first-transition forwarding, and
+incomplete-state fail-open behavior. All 129 Python tests pass. The real
+official MoltenVK 1.4.2/AppKit/Metal gate passes black clear, magenta clear,
+graphics draw, load-only, and RGBA16F subresource controls at small and exact
+ESO extents outside the restricted sandbox. No game process or bundle was
+touched. The installed mode remains `performance-aggressive`; Experiment 0030
+awaits explicit installation approval and one bounded user-controlled startup.
+
+Experiment 0029 remains a prepared diagnostic fallback, not the next required
+run. Its two-input readback can distinguish scene from GUI only if the narrower
+descriptor-transition neutralizer fails open or the artifact persists.
 
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface

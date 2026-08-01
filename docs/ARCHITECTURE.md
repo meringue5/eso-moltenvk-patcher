@@ -410,6 +410,20 @@ withholding only its presentation; permanently latch back to direct MoltenVK
 forwarding at the first valid compositor input. Do not add steady-state pixel
 readback or a general shader/material replacement.
 
+Experiment 0030 implements a narrower production candidate directly at the
+already observed aggregate descriptor transition. It does not need to know
+which of the scene/GUI inputs owns the placeholder to avoid presenting the
+invalid combined result. The gate requires the exact indexed pipeline,
+pipeline layout, ordered descriptor-set layouts, zero push range, complete
+descriptor classes, generation 2, and present ordinals 60 through 149. The
+first descriptor-update signature is treated as the placeholder state and the
+exact draw is replaced by an opaque-black full-frame clear. A different
+signature forwards that same draw and permanently latches direct forwarding.
+Missing state, unexpected non-indexed use, a 96-draw bound, or the ordinal-150
+boundary forwards rather than suppresses. This keeps Experiment 0029's
+scene/GUI readback as a diagnostic fallback and removes all pixel readback from
+the repair path.
+
 The complete observed presentation stack is now:
 
 1. ESO's `ZOMetalGameView` owns an opaque `CAMetalLayer`; its AppKit fallback
