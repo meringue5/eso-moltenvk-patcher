@@ -58,7 +58,13 @@ amendments; do not rewrite the original observation.
   bundle-idle gate: block ESO, the ZeniMax launcher, active Steam ESO
   download/update state, any process holding a file in the target `eso.app`, or
   an indeterminate check. Do not reintroduce a blanket `steam_osx` prohibition.
-- Never install the bridge or modify the game bundle without explicit approval.
+- The user has granted standing authorization for this project to perform
+  cache-preserving bridge restore/install cycles after the exact target,
+  restore path, source build, non-game gates, and shared bundle-idle gate pass.
+  Do not pause for another per-install confirmation in that verified scope;
+  complete installation and notify the user only when their interactive launch
+  is required. This authorization does not cover unknown builds, settings or
+  cache-policy changes, launching an app, or a broader/destructive mutation.
 - Never bypass the Steam authentication path or launch `eso.app` directly as a
   substitute for a Steam test.
 - Never delete the pristine Bink backup, old pipeline cache, crash evidence, or
@@ -119,8 +125,11 @@ The installer is intentionally blocked unless the caller sets:
 TESO4M4_EXPERIMENTAL=I_ACCEPT_CRASH_RISK
 ```
 
-That environment variable is not standing user approval. An agent must still
-receive explicit approval for each modification of the game bundle.
+The environment variable is only a source-tool safeguard. Standing project
+authorization for verified cache-preserving restore/install cycles is recorded
+in the safety rules above; no additional per-install confirmation is required
+inside that scope. Any operation outside that scope still requires explicit
+approval.
 
 This is a source-tool safeguard while the end-user installer is not yet built.
 Consult `docs/STATUS.md` and `docs/PRODUCTION.md` for the current production
