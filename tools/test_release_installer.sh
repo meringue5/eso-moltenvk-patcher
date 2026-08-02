@@ -33,6 +33,8 @@ print -r -- 'RELEASE_VERSION=fixture-1.0.0' > "$PAYLOAD/target-profile.env"
 print -r -- "PROFILE_DESCRIPTION='Release installer fixture'" >> "$PAYLOAD/target-profile.env"
 print -r -- "EXPECTED_ESO_SHA256=$EXPECTED_ESO_SHA" >> "$PAYLOAD/target-profile.env"
 print -r -- "EXPECTED_ORIGINAL_BINK_SHA256=$EXPECTED_BINK_SHA" >> "$PAYLOAD/target-profile.env"
+EXPECTED_RETAGGED_BINK_SHA="$(shasum -a 256 "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" | awk '{print $1}')"
+print -r -- "EXPECTED_RETAGGED_ORIGINAL_BINK_SHA256=$EXPECTED_RETAGGED_BINK_SHA" >> "$PAYLOAD/target-profile.env"
 print -r -- 'EXPECTED_ESO_UUID=fixture' >> "$PAYLOAD/target-profile.env"
 
 print -r -- '#!/bin/zsh' > "$MOCK_BIN/pgrep"
@@ -41,15 +43,23 @@ print -r -- '#!/bin/zsh' > "$MOCK_BIN/lsof"
 print -r -- 'exit 1' >> "$MOCK_BIN/lsof"
 chmod 755 "$TOOL" "$MOCK_BIN/pgrep" "$MOCK_BIN/lsof"
 
+cp "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" \
+  "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib"
+cp "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$GAME_MAC/libMoltenVK.teso4m4.dylib"
+
 run_tool() {
   PATH="$MOCK_BIN:$PATH" ESO_MOLTENVK_PATCHER_STATE_ROOT="$STATE_ROOT" \
     "$TOOL" "$@" --eso-app "$ESO_APP"
 }
 
-if run_tool install --yes >/dev/null 2>&1; then
+initial_choice_output="$(run_tool install --yes 2>&1 || true)"
+if [[ "$initial_choice_output" != *'Choose settings explicitly'* ]]; then
   print -u2 -- 'Expected non-interactive install without a settings choice to fail.'
   exit 1
 fi
+[[ "$initial_choice_output" == *'Detected verified inactive development artifacts'* ]]
+rm -f "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
+  "$GAME_MAC/libMoltenVK.teso4m4.dylib"
 status_output="$(run_tool status)"
 [[ "$status_output" == *'patch not installed'* ]]
 

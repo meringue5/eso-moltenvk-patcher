@@ -26,7 +26,7 @@ import shlex
 import sys
 
 profile = json.load(open(sys.argv[1], encoding="utf-8"))
-required = ("description", "sha256", "original_bink_sha256", "uuid")
+required = ("description", "sha256", "original_bink_sha256", "retagged_original_bink_sha256", "uuid")
 missing = [key for key in required if key not in profile]
 if missing:
     raise SystemExit(f"Target profile lacks release fields: {', '.join(missing)}")
@@ -35,6 +35,7 @@ with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as output:
     output.write(f"PROFILE_DESCRIPTION={shlex.quote(profile['description'])}\n")
     output.write(f"EXPECTED_ESO_SHA256={shlex.quote(profile['sha256'])}\n")
     output.write(f"EXPECTED_ORIGINAL_BINK_SHA256={shlex.quote(profile['original_bink_sha256'])}\n")
+    output.write(f"EXPECTED_RETAGGED_ORIGINAL_BINK_SHA256={shlex.quote(profile['retagged_original_bink_sha256'])}\n")
     output.write(f"EXPECTED_ESO_UUID={shlex.quote(profile['uuid'])}\n")
 PY
 chmod 755 "$INTERNAL/bin/eso-moltenvk-patcher" "$INTERNAL/status.command" "$STAGE"/*.command

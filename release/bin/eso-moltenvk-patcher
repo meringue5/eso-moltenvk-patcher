@@ -47,7 +47,7 @@ die() {
   print -u2 -- ""
   print -u2 -- "  $*"
   if [[ "$MUTATION_STARTED" == false ]]; then
-    print -u2 -- "  No files were changed."
+    [[ "$*" == *"No files were changed."* ]] || print -u2 -- "  No files were changed."
   else
     print -u2 -- "  A verified recovery record is available; run the command again."
   fi
@@ -317,6 +317,14 @@ recover_incomplete_install() {
   [[ ! -e "$MARKER" ]] || die "The patch is already installed. Use status or remove."
   local current_bink="$(sha256 "$BINK")"
   if [[ ! -e "$RENAMED" && ! -e "$MVK" && "$current_bink" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
+    return 0
+  fi
+  if [[ "$current_bink" == "$EXPECTED_ORIGINAL_BINK_SHA256" && ! -e "$STATE" && ! -e "$BACKUP" ]]; then
+    [[ ! -e "$RENAMED" || "$(sha256 "$RENAMED")" == "$EXPECTED_RETAGGED_ORIGINAL_BINK_SHA256" ]] \
+      || die "An unknown inactive Bink companion file is present. No files were changed."
+    [[ ! -e "$MVK" || "$(sha256 "$MVK")" == "$(sha256 "$PAYLOAD/libMoltenVK.teso4m4.dylib")" ]] \
+      || die "An unknown inactive MoltenVK companion file is present. No files were changed."
+    print -- "  Detected verified inactive development artifacts; the active original baseline is clean."
     return 0
   fi
   [[ -f "$BACKUP" && -f "$STATE" ]] || die "An incomplete patch state exists without a verified restore record. No files were changed."

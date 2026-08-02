@@ -43,6 +43,11 @@ original Bink hash. The original-loader hash is
 supported by the active original, both pristine copies, and the preserved
 original-runtime experiment records. The release gate now uses that value and
 still fails closed on any other library.
+The local double-click pass also established a clean migration case: the
+source-maintenance restore leaves verified inactive retagged-Bink and MoltenVK
+companions beside the active original. With no release state or backup, the
+release installer now accepts only those two exact known hashes as inactive
+development artifacts. Any unknown companion still fails closed.
 
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,

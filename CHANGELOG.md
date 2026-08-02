@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Allowed migration from the verified source-maintenance restore state when
+  its inactive retagged-Bink and MoltenVK companions match exact known hashes;
+  unknown companions still fail closed.
 - Corrected the release profile's original-Bink fingerprint, which had
   accidentally recorded a built proxy hash; the fail-closed installer now
   accepts only the independently preserved original loader hash.
