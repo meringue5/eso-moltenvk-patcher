@@ -31,7 +31,7 @@ the journal and backup, restores the clean baseline, and safely restarts. It
 never resumes from an unverified partially copied binary.
 
 Source, supported builds, and troubleshooting:
-https://github.com/meringue5/teso4m4
+https://github.com/meringue5/eso-moltenvk-patcher
 
 Latest release:
-https://github.com/meringue5/teso4m4/releases/latest
+https://github.com/meringue5/eso-moltenvk-patcher/releases/latest

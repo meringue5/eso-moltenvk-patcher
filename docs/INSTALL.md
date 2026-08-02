@@ -1,6 +1,6 @@
 # Install ESO MoltenVK Patcher
 
-[![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/teso4m4/releases/latest)
+[![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
 
 This guide is for the prebuilt GitHub Release ZIP. It does not require Python,
 Xcode, Homebrew, or a source checkout. The illustrations below intentionally
@@ -9,7 +9,7 @@ version.
 
 ## 1. Download and open the package
 
-Open the [latest release](https://github.com/meringue5/teso4m4/releases/latest),
+Open the [latest release](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest),
 expand **Assets** if necessary, and download
 `ESO-MoltenVK-Patcher-<version>.zip`. Do not download GitHub's automatically
 generated **Source code** archives: they are for contributors and do not

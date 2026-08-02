@@ -8,14 +8,14 @@ Steam launch path; on the tested M4 MacBook Air, a 2048 x 1280 medium-to-high
 graphics profile held the 60 FPS VSync ceiling throughout roughly 93 minutes
 of user-observed active gameplay.
 
-[![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/teso4m4/releases/latest)
+[![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
 
 ## How to install
 
 The public release is a prebuilt ZIP. Players do **not** need Python, Xcode, or
 a source checkout.
 
-1. [Download the latest GitHub Release](https://github.com/meringue5/teso4m4/releases/latest)
+1. [Download the latest GitHub Release](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
    and choose `ESO-MoltenVK-Patcher-<version>.zip` under **Assets**.
 2. Unzip it and open the single **ESO MoltenVK Patcher** folder.
 3. Quit ESO and the ZeniMax launcher. Steam may remain open unless it is

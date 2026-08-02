@@ -2,8 +2,9 @@
 
 ## Canonical name
 
-The public product name is **ESO MoltenVK Patcher**. The intended GitHub
-repository slug and local workspace directory are `eso-moltenvk-patcher`.
+The public product name is **ESO MoltenVK Patcher**. The GitHub repository slug
+is `eso-moltenvk-patcher`; the local workspace directory will use the same slug
+after active sessions have moved away from the legacy path.
 Release archives use `ESO-MoltenVK-Patcher-<version>.zip`, and the packaged
 command-line implementation uses `eso-moltenvk-patcher`.
 
