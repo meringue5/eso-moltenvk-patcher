@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Replaced defaulted confirmation prompts with dependency-free arrow-key menus
+  that start unselected, retain Y/N shortcuts, ignore Return until selection,
+  and cancel on Escape.
 - Refined the interactive stepper to clear the shell's echoed launch command,
   show every stage up front in muted text, and promote completed stages to
   bright green checked rows while leaving redirected logs untouched.

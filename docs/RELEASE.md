@@ -40,6 +40,10 @@ The interactive renderer clears only the visible viewport, then redraws the
 full plan after each completed boundary. Pending rows are grey and unmarked;
 completed rows use a bright label and green checked box. Non-interactive output
 never emits screen-clearing or cursor-control sequences.
+Interactive target and settings confirmations are dependency-free single-key
+menus with no initial selection. Arrow keys move the highlight, Return confirms
+only a highlighted row, Y/N act as shortcuts, and Escape cancels. The script
+does not alter persistent terminal input settings.
 
 The package prints its release version on every invocation. If no known client
 is found, an interactive Terminal session asks the player to drag `eso.app` or

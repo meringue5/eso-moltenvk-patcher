@@ -39,6 +39,9 @@ All stages are visible from the beginning. Pending rows are muted and have no
 checkbox; completed rows become bright with a green checked box. The
 interactive installer clears the shell's echoed launch command from the
 visible viewport before drawing its header.
+Confirmation menus start with no highlighted default. Use the Up and Down
+arrows and press Return, or press Y/N directly. Return before choosing does
+nothing, and Escape cancels safely.
 
 The installer searches known Steam and official ZeniMax locations. If ESO is
 elsewhere, Terminal asks for a path: drag `eso.app` or `ESO Launcher.app` from

@@ -58,6 +58,8 @@ if [[ "$initial_choice_output" != *'Choose settings explicitly'* ]]; then
   exit 1
 fi
 [[ "$initial_choice_output" == *'Detected verified inactive development artifacts'* ]]
+target_choice_output="$(run_tool install --skip-settings 2>&1 || true)"
+[[ "$target_choice_output" == *'Non-interactive installation requires --yes'* ]]
 rm -f "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
   "$GAME_MAC/libMoltenVK.teso4m4.dylib"
 status_output="$(run_tool status)"

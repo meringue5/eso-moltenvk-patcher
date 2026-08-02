@@ -40,6 +40,9 @@ whether mutation started and how verified recovery proceeds.
 The interactive view clears the shell's launch command from the visible
 viewport, shows the complete plan in muted text, and promotes each finished
 stage to a bright green checked row.
+Target confirmation and settings use no default selection: move with the Up
+and Down arrows and press Return, or use Y/N shortcuts. Return does nothing
+until a choice is highlighted; Escape cancels.
 
 Choosing settings application selectively merges 48 allowlisted keys after
 backing up `UserSettings.txt`; it does not replace the complete file. Removal
