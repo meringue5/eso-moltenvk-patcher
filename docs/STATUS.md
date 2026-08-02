@@ -4,7 +4,7 @@ Last updated: 2026-08-02
 
 ## Current production baseline
 
-`teso4m4` was promoted to production on 2026-08-01. The validated gameplay
+**ESO MoltenVK Patcher** was promoted to production on 2026-08-01. The validated gameplay
 baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
 for ESO 12.0.7, databuild `3281538`. Experiment 0031's exact bounded startup
 compositor neutralizer is the current 2026-08-02 maintenance baseline layered

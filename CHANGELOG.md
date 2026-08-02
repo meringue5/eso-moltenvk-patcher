@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Adopted **ESO MoltenVK Patcher** as the canonical product name while
+  retaining `teso4m4` installation and source identifiers for backward
+  compatibility.
 - Added a prominent latest-release download link and an illustrated end-user
   installation guide covering install, custom paths, Gatekeeper, and removal.
 - Added the no-membership public release path: a prebuilt GitHub Release ZIP

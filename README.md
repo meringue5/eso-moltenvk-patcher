@@ -1,6 +1,7 @@
-# The Unofficial MoltenVK Patch for The Elder Scrolls Online
+# ESO MoltenVK Patcher
 
-`teso4m4` redirects the macOS client of **The Elder Scrolls Online** from its
+**ESO MoltenVK Patcher** redirects the macOS client of **The Elder Scrolls
+Online** from its
 statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
 1.4.2 release. The current patch and installer are validated on the normal
 Steam launch path; on the tested M4 MacBook Air, a 2048 x 1280 medium-to-high
@@ -35,10 +36,10 @@ failure messages.
 
 ## What the patch delivers
 
-[![Simple sketch of the teso4m4 override: ESO's original straight path runs through embedded MoltenVK 1.0.18 and then Metal; teso4m4 cuts that old path in process memory, detours through MoltenVK 1.4.2, and rejoins the same Metal stage](docs/images/teso4m4-runtime-hijack-simple.svg)](docs/images/teso4m4-runtime-hijack-simple.svg)
+[![Simple sketch of the ESO MoltenVK Patcher override: ESO's original straight path runs through embedded MoltenVK 1.0.18 and then Metal; the patcher cuts that old path in process memory, detours through MoltenVK 1.4.2, and rejoins the same Metal stage](docs/images/teso4m4-runtime-hijack-simple.svg)](docs/images/teso4m4-runtime-hijack-simple.svg)
 
 *The grey line is ESO's original path through embedded MoltenVK 1.0.18. At
-launch, `teso4m4` cuts that route at the old entry points, takes the green
+launch, ESO MoltenVK Patcher cuts that route at the old entry points, takes the green
 detour through MoltenVK 1.4.2, and rejoins the same Metal stage. The grey code
 remains unchanged on disk, and the override disappears when ESO exits.*
 
@@ -70,7 +71,7 @@ image to inspect the original 3420 x 2214 screenshot.*
 
 ## Before and after
 
-| Embedded MoltenVK 1.0.18 | `teso4m4` with official MoltenVK 1.4.2 |
+| Embedded MoltenVK 1.0.18 | ESO MoltenVK Patcher with official MoltenVK 1.4.2 |
 |---|---|
 | Medium settings were not practical in long-term user experience | Validated 2048 x 1280 medium-to-high profile |
 | Minimum-oriented play often stayed below 50 FPS | Active gameplay held the user-observed 60 FPS VSync ceiling |
@@ -93,7 +94,7 @@ ESO does not load MoltenVK from a replaceable dynamic library. MoltenVK 1.0.18
 is statically linked into the game executable, so swapping the bundled
 framework or archive does not change the code that runs.
 
-`teso4m4` solves that boundary by:
+ESO MoltenVK Patcher solves that boundary by:
 
 1. loading through ESO's existing Bink dynamic-library path while re-exporting
    the complete original Bink interface;
@@ -148,7 +149,7 @@ the source record and limits of that conclusion.
 
 ### Public release package
 
-`teso4m4` is **not** an ESO add-on. It cannot be installed in the game's
+ESO MoltenVK Patcher is **not** an ESO add-on. It cannot be installed in the game's
 `AddOns` folder because it changes the runtime path inside the macOS game
 client. A folder-copy add-on release would therefore be misleading and would
 not work.
@@ -185,7 +186,7 @@ Gatekeeper check; see [Release packaging](docs/RELEASE.md).
 
 ## Production baseline
 
-`teso4m4` was promoted from research to a production runtime patch on
+ESO MoltenVK Patcher was promoted from research to a production runtime patch on
 2026-08-01. The exact supported scope, promotion boundary, and remaining
 limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 
@@ -262,6 +263,7 @@ modifying the game bundle. See the [update runbook](docs/UPDATES.md).
 ## Documentation
 
 - [Installation guide](docs/INSTALL.md)
+- [Project naming and compatibility](docs/NAMING.md)
 - [Current verified status](docs/STATUS.md)
 - [Durable findings](docs/FINDINGS.md)
 - [Bridge architecture](docs/ARCHITECTURE.md)
@@ -285,7 +287,7 @@ tools/              Binary-analysis and compatibility probes
 
 ## Scope and license
 
-`teso4m4` is unaffiliated with ZeniMax, Bethesda, Valve, Apple, or Khronos. The
+ESO MoltenVK Patcher is unaffiliated with ZeniMax, Bethesda, Valve, Apple, or Khronos. The
 project is MIT-licensed and does not distribute proprietary game files,
 credentials, or caches. MoltenVK is fetched from its official release and
 remains under its Apache 2.0 license. Use this project only with software and
@@ -293,7 +295,7 @@ accounts you are authorized to operate.
 
 ## 한국어 요약
 
-`teso4m4`는 ESO의 macOS 실행 파일에 정적으로 포함된 MoltenVK 1.0.18을
+**ESO MoltenVK Patcher**는 ESO의 macOS 실행 파일에 정적으로 포함된 MoltenVK 1.0.18을
 공식 MoltenVK 1.4.2로 우회하는 비공식 런타임 패치입니다. 구형 런타임은
 Steam 전용 앱의 문제가 아니라 현재 ESO macOS 클라이언트에 포함된
 구성요소이며, 현재 배포본과 설치 절차는 Steam판의 정상 인증 경로에서

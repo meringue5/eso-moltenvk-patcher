@@ -1,12 +1,12 @@
 # AGENTS.md
 
 This file contains standing instructions for coding agents working on
-`teso4m4`. Keep changing project state and experiment history in `docs/` rather
+**ESO MoltenVK Patcher**. Keep changing project state and experiment history in `docs/` rather
 than accumulating it here.
 
 ## Mission
 
-`teso4m4` is a production macOS runtime patch for ESO on Apple Silicon. It
+**ESO MoltenVK Patcher** is a production macOS runtime patch for ESO on Apple Silicon. It
 bridges the game's statically linked MoltenVK runtime while preserving the
 user's normal launcher and authentication path. The project was promoted from
 research to production on 2026-08-01; see `docs/PRODUCTION.md` for the exact
@@ -14,6 +14,11 @@ baseline and supported scope.
 
 Production reliability, reversibility, and evidence preservation take priority
 over broadening support or pursuing a quick FPS result.
+
+The former project name `teso4m4` remains in internal symbols, environment
+variables, installed filenames, and historical evidence as a compatibility
+identifier. Do not mechanically rename those identifiers; follow
+`docs/NAMING.md` when migrating them.
 
 ## Start every task here
 
