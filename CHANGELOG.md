@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Refined the interactive stepper to clear the shell's echoed launch command,
+  show every stage up front in muted text, and promote completed stages to
+  bright green checked rows while leaving redirected logs untouched.
 - Allowed migration from the verified source-maintenance restore state when
   its inactive retagged-Bink and MoltenVK companions match exact known hashes;
   unknown companions still fail closed.

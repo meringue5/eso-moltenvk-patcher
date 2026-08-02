@@ -37,6 +37,9 @@ verification or change is shown as a numbered stage, followed by a concise
 target, version, settings, and recovery summary. Interactive terminals use
 light color; redirected logs remain plain text. Technical failures state
 whether mutation started and how verified recovery proceeds.
+The interactive view clears the shell's launch command from the visible
+viewport, shows the complete plan in muted text, and promotes each finished
+stage to a bright green checked row.
 
 Choosing settings application selectively merges 48 allowlisted keys after
 backing up `UserSettings.txt`; it does not replace the complete file. Removal

@@ -7,15 +7,27 @@ source "$PAYLOAD/target-profile.env"
 
 UI_TTY=false
 [[ -t 1 ]] && UI_TTY=true
-UI_GREEN="" UI_RED="" UI_BLUE="" UI_DIM="" UI_RESET=""
+UI_GREEN="" UI_RED="" UI_BLUE="" UI_DIM="" UI_BRIGHT="" UI_GREY="" UI_RESET=""
 if [[ "$UI_TTY" == true && -z "${NO_COLOR:-}" ]]; then
   UI_GREEN=$'\033[32m'
   UI_RED=$'\033[31m'
   UI_BLUE=$'\033[36m'
   UI_DIM=$'\033[2m'
+  UI_BRIGHT=$'\033[1m'
+  UI_GREY=$'\033[90m'
   UI_RESET=$'\033[0m'
 fi
 MUTATION_STARTED=false
+UI_ACTION=""
+UI_COMPLETED=0
+typeset -a UI_STEP_LABELS
+
+ui_clear() {
+  if [[ "$UI_TTY" == true ]]; then
+    printf '\033[2J\033[H'
+  fi
+  return 0
+}
 
 ui_header() {
   local action="$1"
@@ -29,9 +41,40 @@ ui_header() {
 
 ui_step() {
   local current="$1" total="$2" label="$3" result="${4:-Done}"
+  if [[ "$UI_TTY" == true && -n "$UI_ACTION" ]]; then
+    UI_COMPLETED="$current"
+    ui_render_plan
+    return 0
+  fi
   local symbol="✓" color="$UI_GREEN"
   [[ "$result" == "Skipped" ]] && { symbol="–"; color="$UI_DIM"; }
   print -- "  ${color}${symbol}${UI_RESET} [$current/$total] $label  ${color}$result${UI_RESET}"
+}
+
+ui_render_plan() {
+  ui_clear
+  ui_header "$UI_ACTION"
+  local step total="${#UI_STEP_LABELS[@]}"
+  for (( step = 1; step <= total; step++ )); do
+    if (( step <= UI_COMPLETED )); then
+      print -- "  ${UI_GREEN}☑${UI_RESET} ${UI_BRIGHT}[$step/$total] ${UI_STEP_LABELS[$step]}${UI_RESET}"
+    else
+      print -- "    ${UI_GREY}[$step/$total] ${UI_STEP_LABELS[$step]}${UI_RESET}"
+    fi
+  done
+  print -- ""
+}
+
+ui_plan_start() {
+  UI_ACTION="$1"
+  shift
+  UI_STEP_LABELS=("$@")
+  UI_COMPLETED=0
+  if [[ "$UI_TTY" == true ]]; then
+    ui_render_plan
+  else
+    ui_header "$UI_ACTION"
+  fi
 }
 
 ui_complete() {
@@ -349,6 +392,7 @@ recover_incomplete_install() {
 }
 
 check() {
+  ui_clear
   ui_header "Installation status"
   resolve_target; state_directory
   local executable_hash="$(sha256 "$ESO")"
@@ -365,7 +409,13 @@ check() {
 }
 
 install() {
-  ui_header "Safe, reversible runtime installation"
+  ui_plan_start "Safe, reversible runtime installation" \
+    "Finding ESO installation" \
+    "Verifying supported ESO build" \
+    "Checking game, launcher, and update state" \
+    "Preparing verified recovery backup" \
+    "Installing runtime bridge" \
+    "Finalizing settings and verifying installation"
   resolve_target; state_directory
   ui_step 1 6 "Finding ESO installation"
   require_supported_executable
@@ -435,7 +485,11 @@ install() {
 }
 
 remove() {
-  ui_header "Restore the original ESO runtime"
+  ui_plan_start "Restore the original ESO runtime" \
+    "Finding patched ESO installation" \
+    "Checking game, launcher, and recovery state" \
+    "Restoring original runtime files" \
+    "Verifying settings and removal"
   resolve_target; state_directory
   ui_step 1 4 "Finding patched ESO installation"
   require_idle

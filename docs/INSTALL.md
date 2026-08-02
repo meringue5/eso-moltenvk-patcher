@@ -35,6 +35,10 @@ verification, idle checks, recovery preparation, bridge installation, settings,
 and final verification. The progress display advances only when a real stage
 finishes; it is not a time-based animation. The final summary lists the exact
 ESO target, patcher version, settings choice, and backup result.
+All stages are visible from the beginning. Pending rows are muted and have no
+checkbox; completed rows become bright with a green checked box. The
+interactive installer clears the shell's echoed launch command from the
+visible viewport before drawing its header.
 
 The installer searches known Steam and official ZeniMax locations. If ESO is
 elsewhere, Terminal asks for a path: drag `eso.app` or `ESO Launcher.app` from

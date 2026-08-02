@@ -36,6 +36,10 @@ than raw implementation logs. Numbered stages correspond to completed safety
 or mutation boundaries; there is no simulated time-based progress. Color is
 enabled only for an interactive terminal and disabled by `NO_COLOR` or output
 redirection, keeping support logs machine-readable.
+The interactive renderer clears only the visible viewport, then redraws the
+full plan after each completed boundary. Pending rows are grey and unmarked;
+completed rows use a bright label and green checked box. Non-interactive output
+never emits screen-clearing or cursor-control sequences.
 
 The package prints its release version on every invocation. If no known client
 is found, an interactive Terminal session asks the player to drag `eso.app` or
