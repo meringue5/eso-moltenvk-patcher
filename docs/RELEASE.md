@@ -12,13 +12,18 @@ in a compressed DMG remains the future polished distribution channel.
 ./scripts/package-release-zip.sh 0.1.0
 ```
 
-The command rebuilds the bridge, runs its non-game gates, embeds only the
-bridge, MoltenVK runtime, and current target profile, writes a SHA-256 manifest,
+The command rebuilds the bridge, runs its non-game gates, embeds the bridge,
+MoltenVK runtime, current target profile, and sanitized M4 settings template,
+writes a SHA-256 manifest,
 and emits a ZIP under `dist/`. Python and Xcode are release-author tooling only:
 players need neither of them, nor a source checkout.
 
 Players normally run only `install.command`; it discovers and validates the
 client, then asks for confirmation immediately before changing files.
+It also requires an explicit settings-template choice with no default. In an
+interactive Terminal the player must enter `y` or `n`; non-interactive callers
+must pass `--apply-settings` or `--skip-settings`. `--yes` accepts only the ESO
+application target and never implies a settings choice.
 `status.command` is optional support diagnostics and `remove.command` restores
 the original. If Finder
 does not permit a downloaded command to run directly, they can drag it into a
@@ -51,6 +56,9 @@ only patch-owned artifacts, and restarts from the clean baseline.
 - Creates an independently verified original-Bink backup in Application
   Support, while retaining the renamed original needed by the runtime proxy.
 - Exposes one-step Install and Remove, plus optional Status and CLI Repair.
+- Optionally merges exactly 48 allowlisted M4-profile keys into a verified
+  `UserSettings.txt` backup. Remove restores the backup only if the applied
+  settings have not subsequently changed.
 - Restores the original Bink library on Remove only after the saved restore
   record, backup hash, and selected executable still match the exact profile;
   it does not launch ESO or alter account authentication.

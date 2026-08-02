@@ -38,6 +38,12 @@ Review the displayed target. Type `y` only when it names the ESO installation
 you intend to patch. The installer then verifies the exact game build,
 original library, payload checksums, idle state, and recoverable backup.
 
+The installer also requires an explicit `y` or `n` response for the bundled
+M4 2048×1280 settings template. Pressing Return alone does not choose a
+default; the question repeats. Choosing `y` backs up `UserSettings.txt` and
+selectively merges only the 48 allowlisted keys. Choosing `n` leaves all game
+settings unchanged.
+
 ![Terminal confirmation example showing the verified target and one confirmation](images/install/03-confirm.svg)
 
 An unsupported or updated ESO build stops without changing files. Do not work
@@ -66,6 +72,11 @@ verifies and restores the recorded original library. Keep the patcher folder
 until removal is complete. `status.command` reports the installed version and
 state when troubleshooting, but installation never requires a separate Check
 step.
+
+If the settings template was applied, Remove restores the pre-install settings
+only when the current file still exactly matches the applied result. If you
+changed settings afterward, Remove preserves those changes and reports the
+retained backup path instead of silently overwriting them.
 
 If installation was interrupted, run `install.command` again. It does not
 blindly continue copying from the last line: it verifies the journal and

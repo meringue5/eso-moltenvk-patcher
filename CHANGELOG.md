@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Bundled the 48-key M4 settings template with an explicit apply-or-skip
+  installation choice, selective merge, verified backup, and conflict-safe
+  removal behavior. The prompt has no default and non-interactive installs
+  must state their choice.
 - Adopted **ESO MoltenVK Patcher** as the canonical product name while
   retaining `teso4m4` installation and source identifiers for backward
   compatibility.

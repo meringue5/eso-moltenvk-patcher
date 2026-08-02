@@ -18,6 +18,7 @@ cp "$ROOT/release/install.command" "$ROOT/release/status.command" \
 cp "$ROOT/release/README.txt" "$STAGE/"
 cp "$ROOT/build/libBink2Macx64.dylib" "$ROOT/build/libMoltenVK.teso4m4.dylib" \
   "$STAGE/payload/"
+cp "$ROOT/config/usersettings-m4-moltenvk-1.4.2-standard.txt" "$STAGE/payload/"
 python3 - "$TARGET" "$STAGE/payload/target-profile.env" "$VERSION" <<'PY'
 import json
 import shlex

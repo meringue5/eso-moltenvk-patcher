@@ -11,7 +11,13 @@ print -- "ESO MoltenVK Patcher ${RELEASE_VERSION:-unknown}"
 
 usage() {
   cat <<'EOF'
-Usage: eso-moltenvk-patcher <status|install|remove|repair> [--eso-app PATH] [--yes]
+Usage: eso-moltenvk-patcher <status|install|remove|repair> [options]
+
+Install options:
+  --apply-settings       selectively merge the bundled M4 settings template
+  --skip-settings        leave UserSettings.txt unchanged
+  --settings-file PATH   select UserSettings.txt when applying the template
+  --yes                  accept the displayed ESO application target
 
 PATH may be eso.app itself or an ESO Launcher.app containing game_mac.
 No game, Steam, or launcher is started by this tool.
@@ -22,10 +28,15 @@ command_name="${1:-}"
 [[ -n "$command_name" ]] || { usage; exit 2; }
 shift || true
 selected="${ESO_APP:-}"
+selected_settings="${ESO_SETTINGS_FILE:-}"
 assume_yes=false
+settings_choice=""
 while (( $# )); do
   case "$1" in
     --eso-app) (( $# >= 2 )) || die "--eso-app needs a path"; selected="$2"; shift 2 ;;
+    --settings-file) (( $# >= 2 )) || die "--settings-file needs a path"; selected_settings="$2"; shift 2 ;;
+    --apply-settings) [[ -z "$settings_choice" ]] || die "Choose only one settings action."; settings_choice=apply; shift ;;
+    --skip-settings) [[ -z "$settings_choice" ]] || die "Choose only one settings action."; settings_choice=skip; shift ;;
     --yes|-y) assume_yes=true; shift ;;
     --help|-h) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
@@ -73,6 +84,122 @@ state_directory() {
   BACKUP="$STATE_DIR/original-libBink2Macx64.dylib"
   STATE="$STATE_DIR/install-state.env"
   VERSION_FILE="$STATE_DIR/.version"
+  SETTINGS_PATH_FILE="$STATE_DIR/settings-target-path.txt"
+  SETTINGS_APPLIED_SHA_FILE="$STATE_DIR/settings-applied.sha256"
+}
+
+choose_settings_action() {
+  [[ "$command_name" == install || "$command_name" == repair ]] || return 0
+  if [[ -n "$settings_choice" ]]; then return 0; fi
+  [[ -t 0 ]] || die "Choose settings explicitly with --apply-settings or --skip-settings."
+  local answer=""
+  while true; do
+    print -- "The bundled settings template is the validated M4 2048 x 1280 profile."
+    print -n -- "Apply its 48 allowlisted settings? Enter y or n: "
+    IFS= read -r answer
+    case "$answer" in
+      y|Y|yes|YES|Yes) settings_choice=apply; return 0 ;;
+      n|N|no|NO|No) settings_choice=skip; return 0 ;;
+      *) print -- "Please enter y or n. There is no default." ;;
+    esac
+  done
+}
+
+resolve_settings_file() {
+  [[ "$settings_choice" == apply ]] || return 0
+  local home_dir="$HOME"
+  local -a candidates=(
+    "$home_dir/Documents/Elder Scrolls Online/live/UserSettings.txt"
+    "$home_dir/Library/Mobile Documents/com~apple~CloudDocs/Documents/Elder Scrolls Online/live/UserSettings.txt"
+  )
+  if [[ -z "$selected_settings" ]]; then
+    local candidate
+    for candidate in "${candidates[@]}"; do
+      [[ -f "$candidate" ]] && { selected_settings="$candidate"; break; }
+    done
+  fi
+  if [[ -z "$selected_settings" && -t 0 ]]; then
+    print -- "UserSettings.txt was not found in a known location."
+    print -- "Drag UserSettings.txt into this Terminal window, then press Return:"
+    IFS= read -r selected_settings
+    selected_settings="${(Q)selected_settings}"
+  fi
+  [[ -n "$selected_settings" ]] || die "UserSettings.txt was not found. Re-run with --settings-file PATH."
+  SETTINGS_FILE="${selected_settings:A}"
+  [[ -f "$SETTINGS_FILE" ]] || die "The selected settings path is not a regular file: $SETTINGS_FILE"
+  [[ -f "$PAYLOAD/usersettings-m4-moltenvk-1.4.2-standard.txt" ]] || die "The settings template is missing from this release."
+}
+
+validate_settings_template() {
+  [[ "$settings_choice" == apply ]] || return 0
+  local template="$PAYLOAD/usersettings-m4-moltenvk-1.4.2-standard.txt"
+  local count unique
+  count="$(awk '$1 == "SET" {count++} END {print count + 0}' "$template")"
+  unique="$(awk '$1 == "SET" {seen[$2] = 1} END {for (key in seen) count++; print count + 0}' "$template")"
+  [[ "$count" == 48 && "$unique" == 48 ]] || die "The bundled settings template is not the expected 48-key profile."
+}
+
+prepare_settings_template() {
+  [[ "$settings_choice" == apply ]] || return 0
+  local template="$PAYLOAD/usersettings-m4-moltenvk-1.4.2-standard.txt"
+  local backup temporary
+  backup="$(mktemp "$STATE_DIR/settings-backup-XXXXXXXX")"
+  temporary="$STATE_DIR/settings-merged.txt"
+  copy_verified "$SETTINGS_FILE" "$backup"
+  awk '
+    NR == FNR {
+      if ($1 == "SET") { replacement[$2] = $0; order[++count] = $2 }
+      next
+    }
+    {
+      if ($1 == "SET" && ($2 in replacement)) {
+        print replacement[$2]
+        applied[$2] = 1
+      } else print
+    }
+    END {
+      for (item_index = 1; item_index <= count; item_index++) {
+        key = order[item_index]
+        if (!(key in applied)) print replacement[key]
+      }
+    }
+  ' "$template" "$SETTINGS_FILE" > "$temporary"
+  if ! awk '$1 == "SET" {seen[$2]++} END {for (key in seen) if (seen[key] != 1) exit 1}' "$temporary"; then
+    rm -f "$temporary"
+    die "The merged settings file contains duplicate keys."
+  fi
+  print -r -- "$SETTINGS_FILE" > "$SETTINGS_PATH_FILE"
+  rm -f "$SETTINGS_APPLIED_SHA_FILE"
+  SETTINGS_BACKUP_NAME="${backup:t}"
+}
+
+commit_settings_template() {
+  [[ "$settings_choice" == apply ]] || { print -- "Settings: unchanged by explicit choice."; return 0; }
+  local merged="$STATE_DIR/settings-merged.txt"
+  [[ -f "$merged" ]] || die "The prepared settings merge is missing."
+  copy_verified "$merged" "$SETTINGS_FILE"
+  print -r -- "$(sha256 "$SETTINGS_FILE")" > "$SETTINGS_APPLIED_SHA_FILE"
+  rm -f "$merged"
+  print -- "Settings template applied selectively to: $SETTINGS_FILE"
+  print -- "Settings backup: $STATE_DIR/$SETTINGS_BACKUP_NAME"
+}
+
+restore_settings_if_safe() {
+  [[ "${settings_choice:-skip}" == apply ]] || return 0
+  [[ -f "$SETTINGS_APPLIED_SHA_FILE" ]] || return 0
+  [[ -f "$SETTINGS_PATH_FILE" && -n "${settings_backup:-}" ]] \
+    || { print -- "Settings restore record is incomplete; settings were not changed."; return 0; }
+  local settings_file backup applied_sha
+  settings_file="$(<"$SETTINGS_PATH_FILE")"
+  backup="$STATE_DIR/$settings_backup"
+  applied_sha="$(<"$SETTINGS_APPLIED_SHA_FILE")"
+  [[ -f "$settings_file" && -f "$backup" ]] || { print -- "Settings file or backup is missing; settings were not changed."; return 0; }
+  if [[ "$(sha256 "$settings_file")" != "$applied_sha" ]]; then
+    print -- "Settings changed after installation; they were not overwritten. Backup retained at: $backup"
+    return 0
+  fi
+  copy_verified "$backup" "$settings_file"
+  print -- "Restored pre-install settings from: $backup"
 }
 
 require_supported_original() {
@@ -130,6 +257,8 @@ record_state() {
   print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
   print -r -- "release_version=${RELEASE_VERSION:-unknown}" >> "$STATE"
   print -r -- "transaction_phase=$phase" >> "$STATE"
+  print -r -- "settings_choice=${settings_choice:-skip}" >> "$STATE"
+  print -r -- "settings_backup=${SETTINGS_BACKUP_NAME:-${settings_backup:-}}" >> "$STATE"
   print -r -- "recorded_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
   print -r -- "${RELEASE_VERSION:-unknown}" > "$VERSION_FILE"
 }
@@ -141,6 +270,7 @@ recover_incomplete_install() {
     return 0
   fi
   [[ -f "$BACKUP" && -f "$STATE" ]] || die "An incomplete patch state exists without a verified restore record. No files were changed."
+  local requested_settings_choice="$settings_choice"
   source "$STATE"
   [[ "${executable_sha256:-}" == "$EXPECTED_ESO_SHA256" \
     && "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
@@ -153,6 +283,10 @@ recover_incomplete_install() {
   print -- "Restoring the verified baseline before restarting installation."
   copy_verified "$BACKUP" "$BINK"
   write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
+  restore_settings_if_safe
+  rm -f "$STATE_DIR/settings-merged.txt" "$SETTINGS_APPLIED_SHA_FILE"
+  settings_choice="$requested_settings_choice"
+  SETTINGS_BACKUP_NAME=""
   record_state recovered
 }
 
@@ -172,7 +306,8 @@ check() {
 }
 
 install() {
-  resolve_target; state_directory; require_supported_executable; require_idle
+  resolve_target; state_directory; choose_settings_action; resolve_settings_file; validate_settings_template
+  require_supported_executable; require_idle
   recover_incomplete_install
   require_supported_original
   if [[ "$assume_yes" != true && -t 0 ]]; then
@@ -191,11 +326,13 @@ install() {
   else
     copy_verified "$BINK" "$BACKUP"
   fi
+  prepare_settings_template
   record_state prepared
   copy_verified "$BINK" "$RENAMED"
   retag_original
   copy_verified "$PAYLOAD/libBink2Macx64.dylib" "$BINK"
   copy_verified "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$MVK"
+  commit_settings_template
   print -r -- 'startup-compositor-neutralize' > "$STATE_DIR/enable-marker"
   copy_verified "$STATE_DIR/enable-marker" "$MARKER"
   rm -f "$STATE_DIR/enable-marker"
@@ -214,6 +351,7 @@ remove() {
   [[ "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The restore backup does not match the supported original."
   copy_verified "$BACKUP" "$BINK"
   write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
+  restore_settings_if_safe
   record_state removed
   print -- "Removed from: $ESO_APP"
   print -- "The original Bink library is restored; the verified backup remains at: $BACKUP"
@@ -223,6 +361,12 @@ case "$command_name" in
   check|status) check ;;
   install) install ;;
   remove) remove ;;
-  repair) remove; install ;;
+  repair)
+    requested_settings_choice="$settings_choice"
+    remove
+    settings_choice="$requested_settings_choice"
+    SETTINGS_BACKUP_NAME=""
+    install
+    ;;
   *) usage; exit 2 ;;
 esac

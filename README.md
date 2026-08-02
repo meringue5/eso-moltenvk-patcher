@@ -21,7 +21,8 @@ a source checkout.
 3. Quit ESO and the ZeniMax launcher. Steam may remain open unless it is
    updating or using ESO's files.
 4. Double-click `install.command`. Review the detected ESO path and type `y`
-   only when it is correct.
+   only when it is correct. When asked about the validated M4 2048×1280
+   settings template, explicitly enter `y` or `n`; there is no default.
 5. Start ESO later through your normal Steam or official ESO launcher.
 
 The installer checks known Steam and ZeniMax locations. If it cannot find the
@@ -29,6 +30,10 @@ game, it asks you to drag `eso.app` or `ESO Launcher.app` into Terminal. It
 verifies the exact supported client and a restorable backup before changing
 anything. Double-click `remove.command` to uninstall and restore the original;
 `status.command` is optional and is not a separate prerequisite.
+
+Choosing settings application selectively merges 48 allowlisted keys after
+backing up `UserSettings.txt`; it does not replace the complete file. Removal
+restores that backup only when the settings have not subsequently changed.
 
 See the [illustrated installation guide](docs/INSTALL.md) for the complete
 walkthrough, macOS **Open Anyway** instructions, recovery behavior, and common
