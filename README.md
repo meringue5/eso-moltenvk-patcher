@@ -128,7 +128,8 @@ client. A folder-copy add-on release would therefore be misleading and would
 not work.
 
 The initial release package is a GitHub Release ZIP containing prebuilt bridge
-payloads and **Check**, **Install**, and **Remove** command scripts. It is an
+payloads and one-step **Install** and **Remove** command scripts, plus optional
+**Status** diagnostics. It is an
 installation tool, not an app that must stay running while ESO is played. It bundles the
 verified bridge and runtime so players do not need Python, Xcode, or build
 scripts. A signed **ESO MoltenVK Patcher.app** DMG remains the future polished

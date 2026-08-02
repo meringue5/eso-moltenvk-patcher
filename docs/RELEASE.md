@@ -2,7 +2,7 @@
 
 The release artifact available without an Apple Developer membership is
 **ESO-MoltenVK-Patcher-<version>.zip**. It contains prebuilt payloads plus
-`check.command`, `install.command`, and `remove.command`; it is an installer
+`install.command`, `remove.command`, and optional `status.command`; it is an installer
 and maintenance tool, not a game launcher. A signed **ESO MoltenVK Patcher.app**
 in a compressed DMG remains the future polished distribution channel.
 
@@ -17,7 +17,10 @@ bridge, MoltenVK runtime, and current target profile, writes a SHA-256 manifest,
 and emits a ZIP under `dist/`. Python and Xcode are release-author tooling only:
 players need neither of them, nor a source checkout.
 
-Players run `check.command`, `install.command`, or `remove.command`. If Finder
+Players normally run only `install.command`; it discovers and validates the
+client, then asks for confirmation immediately before changing files.
+`status.command` is optional support diagnostics and `remove.command` restores
+the original. If Finder
 does not permit a downloaded command to run directly, they can drag it into a
 Terminal window or run `zsh install.command`; this is the unsigned-release
 tradeoff. Do not ask users to run a remote `curl | sh` command.
@@ -28,6 +31,12 @@ the ESO Launcher into the window. A successful install reports the exact target,
 release version, and verified backup location. The per-installation state keeps
 a `.version` record for later support and survives removal alongside the
 verified backup.
+
+The same per-installation directory journals `prepared`, `installed`,
+`recovered`, and `removed` transaction phases. A repeated Install after an
+interruption never trusts a partial binary: it validates the exact executable,
+state, backup, and active Bink identity, restores the verified original, removes
+only patch-owned artifacts, and restarts from the clean baseline.
 
 ## Installer behavior
 
@@ -41,7 +50,7 @@ verified backup.
 - Requires the selected bundle to be idle; idle Steam alone is not a blocker.
 - Creates an independently verified original-Bink backup in Application
   Support, while retaining the renamed original needed by the runtime proxy.
-- Exposes Check, Install, Repair, and Remove.
+- Exposes one-step Install and Remove, plus optional Status and CLI Repair.
 - Restores the original Bink library on Remove only after the saved restore
   record, backup hash, and selected executable still match the exact profile;
   it does not launch ESO or alter account authentication.
@@ -51,7 +60,7 @@ client profile when its exact executable matches, without assuming that either
 path is trustworthy.
 
 Release assembly runs a disposable end-to-end fixture covering a deliberately
-interrupted install and verified recovery, Check, Install, Remove, and
+interrupted install and verified recovery, Status, Install, Remove, and
 reinstall; verifies LF line endings and every payload checksum; and rejects
 ZIPs containing `.DS_Store`, AppleDouble `._` entries, or `__MACOSX`.
 

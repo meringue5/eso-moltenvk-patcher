@@ -20,11 +20,13 @@ activity. The update check, executable fingerprint, official runtime hash,
 settings hash, and 1.4.2 pipeline-cache UUID remain current.
 
 The unsigned public distribution path is now a prebuilt release ZIP rather
-than a source checkout. It contains exact-profile Check, Install, and Remove
-commands, automatic Steam/ZeniMax discovery with interactive path fallback,
+than a source checkout. It contains one-step exact-profile Install and Remove
+commands plus optional Status diagnostics, automatic Steam/ZeniMax discovery
+with interactive path fallback,
 verified per-installation backup and version state, and no player-side Python
-or Xcode requirement. Release assembly now proves a disposable Check → Install
-→ Remove → reinstall transaction and rejects CRLF or macOS metadata leakage.
+or Xcode requirement. Release assembly now proves a disposable Status → Install
+→ Remove → reinstall transaction, including verified rollback and clean restart
+after an interrupted install, and rejects CRLF or macOS metadata leakage.
 The signed/notarized DMG remains optional pending a Developer ID membership.
 
 The user's post-install ordinary play now supplies the missing runtime

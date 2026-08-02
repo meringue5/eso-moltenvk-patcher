@@ -11,7 +11,7 @@ print -- "ESO MoltenVK Patcher ${RELEASE_VERSION:-unknown}"
 
 usage() {
   cat <<'EOF'
-Usage: eso-moltenvk-patcher <check|install|remove|repair> [--eso-app PATH]
+Usage: eso-moltenvk-patcher <status|install|remove|repair> [--eso-app PATH] [--yes]
 
 PATH may be eso.app itself or an ESO Launcher.app containing game_mac.
 No game, Steam, or launcher is started by this tool.
@@ -22,9 +22,11 @@ command_name="${1:-}"
 [[ -n "$command_name" ]] || { usage; exit 2; }
 shift || true
 selected="${ESO_APP:-}"
+assume_yes=false
 while (( $# )); do
   case "$1" in
     --eso-app) (( $# >= 2 )) || die "--eso-app needs a path"; selected="$2"; shift 2 ;;
+    --yes|-y) assume_yes=true; shift ;;
     --help|-h) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
@@ -78,6 +80,10 @@ require_supported_original() {
   [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The Bink library is not the exact original expected by this release. No files were changed."
 }
 
+require_supported_executable() {
+  [[ "$(sha256 "$ESO")" == "$EXPECTED_ESO_SHA256" ]] || die "Unsupported ESO executable. No files were changed."
+}
+
 require_idle() {
   pgrep -x eso >/dev/null 2>&1 && die "Quit ESO before changing its files."
   pgrep -f '/ZeniMax Online Studios Launcher' >/dev/null 2>&1 && die "Quit the ZeniMax launcher before changing ESO files."
@@ -118,6 +124,38 @@ retag_original() {
     '@loader_path/libBink2Macx64.teso4m4-original.dylib' "$RENAMED"
 }
 
+record_state() {
+  local phase="$1"
+  print -r -- "executable_sha256=$EXPECTED_ESO_SHA256" > "$STATE"
+  print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
+  print -r -- "release_version=${RELEASE_VERSION:-unknown}" >> "$STATE"
+  print -r -- "transaction_phase=$phase" >> "$STATE"
+  print -r -- "recorded_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
+  print -r -- "${RELEASE_VERSION:-unknown}" > "$VERSION_FILE"
+}
+
+recover_incomplete_install() {
+  [[ ! -e "$MARKER" ]] || die "The patch is already installed. Use status or remove."
+  local current_bink="$(sha256 "$BINK")"
+  if [[ ! -e "$RENAMED" && ! -e "$MVK" && "$current_bink" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
+    return 0
+  fi
+  [[ -f "$BACKUP" && -f "$STATE" ]] || die "An incomplete patch state exists without a verified restore record. No files were changed."
+  source "$STATE"
+  [[ "${executable_sha256:-}" == "$EXPECTED_ESO_SHA256" \
+    && "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
+    && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] \
+    || die "The incomplete patch state does not match this exact client. No files were changed."
+  [[ "$current_bink" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
+    || "$current_bink" == "$(sha256 "$PAYLOAD/libBink2Macx64.dylib")" ]] \
+    || die "The active Bink library is neither the verified original nor this release's bridge. No files were changed."
+  print -- "A previous install stopped during phase: ${transaction_phase:-unknown}."
+  print -- "Restoring the verified baseline before restarting installation."
+  copy_verified "$BACKUP" "$BINK"
+  write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
+  record_state recovered
+}
+
 check() {
   resolve_target; state_directory
   local executable_hash="$(sha256 "$ESO")"
@@ -134,8 +172,17 @@ check() {
 }
 
 install() {
-  resolve_target; state_directory; require_supported_original; require_idle
-  [[ ! -e "$MARKER" && ! -e "$RENAMED" && ! -e "$MVK" ]] || die "A patch or incomplete attempt already exists. Run remove first."
+  resolve_target; state_directory; require_supported_executable; require_idle
+  recover_incomplete_install
+  require_supported_original
+  if [[ "$assume_yes" != true && -t 0 ]]; then
+    print -- "Ready to install ${RELEASE_VERSION:-unknown} to:"
+    print -- "  $ESO_APP"
+    print -n -- "Continue? [y/N] "
+    local answer=""
+    IFS= read -r answer
+    [[ "$answer" == [yY] || "$answer" == [yY][eE][sS] ]] || { print -- "Cancelled. No files were changed."; return 0; }
+  fi
   mkdir -p "$STATE_DIR"
   chmod 700 "$STATE_DIR"
   if [[ -e "$BACKUP" || -e "$STATE" ]]; then
@@ -144,11 +191,7 @@ install() {
   else
     copy_verified "$BINK" "$BACKUP"
   fi
-  print -r -- "executable_sha256=$EXPECTED_ESO_SHA256" > "$STATE"
-  print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
-  print -r -- "release_version=${RELEASE_VERSION:-unknown}" >> "$STATE"
-  print -r -- "installed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
-  print -r -- "${RELEASE_VERSION:-unknown}" > "$VERSION_FILE"
+  record_state prepared
   copy_verified "$BINK" "$RENAMED"
   retag_original
   copy_verified "$PAYLOAD/libBink2Macx64.dylib" "$BINK"
@@ -156,6 +199,7 @@ install() {
   print -r -- 'startup-compositor-neutralize' > "$STATE_DIR/enable-marker"
   copy_verified "$STATE_DIR/enable-marker" "$MARKER"
   rm -f "$STATE_DIR/enable-marker"
+  record_state installed
   print -- "Installed to: $ESO_APP"
   print -- "Release: ${RELEASE_VERSION:-unknown}"
   print -- "Verified restore backup: $BACKUP"
@@ -170,12 +214,13 @@ remove() {
   [[ "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The restore backup does not match the supported original."
   copy_verified "$BACKUP" "$BINK"
   write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
+  record_state removed
   print -- "Removed from: $ESO_APP"
   print -- "The original Bink library is restored; the verified backup remains at: $BACKUP"
 }
 
 case "$command_name" in
-  check) check ;;
+  check|status) check ;;
   install) install ;;
   remove) remove ;;
   repair) remove; install ;;

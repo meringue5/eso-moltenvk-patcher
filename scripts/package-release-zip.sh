@@ -13,7 +13,7 @@ TARGET="$ROOT/config/$TARGET_NAME"
 rm -rf "$STAGE"
 mkdir -p "$STAGE/bin" "$STAGE/payload"
 cp "$ROOT/release/bin/eso-moltenvk-patcher" "$STAGE/bin/"
-cp "$ROOT/release/install.command" "$ROOT/release/check.command" \
+cp "$ROOT/release/install.command" "$ROOT/release/status.command" \
   "$ROOT/release/remove.command" "$STAGE/"
 cp "$ROOT/release/README.txt" "$STAGE/"
 cp "$ROOT/build/libBink2Macx64.dylib" "$ROOT/build/libMoltenVK.teso4m4.dylib" \

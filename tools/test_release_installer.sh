@@ -40,13 +40,16 @@ run_tool() {
     "$TOOL" "$@" --eso-app "$ESO_APP"
 }
 
-run_tool check | grep -q 'patch not installed'
+run_tool status | grep -q 'patch not installed'
 mv "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$PAYLOAD/libMoltenVK.teso4m4.dylib.missing"
 if run_tool install >/dev/null 2>&1; then
   print -u2 -- 'Expected the incomplete-payload install to fail.'
   exit 1
 fi
 mv "$PAYLOAD/libMoltenVK.teso4m4.dylib.missing" "$PAYLOAD/libMoltenVK.teso4m4.dylib"
+recovery_output="$(run_tool install)"
+print -r -- "$recovery_output" | grep -q 'Restoring the verified baseline before restarting installation.'
+print -r -- "$recovery_output" | grep -q 'Installed to:'
 run_tool remove >/dev/null
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$EXPECTED_BINK_SHA" ]]
 
@@ -58,7 +61,7 @@ print -r -- "$install_output" | grep -q 'Release: fixture-1.0.0'
 [[ -f "$GAME_MAC/.teso4m4-enable" \
   && -f "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
   && -f "$GAME_MAC/libMoltenVK.teso4m4.dylib" ]]
-run_tool check | grep -q 'Installed release: fixture-1.0.0'
+run_tool status | grep -q 'Installed release: fixture-1.0.0'
 
 run_tool remove | grep -q "Removed from: $ESO_APP"
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$EXPECTED_BINK_SHA" ]]
@@ -69,4 +72,4 @@ run_tool remove | grep -q "Removed from: $ESO_APP"
 run_tool install >/dev/null
 run_tool remove >/dev/null
 find "$STATE_ROOT" -name .version -type f -exec grep -q 'fixture-1.0.0' {} \;
-print -- 'Release installer transaction: PASS (failed-install recovery, check, install, remove, reinstall)'
+print -- 'Release installer transaction: PASS (failed-install recovery, status, install, remove, reinstall)'
