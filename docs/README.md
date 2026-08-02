@@ -12,6 +12,7 @@ claims belong in `PRODUCTION.md`, `STATUS.md`, and the top-level README.
 
 | Question | Authoritative document |
 |---|---|
+| How does a player download, install, and remove the public package? | [Installation guide](INSTALL.md) |
 | What is the supported production release baseline? | [Production baseline](PRODUCTION.md) |
 | What is safe and active right now? | [Project status](STATUS.md) |
 | What should happen next? | [Roadmap](ROADMAP.md) |

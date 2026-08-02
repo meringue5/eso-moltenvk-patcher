@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Download the prebuilt release ZIP</title><desc id="desc">An illustrated GitHub release Assets panel highlights the ESO MoltenVK Patcher ZIP and warns against source archives.</desc>
+  <rect width="1200" height="620" fill="#0d1117"/><rect x="90" y="60" width="1020" height="500" rx="18" fill="#161b22" stroke="#30363d" stroke-width="3"/>
+  <text x="140" y="125" fill="#f0f6fc" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="34" font-weight="700">Latest release</text>
+  <text x="140" y="180" fill="#8b949e" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="25">Assets</text>
+  <rect x="125" y="210" width="950" height="105" rx="12" fill="#173d28" stroke="#3fb950" stroke-width="4"/>
+  <text x="165" y="258" fill="#f0f6fc" font-family="ui-monospace,SFMono-Regular,monospace" font-size="27" font-weight="700">ESO-MoltenVK-Patcher-&lt;version&gt;.zip</text>
+  <text x="165" y="292" fill="#7ee787" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22">Download this prebuilt package</text>
+  <rect x="125" y="340" width="950" height="76" rx="10" fill="#21262d"/>
+  <text x="165" y="388" fill="#8b949e" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="24">Source code (zip)</text>
+  <rect x="125" y="430" width="950" height="76" rx="10" fill="#21262d"/>
+  <text x="165" y="478" fill="#8b949e" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="24">Source code (tar.gz)</text>
+  <text x="140" y="540" fill="#f85149" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="20">Source archives do not contain the prebuilt installer payload.</text>
+</svg>

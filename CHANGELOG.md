@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a prominent latest-release download link and an illustrated end-user
+  installation guide covering install, custom paths, Gatekeeper, and removal.
 - Added the no-membership public release path: a prebuilt GitHub Release ZIP
   with one-step exact-profile `install` and `remove` commands, optional status,
   automatic Steam/ZeniMax path discovery, explicit custom-path support, and SHA-256

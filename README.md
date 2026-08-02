@@ -7,6 +7,32 @@ Steam launch path; on the tested M4 MacBook Air, a 2048 x 1280 medium-to-high
 graphics profile held the 60 FPS VSync ceiling throughout roughly 93 minutes
 of user-observed active gameplay.
 
+[![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/teso4m4/releases/latest)
+
+## How to install
+
+The public release is a prebuilt ZIP. Players do **not** need Python, Xcode, or
+a source checkout.
+
+1. [Download the latest GitHub Release](https://github.com/meringue5/teso4m4/releases/latest)
+   and choose `ESO-MoltenVK-Patcher-<version>.zip` under **Assets**.
+2. Unzip it and open the single **ESO MoltenVK Patcher** folder.
+3. Quit ESO and the ZeniMax launcher. Steam may remain open unless it is
+   updating or using ESO's files.
+4. Double-click `install.command`. Review the detected ESO path and type `y`
+   only when it is correct.
+5. Start ESO later through your normal Steam or official ESO launcher.
+
+The installer checks known Steam and ZeniMax locations. If it cannot find the
+game, it asks you to drag `eso.app` or `ESO Launcher.app` into Terminal. It
+verifies the exact supported client and a restorable backup before changing
+anything. Double-click `remove.command` to uninstall and restore the original;
+`status.command` is optional and is not a separate prerequisite.
+
+See the [illustrated installation guide](docs/INSTALL.md) for the complete
+walkthrough, macOS **Open Anyway** instructions, recovery behavior, and common
+failure messages.
+
 ## What the patch delivers
 
 [![Simple sketch of the teso4m4 override: ESO's original straight path runs through embedded MoltenVK 1.0.18 and then Metal; teso4m4 cuts that old path in process memory, detours through MoltenVK 1.4.2, and rejoins the same Metal stage](docs/images/teso4m4-runtime-hijack-simple.svg)](docs/images/teso4m4-runtime-hijack-simple.svg)
@@ -235,6 +261,7 @@ modifying the game bundle. See the [update runbook](docs/UPDATES.md).
 
 ## Documentation
 
+- [Installation guide](docs/INSTALL.md)
 - [Current verified status](docs/STATUS.md)
 - [Durable findings](docs/FINDINGS.md)
 - [Bridge architecture](docs/ARCHITECTURE.md)
@@ -279,8 +306,11 @@ Steam 전용 앱의 문제가 아니라 현재 ESO macOS 클라이언트에 포�
 렌더링 손상 없이 완료됐습니다. 정확히 검증된 ESO 빌드에서만 작동하며,
 Steam 실행과 인증 경로 및 원본 복구 경로를 그대로 보존합니다.
 
-일반 사용자를 위한 GitHub 배포본은 아직 준비 중입니다. 목표는 Python,
-Xcode, 스크립트 실행을 요구하지 않는 서명·공증된 설치/관리 도구이며,
-Steam과 공식 런처 설치본을 모두 감지하되 검증된 클라이언트에만 안전하게
-설치·복구하는 방식입니다. ESO 애드온 폴더에 넣는 방식은 이 런타임 패치에
-적합하지 않습니다.
+일반 사용자는 README 상단의 **Download Latest Release** 버튼에서 미리
+빌드된 ZIP을 받아 `install.command`를 한 번 실행하면 됩니다. Python이나
+Xcode는 필요하지 않습니다. 설치기는 Steam판과 공식 런처판의 알려진
+경로를 모두 찾고, 경로가 다르면 앱을 Terminal에 드래그하도록 안내하며,
+정확히 검증된 클라이언트에만 설치합니다. `remove.command`로 원본을
+복구할 수 있습니다. ESO 애드온 폴더에 넣는 방식은 이 런타임 패치에
+적합하지 않습니다. 자세한 화면별 절차는 [설치 가이드](docs/INSTALL.md)를
+참고하세요.
