@@ -20,9 +20,10 @@ a source checkout.
 2. Unzip it and open the single **ESO MoltenVK Patcher** folder.
 3. Quit ESO and the ZeniMax launcher. Steam may remain open unless it is
    updating or using ESO's files.
-4. Double-click `Install.command`. Review the detected ESO path and type `y`
-   only when it is correct. When asked about the validated M4 2048×1280
-   settings template, explicitly enter `y` or `n`; there is no default.
+4. Double-click `Install.command`. Review the detected ESO path before
+   confirming the highlighted **Install** choice. The validated M4 2048×1280
+   settings template likewise starts on **Apply**; move to the other choice if
+   you want to preserve the current settings.
 5. Start ESO later through your normal Steam or official ESO launcher.
 
 The installer checks known Steam and ZeniMax locations. If it cannot find the
@@ -40,9 +41,9 @@ whether mutation started and how verified recovery proceeds.
 The interactive view clears the shell's launch command from the visible
 viewport, shows the complete plan in muted text, and promotes each finished
 stage to a bright green checked row.
-Target confirmation and settings use no default selection: move with the Up
-and Down arrows and press Return, or use Y/N shortcuts. Return does nothing
-until a choice is highlighted; Escape cancels.
+Target confirmation and settings initially highlight the first, affirmative
+choice so the menu is immediately legible. Move with the Up and Down arrows
+and press Return, or use Y/N shortcuts. Escape cancels.
 
 Choosing settings application selectively merges 48 allowlisted keys after
 backing up `UserSettings.txt`; it does not replace the complete file. Removal

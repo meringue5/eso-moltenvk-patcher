@@ -79,7 +79,7 @@ ui_plan_start() {
 
 ui_choice_menu() {
   local title="$1" detail="$2" yes_label="$3" no_label="$4"
-  local selected=0 key="" sequence=""
+  local selected=1 key="" sequence=""
   while true; do
     ui_render_plan
     print -- "  $title"
@@ -112,8 +112,7 @@ ui_choice_menu() {
         sequence=""
         IFS= read -rsk2 -t 0.2 sequence || true
         case "$sequence" in
-          '[A') (( selected == 0 )) && selected=2 || selected=$(( selected == 1 ? 2 : 1 )) ;;
-          '[B') (( selected == 0 )) && selected=1 || selected=$(( selected == 1 ? 2 : 1 )) ;;
+          '[A'|'[B') selected=$(( selected == 1 ? 2 : 1 )) ;;
           *) return 1 ;;
         esac
         ;;
@@ -228,7 +227,7 @@ choose_settings_action() {
   [[ -t 0 ]] || die "Choose settings explicitly with --apply-settings or --skip-settings."
   if ui_choice_menu \
     "Settings profile" \
-    "Validated M4 2048 x 1280 profile; there is no default." \
+    "Validated M4 2048 x 1280 profile; Apply is selected by default." \
     "Apply 48 allowlisted settings" \
     "Keep my current settings"; then
     settings_choice=apply

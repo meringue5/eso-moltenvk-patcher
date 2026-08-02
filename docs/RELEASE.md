@@ -20,8 +20,8 @@ players need neither of them, nor a source checkout.
 
 Players normally run only `Install.command`; it discovers and validates the
 client, then asks for confirmation immediately before changing files.
-It also requires an explicit settings-template choice with no default. In an
-interactive Terminal the player must enter `y` or `n`; non-interactive callers
+It also presents an explicit settings-template choice with Apply highlighted
+initially. In an interactive Terminal the player may use arrows or Y/N; non-interactive callers
 must pass `--apply-settings` or `--skip-settings`. `--yes` accepts only the ESO
 application target and never implies a settings choice.
 Payloads, checksums, and optional Status diagnostics live under the hidden
@@ -41,8 +41,8 @@ full plan after each completed boundary. Pending rows are grey and unmarked;
 completed rows use a bright label and green checked box. Non-interactive output
 never emits screen-clearing or cursor-control sequences.
 Interactive target and settings confirmations are dependency-free single-key
-menus with no initial selection. Arrow keys move the highlight, Return confirms
-only a highlighted row, Y/N act as shortcuts, and Escape cancels. The script
+menus with the affirmative first row highlighted initially. Arrow keys move
+the highlight, Return confirms it, Y/N act as shortcuts, and Escape cancels. The script
 does not alter persistent terminal input settings.
 
 The package prints its release version on every invocation. If no known client

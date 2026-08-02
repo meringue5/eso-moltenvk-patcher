@@ -12,7 +12,7 @@ account, input, audio, UI, add-on, and machine-specific state and is not a
 complete replacement for `UserSettings.txt`.
 
 The public release bundles this template as an explicit install option. There
-is no default response: the player must choose to apply or skip it. Application
+initially highlights Apply: the player may confirm it or move to Skip. Application
 backs up the complete live file and selectively merges these 48 keys. Removal
 restores the backup only when the live file still matches the applied result,
 so settings changed after installation are not overwritten.

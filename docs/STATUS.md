@@ -27,9 +27,9 @@ verified per-installation backup and version state, and no player-side Python
 or Xcode requirement. Release assembly now proves a disposable Status → Install
 → Remove → reinstall transaction, including verified rollback and clean restart
 after an interrupted install, and rejects CRLF or macOS metadata leakage.
-The ZIP now also carries the sanitized 48-key M4 settings template. Install has
-no default settings action: an interactive player must explicitly apply or
-skip it, and a non-interactive caller must pass the matching flag. Application
+The ZIP now also carries the sanitized 48-key M4 settings template. Interactive
+Install initially highlights Apply while still allowing the player to move to
+Skip; a non-interactive caller must pass the matching flag. Application
 selectively merges the allowlist after a verified full-file backup. Removal
 restores that backup only when the applied settings remain unchanged; later
 player edits are preserved. The disposable transaction covers interruption

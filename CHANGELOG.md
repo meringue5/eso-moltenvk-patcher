@@ -2,9 +2,9 @@
 
 ## Unreleased
 
-- Replaced defaulted confirmation prompts with dependency-free arrow-key menus
-  that start unselected, retain Y/N shortcuts, ignore Return until selection,
-  and cancel on Escape.
+- Replaced text confirmation prompts with dependency-free arrow-key menus that
+  initially highlight the affirmative choice, retain Y/N shortcuts, confirm
+  with Return, and cancel on Escape.
 - Refined the interactive stepper to clear the shell's echoed launch command,
   show every stage up front in muted text, and promote completed stages to
   bright green checked rows while leaving redirected logs untouched.
@@ -22,8 +22,8 @@
   diagnostics retained under a hidden internal directory.
 - Bundled the 48-key M4 settings template with an explicit apply-or-skip
   installation choice, selective merge, verified backup, and conflict-safe
-  removal behavior. The prompt has no default and non-interactive installs
-  must state their choice.
+  removal behavior. Interactive installs highlight Apply initially, while
+  non-interactive installs must state their choice.
 - Adopted **ESO MoltenVK Patcher** as the canonical product name while
   retaining `teso4m4` installation and source identifiers for backward
   compatibility.
