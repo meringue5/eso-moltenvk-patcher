@@ -2,7 +2,7 @@
 
 The release artifact available without an Apple Developer membership is
 **ESO-MoltenVK-Patcher-<version>.zip**. It contains prebuilt payloads plus
-`install.command`, `remove.command`, and optional `status.command`; it is an installer
+player-facing `Install.command`, `Uninstall.command`, and `README.txt`; it is an installer
 and maintenance tool, not a game launcher. A signed **ESO MoltenVK Patcher.app**
 in a compressed DMG remains the future polished distribution channel.
 
@@ -18,16 +18,17 @@ writes a SHA-256 manifest,
 and emits a ZIP under `dist/`. Python and Xcode are release-author tooling only:
 players need neither of them, nor a source checkout.
 
-Players normally run only `install.command`; it discovers and validates the
+Players normally run only `Install.command`; it discovers and validates the
 client, then asks for confirmation immediately before changing files.
 It also requires an explicit settings-template choice with no default. In an
 interactive Terminal the player must enter `y` or `n`; non-interactive callers
 must pass `--apply-settings` or `--skip-settings`. `--yes` accepts only the ESO
 application target and never implies a settings choice.
-`status.command` is optional support diagnostics and `remove.command` restores
-the original. If Finder
+Payloads, checksums, and optional Status diagnostics live under the hidden
+`.eso-moltenvk-patcher` directory; `Uninstall.command` restores the original.
+If Finder
 does not permit a downloaded command to run directly, they can drag it into a
-Terminal window or run `zsh install.command`; this is the unsigned-release
+Terminal window or run `zsh Install.command`; this is the unsigned-release
 tradeoff. Do not ask users to run a remote `curl | sh` command.
 
 The package prints its release version on every invocation. If no known client
@@ -55,7 +56,8 @@ only patch-owned artifacts, and restarts from the clean baseline.
 - Requires the selected bundle to be idle; idle Steam alone is not a blocker.
 - Creates an independently verified original-Bink backup in Application
   Support, while retaining the renamed original needed by the runtime proxy.
-- Exposes one-step Install and Remove, plus optional Status and CLI Repair.
+- Exposes one-step Install and Uninstall while retaining hidden Status and CLI
+  Repair diagnostics.
 - Optionally merges exactly 48 allowlisted M4-profile keys into a verified
   `UserSettings.txt` backup. Remove restores the backup only if the applied
   settings have not subsequently changed.

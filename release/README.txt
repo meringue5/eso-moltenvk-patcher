@@ -1,23 +1,24 @@
 ESO MoltenVK Patcher replaces ESO's embedded legacy MoltenVK path on one exact verified macOS client.
 It installs beside the selected eso.app; it is not an AddOn and does not use Documents/Elder Scrolls Online/live/AddOns.
-If anything goes wrong, run remove.command to restore the verified original Bink library.
+If anything goes wrong, run Uninstall.command to restore the verified original Bink library.
 
 QUICK START
 
 1. Quit ESO and the ZeniMax launcher. Steam may remain open if ESO is not updating.
-2. Double-click install.command. It finds and verifies ESO, then asks before changing files.
+2. Double-click Install.command. It finds and verifies ESO, then asks before changing files.
    You must also explicitly choose y or n when asked whether to apply the
    validated M4 2048 x 1280 settings template. There is no default choice.
-3. To uninstall, double-click remove.command.
+3. To uninstall, double-click Uninstall.command.
 
-status.command is optional. Use it only when you want to check the installed
-version or diagnose a support problem; it is not a required installation step.
+Support diagnostics and payload files are kept in a hidden internal folder;
+they are not separate installation steps. Keep this folder together and do not
+move Install.command or Uninstall.command out of it.
 
 The scripts look in the known Steam and ZeniMax locations. If ESO is elsewhere,
 the Terminal asks you to drag eso.app or the ESO Launcher.app into the window.
 You can also run a command explicitly:
 
-  ./install.command --eso-app '/path/to/eso.app'
+  ./Install.command --eso-app '/path/to/eso.app'
 
 If macOS blocks a downloaded command, open System Settings > Privacy & Security,
 scroll down, and choose Open Anyway. Removing quarantine attributes is not the
@@ -34,7 +35,7 @@ settings still match the applied result; later user changes are never silently
 overwritten.
 
 Installation progress is journaled in the per-installation Application Support
-folder. If an install was interrupted, running install.command again verifies
+folder. If an install was interrupted, running Install.command again verifies
 the journal and backup, restores the clean baseline, and safely restarts. It
 never resumes from an unverified partially copied binary.
 

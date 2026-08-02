@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Simplified the ZIP's Finder view to `Install.command`,
+  `Uninstall.command`, and `README.txt`, with payloads, checksums, and support
+  diagnostics retained under a hidden internal directory.
 - Bundled the 48-key M4 settings template with an explicit apply-or-skip
   installation choice, selective merge, verified backup, and conflict-safe
   removal behavior. The prompt has no default and non-interactive installs

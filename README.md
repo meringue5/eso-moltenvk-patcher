@@ -20,7 +20,7 @@ a source checkout.
 2. Unzip it and open the single **ESO MoltenVK Patcher** folder.
 3. Quit ESO and the ZeniMax launcher. Steam may remain open unless it is
    updating or using ESO's files.
-4. Double-click `install.command`. Review the detected ESO path and type `y`
+4. Double-click `Install.command`. Review the detected ESO path and type `y`
    only when it is correct. When asked about the validated M4 2048×1280
    settings template, explicitly enter `y` or `n`; there is no default.
 5. Start ESO later through your normal Steam or official ESO launcher.
@@ -28,8 +28,9 @@ a source checkout.
 The installer checks known Steam and ZeniMax locations. If it cannot find the
 game, it asks you to drag `eso.app` or `ESO Launcher.app` into Terminal. It
 verifies the exact supported client and a restorable backup before changing
-anything. Double-click `remove.command` to uninstall and restore the original;
-`status.command` is optional and is not a separate prerequisite.
+anything. Double-click `Uninstall.command` to uninstall and restore the
+original. Payloads, checksums, and optional support diagnostics live in a
+Finder-hidden internal folder rather than cluttering the player-facing view.
 
 Choosing settings application selectively merges 48 allowlisted keys after
 backing up `UserSettings.txt`; it does not replace the complete file. Removal
@@ -314,10 +315,10 @@ Steam 전용 앱의 문제가 아니라 현재 ESO macOS 클라이언트에 포�
 Steam 실행과 인증 경로 및 원본 복구 경로를 그대로 보존합니다.
 
 일반 사용자는 README 상단의 **Download Latest Release** 버튼에서 미리
-빌드된 ZIP을 받아 `install.command`를 한 번 실행하면 됩니다. Python이나
+빌드된 ZIP을 받아 `Install.command`를 한 번 실행하면 됩니다. Python이나
 Xcode는 필요하지 않습니다. 설치기는 Steam판과 공식 런처판의 알려진
 경로를 모두 찾고, 경로가 다르면 앱을 Terminal에 드래그하도록 안내하며,
-정확히 검증된 클라이언트에만 설치합니다. `remove.command`로 원본을
+정확히 검증된 클라이언트에만 설치합니다. `Uninstall.command`로 원본을
 복구할 수 있습니다. ESO 애드온 폴더에 넣는 방식은 이 런타임 패치에
 적합하지 않습니다. 자세한 화면별 절차는 [설치 가이드](docs/INSTALL.md)를
 참고하세요.

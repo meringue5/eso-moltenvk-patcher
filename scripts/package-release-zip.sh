@@ -6,20 +6,21 @@ VERSION="${1:-0.1.0-dev}"
 NAME="ESO-MoltenVK-Patcher-$VERSION"
 STAGE="$ROOT/dist/$NAME"
 OUTPUT="$ROOT/dist/$NAME.zip"
+INTERNAL="$STAGE/.eso-moltenvk-patcher"
 TARGET_NAME="$(<"$ROOT/config/current-target.txt")"
 TARGET="$ROOT/config/$TARGET_NAME"
 
 "$ROOT/scripts/build.sh"
 rm -rf "$STAGE"
-mkdir -p "$STAGE/bin" "$STAGE/payload"
-cp "$ROOT/release/bin/eso-moltenvk-patcher" "$STAGE/bin/"
-cp "$ROOT/release/install.command" "$ROOT/release/status.command" \
-  "$ROOT/release/remove.command" "$STAGE/"
+mkdir -p "$INTERNAL/bin" "$INTERNAL/payload"
+cp "$ROOT/release/bin/eso-moltenvk-patcher" "$INTERNAL/bin/"
+cp "$ROOT/release/status.command" "$INTERNAL/"
+cp "$ROOT/release/Install.command" "$ROOT/release/Uninstall.command" "$STAGE/"
 cp "$ROOT/release/README.txt" "$STAGE/"
 cp "$ROOT/build/libBink2Macx64.dylib" "$ROOT/build/libMoltenVK.teso4m4.dylib" \
-  "$STAGE/payload/"
-cp "$ROOT/config/usersettings-m4-moltenvk-1.4.2-standard.txt" "$STAGE/payload/"
-python3 - "$TARGET" "$STAGE/payload/target-profile.env" "$VERSION" <<'PY'
+  "$INTERNAL/payload/"
+cp "$ROOT/config/usersettings-m4-moltenvk-1.4.2-standard.txt" "$INTERNAL/payload/"
+python3 - "$TARGET" "$INTERNAL/payload/target-profile.env" "$VERSION" <<'PY'
 import json
 import shlex
 import sys
@@ -36,12 +37,17 @@ with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as output:
     output.write(f"EXPECTED_ORIGINAL_BINK_SHA256={shlex.quote(profile['original_bink_sha256'])}\n")
     output.write(f"EXPECTED_ESO_UUID={shlex.quote(profile['uuid'])}\n")
 PY
-chmod 755 "$STAGE/bin/eso-moltenvk-patcher" "$STAGE"/*.command
+chmod 755 "$INTERNAL/bin/eso-moltenvk-patcher" "$INTERNAL/status.command" "$STAGE"/*.command
 (cd "$ROOT" && ./tools/test_release_installer.sh)
-for text_file in "$STAGE/bin/eso-moltenvk-patcher" "$STAGE"/*.command "$STAGE/README.txt" "$STAGE/payload/target-profile.env"; do
+for text_file in "$INTERNAL/bin/eso-moltenvk-patcher" "$INTERNAL/status.command" \
+  "$STAGE"/*.command "$STAGE/README.txt" "$INTERNAL/payload/target-profile.env" \
+  "$INTERNAL/payload/usersettings-m4-moltenvk-1.4.2-standard.txt"; do
   LC_ALL=C grep -q $'\r' "$text_file" && { echo "CRLF is not allowed: $text_file" >&2; exit 1; }
 done
-(cd "$STAGE" && shasum -a 256 bin/eso-moltenvk-patcher payload/* *.command README.txt > SHA256SUMS.txt)
+(cd "$STAGE" && shasum -a 256 Install.command Uninstall.command README.txt \
+  .eso-moltenvk-patcher/bin/eso-moltenvk-patcher \
+  .eso-moltenvk-patcher/payload/* .eso-moltenvk-patcher/status.command \
+  > .eso-moltenvk-patcher/SHA256SUMS.txt)
 rm -f "$OUTPUT"
 (cd "$ROOT/dist" && COPYFILE_DISABLE=1 zip -q -r -X "$OUTPUT" "$NAME")
 unzip -tq "$OUTPUT" >/dev/null

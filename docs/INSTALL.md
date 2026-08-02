@@ -18,8 +18,9 @@ contain the prebuilt release payload.
 ![Release Assets example with the prebuilt ZIP highlighted](images/install/01-download.svg)
 
 Unzip the download. It opens as one folder containing three commands and its
-payload. `install.command` is the only command required for installation;
-`status.command` is optional.
+payload. Finder normally shows only `Install.command`, `Uninstall.command`,
+and `README.txt`; payloads, checksums, and support diagnostics remain in the
+hidden `.eso-moltenvk-patcher` folder.
 
 ![Package folder showing Install, Remove, and optional Status](images/install/02-package.svg)
 
@@ -27,7 +28,7 @@ payload. `install.command` is the only command required for installation;
 
 Quit ESO and the ZeniMax launcher before installation. Steam itself may remain
 open unless it is downloading, updating, or holding files in the selected ESO
-bundle. Double-click `install.command`.
+bundle. Double-click `Install.command`.
 
 The installer searches known Steam and official ZeniMax locations. If ESO is
 elsewhere, Terminal asks for a path: drag `eso.app` or `ESO Launcher.app` from
@@ -52,7 +53,7 @@ around that check; wait for a compatible patcher release.
 ## 3. If macOS blocks the command
 
 An unsigned GitHub download may be blocked on first open. Try opening
-`install.command` once, then go to **System Settings → Privacy & Security**,
+`Install.command` once, then go to **System Settings → Privacy & Security**,
 scroll to the Security section, and choose **Open Anyway** for the blocked
 item. Confirm macOS's prompt, then run Install again.
 
@@ -67,18 +68,17 @@ After a successful summary, close Terminal and start ESO through the same
 Steam or official ESO launcher you normally use. The patcher does not replace
 authentication and does not need to remain open.
 
-To uninstall, quit ESO and the launcher and double-click `remove.command`. It
+To uninstall, quit ESO and the launcher and double-click `Uninstall.command`. It
 verifies and restores the recorded original library. Keep the patcher folder
-until removal is complete. `status.command` reports the installed version and
-state when troubleshooting, but installation never requires a separate Check
-step.
+until removal is complete. Support diagnostics remain available inside the
+hidden internal folder, but installation never requires a separate Check step.
 
 If the settings template was applied, Remove restores the pre-install settings
 only when the current file still exactly matches the applied result. If you
 changed settings afterward, Remove preserves those changes and reports the
 retained backup path instead of silently overwriting them.
 
-If installation was interrupted, run `install.command` again. It does not
+If installation was interrupted, run `Install.command` again. It does not
 blindly continue copying from the last line: it verifies the journal and
 backup, restores a clean baseline, and restarts the transaction safely.
 
