@@ -134,7 +134,7 @@ verified bridge and runtime so players do not need Python, Xcode, or build
 scripts. A signed **ESO MoltenVK Patcher.app** DMG remains the future polished
 distribution option.
 
-The installer will be edition-neutral:
+The installer is edition-neutral:
 
 1. look for the known Steam and official ZeniMax launcher locations, then let
    the player choose an ESO or launcher app if it is elsewhere;

@@ -7,6 +7,7 @@ source "$PAYLOAD/target-profile.env"
 
 die() { print -u2 -- "$*"; exit 1; }
 sha256() { shasum -a 256 "$1" | awk '{print $1}'; }
+print -- "ESO MoltenVK Patcher ${RELEASE_VERSION:-unknown}"
 
 usage() {
   cat <<'EOF'
@@ -41,6 +42,12 @@ resolve_target() {
       [[ -d "$candidate" ]] && { selected="$candidate"; break; }
     done
   fi
+  if [[ -z "$selected" && -t 0 ]]; then
+    print -- "ESO was not found in a known location."
+    print -- "Drag eso.app or the ESO Launcher.app into this Terminal window, then press Return:"
+    IFS= read -r selected
+    selected="${(Q)selected}"
+  fi
   [[ -n "$selected" ]] || die "ESO was not found. Re-run with --eso-app '/path/to/eso.app'."
   if [[ "${selected:t}" == "eso.app" ]]; then
     ESO_APP="${selected:A}"
@@ -59,9 +66,11 @@ resolve_target() {
 state_directory() {
   local id
   id="$(print -rn -- "$ESO_APP" | shasum -a 256 | awk '{print $1}')"
-  STATE_DIR="$HOME/Library/Application Support/ESO MoltenVK Patcher/Installations/$id"
+  local state_root="${ESO_MOLTENVK_PATCHER_STATE_ROOT:-$HOME/Library/Application Support/ESO MoltenVK Patcher/Installations}"
+  STATE_DIR="$state_root/$id"
   BACKUP="$STATE_DIR/original-libBink2Macx64.dylib"
   STATE="$STATE_DIR/install-state.env"
+  VERSION_FILE="$STATE_DIR/.version"
 }
 
 require_supported_original() {
@@ -110,12 +119,13 @@ retag_original() {
 }
 
 check() {
-  resolve_target
+  resolve_target; state_directory
   local executable_hash="$(sha256 "$ESO")"
   [[ "$executable_hash" == "$EXPECTED_ESO_SHA256" ]] || die "Unsupported ESO executable: $executable_hash"
   if [[ -e "$MARKER" ]]; then
     [[ "$(sha256 "$BINK")" == "$(sha256 "$PAYLOAD/libBink2Macx64.dylib")" ]] || die "Incomplete patch state: marker and bridge differ. Run remove."
     print -- "Supported ESO client; patch installed."
+    [[ -f "$VERSION_FILE" ]] && print -- "Installed release: $(<"$VERSION_FILE")"
   else
     [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "Unsupported or already-modified Bink library."
     print -- "Supported ESO client; patch not installed."
@@ -129,20 +139,27 @@ install() {
   mkdir -p "$STATE_DIR"
   chmod 700 "$STATE_DIR"
   if [[ -e "$BACKUP" || -e "$STATE" ]]; then
-    [[ -f "$BACKUP" && -f "$STATE" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The existing restore record is incomplete or does not match this client."
+    [[ -f "$BACKUP" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The existing restore backup is incomplete or does not match this client."
+    [[ ! -e "$STATE" || -f "$STATE" ]] || die "The existing restore record is invalid."
   else
     copy_verified "$BINK" "$BACKUP"
   fi
+  print -r -- "executable_sha256=$EXPECTED_ESO_SHA256" > "$STATE"
+  print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
+  print -r -- "release_version=${RELEASE_VERSION:-unknown}" >> "$STATE"
+  print -r -- "installed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
+  print -r -- "${RELEASE_VERSION:-unknown}" > "$VERSION_FILE"
   copy_verified "$BINK" "$RENAMED"
   retag_original
   copy_verified "$PAYLOAD/libBink2Macx64.dylib" "$BINK"
   copy_verified "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$MVK"
-  print -r -- "executable_sha256=$EXPECTED_ESO_SHA256" > "$STATE"
-  print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
-  print -r -- "installed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
-  print -r -- 'startup-compositor-neutralize' > "$MARKER.installing"
-  write_command "${MARKER:h}" mv "$MARKER.installing" "$MARKER"
-  print -- "Installed. Start ESO through your usual Steam or ZeniMax launcher."
+  print -r -- 'startup-compositor-neutralize' > "$STATE_DIR/enable-marker"
+  copy_verified "$STATE_DIR/enable-marker" "$MARKER"
+  rm -f "$STATE_DIR/enable-marker"
+  print -- "Installed to: $ESO_APP"
+  print -- "Release: ${RELEASE_VERSION:-unknown}"
+  print -- "Verified restore backup: $BACKUP"
+  print -- "Start ESO through your usual Steam or ZeniMax launcher. There is no in-game AddOns toggle for this runtime patch."
 }
 
 remove() {
@@ -153,7 +170,8 @@ remove() {
   [[ "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The restore backup does not match the supported original."
   copy_verified "$BACKUP" "$BINK"
   write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
-  print -- "Removed. The original Bink library is restored; the verified backup remains in Application Support."
+  print -- "Removed from: $ESO_APP"
+  print -- "The original Bink library is restored; the verified backup remains at: $BACKUP"
 }
 
 case "$command_name" in

@@ -22,6 +22,13 @@ does not permit a downloaded command to run directly, they can drag it into a
 Terminal window or run `zsh install.command`; this is the unsigned-release
 tradeoff. Do not ask users to run a remote `curl | sh` command.
 
+The package prints its release version on every invocation. If no known client
+is found, an interactive Terminal session asks the player to drag `eso.app` or
+the ESO Launcher into the window. A successful install reports the exact target,
+release version, and verified backup location. The per-installation state keeps
+a `.version` record for later support and survives removal alongside the
+verified backup.
+
 ## Installer behavior
 
 - Searches the known Steam and ZeniMax launcher client locations.
@@ -30,7 +37,7 @@ tradeoff. Do not ask users to run a remote `curl | sh` command.
 - Checks the exact ESO executable SHA-256 before any file change.
 - Checks the matching original Bink-library SHA-256, then gives the player's
   private copied original the bridge's loader identity; no proprietary Bink
-  binary is included in the release DMG.
+  binary is included in the release ZIP or DMG.
 - Requires the selected bundle to be idle; idle Steam alone is not a blocker.
 - Creates an independently verified original-Bink backup in Application
   Support, while retaining the renamed original needed by the runtime proxy.
@@ -42,6 +49,11 @@ tradeoff. Do not ask users to run a remote `curl | sh` command.
 An unrecognized client build fails closed. This permits a shared Steam/direct
 client profile when its exact executable matches, without assuming that either
 path is trustworthy.
+
+Release assembly runs a disposable end-to-end fixture covering a deliberately
+interrupted install and verified recovery, Check, Install, Remove, and
+reinstall; verifies LF line endings and every payload checksum; and rejects
+ZIPs containing `.DS_Store`, AppleDouble `._` entries, or `__MACOSX`.
 
 ## Optional signed DMG
 

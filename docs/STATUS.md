@@ -19,6 +19,14 @@ while still failing closed on actual ESO, launcher, file-use, or update
 activity. The update check, executable fingerprint, official runtime hash,
 settings hash, and 1.4.2 pipeline-cache UUID remain current.
 
+The unsigned public distribution path is now a prebuilt release ZIP rather
+than a source checkout. It contains exact-profile Check, Install, and Remove
+commands, automatic Steam/ZeniMax discovery with interactive path fallback,
+verified per-installation backup and version state, and no player-side Python
+or Xcode requirement. Release assembly now proves a disposable Check → Install
+→ Remove → reinstall transaction and rejects CRLF or macOS metadata leakage.
+The signed/notarized DMG remains optional pending a Developer ID membership.
+
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
 `20260731T114051.034860000Z-pid30867`, passed the automatic bridge-startup
