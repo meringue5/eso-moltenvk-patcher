@@ -472,30 +472,17 @@ int main(int argc, char** argv) {
     PFN_vkEnumerateDeviceExtensionProperties raw_enumerate_device_extensions =
         enumerate_device_extensions;
     PFN_vkCreateDevice raw_create_device = create_device;
-    PFN_vkGetPhysicalDeviceFeatures raw_get_physical_device_features =
-        get_physical_device_features;
     const bool use_hdr_filter = getenv("TESO4M4_PROBE_HDR_FILTER") != NULL;
-    const bool use_legacy_feature_profile =
-        getenv("TESO4M4_PROBE_LEGACY_FEATURE_PROFILE") != NULL;
-    if (use_hdr_filter || use_legacy_feature_profile) {
+    if (use_hdr_filter) {
         teso4m4_compat_reset();
         teso4m4_compat_set_logger(&probe_compat_log);
         teso4m4_compat_set_enumerate_device_extensions(
             raw_enumerate_device_extensions);
         teso4m4_compat_set_create_device(raw_create_device);
-        teso4m4_compat_set_get_physical_device_features(
-            raw_get_physical_device_features);
-        teso4m4_compat_set_legacy_feature_profile_enabled(
-            use_legacy_feature_profile);
     }
     if (use_hdr_filter) {
         enumerate_device_extensions =
             &teso4m4_enumerate_device_extension_properties;
-        create_device = &teso4m4_create_device;
-    }
-    if (use_legacy_feature_profile) {
-        get_physical_device_features =
-            &teso4m4_get_physical_device_features;
         create_device = &teso4m4_create_device;
     }
 
@@ -577,11 +564,6 @@ int main(int argc, char** argv) {
         free(queue_families);
 
         if (queue_family_index != UINT32_MAX) {
-            VkPhysicalDeviceFeatures enabled_features = {0};
-            if (use_legacy_feature_profile) {
-                get_physical_device_features(
-                    devices[0], &enabled_features);
-            }
             float queue_priority = 1.0f;
             VkDeviceQueueCreateInfo queue_info = {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -595,9 +577,7 @@ int main(int argc, char** argv) {
                 .pQueueCreateInfos = &queue_info,
                 .enabledExtensionCount = requested_device_extension_count,
                 .ppEnabledExtensionNames = requested_device_extensions,
-                .pEnabledFeatures = use_legacy_feature_profile
-                    ? &enabled_features
-                    : NULL,
+                .pEnabledFeatures = NULL,
             };
             VkDevice device = VK_NULL_HANDLE;
             result = create_device(devices[0], &device_info, NULL, &device);

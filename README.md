@@ -68,46 +68,12 @@ a subsequent crash report. See the
 
 ## How to install
 
-The public release is a prebuilt ZIP. Players do **not** need Python, Xcode, or
-a source checkout.
+1. [Download the latest release](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest).
+2. Unzip it and double-click `Install.command`.
+3. Follow the path and settings prompts, then launch ESO normally.
 
-1. [Download the latest GitHub Release](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
-   and choose `ESO-MoltenVK-Patcher-<version>.zip` under **Assets**.
-2. Unzip it and open the single **ESO MoltenVK Patcher** folder.
-3. Quit ESO and the ZeniMax launcher. Steam may remain open unless it is
-   updating or using ESO's files.
-4. Double-click `Install.command`. Review the detected ESO path before
-   confirming the highlighted **Install** choice. The validated M4 2048×1280
-   settings template likewise starts on **Apply**; move to the other choice if
-   you want to preserve the current settings.
-5. Start ESO later through your normal Steam or official ESO launcher.
-
-The installer checks known Steam and ZeniMax locations. If it cannot find the
-game, it asks you to drag `eso.app` or `ESO Launcher.app` into Terminal. It
-verifies the exact supported client and a restorable backup before changing
-anything. Double-click `Uninstall.command` to uninstall and restore the
-original. Payloads, checksums, and optional support diagnostics live in a
-Finder-hidden internal folder rather than cluttering the player-facing view.
-
-Install and Uninstall use a dependency-free terminal stepper: each completed
-verification or change is shown as a numbered stage, followed by a concise
-target, version, settings, and recovery summary. Interactive terminals use
-light color; redirected logs remain plain text. Technical failures state
-whether mutation started and how verified recovery proceeds.
-The interactive view clears the shell's launch command from the visible
-viewport, shows the complete plan in muted text, and promotes each finished
-stage to a bright green checked row.
-Target confirmation and settings initially highlight the first, affirmative
-choice so the menu is immediately legible. Move with the Up and Down arrows
-and press Return, or use Y/N shortcuts. Escape cancels.
-
-Choosing settings application selectively merges 48 allowlisted keys after
-backing up `UserSettings.txt`; it does not replace the complete file. Removal
-restores that backup only when the settings have not subsequently changed.
-
-See the [illustrated installation guide](docs/INSTALL.md) for the complete
-walkthrough, macOS **Open Anyway** instructions, recovery behavior, and common
-failure messages.
+For Gatekeeper instructions, custom paths, uninstall, and recovery, see the
+[illustrated installation guide](docs/INSTALL.md).
 
 ## Why ESO needs a bridge
 

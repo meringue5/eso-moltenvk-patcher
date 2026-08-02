@@ -136,10 +136,10 @@ in the safety rules above; no additional per-install confirmation is required
 inside that scope. Any operation outside that scope still requires explicit
 approval.
 
-This is a source-tool safeguard while the end-user installer is not yet built.
-Consult `docs/STATUS.md` and `docs/PRODUCTION.md` for the current production
-baseline and known limitations. Do not describe an unproven maintenance mode as
-a supported fix.
+This is a source-maintenance safeguard; the public release installer has its
+own exact-target, backup, and transaction gates. Consult `docs/STATUS.md` and
+`docs/PRODUCTION.md` for the current production baseline and known limitations.
+Do not describe an unproven maintenance mode as a supported fix.
 
 ## Evidence standards
 

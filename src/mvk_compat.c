@@ -17,11 +17,9 @@ _Static_assert(
 
 static PFN_vkEnumerateDeviceExtensionProperties g_next_enumerate_device_extensions;
 static PFN_vkCreateDevice g_next_create_device;
-static PFN_vkGetPhysicalDeviceFeatures g_next_get_physical_device_features;
 static PFN_vkGetPhysicalDeviceSurfaceFormatsKHR g_next_get_surface_formats;
 static Teso4m4CompatLogFunction g_logger;
 static atomic_uint_fast64_t g_create_call_counter;
-static bool g_legacy_feature_profile_enabled;
 
 static void compat_log(const char* format, ...) {
     if (!g_logger) {
@@ -38,10 +36,8 @@ static void compat_log(const char* format, ...) {
 void teso4m4_compat_reset(void) {
     g_next_enumerate_device_extensions = NULL;
     g_next_create_device = NULL;
-    g_next_get_physical_device_features = NULL;
     g_next_get_surface_formats = NULL;
     g_logger = NULL;
-    g_legacy_feature_profile_enabled = false;
     atomic_store_explicit(&g_create_call_counter, 0, memory_order_relaxed);
 }
 
@@ -58,109 +54,9 @@ void teso4m4_compat_set_create_device(PFN_vkCreateDevice next_function) {
     g_next_create_device = next_function;
 }
 
-void teso4m4_compat_set_get_physical_device_features(
-    PFN_vkGetPhysicalDeviceFeatures next_function) {
-    g_next_get_physical_device_features = next_function;
-}
-
-void teso4m4_compat_set_legacy_feature_profile_enabled(bool enabled) {
-    g_legacy_feature_profile_enabled = enabled;
-}
-
 void teso4m4_compat_set_get_surface_formats(
     PFN_vkGetPhysicalDeviceSurfaceFormatsKHR next_function) {
     g_next_get_surface_formats = next_function;
-}
-
-static uint32_t count_enabled_features(
-    const VkPhysicalDeviceFeatures* features) {
-    if (!features) {
-        return 0;
-    }
-    VkBool32 values[sizeof(*features) / sizeof(VkBool32)];
-    memcpy(values, features, sizeof(values));
-    uint32_t count = 0;
-    for (size_t index = 0;
-         index < sizeof(values) / sizeof(values[0]); ++index) {
-        count += values[index] == VK_TRUE;
-    }
-    return count;
-}
-
-static uint32_t count_legacy_incompatible_features(
-    const VkPhysicalDeviceFeatures* features) {
-    if (!features) {
-        return 0;
-    }
-    return
-        (features->robustBufferAccess == VK_TRUE) +
-        (features->fullDrawIndexUint32 == VK_TRUE) +
-        (features->tessellationShader == VK_TRUE) +
-        (features->sampleRateShading == VK_TRUE) +
-        (features->drawIndirectFirstInstance == VK_TRUE) +
-        (features->multiViewport == VK_TRUE) +
-        (features->textureCompressionETC2 == VK_TRUE) +
-        (features->textureCompressionASTC_LDR == VK_TRUE) +
-        (features->shaderTessellationAndGeometryPointSize == VK_TRUE) +
-        (features->shaderStorageImageReadWithoutFormat == VK_TRUE) +
-        (features->shaderStorageImageWriteWithoutFormat == VK_TRUE) +
-        (features->shaderUniformBufferArrayDynamicIndexing == VK_TRUE) +
-        (features->shaderSampledImageArrayDynamicIndexing == VK_TRUE) +
-        (features->shaderStorageBufferArrayDynamicIndexing == VK_TRUE) +
-        (features->shaderStorageImageArrayDynamicIndexing == VK_TRUE) +
-        (features->shaderInt64 == VK_TRUE) +
-        (features->shaderResourceMinLod == VK_TRUE) +
-        (features->inheritedQueries == VK_TRUE);
-}
-
-static void apply_legacy_feature_profile(
-    VkPhysicalDeviceFeatures* features) {
-    features->robustBufferAccess = VK_FALSE;
-    features->fullDrawIndexUint32 = VK_FALSE;
-    features->tessellationShader = VK_FALSE;
-    features->sampleRateShading = VK_FALSE;
-    features->drawIndirectFirstInstance = VK_FALSE;
-    features->multiViewport = VK_FALSE;
-    features->textureCompressionETC2 = VK_FALSE;
-    features->textureCompressionASTC_LDR = VK_FALSE;
-    features->shaderTessellationAndGeometryPointSize = VK_FALSE;
-    features->shaderStorageImageReadWithoutFormat = VK_FALSE;
-    features->shaderStorageImageWriteWithoutFormat = VK_FALSE;
-    features->shaderUniformBufferArrayDynamicIndexing = VK_FALSE;
-    features->shaderSampledImageArrayDynamicIndexing = VK_FALSE;
-    features->shaderStorageBufferArrayDynamicIndexing = VK_FALSE;
-    features->shaderStorageImageArrayDynamicIndexing = VK_FALSE;
-    features->shaderInt64 = VK_FALSE;
-    features->shaderResourceMinLod = VK_FALSE;
-    features->inheritedQueries = VK_FALSE;
-}
-
-VKAPI_ATTR void VKAPI_CALL teso4m4_get_physical_device_features(
-    VkPhysicalDevice physical_device,
-    VkPhysicalDeviceFeatures* features) {
-    if (!g_next_get_physical_device_features) {
-        compat_log("LEGACY_FEATURE_PROFILE_ERROR: next function is unset");
-        if (features) {
-            memset(features, 0, sizeof(*features));
-        }
-        return;
-    }
-    if (!features) {
-        compat_log("LEGACY_FEATURE_PROFILE_ERROR: features is NULL");
-        return;
-    }
-
-    g_next_get_physical_device_features(physical_device, features);
-    const uint32_t raw_enabled = count_enabled_features(features);
-    const uint32_t raw_incompatible =
-        count_legacy_incompatible_features(features);
-    apply_legacy_feature_profile(features);
-    const uint32_t visible_enabled = count_enabled_features(features);
-    compat_log(
-        "LEGACY_FEATURE_PROFILE: physical=%p raw_enabled=%u "
-        "visible_enabled=%u masked=%u expected_masked=18",
-        (void*)physical_device, raw_enabled, visible_enabled,
-        raw_incompatible);
 }
 
 static bool is_eso_hdr_surface_format(const VkSurfaceFormatKHR* surface_format) {
@@ -437,25 +333,6 @@ VKAPI_ATTR VkResult VKAPI_CALL teso4m4_create_device(
         const char* name = extension_names[index];
         if (name && strcmp(name, VK_EXT_HDR_METADATA_EXTENSION_NAME) == 0) {
             hdr_enabled = true;
-        }
-    }
-
-    if (g_legacy_feature_profile_enabled) {
-        const VkPhysicalDeviceFeatures* enabled_features =
-            create_info ? create_info->pEnabledFeatures : NULL;
-        const uint32_t prohibited_enabled =
-            count_legacy_incompatible_features(enabled_features);
-        compat_log(
-            "CREATE_DEVICE_FEATURE_PROFILE: call=%" PRIu64
-            " enabled=%u prohibited_enabled=%u expected_prohibited=0",
-            call_id, count_enabled_features(enabled_features),
-            prohibited_enabled);
-        if (prohibited_enabled != 0) {
-            compat_log(
-                "CREATE_DEVICE_FEATURE_PROFILE_ERROR: call=%" PRIu64
-                " prohibited legacy-incompatible features were requested",
-                call_id);
-            return VK_ERROR_FEATURE_NOT_PRESENT;
         }
     }
 

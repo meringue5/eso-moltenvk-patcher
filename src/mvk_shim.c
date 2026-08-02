@@ -36,7 +36,6 @@ static char g_run_id[80] = "uninitialized";
 static PFN_vkGetInstanceProcAddr g_next_get_instance_proc_addr;
 static PFN_vkGetDeviceProcAddr g_next_get_device_proc_addr;
 static bool g_reset_trace_enabled;
-static bool g_legacy_feature_profile_enabled;
 static bool g_startup_color_audit_enabled;
 static bool g_startup_present_pixel_audit_enabled;
 static bool g_startup_draw_audit_enabled;
@@ -63,8 +62,6 @@ typedef enum {
     TESO4M4_MODE_RENDER_AUDIT,
     TESO4M4_MODE_RESET_NO_PIPELINE_CACHE,
     TESO4M4_MODE_FULL_LIFETIME_AUDIT,
-    TESO4M4_MODE_TEXTURE_CACHE_FIX,
-    TESO4M4_MODE_LEGACY_FEATURE_PROFILE,
     TESO4M4_MODE_PERFORMANCE_SAFE,
     TESO4M4_MODE_PERFORMANCE_AGGRESSIVE,
     TESO4M4_MODE_STARTUP_COLOR_AUDIT,
@@ -256,11 +253,6 @@ static PFN_vkVoidFunction VKAPI_CALL traced_get_instance_proc_addr(
     } else if (raw_result && name && strcmp(name, "vkCreateDevice") == 0) {
         returned_result = (PFN_vkVoidFunction)&teso4m4_create_device;
         shim = "device-trace";
-    } else if (raw_result && name && g_legacy_feature_profile_enabled &&
-               strcmp(name, "vkGetPhysicalDeviceFeatures") == 0) {
-        returned_result =
-            (PFN_vkVoidFunction)&teso4m4_get_physical_device_features;
-        shim = "legacy-feature-profile";
     } else if (raw_result && name &&
                strcmp(name, "vkGetPhysicalDeviceSurfaceFormatsKHR") == 0) {
         returned_result = (PFN_vkVoidFunction)
@@ -340,12 +332,6 @@ static Teso4m4Mode marker_mode(const char* directory) {
     }
     if (strcmp(mode, "full-lifetime-audit") == 0) {
         return TESO4M4_MODE_FULL_LIFETIME_AUDIT;
-    }
-    if (strcmp(mode, "texture-cache-fix") == 0) {
-        return TESO4M4_MODE_TEXTURE_CACHE_FIX;
-    }
-    if (strcmp(mode, "legacy-feature-profile") == 0) {
-        return TESO4M4_MODE_LEGACY_FEATURE_PROFILE;
     }
     if (strcmp(mode, "performance-safe") == 0) {
         return TESO4M4_MODE_PERFORMANCE_SAFE;
@@ -523,25 +509,17 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             moltenvk, "vkEnumerateDeviceExtensionProperties");
     PFN_vkCreateDevice create_device =
         (PFN_vkCreateDevice)dlsym(moltenvk, "vkCreateDevice");
-    PFN_vkGetPhysicalDeviceFeatures get_physical_device_features =
-        (PFN_vkGetPhysicalDeviceFeatures)dlsym(
-            moltenvk, "vkGetPhysicalDeviceFeatures");
     PFN_vkGetPhysicalDeviceSurfaceFormatsKHR get_surface_formats =
         (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)dlsym(
             moltenvk, "vkGetPhysicalDeviceSurfaceFormatsKHR");
     if (!g_next_get_instance_proc_addr || !g_next_get_device_proc_addr ||
-        !enumerate_device_extensions || !create_device ||
-        !get_physical_device_features || !get_surface_formats) {
+        !enumerate_device_extensions || !create_device || !get_surface_formats) {
         log_message("ERROR: required compatibility entry point is unavailable");
         return false;
     }
     teso4m4_compat_set_enumerate_device_extensions(
         enumerate_device_extensions);
     teso4m4_compat_set_create_device(create_device);
-    teso4m4_compat_set_get_physical_device_features(
-        get_physical_device_features);
-    teso4m4_compat_set_legacy_feature_profile_enabled(
-        g_legacy_feature_profile_enabled);
     teso4m4_compat_set_get_surface_formats(get_surface_formats);
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
@@ -601,7 +579,6 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     teso4m4_fx_sentinel_set_window_function(
         &teso4m4_lifecycle_startup_window_open);
     g_reset_trace_enabled = false;
-    g_legacy_feature_profile_enabled = false;
     g_startup_color_audit_enabled = false;
     g_startup_present_pixel_audit_enabled = false;
     g_startup_draw_audit_enabled = false;
@@ -632,8 +609,6 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_RENDER_AUDIT ||
         mode == TESO4M4_MODE_RESET_NO_PIPELINE_CACHE ||
         mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT;
-    g_legacy_feature_profile_enabled =
-        mode == TESO4M4_MODE_LEGACY_FEATURE_PROFILE;
     g_startup_color_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE ||
@@ -736,14 +711,6 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     } else if (mode == TESO4M4_MODE_FULL_LIFETIME_AUDIT) {
         log_message(
             "MODE: full lifetime audit enabled live_resources=1 "
-            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
-    } else if (mode == TESO4M4_MODE_TEXTURE_CACHE_FIX) {
-        log_message(
-            "MODE: texture cache fix enabled live_resources=1 "
-            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
-    } else if (mode == TESO4M4_MODE_LEGACY_FEATURE_PROFILE) {
-        log_message(
-            "MODE: legacy feature profile enabled live_resources=1 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1");
     } else if (mode == TESO4M4_MODE_PERFORMANCE_SAFE) {
         log_message(

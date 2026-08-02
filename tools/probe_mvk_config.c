@@ -35,8 +35,6 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "render-audit") != 0 &&
          strcmp(argv[2], "reset-no-pipeline-cache") != 0 &&
          strcmp(argv[2], "full-lifetime-audit") != 0 &&
-         strcmp(argv[2], "texture-cache-fix") != 0 &&
-         strcmp(argv[2], "legacy-feature-profile") != 0 &&
          strcmp(argv[2], "performance-safe") != 0 &&
          strcmp(argv[2], "performance-aggressive") != 0 &&
          strcmp(argv[2], "startup-color-audit") != 0 &&
@@ -51,7 +49,7 @@ int main(int argc, char** argv) {
             "usage: %s libMoltenVK.dylib "
             "default|descriptor-compat|legacy-allocation|reset-resource-trace|"
             "no-command-pooling|render-audit|reset-no-pipeline-cache|"
-            "full-lifetime-audit|texture-cache-fix|legacy-feature-profile|"
+            "full-lifetime-audit|"
             "performance-safe|performance-aggressive|startup-color-audit|"
             "startup-fx-neutralize|startup-present-pixel-audit|"
             "startup-draw-audit|startup-input-audit|"
@@ -72,8 +70,6 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "render-audit") == 0 ||
         strcmp(argv[2], "reset-no-pipeline-cache") == 0 ||
         strcmp(argv[2], "full-lifetime-audit") == 0 ||
-        strcmp(argv[2], "texture-cache-fix") == 0 ||
-        strcmp(argv[2], "legacy-feature-profile") == 0 ||
         strcmp(argv[2], "performance-safe") == 0 ||
         strcmp(argv[2], "performance-aggressive") == 0 ||
         strcmp(argv[2], "startup-color-audit") == 0 ||
