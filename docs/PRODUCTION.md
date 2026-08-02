@@ -13,17 +13,20 @@ if it had been production at the time.
 
 | Component | Production baseline |
 |---|---|
-| Product | `teso4m4` macOS runtime patch |
+| Product | ESO MoltenVK Patcher 0.1.0 |
 | ESO client | Steam macOS ESO 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
 | Bridge profile | `performance-aggressive` plus the bounded startup compositor neutralizer |
 | Validated hardware | Apple M4 MacBook Air, through Rosetta |
 | Gameplay evidence | Roughly 93 minutes of ordinary play at the observed 60 FPS VSync ceiling, including live graphics and resolution changes |
 | Startup evidence | Two consecutive exact starts with 79 target draws neutralized at ordinals 71--149 and the normal scene forwarded at ordinal 150 |
+| Standard settings | 2048 x 1280 profile with High subsampling (`SUB_SAMPLING "2"`) |
 | Safety boundary | Exact executable identity, static layout, original patch bytes, backup, and restore path must all pass |
 
 The first semantic product version is **ESO MoltenVK Patcher 0.1.0**, promoted
-on 2026-08-02 from the user-installed and gameplay-tested `0.1.0-rc.1` package.
+on 2026-08-02 from the user-installed and gameplay-tested `0.1.0-rc.1` package,
+then rebuilt from the cleaned production source after the exact successor
+binary and High subsampling passed ordinary gameplay in Experiment 0033.
 **Production Baseline 2026-08-01** remains the historical promotion boundary;
 the 2026-08-02 startup-clean checkpoint is the maintenance baseline shipped in
 0.1.0.
@@ -39,7 +42,8 @@ reclassify the working gameplay patch as experimental. Experiment 0031's two
 successful starts promote its exact bounded compositor substitution to the
 current maintenance baseline. The 0.1.0 release package integrates that
 behavior and passed an end-to-end user install, startup, and ordinary gameplay
-validation as recorded in Experiment 0032.
+validation as recorded in Experiment 0032. Experiment 0033 validates the exact
+cleaned successor binary used for the replacement 0.1.0 payload.
 
 ## Supported scope today
 

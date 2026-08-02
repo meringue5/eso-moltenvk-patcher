@@ -10,7 +10,7 @@ This roadmap contains future work only. Current verified state is in
   the exact bounded startup compositor neutralizer as one release baseline.
 - Preserve the pristine loader, release restore record, historical runtime
   backups, all pipeline-cache generations, and the 48-key sanitized settings
-  template.
+  template with validated High subsampling.
 - Keep release install and uninstall transactional, idempotent, and fail-closed
   on unknown files or incomplete recovery state.
 - Treat regressions in ordinary play, live graphics resets, startup color, or

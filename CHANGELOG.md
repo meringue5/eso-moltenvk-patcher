@@ -1,15 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 - 2026-08-02
 
+- Rebuilt the release from the cleaned 1.4.2 production source after an exact
+  installed-binary gameplay validation.
+- Raised the bundled standard profile's subsampling setting from Medium to
+  High after successful ordinary-play validation.
 - Reduced the README installation section to a release-oriented quick start.
 - Removed the abandoned MoltenVK 1.4.1 texture-cache backport, its dedicated
   build and comparison probes, and the failed legacy feature-profile mode.
 - Reframed current status, roadmap, and architecture documentation around the
   1.4.2 production baseline while preserving experiment and research history.
-
-## 0.1.0 - 2026-08-02
-
 - Promoted the user-installed `0.1.0-rc.1` package after successful ordinary
   Steam-path startup and gameplay on the supported M4/ESO 12.0.7 baseline.
 

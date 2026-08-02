@@ -27,7 +27,7 @@ Validated context:
 | Bridge mode | `performance-aggressive` |
 | Display | exclusive fullscreen, 2048 x 1280 |
 | Character resolution | `2` |
-| Subsampling | `1` |
+| Subsampling | `2` (High) |
 | Shadows / high-resolution shadows | `2` / `1` |
 | Planar / screen-space water reflections | `2` / `1` |
 | Ambient occlusion | `1` |
@@ -59,7 +59,7 @@ Notable values:
 |---|---:|---|
 | `OCCLUSION_CULLING_ENABLED` | `1` | Accepted by ESO; no isolated FPS A/B yet |
 | `CHARACTER_RESOLUTION` | `1` | Preserves player/character clarity |
-| `SUB_SAMPLING` | `1` | Preferred visually; lowering gives a large but unacceptable quality loss |
+| `SUB_SAMPLING` | `2` | High; validated in ordinary play after the production refactor |
 | `VIEW_DISTANCE` | `1.03999996` | Current value; ESO later overwrote a manual `0.80000001` test |
 | `PFX_SUPPRESS_DISTANCE` | `35` | Current reduced effect distance |
 | `REFLECTION_QUALITY` | `0` | Reduced |

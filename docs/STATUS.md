@@ -16,6 +16,10 @@ The production profile combines:
 - the validated `performance-aggressive` resource-check setting; and
 - the bounded startup compositor neutralizer from Experiment 0031.
 
+The bundled M4 settings template now selects High subsampling
+(`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
+the same exact production build and reported no problem.
+
 On the tested M4 MacBook Air, the validated 2048 x 1280 medium-to-high profile
 held the user-observed 60 FPS VSync ceiling during roughly 93 minutes of
 ordinary play. Six live graphics-device reset sequences completed without the
@@ -31,13 +35,16 @@ and Uninstall commands, exact Steam/ZeniMax client discovery, custom-path
 fallback, verified backup and recovery state, explicit settings-template
 choice, and transaction recovery after an interrupted install.
 
-Version 0.1.0 was promoted after the user installed `0.1.0-rc.1`, launched ESO
-through the normal Steam authentication path, and completed ordinary gameplay
-without a problem. The release-package run
-`20260802T084433.627791000Z-pid88181` records the exact supported client,
-official MoltenVK 1.4.2, all 17 redirects, the bounded 79-draw suppression, and
-the ordinal-150 forward latch. See
-[Experiment 0032](experiments/0032-release-candidate-end-to-end.md).
+Version 0.1.0 was promoted after end-to-end RC validation, then rebuilt from the
+cleaned production source. The user installed the exact `0.1.1-dev` precursor
+of that replacement build and completed ordinary gameplay with High
+subsampling without a problem. Installed and built proxy SHA-256 values match
+at `5d6aa40ddd1ac7d7c81a8d164bb0b317a17154034596d63a73bd4710a5139284`.
+The latest run `20260802T094941.290510000Z-pid95867` records official MoltenVK
+1.4.2, all 17 redirects, 79 bounded suppressions, and the ordinal-150 forward
+latch. See Experiments
+[0032](experiments/0032-release-candidate-end-to-end.md) and
+[0033](experiments/0033-production-refactor-release-validation.md).
 
 The signed and notarized app/DMG remains optional pending Apple Developer ID
 membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
