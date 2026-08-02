@@ -32,6 +32,12 @@ anything. Double-click `Uninstall.command` to uninstall and restore the
 original. Payloads, checksums, and optional support diagnostics live in a
 Finder-hidden internal folder rather than cluttering the player-facing view.
 
+Install and Uninstall use a dependency-free terminal stepper: each completed
+verification or change is shown as a numbered stage, followed by a concise
+target, version, settings, and recovery summary. Interactive terminals use
+light color; redirected logs remain plain text. Technical failures state
+whether mutation started and how verified recovery proceeds.
+
 Choosing settings application selectively merges 48 allowlisted keys after
 backing up `UserSettings.txt`; it does not replace the complete file. Removal
 restores that backup only when the settings have not subsequently changed.

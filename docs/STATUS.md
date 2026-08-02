@@ -36,6 +36,14 @@ player edits are preserved. The disposable transaction covers interruption
 after the settings commit as well as apply, skip, restore, and conflict cases.
 The signed/notarized DMG remains optional pending a Developer ID membership.
 
+The first local RC usability pass caught and corrected a release-profile field
+that had mistaken Experiment 0031's built proxy hash `4c1c69fd86bf...` for the
+original Bink hash. The original-loader hash is
+`c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb`,
+supported by the active original, both pristine copies, and the preserved
+original-runtime experiment records. The release gate now uses that value and
+still fails closed on any other library.
+
 The user's post-install ordinary play now supplies the missing runtime
 validation. The latest preserved run,
 `20260731T114051.034860000Z-pid30867`, passed the automatic bridge-startup

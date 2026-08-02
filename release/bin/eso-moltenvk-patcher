@@ -5,9 +5,55 @@ ROOT="${0:A:h:h}"
 PAYLOAD="$ROOT/payload"
 source "$PAYLOAD/target-profile.env"
 
-die() { print -u2 -- "$*"; exit 1; }
+UI_TTY=false
+[[ -t 1 ]] && UI_TTY=true
+UI_GREEN="" UI_RED="" UI_BLUE="" UI_DIM="" UI_RESET=""
+if [[ "$UI_TTY" == true && -z "${NO_COLOR:-}" ]]; then
+  UI_GREEN=$'\033[32m'
+  UI_RED=$'\033[31m'
+  UI_BLUE=$'\033[36m'
+  UI_DIM=$'\033[2m'
+  UI_RESET=$'\033[0m'
+fi
+MUTATION_STARTED=false
+
+ui_header() {
+  local action="$1"
+  print -- ""
+  print -- "╭──────────────────────────────────────────────╮"
+  printf '│  %-44s│\n' "ESO MoltenVK Patcher ${RELEASE_VERSION:-unknown}"
+  printf '│  %-44s│\n' "$action"
+  print -- "╰──────────────────────────────────────────────╯"
+  print -- ""
+}
+
+ui_step() {
+  local current="$1" total="$2" label="$3" result="${4:-Done}"
+  local symbol="✓" color="$UI_GREEN"
+  [[ "$result" == "Skipped" ]] && { symbol="–"; color="$UI_DIM"; }
+  print -- "  ${color}${symbol}${UI_RESET} [$current/$total] $label  ${color}$result${UI_RESET}"
+}
+
+ui_complete() {
+  print -- ""
+  print -- "${UI_GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%${UI_RESET}"
+  print -- ""
+  print -- "${UI_GREEN}✓ $1${UI_RESET}"
+}
+
+die() {
+  print -u2 -- ""
+  print -u2 -- "${UI_RED}✗ Operation stopped safely${UI_RESET}"
+  print -u2 -- ""
+  print -u2 -- "  $*"
+  if [[ "$MUTATION_STARTED" == false ]]; then
+    print -u2 -- "  No files were changed."
+  else
+    print -u2 -- "  A verified recovery record is available; run the command again."
+  fi
+  exit 1
+}
 sha256() { shasum -a 256 "$1" | awk '{print $1}'; }
-print -- "ESO MoltenVK Patcher ${RELEASE_VERSION:-unknown}"
 
 usage() {
   cat <<'EOF'
@@ -94,13 +140,19 @@ choose_settings_action() {
   [[ -t 0 ]] || die "Choose settings explicitly with --apply-settings or --skip-settings."
   local answer=""
   while true; do
-    print -- "The bundled settings template is the validated M4 2048 x 1280 profile."
-    print -n -- "Apply its 48 allowlisted settings? Enter y or n: "
+    print -- ""
+    print -- "  Settings profile"
+    print -- "  The bundled template is the validated M4 2048 x 1280 profile."
+    print -- ""
+    print -- "    [Y] Apply 48 allowlisted settings"
+    print -- "    [N] Keep my current settings"
+    print -- ""
+    print -n -- "  Enter y or n: "
     IFS= read -r answer
     case "$answer" in
       y|Y|yes|YES|Yes) settings_choice=apply; return 0 ;;
       n|N|no|NO|No) settings_choice=skip; return 0 ;;
-      *) print -- "Please enter y or n. There is no default." ;;
+      *) print -- "  Please enter y or n. There is no default." ;;
     esac
   done
 }
@@ -174,14 +226,12 @@ prepare_settings_template() {
 }
 
 commit_settings_template() {
-  [[ "$settings_choice" == apply ]] || { print -- "Settings: unchanged by explicit choice."; return 0; }
+  [[ "$settings_choice" == apply ]] || return 0
   local merged="$STATE_DIR/settings-merged.txt"
   [[ -f "$merged" ]] || die "The prepared settings merge is missing."
   copy_verified "$merged" "$SETTINGS_FILE"
   print -r -- "$(sha256 "$SETTINGS_FILE")" > "$SETTINGS_APPLIED_SHA_FILE"
   rm -f "$merged"
-  print -- "Settings template applied selectively to: $SETTINGS_FILE"
-  print -- "Settings backup: $STATE_DIR/$SETTINGS_BACKUP_NAME"
 }
 
 restore_settings_if_safe() {
@@ -291,6 +341,7 @@ recover_incomplete_install() {
 }
 
 check() {
+  ui_header "Installation status"
   resolve_target; state_directory
   local executable_hash="$(sha256 "$ESO")"
   [[ "$executable_hash" == "$EXPECTED_ESO_SHA256" ]] || die "Unsupported ESO executable: $executable_hash"
@@ -306,18 +357,29 @@ check() {
 }
 
 install() {
-  resolve_target; state_directory; choose_settings_action; resolve_settings_file; validate_settings_template
-  require_supported_executable; require_idle
+  ui_header "Safe, reversible runtime installation"
+  resolve_target; state_directory
+  ui_step 1 6 "Finding ESO installation"
+  require_supported_executable
+  ui_step 2 6 "Verifying supported ESO build"
+  require_idle
+  ui_step 3 6 "Checking game, launcher, and update state"
   recover_incomplete_install
   require_supported_original
   if [[ "$assume_yes" != true && -t 0 ]]; then
-    print -- "Ready to install ${RELEASE_VERSION:-unknown} to:"
+    print -- ""
+    print -- "  Installation target"
     print -- "  $ESO_APP"
-    print -n -- "Continue? [y/N] "
+    print -- ""
+    print -n -- "  Continue with this ESO installation? [y/N] "
     local answer=""
     IFS= read -r answer
-    [[ "$answer" == [yY] || "$answer" == [yY][eE][sS] ]] || { print -- "Cancelled. No files were changed."; return 0; }
+    [[ "$answer" == [yY] || "$answer" == [yY][eE][sS] ]] || { print -- "  Cancelled. No files were changed."; return 0; }
   fi
+  choose_settings_action
+  resolve_settings_file
+  validate_settings_template
+  MUTATION_STARTED=true
   mkdir -p "$STATE_DIR"
   chmod 700 "$STATE_DIR"
   if [[ -e "$BACKUP" || -e "$STATE" ]]; then
@@ -328,31 +390,68 @@ install() {
   fi
   prepare_settings_template
   record_state prepared
+  ui_step 4 6 "Preparing verified recovery backup"
   copy_verified "$BINK" "$RENAMED"
   retag_original
   copy_verified "$PAYLOAD/libBink2Macx64.dylib" "$BINK"
   copy_verified "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$MVK"
+  ui_step 5 6 "Installing runtime bridge"
   commit_settings_template
   print -r -- 'startup-compositor-neutralize' > "$STATE_DIR/enable-marker"
   copy_verified "$STATE_DIR/enable-marker" "$MARKER"
   rm -f "$STATE_DIR/enable-marker"
   record_state installed
+  [[ -f "$MARKER" && "$(sha256 "$BINK")" == "$(sha256 "$PAYLOAD/libBink2Macx64.dylib")" ]] \
+    || die "Final installation verification failed."
+  if [[ "$settings_choice" == apply ]]; then
+    ui_step 6 6 "Applying settings and verifying installation"
+  else
+    ui_step 6 6 "Verifying installation" "Done"
+  fi
+  MUTATION_STARTED=false
+  ui_complete "Installation complete"
+  print -- ""
+  print -- "  ESO:      $ESO_APP"
+  print -- "  Patcher:  ${RELEASE_VERSION:-unknown}"
+  [[ "$settings_choice" == apply ]] \
+    && print -- "  Settings: Applied (48-key M4 profile)" \
+    || print -- "  Settings: Unchanged"
+  print -- "  Backup:   Verified"
+  print -- ""
+  print -- "  Start ESO through your usual Steam or ZeniMax launcher."
+  print -- "  There is no in-game AddOns toggle for this runtime patch."
+  print -- ""
   print -- "Installed to: $ESO_APP"
   print -- "Release: ${RELEASE_VERSION:-unknown}"
   print -- "Verified restore backup: $BACKUP"
-  print -- "Start ESO through your usual Steam or ZeniMax launcher. There is no in-game AddOns toggle for this runtime patch."
 }
 
 remove() {
-  resolve_target; state_directory; require_idle
+  ui_header "Restore the original ESO runtime"
+  resolve_target; state_directory
+  ui_step 1 4 "Finding patched ESO installation"
+  require_idle
+  ui_step 2 4 "Checking game, launcher, and recovery state"
   [[ -f "$BACKUP" && -f "$STATE" ]] || die "A verified restore record was not found. No files were changed."
   source "$STATE"
   [[ "${executable_sha256:-}" == "$EXPECTED_ESO_SHA256" && "$(sha256 "$ESO")" == "$EXPECTED_ESO_SHA256" ]] || die "The selected ESO executable changed. No files were changed."
   [[ "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The restore backup does not match the supported original."
+  MUTATION_STARTED=true
   copy_verified "$BACKUP" "$BINK"
   write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
+  ui_step 3 4 "Restoring original runtime files"
   restore_settings_if_safe
   record_state removed
+  [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" && ! -e "$MARKER" ]] \
+    || die "Final uninstall verification failed."
+  ui_step 4 4 "Verifying settings and removal"
+  MUTATION_STARTED=false
+  ui_complete "Uninstall complete"
+  print -- ""
+  print -- "  ESO:      $ESO_APP"
+  print -- "  Runtime:  Original Bink loader restored"
+  print -- "  Backup:   Retained for verification"
+  print -- ""
   print -- "Removed from: $ESO_APP"
   print -- "The original Bink library is restored; the verified backup remains at: $BACKUP"
 }

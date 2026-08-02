@@ -1,7 +1,7 @@
 {
   "description": "Steam macOS ESO 12.0.7 build analyzed on 2026-07-20",
   "sha256": "82bc04ebc8c486636303d147edb9af6c0727b19c7faf7ce7d00837ac3e8ebf4d",
-  "original_bink_sha256": "4c1c69fd86bfba13a20f218e072092df8082dc8920e8607895358e85770c49d2",
+  "original_bink_sha256": "c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb",
   "uuid": "6599a49f-b1a0-3cbf-9aef-6d4186a66e0d",
   "client_build": {
     "version": "12.0.7",

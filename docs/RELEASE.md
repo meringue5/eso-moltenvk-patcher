@@ -31,6 +31,12 @@ does not permit a downloaded command to run directly, they can drag it into a
 Terminal window or run `zsh Install.command`; this is the unsigned-release
 tradeoff. Do not ask users to run a remote `curl | sh` command.
 
+The commands render a lightweight, dependency-free terminal stepper rather
+than raw implementation logs. Numbered stages correspond to completed safety
+or mutation boundaries; there is no simulated time-based progress. Color is
+enabled only for an interactive terminal and disabled by `NO_COLOR` or output
+redirection, keeping support logs machine-readable.
+
 The package prints its release version on every invocation. If no known client
 is found, an interactive Terminal session asks the player to drag `eso.app` or
 the ESO Launcher into the window. A successful install reports the exact target,

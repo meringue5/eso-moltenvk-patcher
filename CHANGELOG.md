@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Corrected the release profile's original-Bink fingerprint, which had
+  accidentally recorded a built proxy hash; the fail-closed installer now
+  accepts only the independently preserved original loader hash.
+- Added a dependency-free terminal stepper with numbered real-work stages,
+  explicit settings choices, safe failure messaging, and concise install and
+  uninstall summaries; redirected output remains plain text.
 - Simplified the ZIP's Finder view to `Install.command`,
   `Uninstall.command`, and `README.txt`, with payloads, checksums, and support
   diagnostics retained under a hidden internal directory.

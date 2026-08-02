@@ -50,9 +50,11 @@ if run_tool install --yes >/dev/null 2>&1; then
   print -u2 -- 'Expected non-interactive install without a settings choice to fail.'
   exit 1
 fi
-run_tool status | grep -q 'patch not installed'
+status_output="$(run_tool status)"
+[[ "$status_output" == *'patch not installed'* ]]
 
-run_tool status | grep -q 'patch not installed'
+status_output="$(run_tool status)"
+[[ "$status_output" == *'patch not installed'* ]]
 mv "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$PAYLOAD/libMoltenVK.teso4m4.dylib.missing"
 if run_tool install --skip-settings --yes >/dev/null 2>&1; then
   print -u2 -- 'Expected the incomplete-payload install to fail.'
@@ -60,25 +62,30 @@ if run_tool install --skip-settings --yes >/dev/null 2>&1; then
 fi
 mv "$PAYLOAD/libMoltenVK.teso4m4.dylib.missing" "$PAYLOAD/libMoltenVK.teso4m4.dylib"
 recovery_output="$(run_tool install --skip-settings --yes)"
-print -r -- "$recovery_output" | grep -q 'Restoring the verified baseline before restarting installation.'
-print -r -- "$recovery_output" | grep -q 'Installed to:'
+[[ "$recovery_output" == *'Restoring the verified baseline before restarting installation.'* ]]
+[[ "$recovery_output" == *'Installed to:'* ]]
 run_tool remove >/dev/null
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$EXPECTED_BINK_SHA" ]]
 
 install_output="$(run_tool install --apply-settings --settings-file "$SETTINGS_FILE" --yes)"
-print -r -- "$install_output" | grep -q "Installed to: $ESO_APP"
-print -r -- "$install_output" | grep -q 'Release: fixture-1.0.0'
+[[ "$install_output" == *"Installed to: $ESO_APP"* ]]
+[[ "$install_output" == *'Release: fixture-1.0.0'* ]]
+[[ "$install_output" == *'[1/6] Finding ESO installation'* ]]
+[[ "$install_output" == *'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%'* ]]
+[[ "$install_output" == *'✓ Installation complete'* ]]
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" \
   == "$(shasum -a 256 "$PAYLOAD/libBink2Macx64.dylib" | awk '{print $1}')" ]]
 [[ -f "$GAME_MAC/.teso4m4-enable" \
   && -f "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
   && -f "$GAME_MAC/libMoltenVK.teso4m4.dylib" ]]
-run_tool status | grep -q 'Installed release: fixture-1.0.0'
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Installed release: fixture-1.0.0'* ]]
 grep -q '^SET FULLSCREEN "2"$' "$SETTINGS_FILE"
 grep -q '^SET LANGUAGE.2 "en"$' "$SETTINGS_FILE"
 [[ "$(awk '$1 == "SET" {seen[$2]++} END {print seen["FULLSCREEN"]}' "$SETTINGS_FILE")" == 1 ]]
 
-run_tool remove | grep -q "Removed from: $ESO_APP"
+remove_output="$(run_tool remove)"
+[[ "$remove_output" == *"Removed from: $ESO_APP"* ]]
 [[ "$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')" == "$SETTINGS_ORIGINAL_SHA" ]]
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$EXPECTED_BINK_SHA" ]]
 [[ ! -e "$GAME_MAC/.teso4m4-enable" \
@@ -93,7 +100,7 @@ if run_tool install --apply-settings --settings-file "$SETTINGS_FILE" --yes >/de
 fi
 rmdir "$STATE_ROOT/$INSTALL_ID/enable-marker"
 post_settings_recovery="$(run_tool install --apply-settings --settings-file "$SETTINGS_FILE" --yes)"
-print -r -- "$post_settings_recovery" | grep -q 'Restoring the verified baseline before restarting installation.'
+[[ "$post_settings_recovery" == *'Restoring the verified baseline before restarting installation.'* ]]
 run_tool remove >/dev/null
 [[ "$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')" == "$SETTINGS_ORIGINAL_SHA" ]]
 
@@ -101,7 +108,7 @@ run_tool install --apply-settings --settings-file "$SETTINGS_FILE" --yes >/dev/n
 print -r -- 'SET USER_CHANGED_AFTER_INSTALL "1"' >> "$SETTINGS_FILE"
 CHANGED_SETTINGS_SHA="$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')"
 changed_remove_output="$(run_tool remove)"
-print -r -- "$changed_remove_output" | grep -q 'Settings changed after installation; they were not overwritten.'
+[[ "$changed_remove_output" == *'Settings changed after installation; they were not overwritten.'* ]]
 [[ "$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')" == "$CHANGED_SETTINGS_SHA" ]]
 
 run_tool install --skip-settings --yes >/dev/null

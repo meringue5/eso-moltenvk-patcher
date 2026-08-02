@@ -30,6 +30,12 @@ Quit ESO and the ZeniMax launcher before installation. Steam itself may remain
 open unless it is downloading, updating, or holding files in the selected ESO
 bundle. Double-click `Install.command`.
 
+Terminal presents six numbered stages covering discovery, exact-build
+verification, idle checks, recovery preparation, bridge installation, settings,
+and final verification. The progress display advances only when a real stage
+finishes; it is not a time-based animation. The final summary lists the exact
+ESO target, patcher version, settings choice, and backup result.
+
 The installer searches known Steam and official ZeniMax locations. If ESO is
 elsewhere, Terminal asks for a path: drag `eso.app` or `ESO Launcher.app` from
 Finder into the Terminal window and press Return. This supports renamed,
