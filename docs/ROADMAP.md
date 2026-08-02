@@ -138,13 +138,10 @@ are in [Project status](STATUS.md); completed runs belong in the
   suppressed 79 contiguous target draws at ordinals 71--149, forwarded at 150,
   completed at 180, and produced no visible pink. Settings were unchanged, the
   old cache backup was preserved, and no crash report appeared.
-- Fold the proven bounded behavior into the packaged production profile. Keep
-  the exact ESO/pipeline/layout/set/generation identities, ordinal-150
-  fail-open boundary, and zero-readback design. Remove diagnostic-only logging
-  and tracking that are unnecessary after the bounded latch, then repeat the
-  complete non-game gates before treating that packaged integration as
-  release-ready. This optimization does not revoke the installed Experiment
-  0031 checkpoint's status as the current maintenance baseline.
+- Preserve the packaged 0.1.0 production profile proven by Experiment 0032.
+  It retains the exact ESO/pipeline/layout/set/generation identities,
+  ordinal-150 fail-open boundary, zero-readback design, production log level,
+  and complete non-game release gates.
 - If the exact fixed-window log spans ordinals 80--140, forwards at 150, and
   pink still appears, close the repair as failed and use Experiment 0029 or a
   bounded pre-present exact-pixel replacement. Do not add per-frame readback

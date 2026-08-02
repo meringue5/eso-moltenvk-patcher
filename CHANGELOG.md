@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 - 2026-08-02
+
+- Promoted the user-installed `0.1.0-rc.1` package after successful ordinary
+  Steam-path startup and gameplay on the supported M4/ESO 12.0.7 baseline.
 
 - Replaced text confirmation prompts with dependency-free arrow-key menus that
   initially highlight the affirmative choice, retain Y/N shortcuts, confirm
@@ -67,7 +70,7 @@
   window, forwarded the normal scene at ordinal 150, and showed no pink frame,
   crash, settings change, or readback/queue-wait path.
 
-## 0.1.0 - 2026-07-19
+## Pre-production baseline - 2026-07-19
 
 - Documented reproducible FPS degradation and Metal HUD evidence.
 - Recorded validated and rejected ESO settings advice.

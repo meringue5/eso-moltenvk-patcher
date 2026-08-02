@@ -9,6 +9,16 @@ baseline is official MoltenVK 1.4.2 with the `performance-aggressive` profile
 for ESO 12.0.7, databuild `3281538`. Experiment 0031's exact bounded startup
 compositor neutralizer is the current 2026-08-02 maintenance baseline layered
 on that unchanged gameplay configuration.
+Version 0.1.0 is the first semantic production release. The user installed the
+`0.1.0-rc.1` package through its public Install command, launched through the
+normal Steam path, and reported ordinary gameplay with no problem. The latest
+release-package run `20260802T084433.627791000Z-pid88181` records the exact
+supported ESO identity, official MoltenVK 1.4.2 activation, all 17 redirects,
+79 bounded startup suppressions, and the ordinal-150 forward latch. Production
+info logging intentionally omits the diagnostic-only events required by the
+research startup checker, so that checker is not used as a release verdict;
+the exact retained info events and direct user gameplay report are the release
+evidence. See Experiment 0032.
 Experiment 0028's live input audit is complete. The exact run isolates a
 descriptor-update transition while the pipeline, draw, layout, bound set
 objects, and push state remain fixed. Its cache-preserving rollback is complete:
@@ -167,8 +177,8 @@ This is a persistent runtime presentation repair for the exact supported
 build, not deletion of ESO's underlying placeholder input. ESO still records
 the bounded compositor draw; the bridge substitutes opaque black only during
 the proven placeholder window and forwards the normal scene unchanged. The
-next engineering gate is to fold this bounded behavior into the packaged
-production profile while retaining the exact identity and fail-open guards.
+bounded behavior is now integrated into the packaged production profile with
+its exact identity and fail-open guards retained.
 
 Experiment 0023's logging mechanism correctly distinguishes `{1,0,1,1}`, opaque
 black, and load-only submission with real MoltenVK at the exact ESO surface

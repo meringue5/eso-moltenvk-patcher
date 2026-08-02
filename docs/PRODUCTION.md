@@ -22,10 +22,11 @@ if it had been production at the time.
 | Startup evidence | Two consecutive exact starts with 79 target draws neutralized at ordinals 71--149 and the normal scene forwarded at ordinal 150 |
 | Safety boundary | Exact executable identity, static layout, original patch bytes, backup, and restore path must all pass |
 
-No semantic product version has been assigned yet. Until the first GitHub
-Release is cut, **Production Baseline 2026-08-01** is the public version name.
-The 2026-08-02 startup-clean checkpoint is the current maintenance baseline
-within that product line; it does not rename the original promotion milestone.
+The first semantic product version is **ESO MoltenVK Patcher 0.1.0**, promoted
+on 2026-08-02 from the user-installed and gameplay-tested `0.1.0-rc.1` package.
+**Production Baseline 2026-08-01** remains the historical promotion boundary;
+the 2026-08-02 startup-clean checkpoint is the maintenance baseline shipped in
+0.1.0.
 
 ## Promotion boundary
 
@@ -36,9 +37,9 @@ ordinary-play validation establish this production baseline. Later startup
 artifact investigations are bounded maintenance diagnostics; they do not
 reclassify the working gameplay patch as experimental. Experiment 0031's two
 successful starts promote its exact bounded compositor substitution to the
-current maintenance baseline. Removing diagnostic-only tracking and folding
-the behavior into the future release package remain engineering follow-up,
-not an unresolved correctness result for this checkpoint.
+current maintenance baseline. The 0.1.0 release package integrates that
+behavior and passed an end-to-end user install, startup, and ordinary gameplay
+validation as recorded in Experiment 0032.
 
 ## Supported scope today
 
@@ -51,9 +52,10 @@ authentication and launch path. A direct-path gameplay run remains additional
 compatibility evidence, rather than a prerequisite for safely recognizing an
 identical client.
 
-The current source scripts are developer and maintenance tooling, not the
-end-user installer. Their explicit control gates remain in place while the
-signed GitHub Release installer is designed and built.
+The current source scripts remain developer and maintenance tooling. The
+end-user distribution is the prebuilt GitHub Release ZIP; its explicit
+identity, backup, idle-bundle, and restore gates remain in place. A signed and
+notarized app/DMG remains an optional future distribution path.
 
 An idle Steam client is not a dependency of bundle installation or
 restoration and need not be closed. Maintenance tooling instead blocks when

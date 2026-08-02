@@ -42,6 +42,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0029 | 2026-08-02 | Bounded startup scene/GUI compositor input audit | Planned; source and non-game gates pass, production profile unchanged | [Run](0029-startup-compositor-input-audit.md) |
 | 0030 | 2026-08-02 | Bounded startup compositor placeholder neutralization | Failed coverage; latched at ordinal 72 before the proven magenta interval, rollback complete | [Run](0030-startup-compositor-placeholder-neutralization.md) |
 | 0031 | 2026-08-02 | Fixed-window startup compositor neutralization | Succeeded twice; 79 exact draws neutralized through ordinal 149 and scene forwarded at 150 | [Run](0031-startup-compositor-window-neutralization.md) |
+| 0032 | 2026-08-02 | 0.1.0 release-candidate end-to-end validation | Succeeded; public package installed, started, and played normally | [Run](0032-release-candidate-end-to-end.md) |
 
 ## Recording policy
 
