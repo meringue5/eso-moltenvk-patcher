@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title desc">
-  <title id="title">How teso4m4 overrides ESO's original MoltenVK path</title>
-  <desc id="desc">ESO's original straight path is Vulkan calls through embedded MoltenVK 1.0.18, then Metal, then the Apple GPU. teso4m4 cuts the old edge in private process memory and takes a green detour through its entry override and MoltenVK 1.4.2 compatibility layer, then rejoins the same Metal stage. The old MoltenVK node is greyed out but remains unchanged on disk. The override disappears when ESO quits.</desc>
+  <title id="title">How ESO MoltenVK Patcher overrides ESO's original MoltenVK path</title>
+  <desc id="desc">ESO's original straight path is Vulkan calls through embedded MoltenVK 1.0.18, then Metal, then the Apple GPU. ESO MoltenVK Patcher cuts the old edge in private process memory and takes a green detour through its entry override and MoltenVK 1.4.2 compatibility layer, then rejoins the same Metal stage. The old MoltenVK node is greyed out but remains unchanged on disk. The override disappears when ESO quits.</desc>
   <defs>
     <marker id="darkArrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="strokeWidth">
       <path d="M0 0L11 5.5 0 11z" fill="#27343d"/>
@@ -16,7 +16,7 @@
   <rect width="1200" height="460" rx="18" fill="#fbfaf5"/>
 
   <g font-family="ui-rounded,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-    <text x="48" y="53" fill="#27343d" font-size="27" font-weight="700">teso4m4 overrides the old MoltenVK stage</text>
+    <text x="48" y="53" fill="#27343d" font-size="27" font-weight="700">ESO MoltenVK Patcher overrides the old MoltenVK stage</text>
 
     <text x="48" y="259" fill="#7b8489" font-size="15" font-weight="700">ORIGINAL PATH</text>
 
@@ -47,12 +47,12 @@
     <text x="1082" y="316" fill="#27343d" font-size="18" font-weight="700" text-anchor="middle">Apple GPU</text>
     <text x="1082" y="343" fill="#59666f" font-size="14" text-anchor="middle">same target</text>
 
-    <text x="246" y="94" fill="#158467" font-size="15" font-weight="700">TESO4M4 OVERRIDE</text>
+    <text x="246" y="94" fill="#158467" font-size="15" font-weight="700">ESO MOLTENVK PATCHER OVERRIDE</text>
 
     <path d="M224 324C250 324 250 145 278 145" fill="none" stroke="#158467" stroke-width="4" stroke-linecap="round" marker-end="url(#greenArrow)"/>
 
     <rect x="287" y="103" width="174" height="84" rx="13" fill="#eef8f3" stroke="#158467" stroke-width="3"/>
-    <text x="374" y="136" fill="#174c3f" font-size="18" font-weight="700" text-anchor="middle">teso4m4</text>
+    <text x="374" y="136" fill="#174c3f" font-size="18" font-weight="700" text-anchor="middle">Patcher bridge</text>
     <text x="374" y="161" fill="#477267" font-size="14" text-anchor="middle">17 in-memory jumps</text>
 
     <path d="M463 145C477 142 489 148 502 145" fill="none" stroke="#158467" stroke-width="4" stroke-linecap="round" marker-end="url(#greenArrow)"/>
