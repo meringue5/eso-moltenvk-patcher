@@ -10,6 +10,62 @@ of user-observed active gameplay.
 
 [![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
 
+## Effects
+
+### What the patch delivers
+
+[![Simple sketch of the ESO MoltenVK Patcher override: ESO's original straight path runs through embedded MoltenVK 1.0.18 and then Metal; the patcher cuts that old path in process memory, detours through MoltenVK 1.4.2, and rejoins the same Metal stage](docs/images/teso4m4-runtime-hijack-simple.svg)](docs/images/teso4m4-runtime-hijack-simple.svg)
+
+*The grey line is ESO's original path through embedded MoltenVK 1.0.18. At
+launch, ESO MoltenVK Patcher cuts that route at the old entry points, takes the green
+detour through MoltenVK 1.4.2, and rejoins the same Metal stage. The grey code
+remains unchanged on disk, and the override disappears when ESO exits.*
+
+- **60 FPS in real gameplay on the validated M4 checkpoint.** The previous
+  sustained 30--33 FPS degradation did not return during the 93-minute session.
+- **Higher visual settings without the old performance compromise.** The
+  validated profile enables SSAO, high-resolution shadows, higher character
+  detail, foliage, water reflections, and full-resolution subsampling.
+- **Stable live graphics changes.** Resolution and graphics-setting changes
+  returned to correct scene rendering instead of crashing or leaving a solid,
+  black, or frozen frame.
+- **A current Metal translation layer.** ESO runs through official MoltenVK
+  1.4.2 with a compatibility and performance profile designed for its legacy
+  Vulkan behavior.
+- **The normal Steam path stays intact.** Launch and authentication continue
+  through Steam; the patch does not replace the launcher or bypass login.
+- **Updates fail safely and restoration is built in.** Unknown ESO builds are
+  rejected, original files and caches are preserved, and a checked restore
+  path is included.
+
+### See it running
+
+[![ESO gameplay on the validated M4 MoltenVK 1.4.2 checkpoint, with the HUD showing 60 FPS](docs/images/teso4m4-m4-gameplay-60fps.png)](docs/images/teso4m4-m4-gameplay-60fps.png)
+
+*User-controlled gameplay during the validated roughly 93-minute session. The
+scene contains multiple characters, props, architecture, foliage, shadows, and
+distance detail; the lower-left HUD shows the 60 FPS VSync ceiling. Click the
+image to inspect the original 3420 x 2214 screenshot.*
+
+### Before and after
+
+| Embedded MoltenVK 1.0.18 | ESO MoltenVK Patcher with official MoltenVK 1.4.2 |
+|---|---|
+| Medium settings were not practical in long-term user experience | Validated 2048 x 1280 medium-to-high profile |
+| Minimum-oriented play often stayed below 50 FPS | Active gameplay held the user-observed 60 FPS VSync ceiling |
+| Object-heavy states repeatedly approached 30--33 FPS | No comparable sustained degradation during roughly 93 minutes across multiple zones |
+| Leaving or reloading the current UI/world state was used as a recovery workaround | Performance remained stable through ordinary play and zone changes |
+| Graphics changes could destabilize or crash the client | Six logged graphics-device resets completed with correct rendering afterward |
+
+Preserved Metal HUD captures independently measured the embedded-runtime state
+falling from 54--56 FPS to 33.80 FPS while thermals remained nominal. The
+current 60 FPS result is the user's observation of the on-screen counter. The
+preserved logs independently establish the session duration, repeated world
+loads, exact bridge configuration, six graphics-device resets, and absence of
+a subsequent crash report. See the
+[frame-rate findings](docs/FINDINGS.md#repeatable-frame-rate-degradation) and
+[MoltenVK 1.4.2 validation](docs/experiments/0021-moltenvk-1.4.2-maintenance.md).
+
 ## How to install
 
 The public release is a prebuilt ZIP. Players do **not** need Python, Xcode, or
@@ -52,60 +108,6 @@ restores that backup only when the settings have not subsequently changed.
 See the [illustrated installation guide](docs/INSTALL.md) for the complete
 walkthrough, macOS **Open Anyway** instructions, recovery behavior, and common
 failure messages.
-
-## What the patch delivers
-
-[![Simple sketch of the ESO MoltenVK Patcher override: ESO's original straight path runs through embedded MoltenVK 1.0.18 and then Metal; the patcher cuts that old path in process memory, detours through MoltenVK 1.4.2, and rejoins the same Metal stage](docs/images/teso4m4-runtime-hijack-simple.svg)](docs/images/teso4m4-runtime-hijack-simple.svg)
-
-*The grey line is ESO's original path through embedded MoltenVK 1.0.18. At
-launch, ESO MoltenVK Patcher cuts that route at the old entry points, takes the green
-detour through MoltenVK 1.4.2, and rejoins the same Metal stage. The grey code
-remains unchanged on disk, and the override disappears when ESO exits.*
-
-- **60 FPS in real gameplay on the validated M4 checkpoint.** The previous
-  sustained 30--33 FPS degradation did not return during the 93-minute session.
-- **Higher visual settings without the old performance compromise.** The
-  validated profile enables SSAO, high-resolution shadows, higher character
-  detail, foliage, water reflections, and full-resolution subsampling.
-- **Stable live graphics changes.** Resolution and graphics-setting changes
-  returned to correct scene rendering instead of crashing or leaving a solid,
-  black, or frozen frame.
-- **A current Metal translation layer.** ESO runs through official MoltenVK
-  1.4.2 with a compatibility and performance profile designed for its legacy
-  Vulkan behavior.
-- **The normal Steam path stays intact.** Launch and authentication continue
-  through Steam; the patch does not replace the launcher or bypass login.
-- **Updates fail safely and restoration is built in.** Unknown ESO builds are
-  rejected, original files and caches are preserved, and a checked restore
-  path is included.
-
-## See it running
-
-[![ESO gameplay on the validated M4 MoltenVK 1.4.2 checkpoint, with the HUD showing 60 FPS](docs/images/teso4m4-m4-gameplay-60fps.png)](docs/images/teso4m4-m4-gameplay-60fps.png)
-
-*User-controlled gameplay during the validated roughly 93-minute session. The
-scene contains multiple characters, props, architecture, foliage, shadows, and
-distance detail; the lower-left HUD shows the 60 FPS VSync ceiling. Click the
-image to inspect the original 3420 x 2214 screenshot.*
-
-## Before and after
-
-| Embedded MoltenVK 1.0.18 | ESO MoltenVK Patcher with official MoltenVK 1.4.2 |
-|---|---|
-| Medium settings were not practical in long-term user experience | Validated 2048 x 1280 medium-to-high profile |
-| Minimum-oriented play often stayed below 50 FPS | Active gameplay held the user-observed 60 FPS VSync ceiling |
-| Object-heavy states repeatedly approached 30--33 FPS | No comparable sustained degradation during roughly 93 minutes across multiple zones |
-| Leaving or reloading the current UI/world state was used as a recovery workaround | Performance remained stable through ordinary play and zone changes |
-| Graphics changes could destabilize or crash the client | Six logged graphics-device resets completed with correct rendering afterward |
-
-Preserved Metal HUD captures independently measured the embedded-runtime state
-falling from 54--56 FPS to 33.80 FPS while thermals remained nominal. The
-current 60 FPS result is the user's observation of the on-screen counter. The
-preserved logs independently establish the session duration, repeated world
-loads, exact bridge configuration, six graphics-device resets, and absence of
-a subsequent crash report. See the
-[frame-rate findings](docs/FINDINGS.md#repeatable-frame-rate-degradation) and
-[MoltenVK 1.4.2 validation](docs/experiments/0021-moltenvk-1.4.2-maintenance.md).
 
 ## Why ESO needs a bridge
 
