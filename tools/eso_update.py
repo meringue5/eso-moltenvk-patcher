@@ -284,15 +284,69 @@ def compare_analysis(
     reference: dict[str, Any], actual: dict[str, Any]
 ) -> list[str]:
     failures = []
-    for key in (
-        "legacy_moltenvk",
-        "replacement_runtime",
-        "external_references",
-        "proc_queries",
-    ):
+    for key in ("legacy_moltenvk", "replacement_runtime"):
         if reference.get(key) != actual.get(key):
             failures.append(f"analysis profile changed: {key}")
+    if semantic_reference_shape(reference.get("external_references")) != (
+        semantic_reference_shape(actual.get("external_references"))
+    ):
+        failures.append("analysis profile changed: external_references")
+    if semantic_query_shape(reference.get("proc_queries")) != (
+        semantic_query_shape(actual.get("proc_queries"))
+    ):
+        failures.append("analysis profile changed: proc_queries")
     return failures
+
+
+def semantic_reference_shape(value: Any) -> Any:
+    """Drop relocation-only source addresses from an external-reference profile."""
+    if not isinstance(value, dict):
+        return value
+    by_symbol = value.get("by_symbol")
+    if not isinstance(by_symbol, dict):
+        return value
+    return {
+        "total": value.get("total"),
+        "by_symbol": {
+            symbol: {
+                "total": details.get("total"),
+                "kinds": details.get("kinds"),
+            }
+            for symbol, details in sorted(by_symbol.items())
+            if isinstance(details, dict)
+        },
+    }
+
+
+def semantic_query_shape(value: Any) -> Any:
+    """Compare proc-query routes by recovered names and multiplicity, not addresses."""
+    if not isinstance(value, dict):
+        return value
+    routes = value.get("routes")
+    if not isinstance(routes, dict):
+        return value
+    rendered = {}
+    for route, details in sorted(routes.items()):
+        if not isinstance(details, dict):
+            rendered[route] = details
+            continue
+        queries = details.get("queries")
+        if isinstance(queries, list):
+            names = Counter(
+                item.split(":", 1)[1]
+                for item in queries
+                if isinstance(item, str) and ":" in item
+            )
+        else:
+            names = Counter(details.get("names", []))
+        rendered[route] = {
+            "sites": details.get("sites"),
+            "names": dict(sorted(names.items())),
+        }
+    return {
+        "routes": rendered,
+        "unnamed_sites": value.get("unnamed_sites"),
+    }
 
 
 def profile_manifest(
@@ -338,10 +392,6 @@ def audit_manifest(
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if reference.get("schema_version") != SCHEMA_VERSION or "analysis" not in reference:
         return None, ["reference manifest has no schema-v2 update profile"]
-    if reference.get("experimental_targets"):
-        return None, [
-            "experimental patch targets require manual analysis on an ESO update"
-        ]
     legacy = reference["analysis"]["legacy_moltenvk"]
     member = legacy["archive_member"]
     try:
@@ -397,6 +447,9 @@ def audit_manifest(
     candidate["derived_from_sha256"] = reference["sha256"]
     candidate["analysis"] = actual_analysis
     candidate["targets"] = targets
+    # Historical diagnostic hooks are not part of the production redirect and
+    # must not turn a core-compatible update into a false negative.
+    candidate.pop("experimental_targets", None)
     return candidate, []
 
 

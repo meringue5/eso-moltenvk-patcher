@@ -60,8 +60,11 @@ settings unchanged.
 
 ![Terminal confirmation example showing the verified target and one confirmation](images/install/03-confirm.svg)
 
-An unsupported or updated ESO build stops without changing files. Do not work
-around that check; wait for a compatible patcher release.
+An exact supported ESO build is accepted directly. After a later launcher
+update, the same installer may continue only when its bundled native auditor
+proves that ESO's embedded MoltenVK and complete bridge-facing call structure
+remain compatible. A changed runtime, patch byte, reference boundary, or proc
+route stops without changing files. Do not work around that check.
 
 ## 3. If macOS blocks the command
 
@@ -94,6 +97,13 @@ retained backup path instead of silently overwriting them.
 If installation was interrupted, run `Install.command` again. It does not
 blindly continue copying from the last line: it verifies the journal and
 backup, restores a clean baseline, and restarts the transaction safely.
+
+After the ESO launcher updates or repairs the game, quit ESO and the launcher
+and run the same `Install.command` again. It recognizes both cases: the launcher
+may restore the original loader, or it may leave the prior bridge installed
+with a stale executable attestation. The installer preserves the verified
+recovery record and reinstalls only after the updated executable passes its
+compatibility audit.
 
 For technical release details and supported-build policy, see
 [Release packaging](RELEASE.md) and [Production baseline](PRODUCTION.md).

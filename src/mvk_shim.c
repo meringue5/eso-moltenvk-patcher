@@ -1,3 +1,4 @@
+#include <CommonCrypto/CommonDigest.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <mach/mach.h>
@@ -298,7 +299,64 @@ static bool own_directory(char* output, size_t capacity) {
     return true;
 }
 
-static Teso4m4Mode marker_mode(const char* directory) {
+static bool sha256_file(const char* path, char output[65]) {
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        return false;
+    }
+    CC_SHA256_CTX context;
+    if (CC_SHA256_Init(&context) != 1) {
+        fclose(file);
+        return false;
+    }
+    uint8_t buffer[1024 * 1024];
+    size_t count = 0;
+    while ((count = fread(buffer, 1, sizeof(buffer), file)) != 0) {
+        if (CC_SHA256_Update(&context, buffer, (CC_LONG)count) != 1) {
+            fclose(file);
+            return false;
+        }
+    }
+    if (ferror(file)) {
+        fclose(file);
+        return false;
+    }
+    fclose(file);
+    uint8_t digest[CC_SHA256_DIGEST_LENGTH];
+    if (CC_SHA256_Final(digest, &context) != 1) {
+        return false;
+    }
+    for (size_t index = 0; index < sizeof(digest); ++index) {
+        snprintf(output + index * 2, 3, "%02x", digest[index]);
+    }
+    output[64] = '\0';
+    return true;
+}
+
+static bool executable_sha256(char output[65]) {
+    uint32_t capacity = 4096;
+    char path[4096];
+    if (_NSGetExecutablePath(path, &capacity) != 0) {
+        return false;
+    }
+    return sha256_file(path, output);
+}
+
+static bool valid_sha256(const char* value) {
+    if (strlen(value) != 64) {
+        return false;
+    }
+    for (size_t index = 0; index < 64; ++index) {
+        if (!((value[index] >= '0' && value[index] <= '9') ||
+              (value[index] >= 'a' && value[index] <= 'f'))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static Teso4m4Mode marker_mode(const char* directory,
+                               char attested_sha256[65]) {
     char path[4096];
     if (snprintf(path, sizeof(path), "%s/.teso4m4-enable", directory) >= (int)sizeof(path)) {
         return TESO4M4_MODE_DISABLED;
@@ -308,8 +366,17 @@ static Teso4m4Mode marker_mode(const char* directory) {
         return TESO4M4_MODE_DISABLED;
     }
     char mode[64] = {0};
-    if (fgets(mode, sizeof(mode), marker)) {
-        mode[strcspn(mode, "\r\n")] = '\0';
+    char line[160];
+    while (fgets(line, sizeof(line), marker)) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (strncmp(line, "mode=", 5) == 0) {
+            strlcpy(mode, line + 5, sizeof(mode));
+        } else if (strncmp(line, "eso_sha256=", 11) == 0 &&
+                   valid_sha256(line + 11)) {
+            strlcpy(attested_sha256, line + 11, 65);
+        } else if (mode[0] == '\0' && strchr(line, '=') == NULL) {
+            strlcpy(mode, line, sizeof(mode));
+        }
     }
     fclose(marker);
     if (strcmp(mode, "descriptor-compat") == 0) {
@@ -593,7 +660,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message("SKIP: could not resolve bridge directory");
         return;
     }
-    const Teso4m4Mode mode = marker_mode(directory);
+    char attested_sha256[65] = {0};
+    const Teso4m4Mode mode = marker_mode(directory, attested_sha256);
     if (mode == TESO4M4_MODE_DISABLED) {
         log_message("SKIP: enable marker absent");
         return;
@@ -786,8 +854,20 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         return;
     }
     const struct mach_header_64* header = (const struct mach_header_64*)raw;
-    if (!has_expected_uuid(header)) {
-        log_message("SKIP: ESO UUID mismatch");
+    char actual_sha256[65] = {0};
+    if (!executable_sha256(actual_sha256)) {
+        log_message("SKIP: ESO SHA-256 could not be calculated");
+        return;
+    }
+    const char* required_sha256 = attested_sha256[0] != '\0'
+                                      ? attested_sha256
+                                      : ESO_EXPECTED_SHA256;
+    if (strcmp(actual_sha256, required_sha256) != 0) {
+        log_message("SKIP: ESO SHA-256 differs from installer attestation");
+        return;
+    }
+    if (attested_sha256[0] == '\0' && !has_expected_uuid(header)) {
+        log_message("SKIP: legacy marker ESO UUID mismatch");
         return;
     }
 
@@ -848,5 +928,5 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         VK_FORMAT_A2B10G10R10_UNORM_PACK32,
         VK_COLOR_SPACE_HDR10_ST2084_EXT);
     log_message("ACTIVE: redirected %d Vulkan entry points", ESO_TARGET_COUNT);
-    log_message("ESO SHA-256: %s", ESO_EXPECTED_SHA256);
+    log_message("ESO SHA-256: %s", actual_sha256);
 }

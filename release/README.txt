@@ -1,4 +1,4 @@
-ESO MoltenVK Patcher replaces ESO's embedded legacy MoltenVK path on one exact verified macOS client.
+ESO MoltenVK Patcher replaces ESO's embedded legacy MoltenVK path on a verified macOS client.
 It installs beside the selected eso.app; it is not an AddOn and does not use Documents/Elder Scrolls Online/live/AddOns.
 If anything goes wrong, run Uninstall.command to restore the verified original Bink library.
 
@@ -24,9 +24,16 @@ If macOS blocks a downloaded command, open System Settings > Privacy & Security,
 scroll down, and choose Open Anyway. Removing quarantine attributes is not the
 normal installation procedure.
 
-The scripts never launch ESO, Steam, or the launcher. An unknown client build,
-modified original library, running game/launcher, active Steam update, or
-indeterminate bundle state stops without changing files.
+The scripts never launch ESO, Steam, or the launcher. An exact supported client
+is accepted directly. A later game update is accepted only when the bundled
+auditor proves that the embedded MoltenVK, patch bytes, reference boundary, and
+proc-query routes remain compatible. A changed runtime or layout, modified
+original library, running game/launcher, active Steam update, or indeterminate
+bundle state stops without changing files.
+
+After the ESO launcher updates or repairs the client, quit ESO and the launcher
+and run the same Install.command again. It safely recovers whether the update
+restored the original loader or left the prior bridge installed.
 
 If you choose settings application, only the template's 48 allowlisted keys
 are merged into UserSettings.txt. The complete file is never replaced with a

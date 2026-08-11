@@ -4,7 +4,10 @@
 Online** from its
 statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
 1.4.2 release. The current patch and installer are validated on the normal
-Steam launch path; on the tested M4 MacBook Air, a 2048 x 1280 medium-to-high
+Steam launch path. The current 0.1.1 release supports ESO 12.0.8 and can
+re-attest later relocation-only game updates when their embedded MoltenVK and
+complete bridge-facing structure remain unchanged. On the tested M4 MacBook
+Air, a 2048 x 1280 medium-to-high
 graphics profile held the 60 FPS VSync ceiling throughout roughly 93 minutes
 of user-observed active gameplay.
 
@@ -34,9 +37,10 @@ remains unchanged on disk, and the override disappears when ESO exits.*
   Vulkan behavior.
 - **The normal Steam path stays intact.** Launch and authentication continue
   through Steam; the patch does not replace the launcher or bypass login.
-- **Updates fail safely and restoration is built in.** Unknown ESO builds are
-  rejected, original files and caches are preserved, and a checked restore
-  path is included.
+- **Compatible game updates recover automatically and other updates fail
+  safely.** Re-running the same installer re-attests an update only when its
+  embedded MoltenVK, patch bytes, references, and proc routes remain
+  compatible. Original files and caches are preserved.
 
 ### See it running
 
@@ -85,7 +89,8 @@ ESO MoltenVK Patcher solves that boundary by:
 
 1. loading through ESO's existing Bink dynamic-library path while re-exporting
    the complete original Bink interface;
-2. verifying the exact ESO SHA-256, Mach-O UUID, and original patch-site bytes;
+2. verifying either the exact selected ESO profile or an installer-attested
+   compatible executable, plus every original patch-site byte;
 3. loading the pinned official MoltenVK 1.4.2 dynamic library;
 4. redirecting all 17 verified externally referenced Vulkan entry points in
    the running process;
@@ -93,8 +98,8 @@ ESO MoltenVK Patcher solves that boundary by:
    compatibility behavior required by ESO; and
 6. restoring executable code pages to RX permissions after patching.
 
-ESO's executable is not rewritten on disk. Unknown builds and unexpected bytes
-stop before redirection rather than receiving a best-effort patch. The detailed
+ESO's executable is not rewritten on disk. Structurally changed builds and
+unexpected bytes stop before redirection rather than receiving a best-effort patch. The detailed
 design is documented in [Bridge architecture](docs/ARCHITECTURE.md). The
 [detailed runtime hijack diagram](docs/images/teso4m4-runtime-bridge.svg) shows
 the reversible Bink loader setup, validation transaction, private code-page
@@ -105,7 +110,7 @@ copies, 12-byte jumps, and restore path.
 **The stale runtime belongs to the ESO macOS game client; it is not evidence of
 a separate, abandoned Steam-only renderer.** ESO switched its Mac renderer to
 MoltenVK in [Update 20 in October 2018](https://forums.elderscrollsonline.com/en/discussion/comment/5552032/),
-and the current ESO 12.0.7 Mac executable under test still contains MoltenVK
+and the current ESO 12.0.8 Mac executable under test still contains MoltenVK
 1.0.18, an [August 2018 release](https://github.com/KhronosGroup/MoltenVK/blob/main/Docs/Whats_New.md#moltenvk-1018).
 The game client has continued to update; its embedded translation layer has
 not kept pace with those updates.
@@ -122,8 +127,9 @@ The distinction for this repository is operational:
 
 - **Technical target:** the exact ESO macOS `eso.app` and its statically linked
   MoltenVK runtime.
-- **Observed production path:** Steam macOS installation, exact ESO 12.0.7
-  target, and normal Steam-authenticated launch used for gameplay evidence.
+- **Observed production path:** Steam macOS installation, exact ESO 12.0.8
+  target, and normal Steam-authenticated launch used for update validation;
+  the extended performance evidence remains the 12.0.7 checkpoint.
 - **Release eligibility:** Steam and direct website-launcher installations are
   handled identically when the selected `eso.app` matches an exact supported
   profile and passes the same layout, backup, and bundle-idle checks. An
@@ -180,7 +186,8 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 | Component | Verified value |
 |---|---|
 | Mac | Apple M4 MacBook Air |
-| ESO | Steam macOS client 12.0.7, databuild `3281538` |
+| Current supported ESO | Steam macOS client 12.0.8, databuild `3288357` |
+| Extended gameplay baseline | Steam macOS client 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
 | Bridge profile | `performance-aggressive` plus the bounded startup compositor neutralizer |
 | Display profile | 2048 x 1280, VSync enabled |
@@ -195,11 +202,19 @@ The 48 allowlisted settings are available as the
 It is a selective merge reference, not a complete `UserSettings.txt`
 replacement.
 
-The current bridge is deliberately exact-build software. A launcher update is
-accepted only after its executable identity and static layout pass the update
-gate. The tested result applies to the combined runtime, bridge profile,
+The current bridge is deliberately audited software. The selected 12.0.8
+target is exact; a later launcher update is accepted only when the packaged
+auditor proves the embedded runtime and complete bridge-facing structure are
+compatible, after which the runtime rechecks the installed executable
+attestation. The tested result applies to the combined runtime, bridge profile,
 settings, and cache checkpoint on the listed M4; other Apple GPUs and ESO
 builds require their own validation.
+
+The user has also reported that the first one or two starts after patching can
+occasionally show the pink startup surface and run near 10 FPS until ESO, and
+sometimes the launcher, is restarted. This is a tracked cold-start reliability
+issue; shader or pipeline-cache warm-up is not yet a proven cause. See the
+[current project status](docs/STATUS.md).
 
 The former full-screen hot-pink startup interval is now neutralized by replacing
 only the exact bounded placeholder-compositor draws with the existing black

@@ -13,8 +13,10 @@ GAME_MAC="$ESO_APP/Contents/MacOS"
 STATE_ROOT="$TEST_ROOT/state"
 MOCK_BIN="$TEST_ROOT/mock-bin"
 SETTINGS_FILE="$TEST_ROOT/Documents/Elder Scrolls Online/live/UserSettings.txt"
+LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 
 mkdir -p "$PACKAGE/bin" "$PAYLOAD" "$GAME_MAC" "$MOCK_BIN"
+mkdir -p "${LEGACY_MVK:h}"
 mkdir -p "${SETTINGS_FILE:h}"
 cp "$ROOT/release/bin/eso-moltenvk-patcher" "$TOOL"
 cp "$ROOT/build/libBink2Macx64.dylib" "$PAYLOAD/"
@@ -26,6 +28,10 @@ SETTINGS_ORIGINAL_SHA="$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')"
 cp /usr/bin/true "$GAME_MAC/eso"
 cp "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" \
   "$GAME_MAC/libBink2Macx64.dylib"
+cp "$GAME_MAC/libBink2Macx64.dylib" "$TEST_ROOT/original-bink.dylib"
+print -r -- 'fixture embedded MoltenVK archive' > "$LEGACY_MVK"
+print -r -- '#!/bin/zsh' > "$PAYLOAD/eso-compat-audit"
+print -r -- 'exit 0' >> "$PAYLOAD/eso-compat-audit"
 
 EXPECTED_ESO_SHA="$(shasum -a 256 "$GAME_MAC/eso" | awk '{print $1}')"
 EXPECTED_BINK_SHA="$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')"
@@ -36,12 +42,13 @@ print -r -- "EXPECTED_ORIGINAL_BINK_SHA256=$EXPECTED_BINK_SHA" >> "$PAYLOAD/targ
 EXPECTED_RETAGGED_BINK_SHA="$(shasum -a 256 "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" | awk '{print $1}')"
 print -r -- "EXPECTED_RETAGGED_ORIGINAL_BINK_SHA256=$EXPECTED_RETAGGED_BINK_SHA" >> "$PAYLOAD/target-profile.env"
 print -r -- 'EXPECTED_ESO_UUID=fixture' >> "$PAYLOAD/target-profile.env"
+print -r -- "EXPECTED_LEGACY_MVK_ARCHIVE_SHA256=$(shasum -a 256 "$LEGACY_MVK" | awk '{print $1}')" >> "$PAYLOAD/target-profile.env"
 
 print -r -- '#!/bin/zsh' > "$MOCK_BIN/pgrep"
 print -r -- 'exit 1' >> "$MOCK_BIN/pgrep"
 print -r -- '#!/bin/zsh' > "$MOCK_BIN/lsof"
 print -r -- 'exit 1' >> "$MOCK_BIN/lsof"
-chmod 755 "$TOOL" "$MOCK_BIN/pgrep" "$MOCK_BIN/lsof"
+chmod 755 "$TOOL" "$PAYLOAD/eso-compat-audit" "$MOCK_BIN/pgrep" "$MOCK_BIN/lsof"
 
 cp "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" \
   "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib"
@@ -92,6 +99,11 @@ install_output="$(run_tool install --apply-settings --settings-file "$SETTINGS_F
   && -f "$GAME_MAC/libMoltenVK.teso4m4.dylib" ]]
 status_output="$(run_tool status)"
 [[ "$status_output" == *'Installed release: fixture-1.0.0'* ]]
+reinstall_output="$(run_tool install --skip-settings --yes)"
+[[ "$reinstall_output" == *'✓ Patch already installed'* ]]
+[[ "$reinstall_output" == *'No files were changed.'* ]]
+[[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" \
+  == "$(shasum -a 256 "$PAYLOAD/libBink2Macx64.dylib" | awk '{print $1}')" ]]
 grep -q '^SET FULLSCREEN "2"$' "$SETTINGS_FILE"
 grep -q '^SET LANGUAGE.2 "en"$' "$SETTINGS_FILE"
 [[ "$(awk '$1 == "SET" {seen[$2]++} END {print seen["FULLSCREEN"]}' "$SETTINGS_FILE")" == 1 ]]
@@ -125,5 +137,26 @@ changed_remove_output="$(run_tool remove)"
 
 run_tool install --skip-settings --yes >/dev/null
 run_tool remove >/dev/null
+
+run_tool install --skip-settings --yes >/dev/null
+print -r -- 'compatible fixture update' >> "$GAME_MAC/eso"
+cp "$TEST_ROOT/original-bink.dylib" "$GAME_MAC/libBink2Macx64.dylib"
+updated_install_output="$(run_tool install --skip-settings --yes)"
+[[ "$updated_install_output" == *'Compatible ESO update detected'* ]]
+[[ "$updated_install_output" == *'update that restored the original loader'* ]]
+UPDATED_ESO_SHA="$(shasum -a 256 "$GAME_MAC/eso" | awk '{print $1}')"
+grep -q "^eso_sha256=$UPDATED_ESO_SHA$" "$GAME_MAC/.teso4m4-enable"
+run_tool remove >/dev/null
+
+run_tool install --skip-settings --yes >/dev/null
+print -r -- 'compatible fixture update with bridge retained' >> "$GAME_MAC/eso"
+stale_status_output="$(run_tool status)"
+[[ "$stale_status_output" == *'stale bridge attestation. Re-run Install.'* ]]
+retained_bridge_output="$(run_tool install --skip-settings --yes)"
+[[ "$retained_bridge_output" == *'Compatible ESO update detected'* ]]
+[[ "$retained_bridge_output" == *'update that left the bridge loader installed'* ]]
+RETAINED_UPDATE_SHA="$(shasum -a 256 "$GAME_MAC/eso" | awk '{print $1}')"
+grep -q "^eso_sha256=$RETAINED_UPDATE_SHA$" "$GAME_MAC/.teso4m4-enable"
+run_tool remove >/dev/null
 find "$STATE_ROOT" -name .version -type f -exec grep -q 'fixture-1.0.0' {} \;
-print -- 'Release installer transaction: PASS (explicit settings choice, merge, conflict-safe restore, interruption recovery, install/remove/reinstall)'
+print -- 'Release installer transaction: PASS (explicit settings choice, merge, conflict-safe restore, interruption recovery, install/remove/reinstall, compatible-update recovery for restored and retained loaders)'

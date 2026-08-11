@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.1 - 2026-08-11
+
+- Added the verified ESO 12.0.8/databuild `3288357` target after confirming
+  that the embedded MoltenVK runtime and all production redirect boundaries
+  remain compatible.
+- Replaced absolute source-address equality in the update fast path with
+  semantic reference and proc-query comparison, while retaining exact runtime,
+  symbol, count, route, patch-byte, and replacement-runtime gates.
+- Bundled a native relocation-tolerant compatibility auditor so the same
+  installer can accept later ESO updates only when the embedded MoltenVK and
+  complete bridge-facing structure remain unchanged.
+- Attest the actual audited ESO SHA-256 in the install marker and verify that
+  attestation again inside the runtime before applying any in-memory patch.
+- Recover after launcher updates whether they restore the original Bink loader
+  or leave the prior bridge loader installed, preserving the verified backup
+  and historical state before reinstalling.
+- Extended the release transaction fixture to cover both update-recovery
+  states and added a negative changed-patch-byte auditor check.
+- Recorded successful Steam-path activation and gameplay on ESO 12.0.8. A
+  recurring first-one-or-two-start pink/approximately-10-FPS condition remains
+  an explicit cold-start reliability follow-up; no shader-cache cause is yet
+  claimed.
+
 ## 0.1.0 - 2026-08-02
 
 - Rebuilt the release from the cleaned 1.4.2 production source after an exact

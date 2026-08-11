@@ -44,6 +44,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0031 | 2026-08-02 | Fixed-window startup compositor neutralization | Succeeded twice; 79 exact draws neutralized through ordinal 149 and scene forwarded at 150 | [Run](0031-startup-compositor-window-neutralization.md) |
 | 0032 | 2026-08-02 | 0.1.0 release-candidate end-to-end validation | Succeeded; public package installed, started, and played normally | [Run](0032-release-candidate-end-to-end.md) |
 | 0033 | 2026-08-02 | Production-refactor release validation | Succeeded; exact cleaned build and High subsampling played normally | [Run](0033-production-refactor-release-validation.md) |
+| 0034 | 2026-08-11 | ESO 12.0.8 update-compatible recovery | Update recovery and gameplay succeeded; cold-start reliability follow-up required | [Run](0034-eso-12.0.8-update-compatible-recovery.md) |
 
 ## Recording policy
 

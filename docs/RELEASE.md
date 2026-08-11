@@ -58,12 +58,22 @@ interruption never trusts a partial binary: it validates the exact executable,
 state, backup, and active Bink identity, restores the verified original, removes
 only patch-owned artifacts, and restarts from the clean baseline.
 
+Version 0.1.1 also supports a repeated Install after a game update. The package
+accepts its selected exact profile directly. For a different executable it
+first requires the embedded MoltenVK archive hash to remain unchanged, then
+runs the bundled native compatibility auditor over every compiled patch
+signature, old-runtime text-boundary reference, and proc-query multiplicity.
+The audited executable SHA-256 is stored in the marker and rechecked by the
+runtime. Launcher-restored-original and bridge-retained update states both
+restore from the verified backup before reinstalling.
+
 ## Installer behavior
 
 - Searches the known Steam and ZeniMax launcher client locations.
 - Accepts `--eso-app` with an `eso.app` or launcher location when the client is
   installed elsewhere.
-- Checks the exact ESO executable SHA-256 before any file change.
+- Checks the selected exact ESO executable SHA-256, or requires the complete
+  packaged compatibility audit before accepting a later executable.
 - Checks the matching original Bink-library SHA-256, then gives the player's
   private copied original the bridge's loader identity; no proprietary Bink
   binary is included in the release ZIP or DMG.
@@ -84,8 +94,9 @@ client profile when its exact executable matches, without assuming that either
 path is trustworthy.
 
 Release assembly runs a disposable end-to-end fixture covering a deliberately
-interrupted install and verified recovery, Status, Install, Remove, and
-reinstall; verifies LF line endings and every payload checksum; and rejects
+interrupted install and verified recovery, Status, Install, Remove, reinstall,
+launcher-restored update recovery, and bridge-retained update recovery;
+verifies LF line endings and every payload checksum; and rejects
 ZIPs containing `.DS_Store`, AppleDouble `._` entries, or `__MACOSX`.
 
 ## Optional signed DMG
