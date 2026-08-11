@@ -652,3 +652,26 @@ therefore reduce retained source memory while adding CPU latency to shader
 creation or cache reconstruction; it is not intrinsically an FPS optimization.
 The default is no compression, and the documented fastest candidate is LZ4,
 with the largest compressed representation among the provided algorithms.
+
+## ESO 12.0.8 preserves the production MoltenVK bridge boundary
+
+Experiment 0034 establishes that ESO 12.0.8/databuild `3288357` changes the
+executable identity and relocates the audited call sites while preserving both
+embedded MoltenVK archive members, all 17 production patch signatures, the
+complete old-runtime reference shape, and GIPA/GDPA query semantics. The
+packaged native auditor accepted the real executable and rejected a disposable
+copy with one changed patch byte. The installed bridge then recorded the new
+executable hash, activated all 17 redirects, and supported normal
+Steam-authenticated gameplay.
+
+This supports ignoring source-address relocation only. It does not support
+ignoring changed symbols, reference kinds or counts, proc routes or names,
+embedded runtime bytes, or patch signatures.
+
+The same run records a repeatable user-observed cold-start condition: the first
+one or two post-patch starts can show the pink startup surface and run at
+approximately 10 FPS before a later restart becomes clean. All three recorded
+starts reached the same bridge activation and compositor latch, which excludes
+total bridge inactivity but does not identify the cause. Shader compilation or
+pipeline-cache warm-up remains a hypothesis until per-start cache and GPU-time
+evidence distinguishes it from launcher lifetime and other startup state.

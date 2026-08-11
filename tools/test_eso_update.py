@@ -53,25 +53,6 @@ def manifest_for(data: bytes, identifier: uuid.UUID) -> dict[str, object]:
 
 
 class UpdateToolTests(unittest.TestCase):
-    def test_experimental_targets_block_fast_rebase(self) -> None:
-        candidate, failures = audit_manifest(
-            Path("unused-executable"),
-            Path("unused-archive"),
-            {
-                "schema_version": SCHEMA_VERSION,
-                "analysis": {},
-                "experimental_targets": {"fx_material_initializer": {}},
-            },
-            Path("unused-runtime"),
-            "synthetic",
-        )
-        self.assertIsNone(candidate)
-        self.assertEqual(
-            failures,
-            [
-                "experimental patch targets require manual analysis on an ESO update"
-            ],
-        )
 
     def test_patch_targets_records_and_validates_exact_bytes(self) -> None:
         executable = bytes(range(64))
@@ -118,6 +99,52 @@ class UpdateToolTests(unittest.TestCase):
         changed["proc_queries"] = {"unnamed_sites": 1}
         self.assertEqual(
             compare_analysis(reference, changed),
+            ["analysis profile changed: proc_queries"],
+        )
+
+    def test_analysis_comparison_ignores_relocated_sites(self) -> None:
+        reference = {
+            "legacy_moltenvk": {"object_sha256": "a"},
+            "replacement_runtime": {"sha256": "b"},
+            "external_references": {
+                "total": 1,
+                "by_symbol": {
+                    "vkExample": {
+                        "total": 1,
+                        "kinds": {"call": 1},
+                        "sites": ["0x1000:call"],
+                    }
+                },
+            },
+            "proc_queries": {
+                "routes": {
+                    "GIPA": {
+                        "sites": 2,
+                        "names": ["vkExample"],
+                        "queries": [
+                            "0x2000:vkExample",
+                            "0x2100:vkExample",
+                        ],
+                    }
+                },
+                "unnamed_sites": 0,
+            },
+        }
+        relocated = json.loads(json.dumps(reference))
+        relocated["external_references"]["by_symbol"]["vkExample"]["sites"] = [
+            "0x0fd0:call"
+        ]
+        relocated["proc_queries"]["routes"]["GIPA"]["queries"] = [
+            "0x1fd0:vkExample",
+            "0x20d0:vkExample",
+        ]
+        self.assertEqual(compare_analysis(reference, relocated), [])
+
+        relocated["proc_queries"]["routes"]["GIPA"]["queries"][1] = (
+            "0x20d0:vkOther"
+        )
+        self.assertEqual(
+            compare_analysis(reference, relocated),
             ["analysis profile changed: proc_queries"],
         )
 

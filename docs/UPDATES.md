@@ -92,19 +92,22 @@ description:
   'Steam macOS ESO VERSION build analyzed on YYYY-MM-DD'
 ```
 
-The audit accepts the fast path only when all of these are exact matches with
+The audit accepts the fast path only when all semantic bridge boundaries match
 the selected reference profile:
 
 - both object members of the embedded MoltenVK archive;
 - the main MoltenVK object hash, 162 Vulkan text symbols, and link delta;
 - all 17 target symbol offsets and their exact 12-byte patch signatures;
-- all 40 external-reference source sites, grouped by target and reference kind;
-- the GIPA and GDPA slot offsets, all 19 and 80 direct query source sites, their
-  recovered names, and zero unnamed sites;
+- the complete external-reference count grouped by target and reference kind;
+- the GIPA and GDPA routes, direct-query counts, recovered-name multiplicities,
+  and zero unnamed sites;
 - the pinned replacement-runtime hash, export count, and every externally
   referenced Vulkan export.
 
-The executable, archive, and replacement runtime are hashed again before the
+Source addresses may move as the surrounding ESO code changes; address values
+alone are not a compatibility boundary. Patch bytes, target semantics,
+reference kinds/counts, routes, and recovered names remain strict. The
+executable, archive, and replacement runtime are hashed again before the
 result is accepted, which rejects files changing during a launcher update.
 Any mismatch returns `MANUAL_ANALYSIS_REQUIRED`, writes no candidate, and does
 not change the selected target.
@@ -132,7 +135,16 @@ and the launcher stopped, the existing guarded sequence still applies:
 6. Install only under the explicit source-tool installation gate.
 7. Ask the user for the bounded Steam-path runtime test.
 
-The fast path does not prove lobby or world rendering and cannot authorize a
-game-bundle modification. If the archive, reference shape, proc route, or patch
-signature changes, perform a new manual analysis instead of weakening the
-profile.
+The public 0.1.1 package carries a native form of the same fail-closed boundary.
+After a launcher update, re-running its `Install.command` first requires an
+unchanged embedded MoltenVK archive, then validates all compiled patch bytes,
+old-runtime text references, and proc-query multiplicities. If those match, it
+records the new executable SHA-256 in the marker; the bridge independently
+checks that attestation before changing memory. It also recovers both a
+launcher-restored original loader and a retained stale bridge loader from the
+verified backup.
+
+This packaged path avoids a new release for relocation-only ESO updates. It
+does not prove lobby or world rendering and must stop when the archive,
+reference shape, proc route, or patch signature changes. Such a change requires
+manual analysis rather than a weakened profile.

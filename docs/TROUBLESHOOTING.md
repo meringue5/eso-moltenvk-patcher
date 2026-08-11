@@ -1,5 +1,21 @@
 # Troubleshooting history
 
+## First starts after installation
+
+On the ESO 12.0.8 update-compatible validation, the user reported a recurring
+pattern in which the first one or two starts after patching showed the pink
+startup surface and then ran at approximately 10 FPS. Restarting ESO, and
+sometimes the launcher, led to clean normal operation. Three consecutive bridge
+runs all activated the same 17 redirects and reached the same compositor latch,
+so this is not evidence that the bridge was entirely inactive.
+
+The cause is unresolved. Shader compilation or pipeline-cache revalidation is
+one hypothesis, but launcher/process lifetime and another startup-only resource
+transition remain alternatives. Preserve all caches. Do not delete them or
+distribute a warmed cache as a workaround. The next controlled comparison must
+capture cache metadata, process boundaries, fixed-scene FPS/GPU timing, memory,
+and thermal state for each start.
+
 ## Exit crash and settings not saving
 
 Initial symptom: ESO could be played, but normal logout/exit crashed as control

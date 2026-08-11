@@ -9,6 +9,8 @@ OUTPUT="$ROOT/dist/$NAME.zip"
 INTERNAL="$STAGE/.eso-moltenvk-patcher"
 TARGET_NAME="$(<"$ROOT/config/current-target.txt")"
 TARGET="$ROOT/config/$TARGET_NAME"
+ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zenimax Online/The Elder Scrolls Online/game_mac/pubplayerclient/eso.app}"
+LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 
 "$ROOT/scripts/build.sh"
 rm -rf "$STAGE"
@@ -18,7 +20,7 @@ cp "$ROOT/release/status.command" "$INTERNAL/"
 cp "$ROOT/release/Install.command" "$ROOT/release/Uninstall.command" "$STAGE/"
 cp "$ROOT/release/README.txt" "$STAGE/"
 cp "$ROOT/build/libBink2Macx64.dylib" "$ROOT/build/libMoltenVK.teso4m4.dylib" \
-  "$INTERNAL/payload/"
+  "$ROOT/build/eso-compat-audit" "$INTERNAL/payload/"
 cp "$ROOT/config/usersettings-m4-moltenvk-1.4.2-standard.txt" "$INTERNAL/payload/"
 python3 - "$TARGET" "$INTERNAL/payload/target-profile.env" "$VERSION" <<'PY'
 import json
@@ -38,7 +40,10 @@ with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as output:
     output.write(f"EXPECTED_RETAGGED_ORIGINAL_BINK_SHA256={shlex.quote(profile['retagged_original_bink_sha256'])}\n")
     output.write(f"EXPECTED_ESO_UUID={shlex.quote(profile['uuid'])}\n")
 PY
+print -r -- "EXPECTED_LEGACY_MVK_ARCHIVE_SHA256=$(shasum -a 256 "$LEGACY_MVK" | awk '{print $1}')" \
+  >> "$INTERNAL/payload/target-profile.env"
 chmod 755 "$INTERNAL/bin/eso-moltenvk-patcher" "$INTERNAL/status.command" "$STAGE"/*.command
+chmod 755 "$INTERNAL/payload/eso-compat-audit"
 (cd "$ROOT" && ./tools/test_release_installer.sh)
 for text_file in "$INTERNAL/bin/eso-moltenvk-patcher" "$INTERNAL/status.command" \
   "$STAGE"/*.command "$STAGE/README.txt" "$INTERNAL/payload/target-profile.env" \

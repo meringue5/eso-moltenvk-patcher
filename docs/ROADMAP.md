@@ -4,7 +4,22 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## P0: preserve the 1.4.2 production release
+## P0: make the first post-install start reliable
+
+- Reproduce the reported first-one-or-two-start pink/approximately-10-FPS
+  condition with a fixed launch sequence and stop condition.
+- Snapshot pipeline-cache identity, size, and modification time around every
+  start, and separate ESO restart effects from launcher restart effects.
+- Capture fixed-scene FPS, GPU time, frame interval, app/Metal memory, and
+  thermal state for the first bad and first clean starts.
+- Treat shader compilation, pipeline-cache revalidation, launcher lifetime,
+  and startup resource state as competing hypotheses; do not delete or replace
+  caches to force a result.
+- Add a prelaunch preparation step only if it can be proven safe without
+  starting ESO, bypassing authentication, or distributing proprietary cache
+  data.
+
+## P1: preserve the 1.4.2 production release
 
 - Keep official MoltenVK 1.4.2, the validated performance configuration, and
   the exact bounded startup compositor neutralizer as one release baseline.
@@ -16,16 +31,17 @@ This roadmap contains future work only. Current verified state is in
 - Treat regressions in ordinary play, live graphics resets, startup color, or
   restore behavior as release blockers.
 
-## P1: maintain exact ESO target support
+## P2: maintain ESO update support
 
 - Run the quick update gate after every ESO or launcher content update.
-- Automate only an unchanged-layout rebase; any patch-site, reference-shape,
-  proc-route, archive, or runtime mismatch requires manual analysis.
+- Allow the packaged auditor to re-attest relocation-only executable updates
+  only when embedded MoltenVK, patch sites, reference shape, proc routes, and
+  runtime boundaries remain compatible; any mismatch requires manual analysis.
 - Add a new supported target only after rebuild, non-game probes, disposable
   install/remove testing, and a user-controlled normal-launch smoke test.
 - Never turn an unknown build into best-effort compatibility.
 
-## P2: broaden verified compatibility
+## P3: broaden verified compatibility
 
 - Validate the same exact client through a direct ZeniMax installation when a
   suitable user-controlled test is available.
@@ -33,7 +49,7 @@ This roadmap contains future work only. Current verified state is in
 - Keep Steam and launcher discovery edition-neutral; authentication remains the
   responsibility of the user's normal launcher.
 
-## P3: improve distribution
+## P4: improve distribution
 
 - Collect feedback on the unsigned ZIP's Terminal and Gatekeeper experience.
 - Consider a signed/notarized app or DMG if Apple Developer membership becomes

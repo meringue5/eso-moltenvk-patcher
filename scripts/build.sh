@@ -42,6 +42,9 @@ fi
 
 mkdir -p "$BUILD"
 python3 "$ROOT/tools/generate_targets.py" "$ESO" "$MANIFEST" "$BUILD/generated_targets.h"
+python3 "$ROOT/tools/generate_compat_audit_profile.py" \
+  --exe "$ESO" --archive "$LEGACY_MVK" --manifest "$MANIFEST" \
+  --output "$BUILD/generated_compat_audit.h"
 
 cp -p "$SOURCE_BINK" "$BUILD/libBink2Macx64.teso4m4-original.dylib"
 install_name_tool -id @loader_path/libBink2Macx64.teso4m4-original.dylib \
@@ -59,6 +62,10 @@ xcrun clang -fobjc-arc -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wl,-install_name,@executable_path/libBink2Macx64.dylib \
   -Wl,-reexport_library,"$BUILD/libBink2Macx64.teso4m4-original.dylib" \
   -o "$BUILD/libBink2Macx64.dylib"
+
+xcrun clang -arch arm64 -arch x86_64 -mmacosx-version-min=11.0 \
+  -Wall -Wextra -Werror -O2 -I"$BUILD" \
+  "$ROOT/tools/compat_audit.c" -o "$BUILD/eso-compat-audit"
 
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   "$ROOT/tools/smoke_proxy.c" -o "$BUILD/smoke_proxy"

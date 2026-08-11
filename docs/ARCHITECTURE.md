@@ -14,8 +14,9 @@ package uses the Bink load point for a small x86_64 proxy that:
 1. re-exports the complete original Bink interface from a verified renamed
    pristine library;
 2. runs a constructor during ESO startup;
-3. verifies the exact ESO SHA-256, Mach-O UUID, and every original patch-site
-   byte;
+3. verifies the executable SHA-256 attested by the installer and every original
+   patch-site byte; legacy one-line markers additionally require the compiled
+   exact SHA-256 and Mach-O UUID;
 4. loads the pinned official MoltenVK 1.4.2 dynamic library;
 5. resolves every required destination before changing memory;
 6. redirects 17 verified externally referenced Vulkan entry points; and
@@ -84,7 +85,9 @@ bundle when automatic discovery fails.
 
 Before mutation it verifies:
 
-- supported executable identity and static layout;
+- either the exact selected executable or a relocation-tolerant native audit
+  of unchanged embedded MoltenVK, patch bytes, text-reference boundary, and
+  proc-query shape;
 - original loader identity or an exact known inactive development state;
 - payload hashes and companion files;
 - absence of ESO, launcher, active update, and bundle file holders; and
@@ -92,8 +95,11 @@ Before mutation it verifies:
 
 Install writes a journaled per-installation state, preserves the original
 loader, stages files before atomic replacement, records the package version,
-and verifies the resulting bridge/runtime/marker identity. Re-running Install
-recovers or rolls back an interrupted transaction before starting again.
+attests the audited executable SHA-256 in the enable marker, and verifies the
+resulting bridge/runtime/marker identity. Re-running Install after a launcher
+update recovers whether the launcher restored the original loader or retained
+the stale bridge loader. Interrupted transactions are restored to the verified
+baseline before restarting.
 Uninstall restores the verified original and preserves later user settings
 when they differ from the installer's recorded merge result.
 
@@ -103,15 +109,21 @@ or selectable production runtimes.
 
 ## Update gate
 
-`config/current-target.txt` selects the supported manifest. The update checker
-compares executable SHA-256, Mach-O UUID, client version, databuild, patch-site
-bytes, embedded archive members, external-reference shape, proc-query routes,
-and official replacement-runtime identity.
+`config/current-target.txt` selects the supported manifest. The source update
+checker compares executable SHA-256, Mach-O UUID, client version, databuild,
+patch-site bytes, embedded archive members, external-reference shape,
+proc-query routes, and official replacement-runtime identity. Reference and
+query source addresses may relocate; symbol, kind, count, route, and recovered
+name semantics must remain equal.
 
-An exact unchanged-layout update may generate a new candidate manifest, but it
-does not install or promote it. Any mismatch stops for manual analysis. Build,
-release assembly, install, and user-controlled launch validation remain
-separate gates.
+The release package also contains a native compatibility fingerprint compiled
+from the selected baseline. A non-exact executable may be installed only when
+its embedded archive hash matches and the auditor reproduces all compiled
+patch signatures, old-runtime boundary references, and proc-query
+multiplicities. The resulting executable hash is recorded for the runtime to
+enforce. Any mismatch stops for manual analysis. Source rebase, build, release
+assembly, install, and user-controlled launch validation remain separate
+maintenance gates.
 
 ## Diagnostics and historical code
 
