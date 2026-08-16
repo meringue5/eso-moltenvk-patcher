@@ -698,3 +698,13 @@ compiler round trip is therefore not sufficient to prevent the failure. This
 falsifies compiler-service readiness as the direct fix and strengthens the
 interpretation that absent normal compilation is a downstream marker of ESO
 not entering its expected graphics-pipeline initialization path.
+
+A second consecutive low-FPS process repeated the canary-only signature, so a
+single ESO restart is not a deterministic repair. The same-size active
+pipeline cache changed SHA-256 between those two failed exits even though no
+normal ESO compiler jobs occurred and `ShaderCache.cooked` stayed unchanged.
+This establishes cross-process cache evolution during failed runs, not cache
+causality: ordinary serialization can change bytes without controlling the
+next startup. The user's observation that repeated process, and sometimes
+launcher, restarts eventually recover remains consistent with either this
+evolving state or a probabilistic initialization race.

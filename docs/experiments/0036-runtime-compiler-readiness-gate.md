@@ -213,3 +213,40 @@ the same binary is unnecessary: the next diagnostic must time ESO's first
 connections and the user-visible state. The verified pristine restore remains
 available; the failed candidate remains installed only as the current
 documented checkpoint.
+
+## Second ESO validation amendment: consecutive low-FPS process
+
+At 01:49:27 KST the user made another ordinary launch in order to play. This
+was not an agent-requested experiment. Run
+`20260816T164927.826393000Z-pid56332` again reproduced low FPS, and the user
+exited after approximately 39 seconds.
+
+The bridge again loaded the exact replacement runtime, activated all 17
+redirects, and reached the same 79-suppression/ordinal-150 compositor latch.
+The unified log again recorded ten ESO-side compiler-service connections and
+exactly two successful jobs with no failure: one library build and one
+pipeline build at 01:49:29 KST. No later ESO compilation occurred. This is the
+same canary-only signature as the preceding low-FPS process, PID 53111.
+
+The consecutive failures establish that one restart does not deterministically
+repair the condition. The user's longer-term recovery observation is that
+restarting ESO, and sometimes the launcher, repeatedly eventually produces a
+smooth process. That pattern is consistent with either a probabilistic startup
+ordering issue or state evolving across process exits; it does not yet choose
+between them.
+
+There is direct evidence that state evolves even across failed processes. The
+active pipeline cache after PID 53111 was 8,344,388 bytes with SHA-256
+`330040db99ebeb322f360b6dd0e851c469c739d331093a55348559dd8a0668ee`.
+After PID 56332 exited, the same-size file had SHA-256
+`9828ac54bcb6d0e00c20e7eb2155cf9b707e8c58016d617a3399b39f70b4b48d`.
+`ShaderCache.cooked` remained unchanged. The second cache generation and raw
+logs were copied into ignored evidence before another launch could overwrite
+them; the live files were not modified.
+
+This cache rewrite is a new causal candidate, not proof. MoltenVK may serialize
+nondeterministic or non-causal state at normal shutdown. The discriminating
+test is to preserve the active cache after every user-initiated failed attempt
+and immediately before or after the first eventual smooth attempt, without
+deleting, replacing, or distributing it. Graphics-pipeline creation timing is
+still required to determine what the changing state affects.

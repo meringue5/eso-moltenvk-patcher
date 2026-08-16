@@ -20,7 +20,10 @@ This roadmap contains future work only. Current verified state is in
 - Classify each future start as bridge inactive, bridge active with the normal
   compiler path absent, or bridge active with compiler engagement.
 - Snapshot pipeline-cache identity, size, and modification time around every
-  start, and separate ESO restart effects from launcher restart effects.
+  start, preserve each naturally occurring generation before the next retry,
+  and separate ESO restart effects from launcher restart effects. Two
+  consecutive low-FPS exits already rewrote the same-size active cache to
+  different hashes without normal ESO compilation.
 - Capture fixed-scene FPS, GPU time, frame interval, app/Metal memory, and
   thermal state for the first bad and first clean starts.
 - Treat failure to initiate the normal pipeline-compilation path as the leading

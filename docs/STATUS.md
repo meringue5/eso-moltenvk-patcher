@@ -103,6 +103,15 @@ required readiness success record in both runs, leaving a separate
 observability defect. The candidate remains installed as a failed checkpoint
 with a verified restore path; it is not eligible for packaging or release.
 
+A second consecutive low-FPS process reproduced the same canary-only signature:
+ten compiler-service connections, two successful immediate jobs, and no later
+ESO compilation. One restart therefore does not deterministically repair the
+condition. The same-size active pipeline cache changed SHA-256 between the two
+failed exits while `ShaderCache.cooked` remained unchanged. Repeated-exit cache
+evolution is now a specific alternative to a probabilistic startup race, but
+causality is unproven because the first cache generation was not preserved as
+bytes before the second run.
+
 ## Safety boundary
 
 - An exact selected ESO target is accepted directly. A different executable is
@@ -124,8 +133,11 @@ Stop repetition with the Experiment 0036 candidate; its compiler-readiness
 hypothesis is falsified as a reliability fix. Add low-overhead timing and
 bounded counters around ESO's first `vkCreateGraphicsPipelines` wave, including
 whether calls return, their duration, and their relation to compiler-service
-connections. Do not package the candidate, alter user caches, or request
-another user launch until that diagnostic passes source and non-game gates.
+connections. Preserve a read-only snapshot of each naturally occurring cache
+generation around any ordinary user-initiated retry, especially the first
+eventual smooth process. Do not package the candidate, alter user caches, or
+request a dedicated user launch until that diagnostic passes source and
+non-game gates.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).
