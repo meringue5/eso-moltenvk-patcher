@@ -19,6 +19,10 @@ This roadmap contains future work only. Current verified state is in
   that canary as a diagnostic invariant; do not retain it as a claimed fix.
 - Classify each future start as bridge inactive, bridge active with the normal
   compiler path absent, or bridge active with compiler engagement.
+- Record ESO and launcher process identity for correlation, but do not make
+  launcher restart a required workaround or causal assumption. One four-run
+  sequence recovered after a launcher restart, while prior recovery did not
+  always require it.
 - Snapshot pipeline-cache identity, size, and modification time around every
   start, preserve each naturally occurring generation before the next retry,
   and separate ESO restart effects from launcher restart effects. Two

@@ -708,3 +708,12 @@ causality: ordinary serialization can change bytes without controlling the
 next startup. The user's observation that repeated process, and sometimes
 launcher, restarts eventually recover remains consistent with either this
 evolving state or a probabilistic initialization race.
+
+In a later four-run sequence, three consecutive pink/low-FPS processes with the
+ZeniMax launcher left open each completed only the canary's two compiler jobs.
+After the user restarted the launcher through Steam, the next process was
+normal and added a successful `MTLBuildOpaqueRequest` about eight seconds after
+start. This is a launcher-lifetime correlation, not evidence that launcher
+restart is required or causal; the user has recovered through ESO-only retries
+in other sequences. Across both paths, the stronger discriminator is whether
+the ESO process begins any Metal compiler work after the forced canary.

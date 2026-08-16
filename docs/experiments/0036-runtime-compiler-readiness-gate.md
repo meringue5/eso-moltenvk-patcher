@@ -250,3 +250,44 @@ test is to preserve the active cache after every user-initiated failed attempt
 and immediately before or after the first eventual smooth attempt, without
 deleting, replacing, or distributing it. Graphics-pipeline creation timing is
 still required to determine what the changing state affects.
+
+## Third ESO validation amendment: three failures and one recovery
+
+The user then reported a bounded sequence of three consecutive pink/low-FPS
+starts while leaving the ZeniMax launcher open, followed by one normal start
+after closing that launcher and reopening it through Steam:
+
+| User result | Bridge run | Compiler result during the observed startup |
+|---|---|---|
+| pink / low FPS | `20260816T165543.783831000Z-pid57578` | canary-only: 2 begins, 2 successes, 0 failures |
+| pink / low FPS | `20260816T165624.961119000Z-pid57581` | canary-only: 2 begins, 2 successes, 0 failures |
+| pink / low FPS | `20260816T165705.673358000Z-pid57593` | canary-only: 2 begins, 2 successes, 0 failures |
+| normal | `20260816T165757.237933000Z-pid57639` | canary plus 1 later opaque request: 3 begins, 3 successes, 0 failures |
+
+Every process recorded ten compiler-service connections and the canary's one
+library plus one pipeline job. The normal process alone recorded an additional
+successful `MTLBuildOpaqueRequest` about eight seconds after process start.
+This is the earliest direct discriminator in this four-run sequence. The log
+does not identify that opaque request as a specific ESO graphics pipeline, so
+that relationship remains to be established by Vulkan-side timing.
+
+The restarted ZeniMax launcher process began at 01:57:50 KST, seven seconds
+before the normal ESO process. Steam itself remained the same long-running
+process. This establishes temporal correlation in this sequence, not launcher
+causality. The user explicitly reports that launcher restart has not been
+necessary for every prior recovery, so launcher lifetime remains a secondary
+classification field rather than a critical variable or proposed fix.
+
+The active pipeline cache was modified at 01:58:13 KST, after the normal
+process and its opaque compiler request had already started. Its early-normal
+SHA-256 was
+`9e3362420c52344124a1cef75809ba17e8e8223d67bdc9055b81de3f7207fb63`;
+a consistent ignored copy was preserved without modifying the live file. This
+is not the normal process's input cache. The three intervening post-failure
+cache generations were not captured, so the sequence still cannot separate
+cache evolution from scheduling or launcher-associated state.
+
+The strengthened invariant is independent of launcher lifetime: low-FPS
+processes complete only the forced canary work, whereas smooth processes begin
+additional Metal compiler work. The next diagnostic remains bounded timing of
+ESO's first `vkCreateGraphicsPipelines` calls and their return path.

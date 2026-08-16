@@ -112,6 +112,16 @@ evolution is now a specific alternative to a probabilistic startup race, but
 causality is unproven because the first cache generation was not preserved as
 bytes before the second run.
 
+A later four-run sequence sharpened the discriminator. Three consecutive
+pink/low-FPS starts with the ZeniMax launcher left open each completed only the
+two forced canary jobs. After the user restarted the launcher through Steam,
+the next ESO process was normal and performed one additional successful
+`MTLBuildOpaqueRequest` about eight seconds after start. Launcher restart is
+correlated with this recovery but is not treated as causal or critical: the
+user reports that other recoveries have occurred through ESO-only retries.
+The durable distinction is additional ESO/Metal compiler work after the
+canary, not launcher lifetime.
+
 ## Safety boundary
 
 - An exact selected ESO target is accepted directly. A different executable is
@@ -137,7 +147,7 @@ connections. Preserve a read-only snapshot of each naturally occurring cache
 generation around any ordinary user-initiated retry, especially the first
 eventual smooth process. Do not package the candidate, alter user caches, or
 request a dedicated user launch until that diagnostic passes source and
-non-game gates.
+non-game gates. Record launcher lifetime only as a secondary correlation field.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).
