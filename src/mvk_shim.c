@@ -142,6 +142,7 @@ static Teso4m4LogLevel classify_log_message(const char* message) {
         starts_with(message, "MOLTENVK_CONFIG:") ||
         starts_with(message, "MOLTENVK:") || starts_with(message, "HDR_") ||
         starts_with(message, "ACTIVE:") ||
+        starts_with(message, "RUNTIME_READINESS:") ||
         starts_with(message, "ESO SHA-256:") ||
         starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") ||
         starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")) {
@@ -576,17 +577,22 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             moltenvk, "vkEnumerateDeviceExtensionProperties");
     PFN_vkCreateDevice create_device =
         (PFN_vkCreateDevice)dlsym(moltenvk, "vkCreateDevice");
+    PFN_vkDestroyDevice destroy_device =
+        (PFN_vkDestroyDevice)dlsym(moltenvk, "vkDestroyDevice");
     PFN_vkGetPhysicalDeviceSurfaceFormatsKHR get_surface_formats =
         (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)dlsym(
             moltenvk, "vkGetPhysicalDeviceSurfaceFormatsKHR");
     if (!g_next_get_instance_proc_addr || !g_next_get_device_proc_addr ||
-        !enumerate_device_extensions || !create_device || !get_surface_formats) {
+        !enumerate_device_extensions || !create_device || !destroy_device ||
+        !get_surface_formats) {
         log_message("ERROR: required compatibility entry point is unavailable");
         return false;
     }
     teso4m4_compat_set_enumerate_device_extensions(
         enumerate_device_extensions);
     teso4m4_compat_set_create_device(create_device);
+    teso4m4_compat_set_device_readiness(
+        g_next_get_device_proc_addr, destroy_device, true);
     teso4m4_compat_set_get_surface_formats(get_surface_formats);
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {

@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-08-16
+Last updated: 2026-08-17
 
 ## Current production baseline
 
@@ -56,10 +56,12 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the public 0.1.1 bridge installed on the exact 12.0.8 target. The
-bridge, executable-hash enable marker, and official 1.4.2
-runtime are current. The active 1.4.2 pipeline cache, pre-bridge backup, and
-historical 1.4.1 cache backup all pass their recorded identity checks.
+The user has the Experiment 0036 source candidate, derived from public 0.1.1,
+installed on the exact 12.0.8 target. Its bridge, enable marker, and official
+1.4.2 runtime are current. The active 1.4.2 pipeline cache, pre-bridge backup,
+and historical 1.4.1 cache backup all pass their recorded identity checks. The
+candidate was installed only after a verified pristine restore and all caches
+were preserved in place. This installed state is not a public release claim.
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
@@ -83,6 +85,15 @@ leading hypothesis. It does not yet prove whether compiler-service absence is
 the cause or a consequence, and the run lacks fixed-scene FPS/GPU-time
 telemetry and an intermediate cache snapshot.
 
+Experiment 0036 produced a source readiness-gate candidate. Immediately
+after `VkDevice` creation, it compiles a process-unique, cache-independent
+compute pipeline before returning the device to ESO. Five non-game trials under
+the exact production configuration each forced one Metal library build and one
+pipeline build; all ten compiler jobs succeeded. Failure-path probes verify
+that temporary objects and the device are cleaned before an error is returned.
+The candidate is installed but has not yet been validated in ESO, so it is not
+part of the production claim or public package.
+
 ## Safety boundary
 
 - An exact selected ESO target is accepted directly. A different executable is
@@ -100,13 +111,12 @@ telemetry and an intermediate cache snapshot.
 
 ## Next gate
 
-Instrument the first graphics-pipeline creation wave with low overhead and
-correlate it with `MTLCompilerService` connection timing. The next diagnostic
-must distinguish bridge inactivity from an active bridge whose normal compiler
-path never engages. Capture fixed-scene FPS, GPU time, frame interval, memory,
-thermal state, and per-start cache metadata when the user next encounters the
-condition. Do not add cache prewarming or precompilation until the missing
-compiler-service transition is shown to be causal and safely reproducible.
+Run one user-controlled normal-path launch with the installed Experiment 0036
+candidate. The canary must pass before ESO startup, and the first process must
+show neither pink output nor degraded frame pacing. A bad run after a passed
+canary falsifies the compiler-service causal hypothesis and blocks release. Do
+not package the candidate, alter user caches, or claim a first-start fix before
+that gate.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

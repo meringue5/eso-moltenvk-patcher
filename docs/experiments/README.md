@@ -46,6 +46,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0033 | 2026-08-02 | Production-refactor release validation | Succeeded; exact cleaned build and High subsampling played normally | [Run](0033-production-refactor-release-validation.md) |
 | 0034 | 2026-08-11 | ESO 12.0.8 update-compatible recovery | Update recovery and gameplay succeeded; cold-start reliability follow-up required | [Run](0034-eso-12.0.8-update-compatible-recovery.md) |
 | 0035 | 2026-08-16 | Cold-start compiler-service comparison | Bad and smooth starts both activated the bridge; compiler-service engagement distinguished the smooth restart | [Run](0035-cold-start-compiler-service-comparison.md) |
+| 0036 | 2026-08-17 | Runtime compiler-readiness gate | Unique canary forces a real compiler-service round trip in non-game probes; ESO validation pending | [Run](0036-runtime-compiler-readiness-gate.md) |
 
 ## Recording policy
 

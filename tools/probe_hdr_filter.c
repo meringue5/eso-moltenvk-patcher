@@ -25,6 +25,12 @@ static bool g_create_called;
 static uint32_t g_create_extension_count;
 static bool g_create_hdr_enabled;
 static const char* g_last_layer_name;
+static int g_readiness_fail_stage;
+static uint32_t g_shader_destroy_count;
+static uint32_t g_descriptor_layout_destroy_count;
+static uint32_t g_layout_destroy_count;
+static uint32_t g_pipeline_destroy_count;
+static uint32_t g_device_destroy_count;
 
 static void test_log(const char* message) {
     printf("compat %s\n", message);
@@ -68,6 +74,158 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_create_device(
     }
     *device = (VkDevice)(uintptr_t)0x2;
     return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL fake_create_shader_module(
+    VkDevice device,
+    const VkShaderModuleCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkShaderModule* shader) {
+    (void)device;
+    (void)create_info;
+    (void)allocator;
+    if (g_readiness_fail_stage == 1) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    *shader = (VkShaderModule)(uintptr_t)0x10;
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL fake_destroy_shader_module(
+    VkDevice device,
+    VkShaderModule shader,
+    const VkAllocationCallbacks* allocator) {
+    (void)device;
+    (void)shader;
+    (void)allocator;
+    ++g_shader_destroy_count;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL fake_create_descriptor_set_layout(
+    VkDevice device,
+    const VkDescriptorSetLayoutCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkDescriptorSetLayout* layout) {
+    (void)device;
+    (void)create_info;
+    (void)allocator;
+    *layout = (VkDescriptorSetLayout)(uintptr_t)0x13;
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL fake_destroy_descriptor_set_layout(
+    VkDevice device,
+    VkDescriptorSetLayout layout,
+    const VkAllocationCallbacks* allocator) {
+    (void)device;
+    (void)layout;
+    (void)allocator;
+    ++g_descriptor_layout_destroy_count;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL fake_create_pipeline_layout(
+    VkDevice device,
+    const VkPipelineLayoutCreateInfo* create_info,
+    const VkAllocationCallbacks* allocator,
+    VkPipelineLayout* layout) {
+    (void)device;
+    (void)create_info;
+    (void)allocator;
+    if (g_readiness_fail_stage == 2) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    *layout = (VkPipelineLayout)(uintptr_t)0x11;
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL fake_destroy_pipeline_layout(
+    VkDevice device,
+    VkPipelineLayout layout,
+    const VkAllocationCallbacks* allocator) {
+    (void)device;
+    (void)layout;
+    (void)allocator;
+    ++g_layout_destroy_count;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL fake_create_compute_pipelines(
+    VkDevice device,
+    VkPipelineCache cache,
+    uint32_t create_info_count,
+    const VkComputePipelineCreateInfo* create_infos,
+    const VkAllocationCallbacks* allocator,
+    VkPipeline* pipelines) {
+    (void)device;
+    (void)cache;
+    (void)create_info_count;
+    (void)create_infos;
+    (void)allocator;
+    if (g_readiness_fail_stage == 3) {
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    *pipelines = (VkPipeline)(uintptr_t)0x12;
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL fake_destroy_pipeline(
+    VkDevice device,
+    VkPipeline pipeline,
+    const VkAllocationCallbacks* allocator) {
+    (void)device;
+    (void)pipeline;
+    (void)allocator;
+    ++g_pipeline_destroy_count;
+}
+
+static PFN_vkVoidFunction VKAPI_CALL fake_get_device_proc_addr(
+    VkDevice device,
+    const char* name) {
+    (void)device;
+    if (g_readiness_fail_stage == 4 &&
+        strcmp(name, "vkCreateComputePipelines") == 0) {
+        return NULL;
+    }
+    if (strcmp(name, "vkCreateShaderModule") == 0) {
+        return (PFN_vkVoidFunction)&fake_create_shader_module;
+    }
+    if (strcmp(name, "vkDestroyShaderModule") == 0) {
+        return (PFN_vkVoidFunction)&fake_destroy_shader_module;
+    }
+    if (strcmp(name, "vkCreateDescriptorSetLayout") == 0) {
+        return (PFN_vkVoidFunction)&fake_create_descriptor_set_layout;
+    }
+    if (strcmp(name, "vkDestroyDescriptorSetLayout") == 0) {
+        return (PFN_vkVoidFunction)&fake_destroy_descriptor_set_layout;
+    }
+    if (strcmp(name, "vkCreatePipelineLayout") == 0) {
+        return (PFN_vkVoidFunction)&fake_create_pipeline_layout;
+    }
+    if (strcmp(name, "vkDestroyPipelineLayout") == 0) {
+        return (PFN_vkVoidFunction)&fake_destroy_pipeline_layout;
+    }
+    if (strcmp(name, "vkCreateComputePipelines") == 0) {
+        return (PFN_vkVoidFunction)&fake_create_compute_pipelines;
+    }
+    if (strcmp(name, "vkDestroyPipeline") == 0) {
+        return (PFN_vkVoidFunction)&fake_destroy_pipeline;
+    }
+    return NULL;
+}
+
+static VKAPI_ATTR void VKAPI_CALL fake_destroy_device(
+    VkDevice device,
+    const VkAllocationCallbacks* allocator) {
+    (void)device;
+    (void)allocator;
+    ++g_device_destroy_count;
+}
+
+static void reset_readiness_counts(void) {
+    g_shader_destroy_count = 0;
+    g_descriptor_layout_destroy_count = 0;
+    g_layout_destroy_count = 0;
+    g_pipeline_destroy_count = 0;
+    g_device_destroy_count = 0;
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL fake_get_surface_formats(
@@ -213,6 +371,55 @@ int main(void) {
     if (!check(result == VK_SUCCESS && g_create_extension_count == 1 &&
                    g_create_hdr_enabled,
                "explicit HDR enablement must be logged and forwarded unchanged")) {
+        return 1;
+    }
+
+    reset_readiness_counts();
+    g_readiness_fail_stage = 0;
+    teso4m4_compat_set_device_readiness(
+        &fake_get_device_proc_addr, &fake_destroy_device, true);
+    device = VK_NULL_HANDLE;
+    result = teso4m4_create_device(
+        physical_device, &create_info, NULL, &device);
+    if (!check(result == VK_SUCCESS && device != VK_NULL_HANDLE &&
+                   g_shader_destroy_count == 1 &&
+                   g_descriptor_layout_destroy_count == 1 &&
+                   g_layout_destroy_count == 1 &&
+                   g_pipeline_destroy_count == 1 &&
+                   g_device_destroy_count == 0,
+               "readiness success must destroy only temporary objects")) {
+        return 1;
+    }
+
+    reset_readiness_counts();
+    g_readiness_fail_stage = 3;
+    device = VK_NULL_HANDLE;
+    result = teso4m4_create_device(
+        physical_device, &create_info, NULL, &device);
+    if (!check(result == VK_ERROR_INITIALIZATION_FAILED &&
+                   device == VK_NULL_HANDLE &&
+                   g_shader_destroy_count == 1 &&
+                   g_descriptor_layout_destroy_count == 1 &&
+                   g_layout_destroy_count == 1 &&
+                   g_pipeline_destroy_count == 0 &&
+                   g_device_destroy_count == 1,
+               "pipeline failure must clean temporary objects and device")) {
+        return 1;
+    }
+
+    reset_readiness_counts();
+    g_readiness_fail_stage = 4;
+    device = VK_NULL_HANDLE;
+    result = teso4m4_create_device(
+        physical_device, &create_info, NULL, &device);
+    if (!check(result == VK_ERROR_INITIALIZATION_FAILED &&
+                   device == VK_NULL_HANDLE &&
+                   g_shader_destroy_count == 0 &&
+                   g_descriptor_layout_destroy_count == 0 &&
+                   g_layout_destroy_count == 0 &&
+                   g_pipeline_destroy_count == 0 &&
+                   g_device_destroy_count == 1,
+               "missing readiness function must destroy the created device")) {
         return 1;
     }
 
