@@ -668,10 +668,22 @@ This supports ignoring source-address relocation only. It does not support
 ignoring changed symbols, reference kinds or counts, proc routes or names,
 embedded runtime bytes, or patch signatures.
 
-The same run records a repeatable user-observed cold-start condition: the first
-one or two post-patch starts can show the pink startup surface and run at
-approximately 10 FPS before a later restart becomes clean. All three recorded
-starts reached the same bridge activation and compositor latch, which excludes
-total bridge inactivity but does not identify the cause. Shader compilation or
-pipeline-cache warm-up remains a hypothesis until per-start cache and GPU-time
-evidence distinguishes it from launcher lifetime and other startup state.
+The same run records a repeatable user-observed cold-start condition: a patched
+start can show the pink startup surface and run at approximately 10 FPS before
+a later restart becomes clean. Experiment 0035 captured a bad process and a
+smooth process started four seconds later without restarting the launcher.
+Both loaded MoltenVK 1.4.2, activated all 17 redirects, and reached the same
+79-draw/ordinal-150 compositor latch. Total bridge inactivity is therefore
+excluded for the bad process, and the neutralizer's production counters do not
+guarantee that no pink output can occur outside its bounded coverage.
+
+The bad process recorded no ESO-side `MTLCompilerService` connection or Metal
+compilation job during its approximately 42-second lifetime. The smooth restart
+recorded ten connection events and six successful jobs, beginning around 27
+seconds after launch. Normal compilation load therefore does not explain the
+bad FPS in this pair; compiler-service work appeared only on the smooth run.
+The leading hypothesis is instead that the bad process failed to enter or
+complete the normal Metal shader/pipeline initialization path. Unified-log
+absence cannot exclude in-process compilation, and no between-run cache
+snapshot or fixed-scene GPU telemetry exists, so cause and consequence remain
+unproven.

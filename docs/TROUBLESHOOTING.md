@@ -2,19 +2,25 @@
 
 ## First starts after installation
 
-On the ESO 12.0.8 update-compatible validation, the user reported a recurring
-pattern in which the first one or two starts after patching showed the pink
-startup surface and then ran at approximately 10 FPS. Restarting ESO, and
-sometimes the launcher, led to clean normal operation. Three consecutive bridge
-runs all activated the same 17 redirects and reached the same compositor latch,
-so this is not evidence that the bridge was entirely inactive.
+On ESO 12.0.8, the user has repeatedly observed a start that shows the pink
+startup surface and then runs at approximately 10 FPS, followed by a clean,
+smooth restart. Experiment 0035 captured one exact pair in which restarting ESO
+alone after four seconds was sufficient; the launcher was not restarted.
 
-The cause is unresolved. Shader compilation or pipeline-cache revalidation is
-one hypothesis, but launcher/process lifetime and another startup-only resource
-transition remain alternatives. Preserve all caches. Do not delete them or
-distribute a warmed cache as a workaround. The next controlled comparison must
-capture cache metadata, process boundaries, fixed-scene FPS/GPU timing, memory,
-and thermal state for each start.
+Both processes loaded MoltenVK 1.4.2, activated all 17 redirects, and reached
+the same compositor latch, so pink plus low FPS does not by itself mean the
+bridge was inactive. The bad process recorded no normal ESO-side connection to
+`MTLCompilerService` during its approximately 42-second lifetime. The smooth
+restart recorded ten connection events and six successful Metal compilation
+jobs. Failure to enter the normal pipeline-compilation path is now the leading
+hypothesis, but cause and consequence are not yet separated.
+
+If the condition occurs, quitting ESO and starting it again through the same
+normal launcher path is the currently observed recovery; restarting the
+launcher is not always necessary. Preserve all caches. Do not delete them or
+distribute a warmed cache as a workaround. Future diagnosis should capture
+cache metadata, process boundaries, fixed-scene FPS/GPU timing, memory, thermal
+state, and compiler-service engagement for each start.
 
 ## Exit crash and settings not saving
 

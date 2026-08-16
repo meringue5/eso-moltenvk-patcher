@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-08-11
+Last updated: 2026-08-16
 
 ## Current production baseline
 
@@ -56,8 +56,8 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the runtime-identical 0.1.1 RC bridge installed on the exact
-12.0.8 target. The bridge, executable-hash enable marker, and official 1.4.2
+The user has the public 0.1.1 bridge installed on the exact 12.0.8 target. The
+bridge, executable-hash enable marker, and official 1.4.2
 runtime are current. The active 1.4.2 pipeline cache, pre-bridge backup, and
 historical 1.4.1 cache backup all pass their recorded identity checks.
 
@@ -67,13 +67,21 @@ only the logic required to recognize and restore those backups safely.
 
 ## Known cold-start reliability issue
 
-The user reports a recurring post-install pattern: the first one or two starts
-may show the pink splash and then run at approximately 10 FPS; restarting ESO,
-and sometimes the launcher, produces clean normal operation. The three
-12.0.8 runs all reached the same production bridge activation and compositor
-latch, so total bridge activation failure is excluded. No controlled per-start
-cache, shader-compilation, GPU-time, or process-lifetime capture exists yet.
-Shader or pipeline-cache warm-up is therefore a hypothesis, not a finding.
+The user reports a recurring post-install pattern: a start may show the pink
+splash and then run at approximately 10 FPS, while an immediate restart is
+clean and smooth. Experiment 0035 captured one such back-to-back pair without a
+launcher restart. Both processes loaded MoltenVK 1.4.2, activated all 17
+redirects, and reached the same 79-draw/ordinal-150 compositor latch, excluding
+total bridge nonactivation for the bad process.
+
+The bad process recorded no ESO-side `MTLCompilerService` connection or Metal
+compilation job during its approximately 42-second lifetime. The smooth process
+started four seconds later and recorded ten connection events and six
+successful compilation jobs, beginning approximately 27 seconds after launch.
+This makes failure to enter the normal Metal pipeline-compilation path the
+leading hypothesis. It does not yet prove whether compiler-service absence is
+the cause or a consequence, and the run lacks fixed-scene FPS/GPU-time
+telemetry and an intermediate cache snapshot.
 
 ## Safety boundary
 
@@ -92,18 +100,13 @@ Shader or pipeline-cache warm-up is therefore a hypothesis, not a finding.
 
 ## Next gate
 
-Run one bounded cold-start comparison before changing the production profile:
-
-1. snapshot pipeline-cache identity, size, and mtime before and after every
-   start;
-2. record ESO and launcher process lifetimes and fixed startup milestones;
-3. capture FPS, GPU time, frame interval, memory, and thermal state in the same
-   scene for the first bad and first clean starts;
-4. inspect MoltenVK pipeline/shader timing only after the low-overhead evidence
-   identifies a discriminating interval; and
-5. attempt prewarming only if the evidence demonstrates a safe cache or shader
-   dependency that can be prepared without launching ESO or bypassing its
-   normal authentication path.
+Instrument the first graphics-pipeline creation wave with low overhead and
+correlate it with `MTLCompilerService` connection timing. The next diagnostic
+must distinguish bridge inactivity from an active bridge whose normal compiler
+path never engages. Capture fixed-scene FPS, GPU time, frame interval, memory,
+thermal state, and per-start cache metadata when the user next encounters the
+condition. Do not add cache prewarming or precompilation until the missing
+compiler-service transition is shown to be causal and safely reproducible.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

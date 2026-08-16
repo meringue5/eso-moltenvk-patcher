@@ -6,15 +6,20 @@ This roadmap contains future work only. Current verified state is in
 
 ## P0: make the first post-install start reliable
 
-- Reproduce the reported first-one-or-two-start pink/approximately-10-FPS
-  condition with a fixed launch sequence and stop condition.
+- Treat Experiment 0035's back-to-back pair as the current discriminator: both
+  starts activated the full bridge, but only the smooth restart engaged
+  `MTLCompilerService` and completed Metal compilation jobs.
+- Add low-overhead timing around the first graphics-pipeline creation wave and
+  correlate it with compiler-service connection timing.
+- Classify each future start as bridge inactive, bridge active with the normal
+  compiler path absent, or bridge active with compiler engagement.
 - Snapshot pipeline-cache identity, size, and modification time around every
   start, and separate ESO restart effects from launcher restart effects.
 - Capture fixed-scene FPS, GPU time, frame interval, app/Metal memory, and
   thermal state for the first bad and first clean starts.
-- Treat shader compilation, pipeline-cache revalidation, launcher lifetime,
-  and startup resource state as competing hypotheses; do not delete or replace
-  caches to force a result.
+- Treat failure to initiate the normal pipeline-compilation path as the leading
+  hypothesis while retaining cache revalidation and other startup resource
+  state as alternatives; do not delete or replace caches to force a result.
 - Add a prelaunch preparation step only if it can be proven safe without
   starting ESO, bypassing authentication, or distributing proprietary cache
   data.
