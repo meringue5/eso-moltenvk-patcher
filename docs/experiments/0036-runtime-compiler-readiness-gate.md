@@ -291,3 +291,36 @@ The strengthened invariant is independent of launcher lifetime: low-FPS
 processes complete only the forced canary work, whereas smooth processes begin
 additional Metal compiler work. The next diagnostic remains bounded timing of
 ESO's first `vkCreateGraphicsPipelines` calls and their return path.
+
+## Fourth ESO validation amendment: completed normal session
+
+The user later identified run
+`20260816T170146.247090000Z-pid60063` as the actual completed normal gameplay
+session and exited it at approximately 02:34:16 KST after about 32 minutes 30
+seconds. This run corrects the third amendment's proposed early compiler-work
+discriminator.
+
+PID 60063 made ten compiler-service connections and completed the two canary
+jobs at 02:01:47 KST. It then performed no additional compiler-service work
+until 02:11:20 KST, about 9 minutes 34 seconds after process start. At that
+later point one library and two pipeline jobs succeeded. All five jobs in the
+complete session succeeded and none failed.
+
+The client had connected to the game server at 02:01:52 KST, and the user
+observed normal performance before the three later jobs. Therefore a normal
+process can share the same canary-only early compiler signature as a pink,
+low-FPS process for much longer than the complete lifetime of the short failed
+runs. The extra opaque request in the earlier PID 57639 was correlated with
+that process but is not necessary for a subsequent normal startup.
+
+This invalidates post-canary `MTLCompilerService` activity as a sufficient
+early classifier. Unified compiler logs remain useful corroborating evidence,
+but they do not expose the missing transition directly; a normal path can use
+already compiled or cached pipelines without a service request. Direct Vulkan
+graphics-pipeline call and return timing is now required.
+
+The final active pipeline cache remained 8,344,388 bytes and had SHA-256
+`4e1e20d750b4c0362af3b2d4efb68dbba85fb6031e173312a7a731447a52c2b9`.
+`ShaderCache.cooked` remained unchanged. The final cache and logs were copied
+to ignored evidence after ESO and the launcher had exited; live files were not
+modified.

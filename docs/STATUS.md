@@ -112,15 +112,21 @@ evolution is now a specific alternative to a probabilistic startup race, but
 causality is unproven because the first cache generation was not preserved as
 bytes before the second run.
 
-A later four-run sequence sharpened the discriminator. Three consecutive
+A later four-run sequence initially appeared to sharpen the discriminator. Three consecutive
 pink/low-FPS starts with the ZeniMax launcher left open each completed only the
 two forced canary jobs. After the user restarted the launcher through Steam,
 the next ESO process was normal and performed one additional successful
 `MTLBuildOpaqueRequest` about eight seconds after start. Launcher restart is
 correlated with this recovery but is not treated as causal or critical: the
 user reports that other recoveries have occurred through ESO-only retries.
-The durable distinction is additional ESO/Metal compiler work after the
-canary, not launcher lifetime.
+
+The subsequent completed normal session invalidated additional compiler work
+as an early classifier. That process remained canary-only for approximately 9
+minutes 34 seconds, well beyond the complete lifetime of the short failed
+runs, while the user observed normal performance. Its three later compilation
+jobs all succeeded, but were not required for initial normal rendering.
+Compiler-service logs therefore show that the service is available; they do
+not expose the causal startup transition.
 
 ## Safety boundary
 

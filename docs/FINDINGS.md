@@ -709,11 +709,18 @@ next startup. The user's observation that repeated process, and sometimes
 launcher, restarts eventually recover remains consistent with either this
 evolving state or a probabilistic initialization race.
 
-In a later four-run sequence, three consecutive pink/low-FPS processes with the
-ZeniMax launcher left open each completed only the canary's two compiler jobs.
-After the user restarted the launcher through Steam, the next process was
-normal and added a successful `MTLBuildOpaqueRequest` about eight seconds after
-start. This is a launcher-lifetime correlation, not evidence that launcher
-restart is required or causal; the user has recovered through ESO-only retries
-in other sequences. Across both paths, the stronger discriminator is whether
-the ESO process begins any Metal compiler work after the forced canary.
+In a later sequence, three consecutive pink/low-FPS processes with the ZeniMax
+launcher left open each completed only the canary's two compiler jobs. After
+the user restarted the launcher through Steam, a short process added an opaque
+compiler request and the later completed gameplay process was normal. This is
+a launcher-lifetime correlation, not evidence that launcher restart is
+required or causal; the user has recovered through ESO-only retries in other
+sequences.
+
+The completed normal process also invalidates post-canary compiler work as an
+early state classifier. It remained canary-only for approximately 9 minutes 34
+seconds while the user observed normal performance, then completed three later
+jobs. A normal process can therefore use cached or already compiled work
+without producing the service activity absent from short failed runs. Direct
+graphics-pipeline call and return evidence is required to distinguish the
+states.
