@@ -91,8 +91,17 @@ compute pipeline before returning the device to ESO. Five non-game trials under
 the exact production configuration each forced one Metal library build and one
 pipeline build; all ten compiler jobs succeeded. Failure-path probes verify
 that temporary objects and the device are cleaned before an error is returned.
-The candidate is installed but has not yet been validated in ESO, so it is not
-part of the production claim or public package.
+
+ESO validation failed the candidate's purpose. A smooth session and the next
+low-FPS session each made ten compiler-service connections and immediately
+completed the canary's one library and one pipeline job without failure. The
+smooth session later completed 33 additional ESO compilation jobs; the low-FPS
+process completed none beyond the canary during its approximately 105-second
+lifetime. Compiler-service reachability is therefore insufficient to make ESO
+enter its normal graphics-pipeline path. The bridge log also omitted the
+required readiness success record in both runs, leaving a separate
+observability defect. The candidate remains installed as a failed checkpoint
+with a verified restore path; it is not eligible for packaging or release.
 
 ## Safety boundary
 
@@ -111,12 +120,12 @@ part of the production claim or public package.
 
 ## Next gate
 
-Run one user-controlled normal-path launch with the installed Experiment 0036
-candidate. The canary must pass before ESO startup, and the first process must
-show neither pink output nor degraded frame pacing. A bad run after a passed
-canary falsifies the compiler-service causal hypothesis and blocks release. Do
-not package the candidate, alter user caches, or claim a first-start fix before
-that gate.
+Stop repetition with the Experiment 0036 candidate; its compiler-readiness
+hypothesis is falsified as a reliability fix. Add low-overhead timing and
+bounded counters around ESO's first `vkCreateGraphicsPipelines` wave, including
+whether calls return, their duration, and their relation to compiler-service
+connections. Do not package the candidate, alter user caches, or request
+another user launch until that diagnostic passes source and non-game gates.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

@@ -9,12 +9,14 @@ This roadmap contains future work only. Current verified state is in
 - Treat Experiment 0035's back-to-back pair as the current discriminator: both
   starts activated the full bridge, but only the smooth restart engaged
   `MTLCompilerService` and completed Metal compilation jobs.
-- Validate Experiment 0036's process-unique compiler-readiness canary in one
-  cache-preserving, user-controlled normal launch. It is a source candidate,
-  not a production fix, until the first ESO process is smooth.
-- If a passed canary does not correct the condition, add low-overhead timing
-  around the first graphics-pipeline creation wave and correlate it with
-  compiler-service connection timing.
+- Treat Experiment 0036 as a failed fix: its process-unique canary reached the
+  compiler service and completed both immediate jobs in a later low-FPS
+  process, so readiness alone does not trigger ESO's normal pipeline path.
+- Add low-overhead timing and bounded counters around the first
+  `vkCreateGraphicsPipelines` wave and correlate call entry, return, duration,
+  and pipeline count with compiler-service connection timing.
+- Repair the missing readiness-success production log record before reusing
+  that canary as a diagnostic invariant; do not retain it as a claimed fix.
 - Classify each future start as bridge inactive, bridge active with the normal
   compiler path absent, or bridge active with compiler engagement.
 - Snapshot pipeline-cache identity, size, and modification time around every

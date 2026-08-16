@@ -1,8 +1,8 @@
 # Experiment 0036: runtime compiler-readiness gate
 
 - Date: 2026-08-17
-- Outcome: **running; non-game validation succeeded and ESO validation is pending**
-- Rollback: **available and verified; candidate remains installed for validation**
+- Outcome: **failed as a cold-start fix; the readiness gate passed its compiler-service boundary but low FPS recurred**
+- Rollback: **available and verified; failed candidate remains installed as the documented checkpoint**
 
 ## Question
 
@@ -151,3 +151,65 @@ Request one user-controlled normal launch. Pass requires
 own startup milestones, no pink surface, and normal frame pacing on the first
 process. Any pink/low-FPS result despite a passed canary falsifies the current
 causal hypothesis and blocks release.
+
+## ESO validation amendment: 2026-08-17
+
+The user completed two ordinary normal-launch-path sessions with the installed
+candidate. The first was smooth; the next reproduced low FPS. No reinstall,
+cache deletion, settings change, launcher bypass, or agent-controlled launch
+occurred between them.
+
+| Observation | Smooth session | Low-FPS session |
+|---|---:|---:|
+| Bridge run | `20260816T151737.132517000Z-pid52549` | `20260816T164017.660186000Z-pid53111` |
+| Local start | 2026-08-17 00:17:37 KST | 2026-08-17 01:40:17 KST |
+| User result | smooth long play | low FPS; exited after about 105 seconds |
+| ESO-side compiler-service connections | 10 | 10 |
+| Compilation begins / successes / failures | 35 / 35 / 0 | 2 / 2 / 0 |
+| Immediate canary-signature jobs | 1 library + 1 pipeline | 1 library + 1 pipeline |
+| Later ESO compilation jobs | 33 | 0 |
+| Compositor result | 79 suppressed; forward at ordinal 150 | 79 suppressed; forward at ordinal 150 |
+
+Both processes started after the candidate loader was installed and used its
+exact SHA-256. In each process, ten `MTLCompilerService` connections appeared
+about one second after process start, followed by one successful
+`MTLBuildLibraryFromSourceToArchive` and one successful `MTLBuildFunctions`
+job. That is the exact signature produced by the process-unique canary. The
+low-FPS process then reached two logged device-reset completions and a server
+connection, demonstrating that device creation and application startup
+continued.
+
+The smooth process later performed 33 additional successful compilation jobs,
+beginning at 00:22:53 KST and continuing during long play. The low-FPS process
+performed no compilation beyond the two immediate canary-signature jobs before
+it exited at approximately 01:42:03 KST.
+
+The production bridge log unexpectedly omitted the required
+`RUNTIME_READINESS` success record for both processes even though the unified
+log contains the canary's immediate one-library/one-pipeline compiler
+signature. This is an observability defect in the candidate and independently
+fails the explicit logging acceptance criterion. It does not weaken the user
+result: low FPS recurred after the compiler service was demonstrably reachable
+and completed both immediate jobs successfully.
+
+The active pipeline cache was preserved. After the low-FPS process exited it
+remained 8,344,388 bytes with SHA-256
+`330040db99ebeb322f360b6dd0e851c469c739d331093a55348559dd8a0668ee`.
+`ShaderCache.cooked` retained its prior modification time. No between-session
+cache snapshot exists, so this pair does not assign causality to the cache
+delta.
+
+### Amended result
+
+Experiment 0036 is **failed as a cold-start reliability fix**. Proving that the
+compiler service can compile one independent pipeline before ESO continues is
+not sufficient to make ESO enter its normal graphics-pipeline initialization
+path. Compiler-service absence in the earlier bad process was a useful marker,
+but compiler-service readiness is not the root cause established by this test.
+
+The candidate must not be packaged or released. Additional repetition with
+the same binary is unnecessary: the next diagnostic must time ESO's first
+`vkCreateGraphicsPipelines` wave and correlate those calls with compiler
+connections and the user-visible state. The verified pristine restore remains
+available; the failed candidate remains installed only as the current
+documented checkpoint.

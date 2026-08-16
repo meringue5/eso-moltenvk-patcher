@@ -687,3 +687,14 @@ complete the normal Metal shader/pipeline initialization path. Unified-log
 absence cannot exclude in-process compilation, and no between-run cache
 snapshot or fixed-scene GPU telemetry exists, so cause and consequence remain
 unproven.
+
+Experiment 0036 separates compiler-service availability from ESO's later
+pipeline path. Its process-unique readiness canary produced ten service
+connections and one successful library plus one successful pipeline job in
+both a smooth session and a later low-FPS session. The smooth session then
+completed 33 additional compilation jobs; the approximately 105-second
+low-FPS process completed none beyond the canary. A successful independent
+compiler round trip is therefore not sufficient to prevent the failure. This
+falsifies compiler-service readiness as the direct fix and strengthens the
+interpretation that absent normal compilation is a downstream marker of ESO
+not entering its expected graphics-pipeline initialization path.
