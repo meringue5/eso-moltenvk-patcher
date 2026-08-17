@@ -210,9 +210,10 @@ def evaluate_startup_log(
     startup_compositor_neutralize_mode = (
         "MODE: startup compositor neutralize enabled live_resources=0 "
         "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
-        "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+        "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
         "generation_limit=2 generation_2_present_limit=180 "
         "draw_provenance=enabled input_provenance=enabled "
+        "pipeline_timing=bounded readiness_canary=disabled "
         "pixel_readback=disabled fallback=forward"
     )
     matched_modes = [
@@ -274,7 +275,10 @@ def evaluate_startup_log(
         0 if performance_mode else 1
     )
     expected_concurrent_compilation = (
-        1 if performance_mode else 0
+        1
+        if performance_mode
+        and startup_compositor_neutralize_mode not in matched_modes
+        else 0
     )
     expected_configuration = (
         f"MOLTENVK_CONFIG: live_resources={expected_live_resources} "

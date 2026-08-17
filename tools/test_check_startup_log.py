@@ -466,9 +466,10 @@ class StartupLogTests(unittest.TestCase):
             "metal_argument_buffers=0",
             "MODE: startup compositor neutralize enabled live_resources=0 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
-            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
             "generation_limit=2 generation_2_present_limit=180 "
             "draw_provenance=enabled input_provenance=enabled "
+            "pipeline_timing=bounded readiness_canary=disabled "
             "pixel_readback=disabled fallback=forward",
         ).replace(
             "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
@@ -478,7 +479,7 @@ class StartupLogTests(unittest.TestCase):
             "MOLTENVK_CONFIG: live_resources=0 metal_argument_buffers=0 "
             "use_mtlheap=1 synchronous_queue_submits=0 "
             "command_pooling=1 prefill=0 "
-            "maximize_concurrent_compilation=1",
+            "maximize_concurrent_compilation=0",
         )
         text += "\n" + record(
             "STARTUP_COLOR_AUDIT_BEGIN: generation_limit=2 "

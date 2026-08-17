@@ -626,6 +626,7 @@ static bool run_startup_draw_provenance_case(void) {
     teso4m4_lifecycle_set_startup_color_audit(true);
     teso4m4_lifecycle_set_startup_present_pixel_audit(true);
     teso4m4_lifecycle_set_startup_draw_audit(true);
+    teso4m4_lifecycle_set_startup_pipeline_timing(true);
     teso4m4_lifecycle_set_startup_input_audit(true);
     teso4m4_lifecycle_set_startup_compositor_audit(true);
     teso4m4_lifecycle_set_compositor_image_sampler(
@@ -921,6 +922,18 @@ static bool run_startup_draw_provenance_case(void) {
             device, VK_NULL_HANDLE, 1, &pipeline_info, NULL, &pipeline) !=
         VK_SUCCESS) {
         return check(false, "draw provenance pipeline setup failed");
+    }
+    if (!check(
+            strstr(g_log, "STARTUP_PIPELINE_TIMING_BEGIN: call_limit=64") !=
+                    NULL &&
+                strstr(g_log, "STARTUP_PIPELINE_CALL_BEGIN: call=1") != NULL &&
+                strstr(g_log, "requested=1 stages=2 derivatives=0 cache=none") !=
+                    NULL &&
+                strstr(g_log, "STARTUP_PIPELINE_CALL_END: call=1") != NULL &&
+                strstr(g_log, "duration_ns=") != NULL &&
+                strstr(g_log, "requested=1 nonnull=1 result=0") != NULL,
+            "bounded graphics pipeline timing must bracket the downstream call")) {
+        return false;
     }
 
     const VkCommandBufferBeginInfo command_begin = {

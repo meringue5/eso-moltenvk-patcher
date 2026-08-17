@@ -128,6 +128,17 @@ jobs all succeeded, but were not required for initial normal rendering.
 Compiler-service logs therefore show that the service is available; they do
 not expose the causal startup transition.
 
+The next post-sleep first launch reproduced pink/low FPS about 41 minutes after
+a recorded full wake, weakening a simple immediate post-wake readiness race.
+ESO's own interface log supplies a stronger discriminator: low starts enter
+the game-data and character-data wait states and take about 13 seconds to mark
+the renderer complete, while the preceding completed normal start advanced
+directly to character selection and completed the renderer in about 2.7
+seconds. Experiment 0037 therefore restores MoltenVK's default non-maximized
+compilation policy for the production profile, removes the failed canary, and
+adds bounded no-op timing around the first 64 graphics-pipeline creation calls.
+Source and non-game gates pass; installation and user validation are pending.
+
 ## Safety boundary
 
 - An exact selected ESO target is accepted directly. A different executable is
@@ -145,15 +156,13 @@ not expose the causal startup transition.
 
 ## Next gate
 
-Stop repetition with the Experiment 0036 candidate; its compiler-readiness
-hypothesis is falsified as a reliability fix. Add low-overhead timing and
-bounded counters around ESO's first `vkCreateGraphicsPipelines` wave, including
-whether calls return, their duration, and their relation to compiler-service
-connections. Preserve a read-only snapshot of each naturally occurring cache
-generation around any ordinary user-initiated retry, especially the first
-eventual smooth process. Do not package the candidate, alter user caches, or
-request a dedicated user launch until that diagnostic passes source and
-non-game gates. Record launcher lifetime only as a secondary correlation field.
+Install the source-verified Experiment 0037 candidate through the shared idle
+and recovery gates with caches preserved, then collect one ordinary
+user-controlled launch. Require matched pipeline begin/end records and compare
+the renderer-completion path with the user's pink/FPS observation. Do not
+package the candidate or alter user caches until repeated evidence supports the
+non-maximized compilation policy. Record launcher lifetime only as a secondary
+correlation field.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).
