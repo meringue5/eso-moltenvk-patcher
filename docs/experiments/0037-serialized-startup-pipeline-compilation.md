@@ -89,7 +89,7 @@ records are diagnostic observation only.
 - Disposable release transaction fixture, including update recovery and
   uninstall/reinstall: pass.
 - Prepared proxy SHA-256:
-  `f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927`.
+  `79757b5ddeba018d2b93c4078af5e635097bf04e6d651a86495a6b6c5043ee5d`.
 
 No game, launcher, or Steam process was launched by the agent. No game-bundle
 file, setting, or cache was changed while preparing this source candidate.
@@ -111,4 +111,3 @@ file, setting, or cache was changed while preparing this source candidate.
 ## Result
 
 Source and non-game gates passed. Installation and user validation are pending.
-
