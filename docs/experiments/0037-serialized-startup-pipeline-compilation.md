@@ -1,8 +1,8 @@
 # Experiment 0037: serialized startup pipeline compilation
 
 - Date: 2026-08-17
-- Outcome: **running; source and non-game gates passed**
-- Rollback: **available and verified; installation pending**
+- Outcome: **running; candidate installed after source and non-game gates passed**
+- Rollback: **available and verified; candidate currently installed**
 
 ## Question
 
@@ -110,4 +110,23 @@ file, setting, or cache was changed while preparing this source candidate.
 
 ## Result
 
-Source and non-game gates passed. Installation and user validation are pending.
+Source and non-game gates passed from committed source `30b499a`. The shared
+bundle-idle gate passed with idle Steam open and no ESO file or update activity.
+The Experiment 0036 candidate was restored to the pristine loader and this
+candidate was installed with all caches preserved in place.
+
+The installed proxy matches the prepared source build byte for byte at
+`79757b5ddeba018d2b93c4078af5e635097bf04e6d651a86495a6b6c5043ee5d`.
+The installed official MoltenVK remains `aef00b13...`; the exact ESO target,
+attestation, enable marker, restore source, and three cache identities pass.
+Installation preserved:
+
+```text
+settings:             9dd0e4234bb1f0a447b0c870b8c6faa072afbabb729775702aa1dd527b07d5b6
+active 1.4.2 cache:   db4f08a9a092c7586cde9b8068eb24e2de8c80704f66eb761495116d20306f2b
+old embedded backup: 72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+1.4.1 backup:        5869aa929521788681e665e803e5876487a4eb8cede9589f56c48e05087c404b
+```
+
+No Steam, launcher, or ESO process was launched by the agent. User validation
+is pending.

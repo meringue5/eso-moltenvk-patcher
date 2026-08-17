@@ -56,12 +56,15 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the Experiment 0036 source candidate, derived from public 0.1.1,
+The user has the Experiment 0037 source candidate, derived from public 0.1.1,
 installed on the exact 12.0.8 target. Its bridge, enable marker, and official
 1.4.2 runtime are current. The active 1.4.2 pipeline cache, pre-bridge backup,
 and historical 1.4.1 cache backup all pass their recorded identity checks. The
-candidate was installed only after a verified pristine restore and all caches
-were preserved in place. This installed state is not a public release claim.
+installed bridge is byte-identical to committed source build `30b499a`, uses
+MoltenVK's default non-maximized compilation policy, omits the failed readiness
+canary, and records bounded graphics-pipeline call timing. Installation
+followed a verified pristine restore and preserved all caches and settings.
+This installed state is not a public release claim.
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
@@ -156,11 +159,10 @@ Source and non-game gates pass; installation and user validation are pending.
 
 ## Next gate
 
-Install the source-verified Experiment 0037 candidate through the shared idle
-and recovery gates with caches preserved, then collect one ordinary
-user-controlled launch. Require matched pipeline begin/end records and compare
-the renderer-completion path with the user's pink/FPS observation. Do not
-package the candidate or alter user caches until repeated evidence supports the
+Collect one ordinary user-controlled launch of the installed Experiment 0037
+candidate. Require matched pipeline begin/end records and compare the
+renderer-completion path with the user's pink/FPS observation. Do not package
+the candidate or alter user caches until repeated evidence supports the
 non-maximized compilation policy. Record launcher lifetime only as a secondary
 correlation field.
 

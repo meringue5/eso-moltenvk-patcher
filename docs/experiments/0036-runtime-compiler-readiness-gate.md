@@ -2,7 +2,7 @@
 
 - Date: 2026-08-17
 - Outcome: **failed as a cold-start fix; the readiness gate passed its compiler-service boundary but low FPS recurred**
-- Rollback: **available and verified; failed candidate remains installed as the documented checkpoint**
+- Rollback: **complete; displaced by Experiment 0037 with caches and settings preserved**
 
 ## Question
 
@@ -324,3 +324,13 @@ The final active pipeline cache remained 8,344,388 bytes and had SHA-256
 `ShaderCache.cooked` remained unchanged. The final cache and logs were copied
 to ignored evidence after ESO and the launcher had exited; live files were not
 modified.
+
+## Final rollback amendment
+
+The first post-sleep play on 2026-08-17 reproduced pink/low FPS while the
+readiness canary again completed successfully. Experiment 0037 then passed its
+source and non-game gates. The shared bundle-idle gate passed, the Experiment
+0036 loader was restored to the verified pristine source, and the Experiment
+0037 candidate was installed. Settings and all three cache states remained
+byte-identical across the restore/install cycle. No Steam, launcher, or ESO
+process was launched by the agent.
