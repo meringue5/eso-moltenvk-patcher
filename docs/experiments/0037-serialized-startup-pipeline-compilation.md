@@ -130,3 +130,43 @@ old embedded backup: 72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea
 
 No Steam, launcher, or ESO process was launched by the agent. User validation
 is pending.
+
+## First ESO validation amendment: normal extended play
+
+The user performed an ordinary authenticated launch and reported normal,
+extended play. Exact bridge run
+`20260817T055527.350588000Z-pid73931` verified the candidate configuration:
+
+```text
+maximize_concurrent_compilation=0
+readiness_canary=disabled
+pipeline timing retained=64 calls
+pipeline begins/ends=64/64
+pipeline results=64 VK_SUCCESS, 64 non-null outputs
+maximum retained call duration=1.783 ms
+compositor suppressions=79
+compositor forward latch=generation 2 ordinal 150
+```
+
+ESO followed the same early path as the preceding normal process: it advanced
+directly from `AccountLogin` to `CharacterSelect`, then recorded
+`RENDERER Complete` about 2.77 seconds later. The interface log contains
+continued world/zone activity for more than three hours after process start.
+The user did not separately classify whether any pink frame was visible in
+this report, so only normal FPS and extended play are confirmed visually.
+
+This run is a direct counterexample to the startup compositor neutralizer being
+sufficient to cause low FPS: the exact 79-draw suppression and ordinal-150
+forwarding mechanism remained active throughout startup, yet the resulting
+session was normal and long. It does not prove that the neutralizer can never
+interact with another startup state. A clean future A/B, if needed, must retain
+non-maximized compilation and disable only neutralization; the existing
+`performance-aggressive` mode is not that control because it also re-enables
+maximum concurrent compilation.
+
+After process exit, ignored evidence preserved the complete logs and the
+naturally updated caches. The active pipeline cache SHA-256 was
+`1b2cbb651e4faf94f79e37fa4d1b59a6679368ade7a1bc1734fe16f58d176914`;
+`ShaderCache.cooked` was
+`dbda194202ea64f19b743ac6d00c86fb84448940cbd1909314078c91e7b0b3a2`.
+No live cache or setting was replaced.

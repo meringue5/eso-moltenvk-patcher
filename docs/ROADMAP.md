@@ -16,6 +16,13 @@ This roadmap contains future work only. Current verified state is in
   default non-maximized compilation policy for the production profile and
   correlate bounded `vkCreateGraphicsPipelines` entry/return timing with ESO's
   renderer-completion path and user-visible state.
+- Preserve the first normal extended Experiment 0037 session as a positive
+  result, not proof of repeatability: all 64 retained pipeline calls returned
+  successfully and the renderer completed on the normal 2.77-second path.
+- If low FPS recurs under Experiment 0037, build a single-variable control that
+  keeps non-maximized compilation and disables only compositor neutralization.
+  The existing `performance-aggressive` mode is not a valid control because it
+  changes both variables.
 - Repair the missing readiness-success production log record before reusing
   that canary as a diagnostic invariant; do not retain it as a claimed fix.
 - Classify each future start from direct graphics-pipeline call/return timing

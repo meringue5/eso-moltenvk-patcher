@@ -140,7 +140,17 @@ directly to character selection and completed the renderer in about 2.7
 seconds. Experiment 0037 therefore restores MoltenVK's default non-maximized
 compilation policy for the production profile, removes the failed canary, and
 adds bounded no-op timing around the first 64 graphics-pipeline creation calls.
-Source and non-game gates pass; installation and user validation are pending.
+Source and non-game gates passed, and the candidate is now installed.
+
+The first installed Experiment 0037 launch produced normal extended play. All
+64 retained graphics-pipeline calls returned `VK_SUCCESS` with non-null output;
+the slowest took 1.783 ms. ESO advanced directly to character selection and
+marked the renderer complete about 2.77 seconds later, matching the normal
+path rather than the roughly 13-second low-FPS path. The unchanged compositor
+neutralizer still suppressed exactly 79 draws and forwarded at ordinal 150.
+This is one positive result for non-maximized compilation and a direct
+counterexample to neutralization alone being sufficient to cause low FPS, not
+yet a repeatability claim.
 
 ## Safety boundary
 
@@ -159,12 +169,13 @@ Source and non-game gates pass; installation and user validation are pending.
 
 ## Next gate
 
-Collect one ordinary user-controlled launch of the installed Experiment 0037
-candidate. Require matched pipeline begin/end records and compare the
-renderer-completion path with the user's pink/FPS observation. Do not package
-the candidate or alter user caches until repeated evidence supports the
-non-maximized compilation policy. Record launcher lifetime only as a secondary
-correlation field.
+Keep the installed Experiment 0037 candidate unchanged and classify naturally
+occurring future starts. Do not package it until repeated first launches
+support the non-maximized compilation policy. If low FPS recurs, prepare a
+single-variable control that retains non-maximized compilation and disables
+only the cosmetic compositor neutralizer; do not use `performance-aggressive`
+as that A/B because it changes compilation policy too. Record launcher lifetime
+only as a secondary correlation field.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).
