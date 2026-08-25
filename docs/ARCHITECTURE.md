@@ -52,30 +52,30 @@ Before loading MoltenVK, the bridge selects the validated production settings:
 - asynchronous queue submission;
 - command pooling enabled;
 - no command-buffer prefill; and
-- maximum concurrent compilation enabled.
+- maximum concurrent compilation disabled.
 
 After `dlopen`, the bridge reads the effective `MVKConfiguration` and stops
 before patching if any required value differs. The settings are one validated
 profile, not independently supported toggles.
 
-## Bounded startup compositor neutralizer
+## Performance-first startup control
 
-The final scene-and-GUI compositor can present ESO's canonical-magenta
-placeholder during a proven early startup interval. On the exact supported
-client, the bridge tracks the verified generation, pipeline, pipeline layout,
-descriptor-set layouts, descriptor classes, and framebuffer identity.
+The 0.1.2 production profile deliberately does not replace ESO's early
+canonical-magenta compositor draws. The original pink placeholder can remain
+visible. This is an accepted cosmetic issue because the first no-neutralizer
+control returned to normal FPS and the normal renderer-completion path, while
+the preceding neutralized run reproduced the intermittent low-FPS path.
 
-For generation 2, presentation ordinals 71 through 149, an exact matching
-compositor draw is replaced by an opaque-black full-frame clear. At ordinal
-150 the normal application draw is forwarded and the bridge permanently
-latches to forwarding. Unexpected state, incomplete provenance, capacity
-limits, identity mismatch, or a missing clear destination all fail open to ESO's
-original draw. The production path performs no pixel readback or queue-idle
-synchronization.
+Only the first 64 `vkCreateGraphicsPipelines` calls receive a bounded timing
+wrapper. Every argument and result is forwarded unchanged; all other lifecycle,
+draw, descriptor, presentation, and compositor entry points are returned
+directly to MoltenVK. The timing evidence distinguishes delayed ESO requests
+from slow or failed downstream compilation without changing caches or adding a
+readiness wait.
 
-This is a bounded presentation repair. It does not modify ESO assets, shaders,
-settings, or the underlying placeholder input. The evidence chain is preserved
-in Experiments 0026 through 0031.
+The former bounded neutralizer and its evidence remain preserved in
+Experiments 0026 through 0031 and 0038. They are diagnostic history, not the
+0.1.2 production path.
 
 ## Installer transaction
 
@@ -128,8 +128,9 @@ maintenance gates.
 ## Diagnostics and historical code
 
 The source retains bounded lifecycle, descriptor, draw, and compositor
-instrumentation shared by the production neutralizer and future exact-target
-diagnosis. These facilities are not public configuration promises. Abandoned
+instrumentation for historical experiments and future exact-target diagnosis.
+Only bounded pipeline timing is active in 0.1.2. These facilities are not
+public configuration promises. Abandoned
 1.4.1 source patches and failed legacy feature masking are not part of the
 production tree.
 

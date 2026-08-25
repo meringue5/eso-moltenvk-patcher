@@ -1,0 +1,32 @@
+; SPIR-V
+; Version: 1.0
+; Generator: teso4m4
+; Bound: 16
+; Schema: 0
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %output_buffer
+OpExecutionMode %main LocalSize 1 1 1
+OpName %main "main"
+OpName %output_buffer "output_buffer"
+OpName %output_block "OutputBlock"
+OpMemberName %output_block 0 "value"
+OpDecorate %output_block BufferBlock
+OpMemberDecorate %output_block 0 Offset 0
+OpDecorate %output_buffer DescriptorSet 0
+OpDecorate %output_buffer Binding 0
+%void = OpTypeVoid
+%fn_void = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%nonce = OpConstant %uint 324508639
+%output_block = OpTypeStruct %uint
+%ptr_uniform_block = OpTypePointer Uniform %output_block
+%ptr_uniform_uint = OpTypePointer Uniform %uint
+%output_buffer = OpVariable %ptr_uniform_block Uniform
+%main = OpFunction %void None %fn_void
+%entry = OpLabel
+%value_ptr = OpAccessChain %ptr_uniform_uint %output_buffer %uint_0
+OpStore %value_ptr %nonce
+OpReturn
+OpFunctionEnd

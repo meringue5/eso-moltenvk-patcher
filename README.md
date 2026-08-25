@@ -4,7 +4,7 @@
 Online** from its
 statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
 1.4.2 release. The current patch and installer are validated on the normal
-Steam launch path. The current 0.1.1 release supports ESO 12.0.8 and can
+Steam launch path. The current 0.1.2 release supports ESO 12.0.8 and can
 re-attest later relocation-only game updates when their embedded MoltenVK and
 complete bridge-facing structure remain unchanged. On the tested M4 MacBook
 Air, a 2048 x 1280 medium-to-high
@@ -189,7 +189,7 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 | Current supported ESO | Steam macOS client 12.0.8, databuild `3288357` |
 | Extended gameplay baseline | Steam macOS client 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
-| Bridge profile | `performance-aggressive` plus the bounded startup compositor neutralizer |
+| Bridge profile | Performance-first 1.4.2 profile; compositor neutralizer disabled |
 | Display profile | 2048 x 1280, VSync enabled |
 | Graphics profile | Mixed medium-to-high settings with SSAO and high-resolution shadows |
 | Ordinary-play validation | Roughly 93 minutes across multiple zones |
@@ -210,18 +210,15 @@ attestation. The tested result applies to the combined runtime, bridge profile,
 settings, and cache checkpoint on the listed M4; other Apple GPUs and ESO
 builds require their own validation.
 
-The user has also reported that the first one or two starts after patching can
-occasionally show the pink startup surface and run near 10 FPS until ESO, and
-sometimes the launcher, is restarted. This is a tracked cold-start reliability
-issue; shader or pipeline-cache warm-up is not yet a proven cause. See the
+Version 0.1.2 prioritizes FPS reliability over cosmetic startup suppression.
+It deliberately leaves ESO's original full-screen pink placeholder visible
+during startup and removes the bounded compositor substitution that was the
+leading remaining trigger for an intermittent approximately-10-FPS startup
+path. The first exact control launch retained pink but returned to the normal
+renderer path and normal FPS. Because the fault is intermittent, continued
+natural-start monitoring remains explicit; the release does not claim that
+one control proves the exact internal race. See the
 [current project status](docs/STATUS.md).
-
-The former full-screen hot-pink startup interval is now neutralized by replacing
-only the exact bounded placeholder-compositor draws with the existing black
-startup background. Two consecutive exact runs passed and forwarded the normal
-scene unchanged. The underlying ESO placeholder input is not modified; release
-packaging and diagnostic-log reduction for the proven runtime guard are tracked
-in the [current project status](docs/STATUS.md).
 
 ## Source build and maintenance installation
 

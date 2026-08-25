@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.2 - 2026-08-25
+
+- Prioritized startup FPS reliability over cosmetic pink-screen suppression.
+  The release now uses the exact Experiment 0038
+  `startup-pipeline-timing-control` profile: the compositor neutralizer and
+  its supporting startup audits are disabled, while official MoltenVK 1.4.2,
+  compatibility filters, asynchronous submission, disabled live-resource
+  checks, and non-maximized pipeline compilation remain unchanged.
+- Recorded a user-controlled launch with the intended separation: the original
+  pink placeholder remained visible, FPS was normal, ESO issued its bulk
+  pipeline wave at 11.652 seconds, and `RENDERER Complete` followed character
+  selection by 2.685 seconds. All 64 retained pipeline calls succeeded, with a
+  1.547 ms maximum duration.
+- Preserved the pipeline cache produced by the preceding low-FPS run and still
+  obtained the normal path, weakening permanent cache poisoning as a sufficient
+  cause. No cache reset is part of the release.
+- Kept bounded first-64-call pipeline timing for support evidence and added a
+  release transaction assertion for the exact performance-first marker.
+- Retained ESO 12.0.8 support, compatible-update re-attestation, verified
+  backup/restore behavior, normal Steam/ZeniMax authentication, and the
+  optional 48-key settings merge from 0.1.1.
+- Documented the visible pink startup interval as a known cosmetic issue. One
+  normal control is not claimed as proof of long-term reliability or of the
+  exact internal ESO timing race.
+
 ## 0.1.1 - 2026-08-11
 
 - Added the verified ESO 12.0.8/databuild `3288357` target after confirming

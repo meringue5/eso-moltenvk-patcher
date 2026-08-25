@@ -4,25 +4,62 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## P0: make the first post-install start reliable
+## P0: monitor the performance-first startup profile
 
-- Reproduce the reported first-one-or-two-start pink/approximately-10-FPS
-  condition with a fixed launch sequence and stop condition.
+- Treat Experiment 0035's back-to-back pair as the current discriminator: both
+  starts activated the full bridge, but only the smooth restart engaged
+  `MTLCompilerService` and completed Metal compilation jobs.
+- Treat Experiment 0036 as a failed fix: its process-unique canary reached the
+  compiler service and completed both immediate jobs in a later low-FPS
+  process, so readiness alone does not trigger ESO's normal pipeline path.
+- Treat Experiment 0037 as a failed repair and successful diagnostic: low FPS
+  recurred with 64/64 successful fast pipeline calls because ESO delayed
+  issuing the bulk wave by about 20.8 seconds.
+- Preserve Experiment 0038's first normal result: with neutralization and all
+  supporting audits disabled, pink remained visible but FPS and renderer timing
+  returned to the normal path.
+- Ship and monitor the exact 0.1.2 performance-first profile. Do not force
+  repeated gameplay solely to manufacture confidence; classify naturally
+  occurring starts and treat any low-FPS recurrence as a release incident.
+- Repair the missing readiness-success production log record before reusing
+  that canary as a diagnostic invariant; do not retain it as a claimed fix.
+- Classify each future start from direct graphics-pipeline call/return timing
+  and user-visible state. Treat compiler-service engagement only as supporting
+  evidence: one normal process remained canary-only for more than nine minutes.
+- Record ESO and launcher process identity for correlation, but do not make
+  launcher restart a required workaround or causal assumption. One four-run
+  sequence recovered after a launcher restart, while prior recovery did not
+  always require it.
 - Snapshot pipeline-cache identity, size, and modification time around every
-  start, and separate ESO restart effects from launcher restart effects.
+  start, preserve each naturally occurring generation before the next retry,
+  and separate ESO restart effects from launcher restart effects. Two
+  consecutive low-FPS exits already rewrote the same-size active cache to
+  different hashes without normal ESO compilation.
 - Capture fixed-scene FPS, GPU time, frame interval, app/Metal memory, and
   thermal state for the first bad and first clean starts.
-- Treat shader compilation, pipeline-cache revalidation, launcher lifetime,
-  and startup resource state as competing hypotheses; do not delete or replace
-  caches to force a result.
+- Treat the alternate ESO renderer-initialization path as confirmed: low starts
+  pass through the game-data/character-data waits and delay `RENDERER Complete`
+  to about 13 seconds versus about 2.7 seconds in the preceding normal start.
+  Maximum concurrent compilation has been falsified as a repair; retain cache
+  revalidation and other startup resource state as alternatives and do not
+  delete or replace caches to force a result.
 - Add a prelaunch preparation step only if it can be proven safe without
   starting ESO, bypassing authentication, or distributing proprietary cache
   data.
 
-## P1: preserve the 1.4.2 production release
+## P1: isolate an optional pink repair
+
+- Keep visible pink as an accepted cosmetic limitation in 0.1.2.
+- Before any compositor substitution returns, build a forward-only control that
+  retains equivalent tracking and locking without replacing draws. This must
+  separate tracking overhead from the 79 draw-to-clear substitutions.
+- Do not hold the completed 0.1.2 release branch open for this optional work;
+  use a new branch and experiment only when the investigation resumes.
+
+## P2: preserve the 1.4.2 production release
 
 - Keep official MoltenVK 1.4.2, the validated performance configuration, and
-  the exact bounded startup compositor neutralizer as one release baseline.
+  the exact no-neutralizer startup control as one release baseline.
 - Preserve the pristine loader, release restore record, historical runtime
   backups, all pipeline-cache generations, and the 48-key sanitized settings
   template with validated High subsampling.
@@ -31,7 +68,7 @@ This roadmap contains future work only. Current verified state is in
 - Treat regressions in ordinary play, live graphics resets, startup color, or
   restore behavior as release blockers.
 
-## P2: maintain ESO update support
+## P3: maintain ESO update support
 
 - Run the quick update gate after every ESO or launcher content update.
 - Allow the packaged auditor to re-attest relocation-only executable updates
@@ -41,7 +78,7 @@ This roadmap contains future work only. Current verified state is in
   install/remove testing, and a user-controlled normal-launch smoke test.
 - Never turn an unknown build into best-effort compatibility.
 
-## P3: broaden verified compatibility
+## P4: broaden verified compatibility
 
 - Validate the same exact client through a direct ZeniMax installation when a
   suitable user-controlled test is available.
@@ -49,7 +86,7 @@ This roadmap contains future work only. Current verified state is in
 - Keep Steam and launcher discovery edition-neutral; authentication remains the
   responsibility of the user's normal launcher.
 
-## P4: improve distribution
+## P5: improve distribution
 
 - Collect feedback on the unsigned ZIP's Terminal and Gatekeeper experience.
 - Consider a signed/notarized app or DMG if Apple Developer membership becomes

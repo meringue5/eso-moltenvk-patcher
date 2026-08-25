@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 enum {
     kMaxSwapchains = 32,
@@ -30,6 +31,7 @@ enum {
     kStartupAuditGenerationLimit = 2,
     kStartupAuditGeneration2PresentLimit = 180,
     kStartupAuditDetailLimit = 2048,
+    kStartupPipelineTimingCallLimit = 64,
     kCompositorNeutralizeFirstPresent = 71,
     kCompositorNeutralizeLastPresent = 150,
     kCompositorNeutralizeMaxSuppressedDraws = 96,
@@ -372,6 +374,8 @@ static bool g_enabled = true;
 static atomic_bool g_startup_color_audit;
 static atomic_bool g_startup_present_pixel_audit;
 static atomic_bool g_startup_draw_audit;
+static atomic_bool g_startup_pipeline_timing;
+static atomic_uint_fast64_t g_startup_pipeline_call_counter;
 static atomic_bool g_startup_input_audit;
 static atomic_bool g_startup_compositor_audit;
 static atomic_bool g_startup_compositor_neutralize;
@@ -391,11 +395,45 @@ static uint32_t g_compositor_suppressed_draw_count;
 static VkPipeline g_compositor_neutralize_test_pipeline;
 static uint32_t g_compositor_neutralize_test_ordinal;
 static bool g_reset_has_run;
+static struct timespec g_pipeline_timing_origin;
 
 static void lifecycle_log(const char* format, ...) {
     if (!g_logger ||
         (atomic_load(&g_startup_color_audit) &&
          atomic_load(&g_startup_color_audit_finished))) {
+        return;
+    }
+    char message[1024];
+    va_list arguments;
+    va_start(arguments, format);
+    vsnprintf(message, sizeof(message), format, arguments);
+    va_end(arguments);
+    g_logger(message);
+}
+
+static uint64_t elapsed_nanoseconds(
+    const struct timespec* start,
+    const struct timespec* end) {
+    time_t seconds = end->tv_sec - start->tv_sec;
+    long nanoseconds = end->tv_nsec - start->tv_nsec;
+    if (nanoseconds < 0) {
+        --seconds;
+        nanoseconds += 1000000000L;
+    }
+    if (seconds < 0) {
+        return 0;
+    }
+    return (uint64_t)seconds * UINT64_C(1000000000) +
+           (uint64_t)nanoseconds;
+}
+
+/*
+ * This bounded diagnostic intentionally remains visible after the startup
+ * color audit closes. It records only call shape, result, and timing and never
+ * changes the downstream arguments or synchronization.
+ */
+static void startup_pipeline_timing_log(const char* format, ...) {
+    if (!g_logger) {
         return;
     }
     char message[1024];
@@ -2008,9 +2046,63 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_create_graphics_pipelines(
     if (!g_next_create_graphics_pipelines) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    const bool time_call = atomic_load(&g_startup_pipeline_timing);
+    uint64_t timing_call = 0;
+    struct timespec timing_start = {0};
+    uint64_t stage_count = 0;
+    uint32_t derivative_count = 0;
+    if (time_call) {
+        timing_call = atomic_fetch_add_explicit(
+                          &g_startup_pipeline_call_counter, 1,
+                          memory_order_relaxed) +
+                      1;
+        if (timing_call <= kStartupPipelineTimingCallLimit) {
+            if (create_infos) {
+                for (uint32_t index = 0; index < create_info_count; ++index) {
+                    stage_count += create_infos[index].stageCount;
+                    if ((create_infos[index].flags &
+                         VK_PIPELINE_CREATE_DERIVATIVE_BIT) != 0) {
+                        ++derivative_count;
+                    }
+                }
+            }
+            clock_gettime(CLOCK_MONOTONIC, &timing_start);
+            startup_pipeline_timing_log(
+                "STARTUP_PIPELINE_CALL_BEGIN: call=%" PRIu64
+                " since_reset_ns=%" PRIu64 " requested=%u stages=%" PRIu64
+                " derivatives=%u cache=%s",
+                timing_call,
+                elapsed_nanoseconds(
+                    &g_pipeline_timing_origin, &timing_start),
+                create_info_count, stage_count, derivative_count,
+                pipeline_cache == VK_NULL_HANDLE ? "none" : "present");
+        } else if (timing_call == kStartupPipelineTimingCallLimit + 1) {
+            startup_pipeline_timing_log(
+                "STARTUP_PIPELINE_CALL_LIMIT: retained=%u",
+                kStartupPipelineTimingCallLimit);
+        }
+    }
     VkResult result = g_next_create_graphics_pipelines(
         device, pipeline_cache, create_info_count, create_infos,
         allocator, pipelines);
+    if (time_call && timing_call <= kStartupPipelineTimingCallLimit) {
+        struct timespec timing_end = {0};
+        uint32_t nonnull_count = 0;
+        clock_gettime(CLOCK_MONOTONIC, &timing_end);
+        if (pipelines) {
+            for (uint32_t index = 0; index < create_info_count; ++index) {
+                nonnull_count += pipelines[index] != VK_NULL_HANDLE ? 1 : 0;
+            }
+        }
+        startup_pipeline_timing_log(
+            "STARTUP_PIPELINE_CALL_END: call=%" PRIu64
+            " since_reset_ns=%" PRIu64 " duration_ns=%" PRIu64
+            " requested=%u nonnull=%u result=%d",
+            timing_call,
+            elapsed_nanoseconds(&g_pipeline_timing_origin, &timing_end),
+            elapsed_nanoseconds(&timing_start, &timing_end),
+            create_info_count, nonnull_count, result);
+    }
     if (!atomic_load(&g_startup_draw_audit) || startup_audit_finished() ||
         !create_infos || !pipelines) {
         return result;
@@ -3707,6 +3799,9 @@ void teso4m4_lifecycle_reset(void) {
     atomic_store(&g_startup_color_audit, false);
     atomic_store(&g_startup_present_pixel_audit, false);
     atomic_store(&g_startup_draw_audit, false);
+    atomic_store(&g_startup_pipeline_timing, false);
+    atomic_store_explicit(
+        &g_startup_pipeline_call_counter, 0, memory_order_relaxed);
     atomic_store(&g_startup_input_audit, false);
     atomic_store(&g_startup_compositor_audit, false);
     atomic_store(&g_startup_compositor_neutralize, false);
@@ -3719,6 +3814,7 @@ void teso4m4_lifecycle_reset(void) {
     g_compositor_suppressed_draw_count = 0;
     g_compositor_neutralize_test_pipeline = VK_NULL_HANDLE;
     g_compositor_neutralize_test_ordinal = 0;
+    clock_gettime(CLOCK_MONOTONIC, &g_pipeline_timing_origin);
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -3762,6 +3858,18 @@ void teso4m4_lifecycle_set_startup_draw_audit(bool enabled) {
             "STARTUP_DRAW_AUDIT_BEGIN: generation_limit=2"
             " generation_2_present_limit=180"
             " max_distinct_pipelines_per_submit=8");
+    }
+}
+
+void teso4m4_lifecycle_set_startup_pipeline_timing(bool enabled) {
+    atomic_store_explicit(
+        &g_startup_pipeline_call_counter, 0, memory_order_relaxed);
+    clock_gettime(CLOCK_MONOTONIC, &g_pipeline_timing_origin);
+    atomic_store(&g_startup_pipeline_timing, enabled);
+    if (enabled) {
+        startup_pipeline_timing_log(
+            "STARTUP_PIPELINE_TIMING_BEGIN: call_limit=%u downstream=unchanged",
+            kStartupPipelineTimingCallLimit);
     }
 }
 
@@ -3844,6 +3952,17 @@ PFN_vkVoidFunction teso4m4_lifecycle_intercept(
     PFN_vkVoidFunction returned = next_function;
     pthread_mutex_lock(&g_lock);
     if (!g_enabled) {
+        pthread_mutex_unlock(&g_lock);
+        return next_function;
+    }
+    const bool pipeline_timing_only =
+        atomic_load(&g_startup_pipeline_timing) &&
+        !atomic_load(&g_startup_color_audit) &&
+        !atomic_load(&g_startup_draw_audit) &&
+        !atomic_load(&g_startup_input_audit) &&
+        !atomic_load(&g_startup_compositor_neutralize);
+    if (pipeline_timing_only &&
+        strcmp(name, "vkCreateGraphicsPipelines") != 0) {
         pthread_mutex_unlock(&g_lock);
         return next_function;
     }

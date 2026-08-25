@@ -43,6 +43,7 @@ static bool g_startup_draw_audit_enabled;
 static bool g_startup_input_audit_enabled;
 static bool g_startup_compositor_audit_enabled;
 static bool g_startup_compositor_neutralize_enabled;
+static bool g_startup_pipeline_timing_enabled;
 
 typedef enum {
     TESO4M4_LOG_ERROR = 0,
@@ -72,6 +73,7 @@ typedef enum {
     TESO4M4_MODE_STARTUP_INPUT_AUDIT,
     TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT,
     TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE,
+    TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -142,6 +144,8 @@ static Teso4m4LogLevel classify_log_message(const char* message) {
         starts_with(message, "MOLTENVK_CONFIG:") ||
         starts_with(message, "MOLTENVK:") || starts_with(message, "HDR_") ||
         starts_with(message, "ACTIVE:") ||
+        starts_with(message, "RUNTIME_READINESS:") ||
+        starts_with(message, "STARTUP_PIPELINE_") ||
         starts_with(message, "ESO SHA-256:") ||
         starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") ||
         starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")) {
@@ -427,6 +431,9 @@ static Teso4m4Mode marker_mode(const char* directory,
     if (strcmp(mode, "startup-compositor-neutralize") == 0) {
         return TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     }
+    if (strcmp(mode, "startup-pipeline-timing-control") == 0) {
+        return TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -478,7 +485,8 @@ static bool verify_moltenvk_configuration(
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
+        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
     const VkBool32 expected_live_resources =
         (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
          mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
@@ -487,13 +495,18 @@ static bool verify_moltenvk_configuration(
          mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
          mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
-         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE)
+         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
+         mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL)
             ? VK_FALSE
             : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
         performance_mode ? VK_FALSE : VK_TRUE;
     const VkBool32 expected_concurrent_compilation =
-        performance_mode ? VK_TRUE : VK_FALSE;
+        performance_mode &&
+                mode != TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE &&
+                mode != TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL
+            ? VK_TRUE
+            : VK_FALSE;
     if (configuration.liveCheckAllResources != expected_live_resources ||
         configuration.useMetalArgumentBuffers != VK_FALSE ||
         configuration.useMTLHeap != expected_mtlheap ||
@@ -558,7 +571,8 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             g_next_get_instance_proc_addr =
                 (PFN_vkGetInstanceProcAddr)destinations[index];
             destinations[index] = (void*)&traced_get_instance_proc_addr;
-        } else if (g_startup_color_audit_enabled) {
+        } else if (g_startup_color_audit_enabled ||
+                   g_startup_pipeline_timing_enabled) {
             destinations[index] = (void*)teso4m4_lifecycle_intercept(
                 target->symbol,
                 (PFN_vkVoidFunction)destinations[index]);
@@ -576,17 +590,22 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
             moltenvk, "vkEnumerateDeviceExtensionProperties");
     PFN_vkCreateDevice create_device =
         (PFN_vkCreateDevice)dlsym(moltenvk, "vkCreateDevice");
+    PFN_vkDestroyDevice destroy_device =
+        (PFN_vkDestroyDevice)dlsym(moltenvk, "vkDestroyDevice");
     PFN_vkGetPhysicalDeviceSurfaceFormatsKHR get_surface_formats =
         (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)dlsym(
             moltenvk, "vkGetPhysicalDeviceSurfaceFormatsKHR");
     if (!g_next_get_instance_proc_addr || !g_next_get_device_proc_addr ||
-        !enumerate_device_extensions || !create_device || !get_surface_formats) {
+        !enumerate_device_extensions || !create_device || !destroy_device ||
+        !get_surface_formats) {
         log_message("ERROR: required compatibility entry point is unavailable");
         return false;
     }
     teso4m4_compat_set_enumerate_device_extensions(
         enumerate_device_extensions);
     teso4m4_compat_set_create_device(create_device);
+    teso4m4_compat_set_device_readiness(
+        g_next_get_device_proc_addr, destroy_device, false);
     teso4m4_compat_set_get_surface_formats(get_surface_formats);
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
@@ -652,6 +671,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_startup_input_audit_enabled = false;
     g_startup_compositor_audit_enabled = false;
     g_startup_compositor_neutralize_enabled = false;
+    g_startup_pipeline_timing_enabled = false;
     log_message("RUN_START: bridge starting log_level=%s",
                 log_level_name(g_log_level));
 
@@ -703,6 +723,9 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
     g_startup_compositor_neutralize_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
+    g_startup_pipeline_timing_enabled =
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
+        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
         mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
@@ -712,15 +735,19 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
+        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
     teso4m4_lifecycle_set_enabled(
-        !performance_mode || g_startup_color_audit_enabled);
+        !performance_mode || g_startup_color_audit_enabled ||
+        g_startup_pipeline_timing_enabled);
     teso4m4_lifecycle_set_startup_color_audit(
         g_startup_color_audit_enabled);
     teso4m4_lifecycle_set_startup_present_pixel_audit(
         g_startup_present_pixel_audit_enabled);
     teso4m4_lifecycle_set_startup_draw_audit(
         g_startup_draw_audit_enabled);
+    teso4m4_lifecycle_set_startup_pipeline_timing(
+        g_startup_pipeline_timing_enabled);
     teso4m4_lifecycle_set_startup_input_audit(
         g_startup_input_audit_enabled);
     teso4m4_lifecycle_set_startup_compositor_audit(
@@ -740,7 +767,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
              mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
              mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
-             mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE) ? "0" : "1",
+             mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
+             mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL) ? "0" : "1",
             1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -748,10 +776,13 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         (mode == TESO4M4_MODE_NO_COMMAND_POOLING &&
          setenv("MVK_CONFIG_USE_COMMAND_POOLING", "0", 1) != 0) ||
         (performance_mode &&
-         (setenv("MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS", "0", 1) != 0 ||
-          setenv(
-              "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
-              "1", 1) != 0))) {
+         setenv("MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS", "0", 1) != 0) ||
+        (performance_mode &&
+         setenv(
+             "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
+             (mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
+              mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL) ? "0" : "1",
+             1) != 0)) {
         log_message("ERROR: could not set selected compatibility mode: %s",
                     strerror(errno));
         return;
@@ -838,10 +869,18 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message(
             "MODE: startup compositor neutralize enabled live_resources=0 "
             "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
-            "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
             "generation_limit=2 generation_2_present_limit=180 "
             "draw_provenance=enabled input_provenance=enabled "
+            "pipeline_timing=bounded readiness_canary=disabled "
             "pixel_readback=disabled fallback=forward");
+    } else if (mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL) {
+        log_message(
+            "MODE: startup pipeline timing control enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
+            "lifecycle_trace=pipeline-only pipeline_timing=bounded "
+            "readiness_canary=disabled compositor_neutralize=disabled");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "

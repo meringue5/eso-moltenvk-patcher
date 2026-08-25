@@ -17,6 +17,10 @@ TESO4M4_HIDDEN void teso4m4_compat_set_enumerate_device_extensions(
     PFN_vkEnumerateDeviceExtensionProperties next_function);
 TESO4M4_HIDDEN void teso4m4_compat_set_create_device(
     PFN_vkCreateDevice next_function);
+TESO4M4_HIDDEN void teso4m4_compat_set_device_readiness(
+    PFN_vkGetDeviceProcAddr get_device_proc_addr,
+    PFN_vkDestroyDevice destroy_device,
+    bool required);
 TESO4M4_HIDDEN void teso4m4_compat_set_get_surface_formats(
     PFN_vkGetPhysicalDeviceSurfaceFormatsKHR next_function);
 

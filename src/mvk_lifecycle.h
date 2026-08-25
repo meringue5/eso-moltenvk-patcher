@@ -44,6 +44,8 @@ teso4m4_lifecycle_set_startup_present_pixel_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_startup_draw_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
+teso4m4_lifecycle_set_startup_pipeline_timing(bool enabled);
+TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_startup_input_audit(bool enabled);
 TESO4M4_LIFECYCLE_HIDDEN void
 teso4m4_lifecycle_set_startup_compositor_audit(bool enabled);

@@ -626,6 +626,7 @@ static bool run_startup_draw_provenance_case(void) {
     teso4m4_lifecycle_set_startup_color_audit(true);
     teso4m4_lifecycle_set_startup_present_pixel_audit(true);
     teso4m4_lifecycle_set_startup_draw_audit(true);
+    teso4m4_lifecycle_set_startup_pipeline_timing(true);
     teso4m4_lifecycle_set_startup_input_audit(true);
     teso4m4_lifecycle_set_startup_compositor_audit(true);
     teso4m4_lifecycle_set_compositor_image_sampler(
@@ -922,6 +923,18 @@ static bool run_startup_draw_provenance_case(void) {
         VK_SUCCESS) {
         return check(false, "draw provenance pipeline setup failed");
     }
+    if (!check(
+            strstr(g_log, "STARTUP_PIPELINE_TIMING_BEGIN: call_limit=64") !=
+                    NULL &&
+                strstr(g_log, "STARTUP_PIPELINE_CALL_BEGIN: call=1") != NULL &&
+                strstr(g_log, "requested=1 stages=2 derivatives=0 cache=none") !=
+                    NULL &&
+                strstr(g_log, "STARTUP_PIPELINE_CALL_END: call=1") != NULL &&
+                strstr(g_log, "duration_ns=") != NULL &&
+                strstr(g_log, "requested=1 nonnull=1 result=0") != NULL,
+            "bounded graphics pipeline timing must bracket the downstream call")) {
+        return false;
+    }
 
     const VkCommandBufferBeginInfo command_begin = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -1116,6 +1129,59 @@ static bool run_startup_draw_provenance_case(void) {
                 "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH: action=forward"
                 " reason=present-deadline") != NULL,
         "ordinal-window neutralizer must forward the ordinal-150 draw");
+}
+
+static bool run_startup_pipeline_timing_only_case(void) {
+    g_log_length = 0;
+    g_log[0] = '\0';
+    teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_logger(&test_log);
+    teso4m4_lifecycle_set_startup_pipeline_timing(true);
+
+    PFN_vkVoidFunction swapchain = teso4m4_lifecycle_intercept(
+        "vkCreateSwapchainKHR",
+        (PFN_vkVoidFunction)&fake_create_swapchain);
+    PFN_vkVoidFunction draw_indexed = teso4m4_lifecycle_intercept(
+        "vkCmdDrawIndexed",
+        (PFN_vkVoidFunction)&fake_cmd_draw_indexed);
+    PFN_vkCreateGraphicsPipelines create_graphics_pipelines =
+        (PFN_vkCreateGraphicsPipelines)teso4m4_lifecycle_intercept(
+            "vkCreateGraphicsPipelines",
+            (PFN_vkVoidFunction)&fake_create_graphics_pipelines);
+
+    if (!check(
+            swapchain == (PFN_vkVoidFunction)&fake_create_swapchain &&
+                draw_indexed == (PFN_vkVoidFunction)&fake_cmd_draw_indexed,
+            "pipeline-only mode must return non-pipeline functions unchanged") ||
+        !check(
+            (PFN_vkVoidFunction)create_graphics_pipelines !=
+                (PFN_vkVoidFunction)&fake_create_graphics_pipelines,
+            "pipeline-only mode must wrap graphics pipeline creation")) {
+        return false;
+    }
+
+    const VkGraphicsPipelineCreateInfo create_info = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .basePipelineIndex = -1,
+    };
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    if (!check(
+            create_graphics_pipelines(
+                HANDLE(VkDevice, 0x91), VK_NULL_HANDLE, 1, &create_info,
+                NULL, &pipeline) == VK_SUCCESS &&
+                pipeline != VK_NULL_HANDLE,
+            "pipeline-only timing wrapper must preserve downstream result")) {
+        return false;
+    }
+    return check(
+        strstr(
+            g_log,
+            "STARTUP_PIPELINE_TIMING_BEGIN: call_limit=64 downstream=unchanged") !=
+                NULL &&
+            strstr(g_log, "STARTUP_PIPELINE_CALL_BEGIN: call=1") != NULL &&
+            strstr(g_log, "STARTUP_PIPELINE_CALL_END: call=1") != NULL &&
+            strstr(g_log, "requested=1 nonnull=1 result=0") != NULL,
+        "pipeline-only timing mode must emit one matched call pair");
 }
 
 static bool run_startup_color_case(
@@ -1603,13 +1669,15 @@ int main(void) {
     }
     if (!run_present_pixel_schedule_case() ||
         !run_consumed_semaphore_case() ||
-        !run_startup_draw_provenance_case()) {
+        !run_startup_draw_provenance_case() ||
+        !run_startup_pipeline_timing_only_case()) {
         return 1;
     }
 
     printf(
         "Lifecycle trace smoke: yes startup_color_cases=3 "
         "present_pixel_cases=2 startup_draw_cases=1 startup_input_cases=1 "
+        "startup_pipeline_timing_only_cases=1 "
         "steady_pair_ns=%" PRIu64 "\n",
         pair_nanoseconds);
     return 0;

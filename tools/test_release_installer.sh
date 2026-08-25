@@ -97,6 +97,8 @@ install_output="$(run_tool install --apply-settings --settings-file "$SETTINGS_F
 [[ -f "$GAME_MAC/.teso4m4-enable" \
   && -f "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
   && -f "$GAME_MAC/libMoltenVK.teso4m4.dylib" ]]
+grep -q '^mode=startup-pipeline-timing-control$' \
+  "$GAME_MAC/.teso4m4-enable"
 status_output="$(run_tool status)"
 [[ "$status_output" == *'Installed release: fixture-1.0.0'* ]]
 reinstall_output="$(run_tool install --skip-settings --yes)"

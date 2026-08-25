@@ -466,6 +466,10 @@ int main(int argc, char** argv) {
             instance, "vkGetPhysicalDeviceProperties");
     PFN_vkCreateDevice create_device =
         (PFN_vkCreateDevice)get_proc(instance, "vkCreateDevice");
+    PFN_vkGetDeviceProcAddr get_device_proc =
+        (PFN_vkGetDeviceProcAddr)get_proc(instance, "vkGetDeviceProcAddr");
+    PFN_vkDestroyDevice destroy_device =
+        (PFN_vkDestroyDevice)get_proc(instance, "vkDestroyDevice");
     PFN_vkDestroyInstance destroy_instance =
         (PFN_vkDestroyInstance)get_proc(instance, "vkDestroyInstance");
 
@@ -473,14 +477,17 @@ int main(int argc, char** argv) {
         enumerate_device_extensions;
     PFN_vkCreateDevice raw_create_device = create_device;
     const bool use_hdr_filter = getenv("TESO4M4_PROBE_HDR_FILTER") != NULL;
-    if (use_hdr_filter) {
+    const bool use_readiness = getenv("TESO4M4_PROBE_READINESS") != NULL;
+    if (use_hdr_filter || use_readiness) {
         teso4m4_compat_reset();
         teso4m4_compat_set_logger(&probe_compat_log);
         teso4m4_compat_set_enumerate_device_extensions(
             raw_enumerate_device_extensions);
         teso4m4_compat_set_create_device(raw_create_device);
+        teso4m4_compat_set_device_readiness(
+            get_device_proc, destroy_device, use_readiness);
     }
-    if (use_hdr_filter) {
+    if (use_hdr_filter || use_readiness) {
         enumerate_device_extensions =
             &teso4m4_enumerate_device_extension_properties;
         create_device = &teso4m4_create_device;
@@ -601,8 +608,6 @@ int main(int argc, char** argv) {
                     printf("hdr filter validation: %s\n",
                            filter_validation_succeeded ? "PASS" : "FAIL");
                 }
-                PFN_vkDestroyDevice destroy_device =
-                    (PFN_vkDestroyDevice)get_proc(instance, "vkDestroyDevice");
                 destroy_device(device, NULL);
             }
         }

@@ -668,10 +668,59 @@ This supports ignoring source-address relocation only. It does not support
 ignoring changed symbols, reference kinds or counts, proc routes or names,
 embedded runtime bytes, or patch signatures.
 
-The same run records a repeatable user-observed cold-start condition: the first
-one or two post-patch starts can show the pink startup surface and run at
-approximately 10 FPS before a later restart becomes clean. All three recorded
-starts reached the same bridge activation and compositor latch, which excludes
-total bridge inactivity but does not identify the cause. Shader compilation or
-pipeline-cache warm-up remains a hypothesis until per-start cache and GPU-time
-evidence distinguishes it from launcher lifetime and other startup state.
+The same run records a repeatable user-observed cold-start condition: a patched
+start can show the pink startup surface and run at approximately 10 FPS before
+a later restart becomes clean. Experiment 0035 captured a bad process and a
+smooth process started four seconds later without restarting the launcher.
+Both loaded MoltenVK 1.4.2, activated all 17 redirects, and reached the same
+79-draw/ordinal-150 compositor latch. Total bridge inactivity is therefore
+excluded for the bad process, and the neutralizer's production counters do not
+guarantee that no pink output can occur outside its bounded coverage.
+
+The bad process recorded no ESO-side `MTLCompilerService` connection or Metal
+compilation job during its approximately 42-second lifetime. The smooth restart
+recorded ten connection events and six successful jobs, beginning around 27
+seconds after launch. Normal compilation load therefore does not explain the
+bad FPS in this pair; compiler-service work appeared only on the smooth run.
+The leading hypothesis is instead that the bad process failed to enter or
+complete the normal Metal shader/pipeline initialization path. Unified-log
+absence cannot exclude in-process compilation, and no between-run cache
+snapshot or fixed-scene GPU telemetry exists, so cause and consequence remain
+unproven.
+
+Experiment 0036 separates compiler-service availability from ESO's later
+pipeline path. Its process-unique readiness canary produced ten service
+connections and one successful library plus one successful pipeline job in
+both a smooth session and a later low-FPS session. The smooth session then
+completed 33 additional compilation jobs; the approximately 105-second
+low-FPS process completed none beyond the canary. A successful independent
+compiler round trip is therefore not sufficient to prevent the failure. This
+falsifies compiler-service readiness as the direct fix and strengthens the
+interpretation that absent normal compilation is a downstream marker of ESO
+not entering its expected graphics-pipeline initialization path.
+
+A second consecutive low-FPS process repeated the canary-only signature, so a
+single ESO restart is not a deterministic repair. The same-size active
+pipeline cache changed SHA-256 between those two failed exits even though no
+normal ESO compiler jobs occurred and `ShaderCache.cooked` stayed unchanged.
+This establishes cross-process cache evolution during failed runs, not cache
+causality: ordinary serialization can change bytes without controlling the
+next startup. The user's observation that repeated process, and sometimes
+launcher, restarts eventually recover remains consistent with either this
+evolving state or a probabilistic initialization race.
+
+In a later sequence, three consecutive pink/low-FPS processes with the ZeniMax
+launcher left open each completed only the canary's two compiler jobs. After
+the user restarted the launcher through Steam, a short process added an opaque
+compiler request and the later completed gameplay process was normal. This is
+a launcher-lifetime correlation, not evidence that launcher restart is
+required or causal; the user has recovered through ESO-only retries in other
+sequences.
+
+The completed normal process also invalidates post-canary compiler work as an
+early state classifier. It remained canary-only for approximately 9 minutes 34
+seconds while the user observed normal performance, then completed three later
+jobs. A normal process can therefore use cached or already compiled work
+without producing the service activity absent from short failed runs. Direct
+graphics-pipeline call and return evidence is required to distinguish the
+states.

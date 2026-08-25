@@ -58,7 +58,11 @@ interruption never trusts a partial binary: it validates the exact executable,
 state, backup, and active Bink identity, restores the verified original, removes
 only patch-owned artifacts, and restarts from the clean baseline.
 
-Version 0.1.1 also supports a repeated Install after a game update. The package
+Version 0.1.2 retains repeated Install support after a compatible game update
+and selects the performance-first `startup-pipeline-timing-control` profile.
+The original pink startup placeholder may remain visible; the compositor
+neutralizer is deliberately excluded because low-FPS avoidance has priority.
+The package
 accepts its selected exact profile directly. For a different executable it
 first requires the embedded MoltenVK archive hash to remain unchanged, then
 runs the bundled native compatibility auditor over every compiled patch

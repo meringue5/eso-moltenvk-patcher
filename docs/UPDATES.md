@@ -135,7 +135,7 @@ and the launcher stopped, the existing guarded sequence still applies:
 6. Install only under the explicit source-tool installation gate.
 7. Ask the user for the bounded Steam-path runtime test.
 
-The public 0.1.1 package carries a native form of the same fail-closed boundary.
+The public 0.1.1 and later packages carry a native form of the same fail-closed boundary.
 After a launcher update, re-running its `Install.command` first requires an
 unchanged embedded MoltenVK archive, then validates all compiled patch bytes,
 old-runtime text references, and proc-query multiplicities. If those match, it

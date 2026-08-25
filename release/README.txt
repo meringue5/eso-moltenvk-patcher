@@ -10,6 +10,10 @@ QUICK START
    validated M4 2048 x 1280 settings template. There is no default choice.
 3. To uninstall, double-click Uninstall.command.
 
+Version 0.1.2 prioritizes FPS reliability. ESO's original pink placeholder may
+remain visible briefly during startup; this cosmetic screen alone does not
+mean the patch failed.
+
 Support diagnostics and payload files are kept in a hidden internal folder;
 they are not separate installation steps. Keep this folder together and do not
 move Install.command or Uninstall.command out of it.

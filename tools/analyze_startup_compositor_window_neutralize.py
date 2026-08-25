@@ -10,7 +10,7 @@ from pathlib import Path
 from check_startup_log import parse_runs, run_epoch
 
 
-MODE = (
+LEGACY_MODE = (
     "MODE: startup compositor neutralize enabled live_resources=0 "
     "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
     "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
@@ -18,6 +18,16 @@ MODE = (
     "draw_provenance=enabled input_provenance=enabled "
     "pixel_readback=disabled fallback=forward"
 )
+TIMING_MODE = (
+    "MODE: startup compositor neutralize enabled live_resources=0 "
+    "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+    "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
+    "generation_limit=2 generation_2_present_limit=180 "
+    "draw_provenance=enabled input_provenance=enabled "
+    "pipeline_timing=bounded readiness_canary=disabled "
+    "pixel_readback=disabled fallback=forward"
+)
+MODES = (LEGACY_MODE, TIMING_MODE)
 BEGIN = (
     "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 first_present=71 "
     "last_present=150 max_suppressed_draws=96 strategy=ordinal-window "
@@ -47,7 +57,7 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
     candidates = [
         (run_epoch(run_id), order, run_id, lines)
         for order, (run_id, lines) in enumerate(parse_runs(text).items())
-        if MODE in lines and BEGIN in lines
+        if any(mode in lines for mode in MODES) and BEGIN in lines
     ]
     if not candidates:
         return "INVALID", ["no fixed-window compositor neutralizer run was found"]
