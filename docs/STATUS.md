@@ -48,6 +48,13 @@ attestation before redirecting. Launcher-restored-original and
 bridge-retained update states are both covered by the disposable release
 transaction fixture.
 
+The public `v0.1.2` release is live. Its freshly downloaded ZIP and GitHub's
+server-reported asset digest both match SHA-256
+`7b587caa68bf729ec4ea75888223c72908672fb70c853a382d7215407d21e830`.
+The packaged bridge is byte-identical to the user-validated Experiment 0038
+installation. See Experiment
+[0039](experiments/0039-performance-first-0.1.2-release.md).
+
 The 12.0.8 user run activated all 17 redirects and reached the same 79-draw,
 ordinal-150 compositor latch in three consecutive starts. The final start and
 gameplay were normal. See Experiment

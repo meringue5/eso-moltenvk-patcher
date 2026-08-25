@@ -1,7 +1,7 @@
 # Experiment 0039: performance-first 0.1.2 release
 
 - Date: 2026-08-25
-- Outcome: **running; release candidate passed all local gates**
+- Outcome: **succeeded; public release and downloaded asset verified**
 - Rollback: **not applicable to package assembly; installed 0038 control retained**
 
 ## Question
@@ -67,5 +67,16 @@ marker:          startup-pipeline-timing-control
 ```
 
 The packaged bridge is byte-identical to the currently installed and
-user-validated Experiment 0038 bridge. Publication, public asset digest
-verification, and branch cleanup remain pending.
+user-validated Experiment 0038 bridge.
+
+Commit `554c55d` was pushed to `main` and tagged `v0.1.2`. GitHub published the
+non-draft, non-prerelease release at
+`https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.1.2`.
+The server-reported asset digest is
+`sha256:7b587caa68bf729ec4ea75888223c72908672fb70c853a382d7215407d21e830`.
+A fresh download of the public ZIP produced the same SHA-256, and the GitHub
+latest-release endpoint selected `v0.1.2` with that single named asset.
+
+No game, launcher, setting, cache, or installed bridge was changed during
+package publication. Branch cleanup follows only after this result is committed
+to `main`.
