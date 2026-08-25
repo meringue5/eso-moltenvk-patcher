@@ -1,8 +1,8 @@
 # Experiment 0038: no-neutralizer startup control
 
 - Date: 2026-08-25
-- Outcome: **running; source and non-game gates passed, installation pending**
-- Rollback: **available; Experiment 0037 remains installed until the transaction gate**
+- Outcome: **running; timing-only control installed after all gates passed**
+- Rollback: **available and verified; control currently installed**
 
 ## Question
 
@@ -115,4 +115,25 @@ preparation.
 
 ## Result
 
-Pending installation and user-controlled launch.
+Committed source `8f59bac` passed the exact-target and shared bundle-idle gates.
+Idle Steam was open, but no ESO, launcher, file-holder, or update activity was
+present. Experiment 0037 was restored to the pristine loader, verified
+inactive, and this control was installed without launching any application.
+
+The installed bridge is byte-identical to the prepared build at
+`837ce644b3fa133ae8a5322fff8c0947d6fb8ccfc8c8d205f20c230b746d1580`.
+The marker records `startup-pipeline-timing-control`; official MoltenVK remains
+`aef00b13...`; the exact ESO attestation and all three pipeline-cache identity
+headers pass. The restore/install transaction preserved these hashes:
+
+```text
+settings:             104e894803e70dae30fdab887474a8f3116387375614484d36c3755c58745fb0
+active 1.4.2 cache:   896a9326fa71733119b1ec2a6a8fe74beaa7a53aa5526aad7907713921647684
+old embedded backup: 72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+1.4.1 backup:        5869aa929521788681e665e803e5876487a4eb8cede9589f56c48e05087c404b
+shader cache:        055a55c821b5dfeb8db4d1f7d290ce8003a46924449d1a190afcde5a19822f6c
+```
+
+User-controlled validation is pending. Pink is expected because the cosmetic
+neutralizer is deliberately absent; the report needed is normal versus low
+FPS. No forced repetition or launcher restart is required.

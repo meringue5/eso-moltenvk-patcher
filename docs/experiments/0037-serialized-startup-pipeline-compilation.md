@@ -2,7 +2,7 @@
 
 - Date: 2026-08-17
 - Outcome: **failed as a reliability fix; diagnostic timing succeeded**
-- Rollback: **available and verified; rollback pending Experiment 0038 transaction**
+- Rollback: **complete; Experiment 0038 timing-only control installed**
 
 ## Question
 

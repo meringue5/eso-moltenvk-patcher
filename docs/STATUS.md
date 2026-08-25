@@ -56,15 +56,16 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the Experiment 0037 source candidate, derived from public 0.1.1,
+The user has the Experiment 0038 source control, derived from public 0.1.1,
 installed on the exact 12.0.8 target. Its bridge, enable marker, and official
 1.4.2 runtime are current. The active 1.4.2 pipeline cache, pre-bridge backup,
-and historical 1.4.1 cache backup all pass their recorded identity checks. The
-installed bridge is byte-identical to committed source build `30b499a`, uses
-MoltenVK's default non-maximized compilation policy, omits the failed readiness
-canary, and records bounded graphics-pipeline call timing. Installation
-followed a verified pristine restore and preserved all caches and settings.
-This installed state is not a public release claim.
+historical 1.4.1 cache backup, shader cache, and settings retained identical
+hashes across restore/install. The bridge is byte-identical to committed
+source build `8f59bac`, uses non-maximized compilation, omits the failed
+readiness canary, and records only bounded graphics-pipeline call timing. It
+deliberately disables compositor neutralization and all supporting startup
+audits. This installed state is a diagnostic control, not a public release
+claim.
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
@@ -163,8 +164,8 @@ the fault upstream of actual graphics-pipeline compilation.
 Experiment 0038 is the prepared next control. It keeps non-maximized
 compilation and bounded pipeline timing but disables only compositor
 neutralization and all supporting startup audits. Source and non-game gates
-pass; installation is pending the exact-target restore transaction. Pink is
-expected in this control and is not failure. Low FPS remains failure.
+pass, and the exact-target cache-preserving transaction installed the control.
+Pink is expected in this control and is not failure. Low FPS remains failure.
 
 ## Safety boundary
 
@@ -183,10 +184,9 @@ expected in this control and is not failure. Low FPS remains failure.
 
 ## Next gate
 
-Install Experiment 0038 through the verified cache-preserving restore path,
-then classify the next ordinary user-controlled start. A low-FPS recurrence
-excludes the neutralizer; normal starts are positive evidence but require
-natural repetition because the fault is intermittent. Record launcher
+Classify the next ordinary user-controlled Experiment 0038 start. A low-FPS
+recurrence excludes the neutralizer; normal starts are positive evidence but
+require natural repetition because the fault is intermittent. Record launcher
 lifetime only as a secondary correlation field and do not require launcher
 restart.
 
