@@ -1,8 +1,8 @@
 # Experiment 0037: serialized startup pipeline compilation
 
 - Date: 2026-08-17
-- Outcome: **running; candidate installed after source and non-game gates passed**
-- Rollback: **available and verified; candidate currently installed**
+- Outcome: **failed as a reliability fix; diagnostic timing succeeded**
+- Rollback: **available and verified; rollback pending Experiment 0038 transaction**
 
 ## Question
 
@@ -170,3 +170,25 @@ naturally updated caches. The active pipeline cache SHA-256 was
 `ShaderCache.cooked` was
 `dbda194202ea64f19b743ac6d00c86fb84448940cbd1909314078c91e7b0b3a2`.
 No live cache or setting was replaced.
+
+## Recurrence amendment: non-maximized compilation falsified as a repair
+
+After several days of apparently normal launches, the user reported visible
+pink and low FPS in run `20260825T141444.855727000Z-pid71293`. The exact
+Experiment 0037 bridge was active: MoltenVK 1.4.2 loaded, all 17 redirects
+activated, non-maximized compilation verified, 79 draws were suppressed, and
+the forward latch occurred at generation 2 ordinal 150.
+
+All 64 retained graphics-pipeline calls returned `VK_SUCCESS` with non-null
+outputs, and the slowest retained call took only 6.775 ms. The discriminator
+was before those calls: the bulk wave beginning with call 5 was not issued
+until about 32.60 seconds after the timing origin, versus about 11.76 seconds
+in the first normal run. ESO delayed `RENDERER Complete` to about 13.86 seconds
+after character selection, again matching the alternate path.
+
+This recurrence falsifies maximum-concurrent-compilation disablement as a
+reliable repair. The diagnostic succeeded by showing that ESO, rather than a
+slow or failed MoltenVK pipeline call, delayed entry into the bulk graphics
+pipeline path. Experiment 0038 is the planned single-variable control: retain
+the Experiment 0037 compilation and timing configuration while disabling only
+the cosmetic compositor neutralizer and its audit machinery.

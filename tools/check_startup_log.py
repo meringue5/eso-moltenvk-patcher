@@ -216,6 +216,13 @@ def evaluate_startup_log(
         "pipeline_timing=bounded readiness_canary=disabled "
         "pixel_readback=disabled fallback=forward"
     )
+    startup_pipeline_timing_control_mode = (
+        "MODE: startup pipeline timing control enabled live_resources=0 "
+        "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+        "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
+        "lifecycle_trace=pipeline-only pipeline_timing=bounded "
+        "readiness_canary=disabled compositor_neutralize=disabled"
+    )
     matched_modes = [
         mode
         for mode in (
@@ -237,6 +244,7 @@ def evaluate_startup_log(
             startup_input_audit_mode,
             startup_compositor_audit_mode,
             startup_compositor_neutralize_mode,
+            startup_pipeline_timing_control_mode,
         )
         if mode in lines
     ]
@@ -256,6 +264,7 @@ def evaluate_startup_log(
         or startup_input_audit_mode in matched_modes
         or startup_compositor_audit_mode in matched_modes
         or startup_compositor_neutralize_mode in matched_modes
+        or startup_pipeline_timing_control_mode in matched_modes
     )
     expected_live_resources = (
         0
@@ -268,6 +277,7 @@ def evaluate_startup_log(
             or startup_input_audit_mode in matched_modes
             or startup_compositor_audit_mode in matched_modes
             or startup_compositor_neutralize_mode in matched_modes
+            or startup_pipeline_timing_control_mode in matched_modes
         )
         else 1
     )
@@ -278,6 +288,7 @@ def evaluate_startup_log(
         1
         if performance_mode
         and startup_compositor_neutralize_mode not in matched_modes
+        and startup_pipeline_timing_control_mode not in matched_modes
         else 0
     )
     expected_configuration = (
@@ -469,6 +480,20 @@ def evaluate_startup_log(
             for line in lines
         ):
             reasons.append("startup compositor neutralizer enabled pixel readback")
+    if startup_pipeline_timing_control_mode in matched_modes:
+        if (
+            "STARTUP_PIPELINE_TIMING_BEGIN: call_limit=64 downstream=unchanged"
+            not in lines
+        ):
+            reasons.append("startup pipeline timing control was not armed exactly")
+        forbidden_prefixes = (
+            "STARTUP_COLOR_AUDIT_BEGIN:",
+            "STARTUP_DRAW_AUDIT_BEGIN:",
+            "STARTUP_INPUT_AUDIT_BEGIN:",
+            "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:",
+        )
+        if any(line.startswith(forbidden_prefixes) for line in lines):
+            reasons.append("startup pipeline timing control armed an audit or neutralizer")
 
     filter_lines = [line for line in lines if line.startswith("HDR_FILTER: ")]
     if not any(

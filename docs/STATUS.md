@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-08-17
+Last updated: 2026-08-25
 
 ## Current production baseline
 
@@ -152,6 +152,20 @@ This is one positive result for non-maximized compilation and a direct
 counterexample to neutralization alone being sufficient to cause low FPS, not
 yet a repeatability claim.
 
+That candidate later reproduced visible pink and low FPS. All 64 retained
+graphics-pipeline calls succeeded with non-null outputs and a maximum duration
+of 6.775 ms, but ESO issued the bulk wave about 20.8 seconds later than in the
+first normal Experiment 0037 run. Renderer completion was again delayed to
+about 13.86 seconds after character selection. Non-maximized compilation is
+therefore falsified as a reliability repair, while the timing evidence moves
+the fault upstream of actual graphics-pipeline compilation.
+
+Experiment 0038 is the prepared next control. It keeps non-maximized
+compilation and bounded pipeline timing but disables only compositor
+neutralization and all supporting startup audits. Source and non-game gates
+pass; installation is pending the exact-target restore transaction. Pink is
+expected in this control and is not failure. Low FPS remains failure.
+
 ## Safety boundary
 
 - An exact selected ESO target is accepted directly. A different executable is
@@ -169,13 +183,12 @@ yet a repeatability claim.
 
 ## Next gate
 
-Keep the installed Experiment 0037 candidate unchanged and classify naturally
-occurring future starts. Do not package it until repeated first launches
-support the non-maximized compilation policy. If low FPS recurs, prepare a
-single-variable control that retains non-maximized compilation and disables
-only the cosmetic compositor neutralizer; do not use `performance-aggressive`
-as that A/B because it changes compilation policy too. Record launcher lifetime
-only as a secondary correlation field.
+Install Experiment 0038 through the verified cache-preserving restore path,
+then classify the next ordinary user-controlled start. A low-FPS recurrence
+excludes the neutralizer; normal starts are positive evidence but require
+natural repetition because the fault is intermittent. Record launcher
+lifetime only as a secondary correlation field and do not require launcher
+restart.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

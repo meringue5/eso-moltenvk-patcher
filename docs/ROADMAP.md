@@ -12,17 +12,16 @@ This roadmap contains future work only. Current verified state is in
 - Treat Experiment 0036 as a failed fix: its process-unique canary reached the
   compiler service and completed both immediate jobs in a later low-FPS
   process, so readiness alone does not trigger ESO's normal pipeline path.
-- Validate Experiment 0037's single-variable candidate: restore MoltenVK's
-  default non-maximized compilation policy for the production profile and
-  correlate bounded `vkCreateGraphicsPipelines` entry/return timing with ESO's
-  renderer-completion path and user-visible state.
-- Preserve the first normal extended Experiment 0037 session as a positive
-  result, not proof of repeatability: all 64 retained pipeline calls returned
-  successfully and the renderer completed on the normal 2.77-second path.
-- If low FPS recurs under Experiment 0037, build a single-variable control that
-  keeps non-maximized compilation and disables only compositor neutralization.
-  The existing `performance-aggressive` mode is not a valid control because it
-  changes both variables.
+- Treat Experiment 0037 as a failed repair and successful diagnostic: low FPS
+  recurred with 64/64 successful fast pipeline calls because ESO delayed
+  issuing the bulk wave by about 20.8 seconds.
+- Install and validate Experiment 0038's single-variable control. It keeps
+  non-maximized compilation and bounded `vkCreateGraphicsPipelines` timing but
+  disables only compositor neutralization and its supporting startup audits.
+- Accept visible pink as expected in Experiment 0038. If low FPS recurs,
+  exclude the neutralizer and continue upstream of ESO's delayed
+  pipeline-request path; if starts remain normal, retain natural repetition
+  before claiming causality.
 - Repair the missing readiness-success production log record before reusing
   that canary as a diagnostic invariant; do not retain it as a claimed fix.
 - Classify each future start from direct graphics-pipeline call/return timing
@@ -42,9 +41,9 @@ This roadmap contains future work only. Current verified state is in
 - Treat the alternate ESO renderer-initialization path as confirmed: low starts
   pass through the game-data/character-data waits and delay `RENDERER Complete`
   to about 13 seconds versus about 2.7 seconds in the preceding normal start.
-  Maximum concurrent compilation is the current causal hypothesis; retain
-  cache revalidation and other startup resource state as alternatives and do
-  not delete or replace caches to force a result.
+  Maximum concurrent compilation has been falsified as a repair; retain cache
+  revalidation and other startup resource state as alternatives and do not
+  delete or replace caches to force a result.
 - Add a prelaunch preparation step only if it can be proven safe without
   starting ESO, bypassing authentication, or distributing proprietary cache
   data.

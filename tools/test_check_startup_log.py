@@ -514,6 +514,63 @@ class StartupLogTests(unittest.TestCase):
             verdict.reasons,
         )
 
+    def test_accepts_pipeline_timing_control_without_neutralizer(self) -> None:
+        text = good_log().replace(
+            "MODE: descriptor compatibility enabled live_resources=1 "
+            "metal_argument_buffers=0",
+            "MODE: startup pipeline timing control enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
+            "lifecycle_trace=pipeline-only pipeline_timing=bounded "
+            "readiness_canary=disabled compositor_neutralize=disabled",
+        ).replace(
+            "MOLTENVK_CONFIG: live_resources=1 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=1 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+            "MOLTENVK_CONFIG: live_resources=0 metal_argument_buffers=0 "
+            "use_mtlheap=1 synchronous_queue_submits=0 "
+            "command_pooling=1 prefill=0 "
+            "maximize_concurrent_compilation=0",
+        )
+        text += "\n" + record(
+            "STARTUP_PIPELINE_TIMING_BEGIN: call_limit=64 downstream=unchanged"
+        )
+        text += "\n" + "\n".join(
+            record(
+                f"GDPA: device=0x2 name={name} result=0x8 "
+                "returned=0x8 shim=none"
+            )
+            for name in (
+                "vkDeviceWaitIdle",
+                "vkCreateSwapchainKHR",
+                "vkDestroySwapchainKHR",
+                "vkGetSwapchainImagesKHR",
+                "vkCreateImageView",
+                "vkDestroyImageView",
+                "vkCreateRenderPass",
+                "vkDestroyRenderPass",
+                "vkCreateFramebuffer",
+                "vkDestroyFramebuffer",
+                "vkAcquireNextImageKHR",
+                "vkQueuePresentKHR",
+            )
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertTrue(verdict.passed, verdict.reasons)
+
+        text += "\n" + record(
+            "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 "
+            "first_present=71 last_present=150 max_suppressed_draws=96 "
+            "strategy=ordinal-window fallback=forward"
+        )
+        verdict = evaluate_startup_log(text)
+        self.assertFalse(verdict.passed)
+        self.assertIn(
+            "startup pipeline timing control armed an audit or neutralizer",
+            verdict.reasons,
+        )
+
     def test_rejects_no_command_pooling_mode_with_pooling_enabled(self) -> None:
         text = good_log().replace(
             "MODE: descriptor compatibility enabled live_resources=1 "

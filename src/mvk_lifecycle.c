@@ -3955,6 +3955,17 @@ PFN_vkVoidFunction teso4m4_lifecycle_intercept(
         pthread_mutex_unlock(&g_lock);
         return next_function;
     }
+    const bool pipeline_timing_only =
+        atomic_load(&g_startup_pipeline_timing) &&
+        !atomic_load(&g_startup_color_audit) &&
+        !atomic_load(&g_startup_draw_audit) &&
+        !atomic_load(&g_startup_input_audit) &&
+        !atomic_load(&g_startup_compositor_neutralize);
+    if (pipeline_timing_only &&
+        strcmp(name, "vkCreateGraphicsPipelines") != 0) {
+        pthread_mutex_unlock(&g_lock);
+        return next_function;
+    }
     if (strcmp(name, "vkDeviceWaitIdle") == 0) {
         g_next_device_wait_idle = (PFN_vkDeviceWaitIdle)next_function;
         returned = (PFN_vkVoidFunction)&traced_device_wait_idle;
