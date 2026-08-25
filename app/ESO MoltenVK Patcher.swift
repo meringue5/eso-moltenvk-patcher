@@ -100,7 +100,7 @@ final class PatcherEngine {
             try retagOriginalBink(renamedOriginal)
             try installReplacement(from: layout.bink, copyOriginalTo: renamedOriginal, replacement: replacement, preserveSource: false)
             try installReplacement(from: runtime, copyOriginalTo: layout.macOS.appendingPathComponent("libMoltenVK.teso4m4.dylib"), replacement: runtime, preserveSource: false)
-            try "startup-compositor-neutralize\n".write(to: marker, atomically: true, encoding: .utf8)
+            try "startup-pipeline-timing-control\n".write(to: marker, atomically: true, encoding: .utf8)
             let state = InstallState(targetPath: app.path, executableSHA256: try sha256(layout.executable), originalBinkSHA256: originalHash, installedAt: Date())
             try JSONEncoder().encode(state).write(to: stateDir.appendingPathComponent("install-state.json"))
         } catch {

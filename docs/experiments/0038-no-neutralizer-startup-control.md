@@ -1,7 +1,7 @@
 # Experiment 0038: no-neutralizer startup control
 
 - Date: 2026-08-25
-- Outcome: **running; timing-only control installed after all gates passed**
+- Outcome: **succeeded as the performance-first control; recurrence monitoring remains**
 - Rollback: **available and verified; control currently installed**
 
 ## Question
@@ -137,3 +137,47 @@ shader cache:        055a55c821b5dfeb8db4d1f7d290ce8003a46924449d1a190afcde5a198
 User-controlled validation is pending. Pink is expected because the cosmetic
 neutralizer is deliberately absent; the report needed is normal versus low
 FPS. No forced repetition or launcher restart is required.
+
+## First user-controlled validation: normal FPS with pink preserved
+
+The user launched through the normal authenticated path and reported the
+intended separation: the pink startup surface remained visible, while the
+low-FPS mode did not occur. Exact bridge run
+`20260825T142936.783874000Z-pid77809` confirms that the result came from this
+control rather than an inactive bridge:
+
+```text
+mode:                               startup-pipeline-timing-control
+compositor neutralizer records:     0
+pipeline timing begins/ends:        64 / 64
+pipeline results:                   64 VK_SUCCESS, non-null output each
+maximum retained call duration:     1.547 ms
+bulk wave beginning at call 5:     11.652 s
+CharacterSelect -> RENDERER Complete: 2.685 s
+visual result:                      pink present, FPS normal
+```
+
+The preceding low-FPS Experiment 0037 run began its bulk wave at 32.603
+seconds and completed the renderer 13.86 seconds after character selection.
+The control therefore returned to the previously observed normal startup path
+while leaving ESO's original pink placeholder visible.
+
+The active pipeline cache from the low run was preserved unchanged into this
+launch at SHA-256 `896a9326...`; no cache reset or replacement was used to
+obtain the normal result. The successful launch naturally rewrote it to
+`430044ec230504d438b8d41d4bc1559953aeab3220d78d57a846fc066292e4fb`.
+`ShaderCache.cooked` remained
+`055a55c821b5dfeb8db4d1f7d290ce8003a46924449d1a190afcde5a19822f6c`.
+This weakens a permanently poisoned cache as a sufficient explanation.
+
+Interpretation is deliberately bounded. Pink is not the cause of low FPS, and
+slow or failed MoltenVK pipeline compilation is excluded for this pair. The
+leading trigger is now the removed startup-neutralization subsystem: either
+the 79 draw-to-clear substitutions or the lifecycle/input/draw tracking needed
+to select them perturbed an existing ESO renderer-initialization race. A fresh
+launcher lifetime and the fault's intermittency remain confounders, so one
+normal control does not prove which part of that subsystem was causal.
+
+The user explicitly chose the performance-first product policy: ship this
+exact control, accept the visible pink interval as a known cosmetic issue, and
+keep its optional repair as future work rather than risking the low-FPS mode.

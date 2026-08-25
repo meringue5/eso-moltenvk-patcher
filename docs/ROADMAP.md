@@ -4,7 +4,7 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## P0: make the first post-install start reliable
+## P0: monitor the performance-first startup profile
 
 - Treat Experiment 0035's back-to-back pair as the current discriminator: both
   starts activated the full bridge, but only the smooth restart engaged
@@ -15,13 +15,12 @@ This roadmap contains future work only. Current verified state is in
 - Treat Experiment 0037 as a failed repair and successful diagnostic: low FPS
   recurred with 64/64 successful fast pipeline calls because ESO delayed
   issuing the bulk wave by about 20.8 seconds.
-- Install and validate Experiment 0038's single-variable control. It keeps
-  non-maximized compilation and bounded `vkCreateGraphicsPipelines` timing but
-  disables only compositor neutralization and its supporting startup audits.
-- Accept visible pink as expected in Experiment 0038. If low FPS recurs,
-  exclude the neutralizer and continue upstream of ESO's delayed
-  pipeline-request path; if starts remain normal, retain natural repetition
-  before claiming causality.
+- Preserve Experiment 0038's first normal result: with neutralization and all
+  supporting audits disabled, pink remained visible but FPS and renderer timing
+  returned to the normal path.
+- Ship and monitor the exact 0.1.2 performance-first profile. Do not force
+  repeated gameplay solely to manufacture confidence; classify naturally
+  occurring starts and treat any low-FPS recurrence as a release incident.
 - Repair the missing readiness-success production log record before reusing
   that canary as a diagnostic invariant; do not retain it as a claimed fix.
 - Classify each future start from direct graphics-pipeline call/return timing
@@ -48,10 +47,19 @@ This roadmap contains future work only. Current verified state is in
   starting ESO, bypassing authentication, or distributing proprietary cache
   data.
 
-## P1: preserve the 1.4.2 production release
+## P1: isolate an optional pink repair
+
+- Keep visible pink as an accepted cosmetic limitation in 0.1.2.
+- Before any compositor substitution returns, build a forward-only control that
+  retains equivalent tracking and locking without replacing draws. This must
+  separate tracking overhead from the 79 draw-to-clear substitutions.
+- Do not hold the completed 0.1.2 release branch open for this optional work;
+  use a new branch and experiment only when the investigation resumes.
+
+## P2: preserve the 1.4.2 production release
 
 - Keep official MoltenVK 1.4.2, the validated performance configuration, and
-  the exact bounded startup compositor neutralizer as one release baseline.
+  the exact no-neutralizer startup control as one release baseline.
 - Preserve the pristine loader, release restore record, historical runtime
   backups, all pipeline-cache generations, and the 48-key sanitized settings
   template with validated High subsampling.
@@ -60,7 +68,7 @@ This roadmap contains future work only. Current verified state is in
 - Treat regressions in ordinary play, live graphics resets, startup color, or
   restore behavior as release blockers.
 
-## P2: maintain ESO update support
+## P3: maintain ESO update support
 
 - Run the quick update gate after every ESO or launcher content update.
 - Allow the packaged auditor to re-attest relocation-only executable updates
@@ -70,7 +78,7 @@ This roadmap contains future work only. Current verified state is in
   install/remove testing, and a user-controlled normal-launch smoke test.
 - Never turn an unknown build into best-effort compatibility.
 
-## P3: broaden verified compatibility
+## P4: broaden verified compatibility
 
 - Validate the same exact client through a direct ZeniMax installation when a
   suitable user-controlled test is available.
@@ -78,7 +86,7 @@ This roadmap contains future work only. Current verified state is in
 - Keep Steam and launcher discovery edition-neutral; authentication remains the
   responsibility of the user's normal launcher.
 
-## P4: improve distribution
+## P5: improve distribution
 
 - Collect feedback on the unsigned ZIP's Terminal and Gatekeeper experience.
 - Consider a signed/notarized app or DMG if Apple Developer membership becomes

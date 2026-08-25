@@ -1,6 +1,6 @@
 # Troubleshooting history
 
-## First starts after installation
+## Pink startup and the historical low-FPS path
 
 On ESO 12.0.8, the user has repeatedly observed a start that shows the pink
 startup surface and then runs at approximately 10 FPS, followed by a clean,
@@ -15,12 +15,17 @@ restart recorded ten connection events and six successful Metal compilation
 jobs. Failure to enter the normal pipeline-compilation path is now the leading
 hypothesis, but cause and consequence are not yet separated.
 
-If the condition occurs, quitting ESO and starting it again through the same
-normal launcher path is the currently observed recovery; restarting the
-launcher is not always necessary. Preserve all caches. Do not delete them or
-distribute a warmed cache as a workaround. Future diagnosis should capture
-cache metadata, process boundaries, fixed-scene FPS/GPU timing, memory, thermal
-state, and compiler-service engagement for each start.
+Version 0.1.2 removes the cosmetic compositor neutralizer and its supporting
+startup audits. In the first exact control, the pink placeholder remained but
+FPS and renderer timing returned to normal. Pink alone therefore does not mean
+the bridge failed or that low FPS will follow; it is an accepted cosmetic
+limitation in the performance-first release.
+
+The low-FPS condition is intermittent, so one normal control is not proof of
+permanent resolution. If low FPS occurs under 0.1.2, exit normally and report
+the run before retrying. Preserve all caches. Do not delete them or distribute
+a warmed cache as a workaround. Capture cache metadata, process boundaries,
+fixed-scene FPS/GPU timing, memory, thermal state, and the bridge/interface logs.
 
 ## Exit crash and settings not saving
 

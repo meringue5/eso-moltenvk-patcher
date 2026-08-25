@@ -11,7 +11,7 @@ fi
 
 ROOT="${0:A:h:h}"
 source "$ROOT/scripts/lib-target.sh"
-MODE="${TESO4M4_MODE:-startup-compositor-neutralize}"
+MODE="${TESO4M4_MODE:-startup-pipeline-timing-control}"
 [[ "$MODE" == "performance-aggressive" \
   || "$MODE" == "startup-compositor-neutralize" \
   || "$MODE" == "startup-pipeline-timing-control" ]] || {

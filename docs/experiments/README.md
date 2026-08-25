@@ -48,7 +48,8 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0035 | 2026-08-16 | Cold-start compiler-service comparison | Bad and smooth starts both activated the bridge; compiler-service engagement distinguished the smooth restart | [Run](0035-cold-start-compiler-service-comparison.md) |
 | 0036 | 2026-08-17 | Runtime compiler-readiness gate | Failed as a cold-start fix; low FPS recurred after the canary's compiler jobs succeeded | [Run](0036-runtime-compiler-readiness-gate.md) |
 | 0037 | 2026-08-17 / 2026-08-25 | Serialized startup pipeline compilation | Failed as a reliability fix; recurrence showed ESO delayed issuing otherwise-fast successful pipeline calls | [Run](0037-serialized-startup-pipeline-compilation.md) |
-| 0038 | 2026-08-25 | No-neutralizer startup control | Running; timing-only control installed with caches and settings preserved | [Run](0038-no-neutralizer-startup-control.md) |
+| 0038 | 2026-08-25 | No-neutralizer startup control | Succeeded as the performance-first control; normal FPS with the original pink placeholder visible | [Run](0038-no-neutralizer-startup-control.md) |
+| 0039 | 2026-08-25 | Performance-first 0.1.2 release | Running; release candidate passed all local gates | [Run](0039-performance-first-0.1.2-release.md) |
 
 ## Recording policy
 

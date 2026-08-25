@@ -572,7 +572,7 @@ install() {
   copy_verified "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$MVK"
   ui_step 5 6 "Installing runtime bridge"
   commit_settings_template
-  print -r -- 'mode=startup-compositor-neutralize' > "$STATE_DIR/enable-marker"
+  print -r -- 'mode=startup-pipeline-timing-control' > "$STATE_DIR/enable-marker"
   print -r -- "eso_sha256=$ACTUAL_ESO_SHA256" >> "$STATE_DIR/enable-marker"
   copy_verified "$STATE_DIR/enable-marker" "$MARKER"
   rm -f "$STATE_DIR/enable-marker"

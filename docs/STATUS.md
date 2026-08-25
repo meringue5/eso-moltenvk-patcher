@@ -4,7 +4,7 @@ Last updated: 2026-08-25
 
 ## Current production baseline
 
-ESO MoltenVK Patcher 0.1.1 is the current production maintenance release. Its
+ESO MoltenVK Patcher 0.1.2 is the current production maintenance release. Its
 selected exact target is macOS ESO 12.0.8, databuild `3288357`, on Apple
 Silicon through Rosetta, and it loads official MoltenVK 1.4.2. The extended
 performance baseline remains the 12.0.7 gameplay checkpoint; 12.0.8 passed a
@@ -14,9 +14,10 @@ The production profile combines:
 
 - HDR extension and surface-format compatibility for ESO's legacy Vulkan path;
 - disabled Metal argument buffers;
-- asynchronous queue submission and concurrent pipeline compilation;
+- asynchronous queue submission and non-maximized pipeline compilation;
 - the validated `performance-aggressive` resource-check setting; and
-- the bounded startup compositor neutralizer from Experiment 0031.
+- the performance-first Experiment 0038 path with compositor neutralization
+  and its supporting startup audits disabled.
 
 The bundled M4 settings template now selects High subsampling
 (`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
@@ -37,8 +38,9 @@ and Uninstall commands, exact Steam/ZeniMax client discovery, custom-path
 fallback, verified backup and recovery state, explicit settings-template
 choice, and transaction recovery after an interrupted install.
 
-Version 0.1.1 adds ESO 12.0.8 and a packaged compatibility auditor for future
-game updates. An updated executable is accepted only when its embedded
+Version 0.1.2 retains 0.1.1's ESO 12.0.8 support and packaged compatibility
+auditor, then promotes the Experiment 0038 performance-first startup profile.
+An updated executable is accepted only when its embedded
 MoltenVK archive is unchanged and its exact patch bytes, complete old-runtime
 reference boundary, and proc-query shape match the compiled profile. Install
 then records the audited executable hash, and the runtime rechecks that
@@ -161,11 +163,13 @@ about 13.86 seconds after character selection. Non-maximized compilation is
 therefore falsified as a reliability repair, while the timing evidence moves
 the fault upstream of actual graphics-pipeline compilation.
 
-Experiment 0038 is the prepared next control. It keeps non-maximized
+Experiment 0038 is the selected performance-first control. It keeps non-maximized
 compilation and bounded pipeline timing but disables only compositor
 neutralization and all supporting startup audits. Source and non-game gates
 pass, and the exact-target cache-preserving transaction installed the control.
-Pink is expected in this control and is not failure. Low FPS remains failure.
+The first user-controlled launch retained pink but followed the normal FPS and
+renderer path: call 5 began at 11.652 seconds and renderer completion followed
+character selection by 2.685 seconds. Pink is expected and is not failure.
 
 ## Safety boundary
 
@@ -184,11 +188,11 @@ Pink is expected in this control and is not failure. Low FPS remains failure.
 
 ## Next gate
 
-Classify the next ordinary user-controlled Experiment 0038 start. A low-FPS
-recurrence excludes the neutralizer; normal starts are positive evidence but
-require natural repetition because the fault is intermittent. Record launcher
-lifetime only as a secondary correlation field and do not require launcher
-restart.
+Monitor ordinary 0.1.2 starts without forcing repetition. Any low-FPS
+recurrence remains a release-reliability incident; visible pink alone is the
+accepted cosmetic limitation. Keep a future pink repair isolated from the
+performance profile and require a forward-only tracking control before
+reintroducing compositor substitution.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

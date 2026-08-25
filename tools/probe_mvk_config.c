@@ -43,7 +43,8 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "startup-draw-audit") != 0 &&
          strcmp(argv[2], "startup-input-audit") != 0 &&
          strcmp(argv[2], "startup-compositor-audit") != 0 &&
-         strcmp(argv[2], "startup-compositor-neutralize") != 0)) {
+         strcmp(argv[2], "startup-compositor-neutralize") != 0 &&
+         strcmp(argv[2], "startup-pipeline-timing-control") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
@@ -53,7 +54,8 @@ int main(int argc, char** argv) {
             "performance-safe|performance-aggressive|startup-color-audit|"
             "startup-fx-neutralize|startup-present-pixel-audit|"
             "startup-draw-audit|startup-input-audit|"
-            "startup-compositor-audit|startup-compositor-neutralize\n",
+            "startup-compositor-audit|startup-compositor-neutralize|"
+            "startup-pipeline-timing-control\n",
             argv[0]);
         return 2;
     }
@@ -79,6 +81,7 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-input-audit") == 0 ||
         strcmp(argv[2], "startup-compositor-audit") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize") == 0 ||
+        strcmp(argv[2], "startup-pipeline-timing-control") == 0 ||
         legacy_allocation;
     const bool no_command_pooling =
         strcmp(argv[2], "no-command-pooling") == 0;
@@ -92,9 +95,13 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-draw-audit") == 0 ||
         strcmp(argv[2], "startup-input-audit") == 0 ||
         strcmp(argv[2], "startup-compositor-audit") == 0 ||
-        strcmp(argv[2], "startup-compositor-neutralize") == 0;
+        strcmp(argv[2], "startup-compositor-neutralize") == 0 ||
+        strcmp(argv[2], "startup-pipeline-timing-control") == 0;
     const bool performance_mode =
         performance_safe || performance_aggressive;
+    const bool nonmaximized_compilation =
+        strcmp(argv[2], "startup-compositor-neutralize") == 0 ||
+        strcmp(argv[2], "startup-pipeline-timing-control") == 0;
     if (descriptor_compat &&
         (setenv(
              "MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES",
@@ -108,7 +115,7 @@ int main(int argc, char** argv) {
           (setenv("MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS", "0", 1) != 0 ||
            setenv(
                "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
-               "1", 1) != 0)))) {
+               nonmaximized_compilation ? "0" : "1", 1) != 0)))) {
         perror("setenv");
         return 1;
     }
@@ -167,7 +174,9 @@ int main(int argc, char** argv) {
         configuration.prefillMetalCommandBuffers ==
             MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS_STYLE_NO_PREFILL &&
         configuration.shouldMaximizeConcurrentCompilation ==
-            (performance_mode ? VK_TRUE : VK_FALSE);
+            (performance_mode && !nonmaximized_compilation
+                 ? VK_TRUE
+                 : VK_FALSE);
     printf("MoltenVK configuration probe: %s\n", passed ? "PASS" : "FAIL");
     dlclose(library);
     return passed ? 0 : 1;

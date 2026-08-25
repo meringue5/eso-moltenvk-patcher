@@ -84,6 +84,11 @@ After a successful summary, close Terminal and start ESO through the same
 Steam or official ESO launcher you normally use. The patcher does not replace
 authentication and does not need to remain open.
 
+Version 0.1.2 may show ESO's original full-screen pink placeholder during
+startup. This is an accepted cosmetic limitation of the performance-first
+profile and does not by itself mean installation failed. Use the included
+Status command when the bridge identity needs verification.
+
 To uninstall, quit ESO and the launcher and double-click `Uninstall.command`. It
 verifies and restores the recorded original library. Keep the patcher folder
 until removal is complete. Support diagnostics remain available inside the
