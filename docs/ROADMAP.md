@@ -4,7 +4,19 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## P0: monitor the performance-first startup profile
+## P0: isolate the 0.1.2 low-FPS release incident
+
+- Treat Experiment 0040 as falsifying the no-neutralizer profile as a
+  reliability repair. The exact 0.1.2 control reproduced pink and low FPS,
+  delayed graphics-pipeline call 5 to 32.698 seconds, and delayed renderer
+  completion to 13.762 seconds even though all retained calls succeeded
+  quickly.
+- Exclude compositor neutralization as a necessary cause and do not describe
+  0.1.2 as a demonstrated low-FPS fix. Its packaging, exact-target, and
+  reversibility claims remain independently verified.
+- Add a bounded, forward-only timestamp trace for device, swapchain, queue,
+  and presentation readiness before the graphics-pipeline bulk wave. Do not
+  mutate calls or re-enable the pink neutralizer in that diagnostic.
 
 - Treat Experiment 0035's back-to-back pair as the current discriminator: both
   starts activated the full bridge, but only the smooth restart engaged
@@ -18,9 +30,8 @@ This roadmap contains future work only. Current verified state is in
 - Preserve Experiment 0038's first normal result: with neutralization and all
   supporting audits disabled, pink remained visible but FPS and renderer timing
   returned to the normal path.
-- Ship and monitor the exact 0.1.2 performance-first profile. Do not force
-  repeated gameplay solely to manufacture confidence; classify naturally
-  occurring starts and treat any low-FPS recurrence as a release incident.
+- Continue classifying naturally occurring starts without forcing repeated
+  gameplay; the low-FPS recurrence is now an open release incident.
 - Repair the missing readiness-success production log record before reusing
   that canary as a diagnostic invariant; do not retain it as a claimed fix.
 - Classify each future start from direct graphics-pipeline call/return timing

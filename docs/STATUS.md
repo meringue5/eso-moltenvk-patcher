@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-08-25
+Last updated: 2026-08-27
 
 ## Current production baseline
 
@@ -54,6 +54,11 @@ server-reported asset digest both match SHA-256
 The packaged bridge is byte-identical to the user-validated Experiment 0038
 installation. See Experiment
 [0039](experiments/0039-performance-first-0.1.2-release.md).
+
+Release packaging and digests remain verified, but 0.1.2 has an open
+reliability incident: the exact installed no-neutralizer profile later
+reproduced pink and low FPS. It is not a demonstrated low-FPS repair. See
+Experiment [0040](experiments/0040-no-neutralizer-low-fps-recurrence.md).
 
 The 12.0.8 user run activated all 17 redirects and reached the same 79-draw,
 ordinal-150 compositor latch in three consecutive starts. The final start and
@@ -178,6 +183,15 @@ The first user-controlled launch retained pink but followed the normal FPS and
 renderer path: call 5 began at 11.652 seconds and renderer completion followed
 character selection by 2.685 seconds. Pink is expected and is not failure.
 
+Experiment 0040 falsifies that control as a reliability repair. Exact run
+`20260826T173857.097445000Z-pid322` used the 0.1.2 mode with neutralization and
+all supporting audits disabled, yet the user observed pink and low FPS. All 64
+retained graphics-pipeline calls succeeded; call 5 began at 32.698 seconds and
+completed in 1.425 ms. ESO took 13.762 seconds from `CharacterSelect` to
+`RENDERER Complete`. The shader cache stayed byte-identical to the normal 0038
+run. The fault therefore remains upstream of actual graphics-pipeline
+creation, and compositor neutralization is excluded as a necessary cause.
+
 ## Safety boundary
 
 - An exact selected ESO target is accepted directly. A different executable is
@@ -195,11 +209,12 @@ character selection by 2.685 seconds. Pink is expected and is not failure.
 
 ## Next gate
 
-Monitor ordinary 0.1.2 starts without forcing repetition. Any low-FPS
-recurrence remains a release-reliability incident; visible pink alone is the
-accepted cosmetic limitation. Keep a future pink repair isolated from the
-performance profile and require a forward-only tracking control before
-reintroducing compositor substitution.
+The 0.1.2 release-reliability incident is open. Preserve naturally occurring
+runs without forcing gameplay, but move the diagnostic boundary upstream of
+graphics-pipeline creation to a forward-only device/swapchain/queue/present
+timestamp trace. Visible pink alone remains cosmetic; do not reintroduce its
+neutralizer or claim launcher/cache causality while the low-FPS trigger is
+unresolved.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

@@ -724,3 +724,23 @@ jobs. A normal process can therefore use cached or already compiled work
 without producing the service activity absent from short failed runs. Direct
 graphics-pipeline call and return evidence is required to distinguish the
 states.
+
+## Neutralizer removal does not prevent the alternate low-FPS startup path
+
+Experiment 0040 captures a naturally occurring pink/low-FPS launch in the
+exact 0.1.2 `startup-pipeline-timing-control` profile. The bridge loaded the
+expected runtime, activated all 17 redirects, used non-maximized compilation,
+and recorded compositor neutralization disabled. All 64 retained
+`vkCreateGraphicsPipelines` calls returned `VK_SUCCESS` with non-null output.
+Call 5 nevertheless arrived at 32.698 seconds and completed in 1.425 ms, while
+ESO delayed `RENDERER Complete` until 13.762 seconds after `CharacterSelect`.
+
+This independently reproduces the earlier neutralized low-run timing signature
+and falsifies Experiment 0038's first normal launch as a reliability repair.
+The neutralizer is not a necessary cause of low FPS. Slow or failed graphics
+pipeline compilation remains excluded for the observed pair; ESO enters the
+alternate path before it issues the bulk graphics-pipeline wave. The unchanged
+shader cache and valid pipeline-cache identity weaken corruption as a
+sufficient explanation, while ordinary pipeline-cache byte evolution remains
+non-causal evidence. The next useful observation boundary is the forward-only
+device/swapchain/queue/present sequence upstream of pipeline creation.

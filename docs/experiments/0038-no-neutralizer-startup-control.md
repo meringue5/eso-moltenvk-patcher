@@ -181,3 +181,19 @@ normal control does not prove which part of that subsystem was causal.
 The user explicitly chose the performance-first product policy: ship this
 exact control, accept the visible pink interval as a known cosmetic issue, and
 keep its optional repair as future work rather than risking the low-FPS mode.
+
+## 2026-08-27 amendment: low FPS recurred without the neutralizer
+
+A naturally occurring 0.1.2 launch later reproduced both pink and low FPS in
+the exact no-neutralizer control. Run
+`20260826T173857.097445000Z-pid322` loaded the expected bridge and runtime,
+redirected all 17 entry points, recorded `compositor_neutralize=disabled`, and
+completed 64/64 retained graphics-pipeline calls successfully. Call 5 did not
+begin until 32.698 seconds, while `CharacterSelect -> RENDERER Complete` took
+13.762 seconds. This matches the earlier alternate path despite removal of the
+neutralization subsystem.
+
+The first normal result remains valid as an observation but is superseded as a
+repair hypothesis. Neutralizer removal does not prevent low FPS, and the
+neutralizer is no longer a leading causal candidate. See Experiment
+[0040](0040-no-neutralizer-low-fps-recurrence.md).

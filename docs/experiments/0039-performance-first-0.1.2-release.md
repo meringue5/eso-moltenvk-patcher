@@ -80,3 +80,12 @@ latest-release endpoint selected `v0.1.2` with that single named asset.
 No game, launcher, setting, cache, or installed bridge was changed during
 package publication. Branch cleanup follows only after this result is committed
 to `main`.
+
+## 2026-08-27 release-reliability amendment
+
+The package and publication verification above remain valid, but a naturally
+occurring launch of the byte-identical installed bridge reproduced pink and
+low FPS. Experiment [0040](0040-no-neutralizer-low-fps-recurrence.md) confirms
+that the exact 0.1.2 profile entered the same delayed renderer path with the
+neutralizer disabled. Version 0.1.2 must therefore not be described as a
+demonstrated low-FPS fix; its release-reliability incident remains open.
