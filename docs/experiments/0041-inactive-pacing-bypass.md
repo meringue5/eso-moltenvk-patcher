@@ -70,6 +70,8 @@ Python compile / shell syntax / git diff check: PASS
 MoltenVK 1.4.2 Metal compatibility probe: PASS on Apple M4
 embedded MoltenVK 1.0.18 comparison probe: PASS on Apple M4
 exact post-patch control-flow review: PASS
+bridge architecture and original-Bink re-export: PASS
+pristine restore identity against target manifest: PASS
 ```
 
 The exact 12.0.8 disassembly rejoins at `0x30f84`, jumps to `0x30f9e`,
@@ -104,10 +106,18 @@ built artifacts exactly:
 
 ```text
 bridge:        2b7520c28a514abc2a2991340f1e6c0be5ba582fc6dc39b3f568acc73dba40b8
+pristine Bink: c269d54e23a0669037df39a77386f0b5e380f715d4416091d028ab9ca20802eb
 original Bink: f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927
 MoltenVK:      aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
 marker:        startup-inactive-pacing-bypass
 ```
+
+The pristine, retagged-original, and replacement-runtime identities match the
+selected target manifest rather than only matching local build copies. The
+bridge is an x86_64 Mach-O and re-exports
+`@loader_path/libBink2Macx64.teso4m4-original.dylib`; the replacement MoltenVK
+contains both x86_64 and arm64 slices, including the x86_64 slice used by ESO
+under Rosetta.
 
 No game, launcher, or Steam process was launched by the agent.
 
