@@ -20,6 +20,7 @@
 
 #include "mvk_compat.h"
 #include "eso_fx_sentinel.h"
+#include "eso_inactive_pacing.h"
 #include "mvk_lifecycle.h"
 #include "mvk_present_pixel.h"
 #include "mvk_reset_trace.h"
@@ -44,6 +45,7 @@ static bool g_startup_input_audit_enabled;
 static bool g_startup_compositor_audit_enabled;
 static bool g_startup_compositor_neutralize_enabled;
 static bool g_startup_pipeline_timing_enabled;
+static bool g_inactive_pacing_bypass_enabled;
 
 typedef enum {
     TESO4M4_LOG_ERROR = 0,
@@ -74,6 +76,7 @@ typedef enum {
     TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT,
     TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE,
     TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL,
+    TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -144,6 +147,7 @@ static Teso4m4LogLevel classify_log_message(const char* message) {
         starts_with(message, "MOLTENVK_CONFIG:") ||
         starts_with(message, "MOLTENVK:") || starts_with(message, "HDR_") ||
         starts_with(message, "ACTIVE:") ||
+        starts_with(message, "INACTIVE_PACING_") ||
         starts_with(message, "RUNTIME_READINESS:") ||
         starts_with(message, "STARTUP_PIPELINE_") ||
         starts_with(message, "ESO SHA-256:") ||
@@ -434,6 +438,9 @@ static Teso4m4Mode marker_mode(const char* directory,
     if (strcmp(mode, "startup-pipeline-timing-control") == 0) {
         return TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
     }
+    if (strcmp(mode, "startup-inactive-pacing-bypass") == 0) {
+        return TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -486,7 +493,8 @@ static bool verify_moltenvk_configuration(
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
-        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
+        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
     const VkBool32 expected_live_resources =
         (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
          mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
@@ -496,7 +504,8 @@ static bool verify_moltenvk_configuration(
          mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
-         mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL)
+         mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
+         mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS)
             ? VK_FALSE
             : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
@@ -504,7 +513,8 @@ static bool verify_moltenvk_configuration(
     const VkBool32 expected_concurrent_compilation =
         performance_mode &&
                 mode != TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE &&
-                mode != TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL
+                mode != TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL &&
+                mode != TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS
             ? VK_TRUE
             : VK_FALSE;
     if (configuration.liveCheckAllResources != expected_live_resources ||
@@ -546,12 +556,22 @@ static void require_rx_restore(const uintptr_t* pages, size_t count,
     }
 }
 
-static bool install_patches(const struct mach_header_64* header, void* moltenvk) {
+static bool install_patches(const struct mach_header_64* header, void* moltenvk,
+                            bool inactive_pacing_bypass) {
     void* destinations[ESO_TARGET_COUNT];
-    uintptr_t writable_pages[ESO_TARGET_COUNT];
+    uintptr_t writable_pages[ESO_TARGET_COUNT + 1];
     size_t writable_page_count = 0;
+    uint8_t inactive_pacing_patch[TESO4M4_INACTIVE_PACING_PATCH_SIZE] = {0};
     const long page_size = sysconf(_SC_PAGESIZE);
     if (page_size <= 0) {
+        return false;
+    }
+
+    if (inactive_pacing_bypass &&
+        (!ESO_HAS_INACTIVE_PACING_TARGET ||
+         !teso4m4_inactive_pacing_prepare(
+             header, &kInactivePacingTarget, inactive_pacing_patch))) {
+        log_message("ERROR: inactive pacing patch preparation failed");
         return false;
     }
 
@@ -630,6 +650,38 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
         writable_pages[writable_page_count++] = page;
     }
 
+    if (inactive_pacing_bypass) {
+        const uintptr_t address =
+            (uintptr_t)header + kInactivePacingTarget.image_offset;
+        const uintptr_t page =
+            address & ~((uintptr_t)page_size - 1);
+        if (address + TESO4M4_INACTIVE_PACING_PATCH_SIZE >
+            page + (uintptr_t)page_size) {
+            log_message("ERROR: inactive pacing patch crosses a code page");
+            require_rx_restore(writable_pages, writable_page_count,
+                               (mach_vm_size_t)page_size);
+            return false;
+        }
+        bool seen = false;
+        for (size_t index = 0; index < writable_page_count; ++index) {
+            seen |= writable_pages[index] == page;
+        }
+        if (!seen) {
+            const kern_return_t result = mach_vm_protect(
+                mach_task_self(), page, (mach_vm_size_t)page_size, FALSE,
+                VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
+            if (result != KERN_SUCCESS) {
+                log_message(
+                    "ERROR: inactive pacing code page is not writable: %s",
+                    mach_error_string(result));
+                require_rx_restore(writable_pages, writable_page_count,
+                                   (mach_vm_size_t)page_size);
+                return false;
+            }
+            writable_pages[writable_page_count++] = page;
+        }
+    }
+
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
         uint8_t patch[12] = {0x48, 0xb8};
         uint64_t destination = (uint64_t)(uintptr_t)destinations[index];
@@ -641,7 +693,19 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk)
         __builtin___clear_cache((char*)address, (char*)address + sizeof(patch));
     }
 
+    if (inactive_pacing_bypass) {
+        uint8_t* address =
+            (uint8_t*)header + kInactivePacingTarget.image_offset;
+        memcpy(address, inactive_pacing_patch, sizeof(inactive_pacing_patch));
+        __builtin___clear_cache(
+            (char*)address,
+            (char*)address + sizeof(inactive_pacing_patch));
+    }
+
     require_rx_restore(writable_pages, writable_page_count, (mach_vm_size_t)page_size);
+    if (inactive_pacing_bypass) {
+        teso4m4_inactive_pacing_did_install();
+    }
     return true;
 }
 
@@ -664,6 +728,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     teso4m4_fx_sentinel_set_logger(&compat_log_message);
     teso4m4_fx_sentinel_set_window_function(
         &teso4m4_lifecycle_startup_window_open);
+    teso4m4_inactive_pacing_reset();
+    teso4m4_inactive_pacing_set_logger(&compat_log_message);
     g_reset_trace_enabled = false;
     g_startup_color_audit_enabled = false;
     g_startup_present_pixel_audit_enabled = false;
@@ -672,6 +738,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_startup_compositor_audit_enabled = false;
     g_startup_compositor_neutralize_enabled = false;
     g_startup_pipeline_timing_enabled = false;
+    g_inactive_pacing_bypass_enabled = false;
     log_message("RUN_START: bridge starting log_level=%s",
                 log_level_name(g_log_level));
 
@@ -689,6 +756,11 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     if (mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE &&
         !ESO_HAS_FX_SENTINEL_TARGET) {
         log_message("SKIP: selected target has no FX sentinel profile");
+        return;
+    }
+    if (mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS &&
+        !ESO_HAS_INACTIVE_PACING_TARGET) {
+        log_message("SKIP: selected target has no inactive pacing profile");
         return;
     }
     g_reset_trace_enabled =
@@ -725,7 +797,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_pipeline_timing_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
-        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
+        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
+    g_inactive_pacing_bypass_enabled =
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
         mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
@@ -736,7 +811,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
-        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL;
+        mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
     teso4m4_lifecycle_set_enabled(
         !performance_mode || g_startup_color_audit_enabled ||
         g_startup_pipeline_timing_enabled);
@@ -768,7 +844,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
              mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
-             mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL) ? "0" : "1",
+             mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
+             mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS) ? "0" : "1",
             1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -781,7 +858,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
          setenv(
              "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
              (mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
-              mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL) ? "0" : "1",
+              mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
+              mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS) ? "0" : "1",
              1) != 0)) {
         log_message("ERROR: could not set selected compatibility mode: %s",
                     strerror(errno));
@@ -881,6 +959,14 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
             "lifecycle_trace=pipeline-only pipeline_timing=bounded "
             "readiness_canary=disabled compositor_neutralize=disabled");
+    } else if (mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS) {
+        log_message(
+            "MODE: startup inactive pacing bypass enabled live_resources=0 "
+            "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
+            "synchronous_queue_submits=0 maximize_concurrent_compilation=0 "
+            "lifecycle_trace=pipeline-only pipeline_timing=bounded "
+            "readiness_canary=disabled compositor_neutralize=disabled "
+            "inactive_100ms_sleep=bypassed");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "
@@ -951,7 +1037,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
                 "rgba8,bgra8,rgba16f");
         }
     }
-    if (!install_patches(header, moltenvk)) {
+    if (!install_patches(
+            header, moltenvk, g_inactive_pacing_bypass_enabled)) {
         log_message("ERROR: patch transaction aborted");
         return;
     }

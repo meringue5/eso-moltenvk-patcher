@@ -8,6 +8,13 @@
     "version": "12.0.8",
     "databuild": "3288357"
   },
+  "experimental_targets": {
+    "inactive_pacing": {
+      "image_offset": "0x30f78",
+      "expected_bytes": "7527bfa0860100e88a788c03",
+      "active_flag_offset": "0x4a0c93c"
+    }
+  },
   "proc_addr_slots": {
     "vkGetInstanceProcAddr": "0x4b3be90",
     "vkGetDeviceProcAddr": "0x4b3be98"

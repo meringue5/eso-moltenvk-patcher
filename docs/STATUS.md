@@ -212,13 +212,23 @@ creation, and compositor neutralization is excluded as a necessary cause.
 The 0.1.2 release-reliability incident is open, but its leading mechanism is
 now localized outside MoltenVK. The exact ESO main loop sleeps for 100,000
 microseconds per iteration whenever its internal AppKit active-state byte is
-false, matching the observed approximately 10-FPS mode. The next candidate is
-a single-variable, exact-target runtime bypass of only that inactive-loop
-sleep, with bounded logging of the internal false state. Preserve the current
-MoltenVK runtime, compilation policy, visible pink output, settings, caches,
-focus-event propagation, and launcher path. Device/swapchain/present tracing
-is no longer the first diagnostic boundary unless the focused bypass fails to
-remove the low-FPS state.
+false, matching the observed approximately 10-FPS mode. Experiment
+[0041](experiments/0041-inactive-pacing-bypass.md) implements the
+single-variable, exact-target runtime bypass of only that inactive-loop sleep,
+with bounded logging of the internal false state. Its build, dedicated x86_64
+patch probe, 134 Python tests, release transaction regression, static checks,
+and both Metal-backed Vulkan probes pass. After the user closed the launcher,
+a cache-preserving restore/install cycle passed the shared bundle-idle gate.
+The installed bridge, renamed original, and MoltenVK hashes exactly match the
+built candidate; the marker selects `startup-inactive-pacing-bypass`; the
+restore source remains available; and every preserved cache identity passes.
+
+The next gate is one user-controlled ordinary Steam-authenticated launch.
+Preserve the current MoltenVK runtime, compilation policy, visible pink output,
+settings, caches, focus-event propagation, and launcher path. Correlate the
+user's FPS result with the new bounded active-state log. Device/swapchain/
+present tracing is no longer the first diagnostic boundary unless the focused
+bypass fails to remove the low-FPS state.
 
 Visible pink alone remains cosmetic; do not reintroduce its neutralizer or
 claim launcher/cache causality while the activation event-order trigger is

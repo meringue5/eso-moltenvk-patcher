@@ -18,6 +18,7 @@ LC_UUID = 0x1B
 PATCH_SIZE = 12
 FX_SENTINEL_PATCH_SIZE = 17
 FX_SENTINEL_CONSTANT_SIZE = 16
+INACTIVE_PACING_PATCH_SIZE = 12
 
 
 def macho_uuid(data: bytes) -> bytes:
@@ -96,6 +97,62 @@ def main() -> None:
     lines.extend(("};", ""))
 
     experimental = manifest.get("experimental_targets", {})
+    inactive_pacing = experimental.get("inactive_pacing")
+    if inactive_pacing is None:
+        lines.extend(
+            (
+                "#define ESO_HAS_INACTIVE_PACING_TARGET 0",
+                "static const Teso4m4InactivePacingTarget "
+                "kInactivePacingTarget = {0};",
+                "",
+            )
+        )
+    else:
+        if not isinstance(inactive_pacing, dict):
+            raise SystemExit("inactive pacing profile must be an object")
+        pacing_offset = int(inactive_pacing["image_offset"], 0)
+        pacing_expected = executable[
+            pacing_offset : pacing_offset + INACTIVE_PACING_PATCH_SIZE
+        ]
+        recorded_pacing = inactive_pacing.get("expected_bytes")
+        if (
+            len(pacing_expected) != INACTIVE_PACING_PATCH_SIZE
+            or not isinstance(recorded_pacing, str)
+            or len(recorded_pacing) != INACTIVE_PACING_PATCH_SIZE * 2
+            or recorded_pacing.lower() != pacing_expected.hex()
+        ):
+            raise SystemExit(
+                "recorded inactive pacing bytes mismatch\n"
+                f"expected: {recorded_pacing}\nactual:   {pacing_expected.hex()}"
+            )
+        delay = struct.unpack_from("<I", pacing_expected, 3)[0]
+        if (
+            pacing_expected[0:3] != bytes((0x75, 0x27, 0xBF))
+            or delay != 100000
+            or pacing_expected[7] != 0xE8
+        ):
+            raise SystemExit(
+                "inactive pacing target is not the analyzed 100ms sleep branch"
+            )
+        active_flag_offset = int(inactive_pacing["active_flag_offset"], 0)
+        if active_flag_offset <= 0:
+            raise SystemExit("inactive pacing active flag offset is invalid")
+        pacing_bytes = ", ".join(
+            f"0x{byte:02x}" for byte in pacing_expected
+        )
+        lines.extend(
+            (
+                "#define ESO_HAS_INACTIVE_PACING_TARGET 1",
+                "static const Teso4m4InactivePacingTarget "
+                "kInactivePacingTarget = {",
+                f"    0x{pacing_offset:x}ULL,",
+                f"    {{{pacing_bytes}}},",
+                f"    0x{active_flag_offset:x}ULL,",
+                "};",
+                "",
+            )
+        )
+
     sentinel = experimental.get("fx_material_initializer")
     if sentinel is None:
         lines.extend(

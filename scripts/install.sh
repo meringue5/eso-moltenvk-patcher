@@ -14,7 +14,8 @@ source "$ROOT/scripts/lib-target.sh"
 MODE="${TESO4M4_MODE:-startup-pipeline-timing-control}"
 [[ "$MODE" == "performance-aggressive" \
   || "$MODE" == "startup-compositor-neutralize" \
-  || "$MODE" == "startup-pipeline-timing-control" ]] || {
+  || "$MODE" == "startup-pipeline-timing-control" \
+  || "$MODE" == "startup-inactive-pacing-bypass" ]] || {
   echo "Unsupported production maintenance mode: $MODE"
   exit 1
 }

@@ -17,11 +17,10 @@ This roadmap contains future work only. Current verified state is in
 - Treat the exact ESO inactive-loop path as the leading mechanism: when its
   internal application-active byte is false, `GameClient::mainLoop` calls
   `usleep(100000)`, directly imposing an approximately 10-Hz outer loop.
-- Build one exact-target, reversible candidate that bypasses only this
-  inactive-loop sleep and records when the internal state is false. Preserve
-  focus event propagation, settings, caches, the official MoltenVK runtime,
-  the no-neutralizer profile, and the launcher path. Validate the complete
-  original instruction sequence and fail closed on any unknown executable.
+- Run one user-controlled ordinary Steam-authenticated launch of the installed
+  Experiment 0041 candidate. Classify normal versus low FPS and correlate the
+  observation with the bounded internal application-active state log. Pink
+  alone remains an expected cosmetic result rather than a failure.
 - Use a bounded, forward-only device/swapchain/queue/present trace only if the
   focused inactive-loop bypass does not eliminate low FPS. Do not re-enable
   the pink neutralizer in either diagnostic.
