@@ -209,11 +209,19 @@ creation, and compositor neutralization is excluded as a necessary cause.
 
 ## Next gate
 
-The 0.1.2 release-reliability incident is open. Preserve naturally occurring
-runs without forcing gameplay, but move the diagnostic boundary upstream of
-graphics-pipeline creation to a forward-only device/swapchain/queue/present
-timestamp trace. Visible pink alone remains cosmetic; do not reintroduce its
-neutralizer or claim launcher/cache causality while the low-FPS trigger is
+The 0.1.2 release-reliability incident is open, but its leading mechanism is
+now localized outside MoltenVK. The exact ESO main loop sleeps for 100,000
+microseconds per iteration whenever its internal AppKit active-state byte is
+false, matching the observed approximately 10-FPS mode. The next candidate is
+a single-variable, exact-target runtime bypass of only that inactive-loop
+sleep, with bounded logging of the internal false state. Preserve the current
+MoltenVK runtime, compilation policy, visible pink output, settings, caches,
+focus-event propagation, and launcher path. Device/swapchain/present tracing
+is no longer the first diagnostic boundary unless the focused bypass fails to
+remove the low-FPS state.
+
+Visible pink alone remains cosmetic; do not reintroduce its neutralizer or
+claim launcher/cache causality while the activation event-order trigger is
 unresolved.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the

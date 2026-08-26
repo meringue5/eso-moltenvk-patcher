@@ -77,3 +77,53 @@ queue, and presentation readiness before the delayed bulk wave. Launcher
 lifetime and cache evolution remain correlations, not required workarounds or
 causal assumptions.
 
+## Static control-flow amendment: 2026-08-27
+
+Read-only analysis of the exact attested ESO executable identified a direct
+10-FPS path outside MoltenVK. `GameClient::mainLoop` calls
+`platformMainLoop`, checks an internal application-active byte, and calls
+`usleep(100000)` before the next iteration whenever that byte is false. The
+100,000-microsecond delay is an exact 0.1-second outer-loop sleep.
+
+The reproducible image-relative locations for this exact target are:
+
+```text
+GameClient::mainLoop inactive branch: 0x30f78
+branch/sleep bytes:                    75 27 bf a0 86 01 00 e8 8a 78 8c 03
+active-state setter:                   0x164792
+applicationDidBecomeActive:            0x31ed0
+applicationDidResignActive:            0x31f22
+internal application-active byte:      0x4a0c93c
+```
+
+These offsets are diagnostic fingerprints for the attested executable only;
+they are not portable patch locations for any other ESO build.
+
+The same binary implements `applicationDidBecomeActive:` and
+`applicationDidResignActive:`. They are the only direct control transfers to
+the internal active-state setter found by the static scan, passing true and
+false respectively. The active byte is read directly by the outer main loop;
+the user-visible background-FPS settings are a separate registered graphics
+setting path. The preserved configuration selected a 60-FPS background cap,
+so that setting does not account for the observed approximately 10-FPS mode.
+
+This changes the leading interpretation. The low-FPS symptom is consistent
+with ESO retaining a false internal application-active state while its custom
+main loop continues to render at the hard-coded inactive cadence. Earlier
+Experiment 0010 WindowServer evidence recorded ESO as frontmost and receiving
+keyboard focus during a comparable approximately 8-FPS/cursor-mode start,
+which weakens OS-level background throttling and supports an internal stale or
+misordered activation state. The exact event-order defect is still a
+hypothesis because no failing run recorded the internal byte transition.
+
+Pink startup output remains a separate rendering symptom: this inactive-loop
+sleep exists in ESO's AppKit control flow and does not depend on compositor
+neutralization or graphics-pipeline compilation.
+
+The next single-variable candidate is therefore an exact-target, reversible
+runtime bypass of only the inactive-loop `usleep(100000)` branch, while
+retaining the official MoltenVK runtime, current compilation policy, visible
+pink output, settings, caches, focus event propagation, and normal launcher
+path. A candidate must validate the complete original instruction sequence,
+restore RX permissions on every path, log when the stale inactive state is
+observed, and remain fail-closed on any unknown executable.

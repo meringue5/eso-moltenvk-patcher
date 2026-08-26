@@ -744,3 +744,31 @@ shader cache and valid pipeline-cache identity weaken corruption as a
 sufficient explanation, while ordinary pipeline-cache byte evolution remains
 non-causal evidence. The next useful observation boundary is the forward-only
 device/swapchain/queue/present sequence upstream of pipeline creation.
+
+## ESO has a separate hard-coded inactive 10-FPS outer-loop path
+
+Read-only control-flow analysis of the exact ESO 12.0.8 executable identifies
+a non-MoltenVK explanation for the characteristic low-FPS state.
+`GameClient::mainLoop` calls `platformMainLoop` and then reads an internal
+application-active byte. If the byte is false, it calls `usleep(100000)` before
+the next iteration. That fixed 0.1-second sleep directly produces an
+approximately 10-Hz outer loop.
+
+`applicationDidBecomeActive:` and `applicationDidResignActive:` pass true and
+false to the only direct active-state setter found by the static scan. The
+outer loop reads this state directly. ESO's separately registered
+`USE_BACKGROUND_FPS_LIMIT` and `BACKGROUND_FPS_LIMIT` graphics settings do not
+implement this fixed sleep; the preserved configuration selected 60 FPS, not
+10 FPS.
+
+This explains why a low start can be slow from the first 2D loading screen,
+before character selection or the delayed graphics-pipeline bulk wave. It also
+fits Experiment 0010's WindowServer evidence: a comparable approximately
+8-FPS/cursor-mode start was still frontmost and held keyboard focus. The
+remaining unconfirmed link is the event sequence that leaves ESO's internal
+active byte false despite foreground OS state. Treat missed or misordered
+AppKit activation as the leading trigger hypothesis, not yet a captured fact.
+
+Pink startup rendering is not evidence for or against this path. The inactive
+sleep is in ESO's AppKit outer loop and is independent of MoltenVK compositor
+substitution and graphics-pipeline creation.
