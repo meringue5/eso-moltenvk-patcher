@@ -1184,6 +1184,43 @@ static bool run_startup_pipeline_timing_only_case(void) {
         "pipeline-only timing mode must emit one matched call pair");
 }
 
+static bool run_measurement_stripped_release_case(void) {
+    g_log_length = 0;
+    g_log[0] = '\0';
+    teso4m4_lifecycle_reset();
+    teso4m4_lifecycle_set_logger(&test_log);
+    teso4m4_lifecycle_set_startup_color_audit(true);
+    teso4m4_lifecycle_set_startup_draw_audit(true);
+    teso4m4_lifecycle_set_startup_input_audit(true);
+    teso4m4_lifecycle_set_startup_compositor_neutralize(true);
+    teso4m4_lifecycle_set_startup_pipeline_timing(false);
+
+    PFN_vkCreateGraphicsPipelines create_graphics_pipelines =
+        (PFN_vkCreateGraphicsPipelines)teso4m4_lifecycle_intercept(
+            "vkCreateGraphicsPipelines",
+            (PFN_vkVoidFunction)&fake_create_graphics_pipelines);
+    const VkGraphicsPipelineCreateInfo create_info = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .basePipelineIndex = -1,
+    };
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    if (!check(
+            (PFN_vkVoidFunction)create_graphics_pipelines !=
+                    (PFN_vkVoidFunction)&fake_create_graphics_pipelines &&
+                create_graphics_pipelines(
+                    HANDLE(VkDevice, 0x92), VK_NULL_HANDLE, 1,
+                    &create_info, NULL, &pipeline) == VK_SUCCESS &&
+                pipeline != VK_NULL_HANDLE,
+            "release mode must retain functional pipeline identity tracking")) {
+        return false;
+    }
+    return check(
+        strstr(g_log, "STARTUP_DRAW_PIPELINE_CREATE:") != NULL &&
+            strstr(g_log, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") != NULL &&
+            strstr(g_log, "STARTUP_PIPELINE_") == NULL,
+        "release mode must retain bounded tracking without timing records");
+}
+
 static bool run_startup_color_case(
     const char* label,
     bool issue_clear,
@@ -1670,14 +1707,15 @@ int main(void) {
     if (!run_present_pixel_schedule_case() ||
         !run_consumed_semaphore_case() ||
         !run_startup_draw_provenance_case() ||
-        !run_startup_pipeline_timing_only_case()) {
+        !run_startup_pipeline_timing_only_case() ||
+        !run_measurement_stripped_release_case()) {
         return 1;
     }
 
     printf(
         "Lifecycle trace smoke: yes startup_color_cases=3 "
         "present_pixel_cases=2 startup_draw_cases=1 startup_input_cases=1 "
-        "startup_pipeline_timing_only_cases=1 "
+        "startup_pipeline_timing_only_cases=1 release_strip_cases=1 "
         "steady_pair_ns=%" PRIu64 "\n",
         pair_nanoseconds);
     return 0;

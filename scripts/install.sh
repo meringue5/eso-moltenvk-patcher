@@ -17,7 +17,8 @@ MODE="${TESO4M4_MODE:-startup-pipeline-timing-control}"
   || "$MODE" == "startup-pipeline-timing-control" \
   || "$MODE" == "startup-inactive-pacing-bypass" \
   || "$MODE" == "startup-compositor-audit-pacing-bypass" \
-  || "$MODE" == "startup-compositor-neutralize-pacing-bypass" ]] || {
+  || "$MODE" == "startup-compositor-neutralize-pacing-bypass" \
+  || "$MODE" == "startup-compositor-neutralize-pacing-release" ]] || {
   echo "Unsupported production maintenance mode: $MODE"
   exit 1
 }

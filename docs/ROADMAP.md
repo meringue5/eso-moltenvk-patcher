@@ -25,8 +25,9 @@ This roadmap contains future work only. Current verified state is in
   neutralizer, pipeline, and ESO renderer records before changing the
   candidate. Use a forward-only device/swapchain/queue/present trace only if
   low FPS returns despite a recorded inactive-sleep bypass.
-- If ordinary starts remain clean, promote the exact committed configuration
-  through a new immutable release rather than replacing the 0.1.2 asset.
+- If ordinary starts remain clean, preserve Experiment 0044's exact functional
+  behavior in the measurement-stripped release profile described in P2, then
+  publish a new immutable release rather than replacing the 0.1.2 asset.
 
 - Treat Experiment 0035's back-to-back pair as the current discriminator: both
   starts activated the full bridge, but only the smooth restart engaged
@@ -90,14 +91,32 @@ This roadmap contains future work only. Current verified state is in
   the producer/readiness transition of the proven GUI-classified image. Do not
   add per-frame image readback merely to replace the already bounded repair.
 
-## P2: freeze and release the Experiment 0044 repair
+## P2: derive and release a measurement-stripped Experiment 0044 repair
 
-- Freeze the exact Experiment 0044 compositor-neutralize/pacing-bypass
-  configuration as the next release candidate. Do not mix the performance
-  candidates below into that release or invalidate its two-run attribution.
+- Freeze Experiment 0044's functional behavior, not its diagnostic
+  instrumentation: retain the exact inactive 100-ms sleep bypass, MoltenVK
+  configuration, fail-open compositor identity checks, 79-draw fixed-window
+  suppression, and ordinal-150 forwarding latch.
+- Complete the Experiment 0045 non-game gate for the separately prepared
+  release profile. Prove that its finished gate leaves every retained wrapper
+  in direct-forward operation without lifecycle-table locking, mutation, or
+  diagnostic logging.
+- Prove functional equivalence with non-game and exact-log probes: the release profile must
+  suppress the same exact 79 draws, forward at ordinal 150, fail open on every
+  incomplete identity, emit no pipeline-timing records, and show no post-finish
+  lifecycle bookkeeping. Keep bounded operational begin/suppress/latch/error
+  evidence needed to diagnose a failed repair.
+- Treat Experiment 0044's two successful starts as evidence for the functional
+  combination only. Require a user-controlled ordinary start of the stripped
+  profile before packaging; do not infer binary equivalence merely from disabled
+  flags.
+- Do not mix the optional performance candidates below into this release or
+  invalidate its attribution. A more elaborate self-retiring dispatch/trampoline
+  remains follow-up work unless the post-finish direct-forward probe exposes a
+  material residual cost.
 - After the ordinary-use reliability gate remains clean, promote the exact
-  committed bridge and runtime through a new immutable release rather than
-  replacing the existing 0.1.2 asset.
+  validated release-profile bridge and runtime through a new immutable release
+  rather than replacing the existing 0.1.2 asset.
 - Keep official MoltenVK 1.4.2 and the verified inactive-sleep and bounded
   compositor repair identities together as one release baseline.
 - Preserve the pristine loader, release restore record, historical runtime
@@ -193,8 +212,9 @@ If the three directions produce validated differences, expose them as
 explicit, hardware-scoped `Performance`, `Quality 60`, and `Efficiency 60`
 choices. Keep the runtime bridge common where possible, apply settings only by
 explicit player choice, and publish measured tradeoffs instead of naming one
-profile universally best. This program follows the Experiment 0044 release; it
-does not block or mutate that fixed candidate.
+profile universally best. This program follows the measurement-stripped
+Experiment 0044 release; it does not block or mutate that fixed functional
+baseline.
 
 ## P4: maintain ESO update support
 

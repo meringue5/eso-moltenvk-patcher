@@ -37,7 +37,18 @@ PACING_BYPASS_MODE = (
     "readiness_canary=disabled pixel_readback=disabled "
     "fallback=forward inactive_100ms_sleep=bypassed"
 )
-MODES = (LEGACY_MODE, TIMING_MODE, PACING_BYPASS_MODE)
+RELEASE_MODE = (
+    "MODE: startup compositor neutralize pacing release enabled "
+    "live_resources=0 metal_argument_buffers=0 use_mtlheap=1 "
+    "command_pooling=1 synchronous_queue_submits=0 "
+    "maximize_concurrent_compilation=0 generation_limit=2 "
+    "generation_2_present_limit=180 draw_provenance=bounded "
+    "input_provenance=bounded pipeline_timing=disabled "
+    "readiness_canary=disabled pixel_readback=disabled "
+    "post_window_bookkeeping=disabled fallback=forward "
+    "inactive_100ms_sleep=bypassed"
+)
+MODES = (LEGACY_MODE, TIMING_MODE, PACING_BYPASS_MODE, RELEASE_MODE)
 PACING_READY = (
     "INACTIVE_PACING_READY: branch_offset=0x30f78 "
     "active_flag_offset=0x4a0c93c original_delay_us=100000 "
@@ -87,9 +98,13 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
         ),
     )
     reasons: list[str] = []
-    if PACING_BYPASS_MODE in lines:
+    if PACING_BYPASS_MODE in lines or RELEASE_MODE in lines:
         if lines.count(PACING_READY) != 1 or lines.count(PACING_ACTIVE) != 1:
             reasons.append("the exact inactive pacing bypass was not active")
+    if RELEASE_MODE in lines and any(
+        line.startswith("STARTUP_PIPELINE_") for line in lines
+    ):
+        reasons.append("release mode unexpectedly enabled pipeline timing")
     if FINISH not in lines:
         reasons.append("the bounded two-generation window did not finish")
     if any(

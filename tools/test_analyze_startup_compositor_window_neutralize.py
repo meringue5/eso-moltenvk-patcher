@@ -6,6 +6,7 @@ from analyze_startup_compositor_window_neutralize import (
     PACING_ACTIVE,
     PACING_BYPASS_MODE,
     PACING_READY,
+    RELEASE_MODE,
     analyze,
 )
 
@@ -30,7 +31,7 @@ def log(
         "last_present=150 max_suppressed_draws=96 strategy=ordinal-window "
         "fallback=forward",
     ]
-    if mode == PACING_BYPASS_MODE:
+    if mode in (PACING_BYPASS_MODE, RELEASE_MODE):
         lines.extend([PACING_READY, PACING_ACTIVE])
     for draw, ordinal in enumerate(range(first, last + 1), start=1):
         descriptor = "01922f8394b93e32" if ordinal < 100 else "a7d448d22e640458"
@@ -61,6 +62,21 @@ class StartupCompositorWindowNeutralizeTests(unittest.TestCase):
         verdict, reasons = analyze(log(mode=PACING_BYPASS_MODE), False)
         self.assertEqual(verdict, "WINDOW-NEUTRALIZED")
         self.assertEqual(reasons, [])
+
+    def test_measurement_stripped_release_mode_is_eligible(self) -> None:
+        verdict, reasons = analyze(log(mode=RELEASE_MODE), False)
+        self.assertEqual(verdict, "WINDOW-NEUTRALIZED")
+        self.assertEqual(reasons, [])
+
+    def test_release_mode_rejects_pipeline_timing_records(self) -> None:
+        text = log(mode=RELEASE_MODE) + (
+            f"\n[run={RUN}] STARTUP_PIPELINE_CALL_BEGIN: call=1"
+        )
+        verdict, reasons = analyze(text, False)
+        self.assertEqual(verdict, "INCONCLUSIVE")
+        self.assertIn(
+            "release mode unexpectedly enabled pipeline timing", reasons
+        )
 
     def test_complete_window_but_pink_reports_failed_repair(self) -> None:
         verdict, reasons = analyze(log(), True)

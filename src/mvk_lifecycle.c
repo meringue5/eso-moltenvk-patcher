@@ -1519,7 +1519,7 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_descriptor_set_layout(
         return;
     }
     g_next_destroy_descriptor_set_layout(device, set_layout, allocator);
-    if (!atomic_load(&g_startup_input_audit)) {
+    if (!atomic_load(&g_startup_input_audit) || startup_audit_finished()) {
         return;
     }
     pthread_mutex_lock(&g_lock);
@@ -1620,7 +1620,7 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_pipeline_layout(
         return;
     }
     g_next_destroy_pipeline_layout(device, pipeline_layout, allocator);
-    if (!atomic_load(&g_startup_input_audit)) {
+    if (!atomic_load(&g_startup_input_audit) || startup_audit_finished()) {
         return;
     }
     pthread_mutex_lock(&g_lock);
@@ -1688,7 +1688,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_free_descriptor_sets(
     VkResult result = g_next_free_descriptor_sets(
         device, pool, descriptor_set_count, descriptor_sets);
     if (result == VK_SUCCESS && descriptor_sets &&
-        atomic_load(&g_startup_input_audit)) {
+        atomic_load(&g_startup_input_audit) && !startup_audit_finished()) {
         pthread_mutex_lock(&g_lock);
         for (uint32_t index = 0; index < descriptor_set_count; ++index) {
             DescriptorSetRecord* record =
@@ -1719,7 +1719,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_reset_descriptor_pool(
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     VkResult result = g_next_reset_descriptor_pool(device, pool, flags);
-    if (result == VK_SUCCESS && atomic_load(&g_startup_input_audit)) {
+    if (result == VK_SUCCESS && atomic_load(&g_startup_input_audit) &&
+        !startup_audit_finished()) {
         pthread_mutex_lock(&g_lock);
         forget_descriptor_pool(pool);
         pthread_mutex_unlock(&g_lock);
@@ -1735,7 +1736,7 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_descriptor_pool(
         return;
     }
     g_next_destroy_descriptor_pool(device, pool, allocator);
-    if (atomic_load(&g_startup_input_audit)) {
+    if (atomic_load(&g_startup_input_audit) && !startup_audit_finished()) {
         pthread_mutex_lock(&g_lock);
         forget_descriptor_pool(pool);
         pthread_mutex_unlock(&g_lock);
@@ -1954,6 +1955,9 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_shader_module(
         return;
     }
     g_next_destroy_shader_module(device, shader_module, allocator);
+    if (startup_audit_finished()) {
+        return;
+    }
     pthread_mutex_lock(&g_lock);
     ShaderModuleRecord* record = find_shader_module(shader_module);
     if (record) {
@@ -2194,6 +2198,9 @@ static VKAPI_ATTR void VKAPI_CALL traced_destroy_pipeline(
         return;
     }
     g_next_destroy_pipeline(device, pipeline, allocator);
+    if (startup_audit_finished()) {
+        return;
+    }
     pthread_mutex_lock(&g_lock);
     GraphicsPipelineRecord* record = find_graphics_pipeline(pipeline);
     if (record) {
@@ -3814,7 +3821,7 @@ void teso4m4_lifecycle_reset(void) {
     g_compositor_suppressed_draw_count = 0;
     g_compositor_neutralize_test_pipeline = VK_NULL_HANDLE;
     g_compositor_neutralize_test_ordinal = 0;
-    clock_gettime(CLOCK_MONOTONIC, &g_pipeline_timing_origin);
+    memset(&g_pipeline_timing_origin, 0, sizeof(g_pipeline_timing_origin));
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -3864,9 +3871,9 @@ void teso4m4_lifecycle_set_startup_draw_audit(bool enabled) {
 void teso4m4_lifecycle_set_startup_pipeline_timing(bool enabled) {
     atomic_store_explicit(
         &g_startup_pipeline_call_counter, 0, memory_order_relaxed);
-    clock_gettime(CLOCK_MONOTONIC, &g_pipeline_timing_origin);
     atomic_store(&g_startup_pipeline_timing, enabled);
     if (enabled) {
+        clock_gettime(CLOCK_MONOTONIC, &g_pipeline_timing_origin);
         startup_pipeline_timing_log(
             "STARTUP_PIPELINE_TIMING_BEGIN: call_limit=%u downstream=unchanged",
             kStartupPipelineTimingCallLimit);

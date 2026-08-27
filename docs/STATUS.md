@@ -79,18 +79,37 @@ active 1.4.2 pipeline cache, pre-bridge backup, historical 1.4.1 cache backup,
 and `UserSettings.txt` retain their identities across the cache-preserving
 restore/install cycle, and all three cache headers pass.
 
-The candidate retains 0041's exact inactive 100-ms outer-loop sleep bypass,
-the current non-maximized MoltenVK compilation policy, and bounded first-64
-graphics-pipeline timing. It combines those with Experiment 0031's proven
-fixed-window neutralizer: only exact final-compositor draws at generation-2
-ordinals 71 through 149 are replaced by opaque black, and ordinal 150 onward
-is forwarded. Pixel readback and the 0043 image sampler are disabled. AppKit
+The installed diagnostic candidate retains 0041's exact inactive 100-ms
+outer-loop sleep bypass, the current non-maximized MoltenVK compilation policy,
+and bounded first-64 graphics-pipeline timing. It combines those with Experiment
+0031's proven fixed-window neutralizer: only exact final-compositor draws at
+generation-2 ordinals 71 through 149 are replaced by opaque black, and ordinal
+150 onward is forwarded. Pixel readback and the 0043 image sampler are disabled. AppKit
 callbacks, focus propagation, settings, caches, and the launcher path remain
 unchanged. Source, non-game, restore, installation, payload-identity, cache-
 identity, and settings-preservation gates pass. This installed state is a
 diagnostic release candidate, not a public release claim. See
 [ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
 [0044](experiments/0044-compositor-neutralize-pacing-bypass.md).
+
+Experiment 0044 is a functional validation checkpoint, not the exact binary to
+package. Its first-64 graphics-pipeline clocking and records are diagnostic-only
+and must be disabled in the release profile. The bounded compositor repair still
+needs startup pipeline, layout, descriptor, draw, swapchain, and presentation
+identity until its fail-open forwarding latch is reached; those functional
+wrappers may remain only for that bounded window. Packaging is blocked until a
+separate measurement-stripped profile proves the same 79-draw suppression and
+ordinal-150 forwarding behavior, emits no `STARTUP_PIPELINE_*` timing records,
+and performs no lifecycle-table bookkeeping after the startup window closes.
+
+Experiment 0045 now owns that release-profile derivation. Its separate
+`startup-compositor-neutralize-pacing-release` source mode retains the 0044
+functional combination while leaving pipeline timing disabled and making every
+identified tracked destroy/free/reset path honor the finished gate. A fresh
+build, lifecycle and configuration probes, 138 Python tests, release transaction
+fixture, Python compilation, shell syntax, and diff checks pass. The candidate
+has not been installed or gameplay-validated; the exact Experiment 0044 payload
+remains active.
 
 Two consecutive ordinary user-controlled starts passed the 0044 gate with no
 visible pink and normal FPS. Exact runs
