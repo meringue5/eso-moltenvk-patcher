@@ -28,11 +28,13 @@ only single-digit nanoseconds per hot call and deferred a self-retiring
 trampoline. Experiment 0049 found a 14.899% CPU descriptor-encoding gain from
 MoltenVK 1.4.2 Metal argument buffers and exact-pixel passes in both 24-cycle
 reset configurations. Its fail-closed experimental mode remains installed
-after a provisional ESO rendering-safety pass: FPS recovered to 60 and no
-historical corruption was reported, but live resolution and HBAO/SSAO changes,
-13 graphics resets, and pipeline-cache population invalidate a performance
-conclusion. The historical 1.4.1 rendering-corruption boundary still blocks
-adoption pending a fixed-settings warm-cache run and controlled A/B.
+after two ESO runs without a reported recurrence of historical corruption.
+The second, approximately 27-minute warm run had no stutter or loaded-world
+graphics reset, strengthening the cache/reset-transient interpretation of the
+first run. The raised High profile still produced a user-perceived frame-rate
+loss in object-dense play and did not hold the 60-FPS quality target. The
+historical 1.4.1 rendering-corruption boundary and lack of a same-settings
+control still block adoption pending a controlled argument-buffer A/B.
 
 The bundled M4 settings template now selects High subsampling
 (`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
@@ -98,12 +100,22 @@ supported pending its user-controlled rendering and performance gates.
 
 First installed run `20260827T105710.534190000Z-pid87213` activated the exact
 candidate without bridge errors, recovered from initial stutter to the 60-FPS
-VSync ceiling, and retained intermittent stutter. The user changed resolution
-once and HBAO/SSAO several times at settings materially higher than the early
-baseline. ESO recorded 13 graphics-device/swapchain resets, while the MoltenVK
-pipeline cache changed and Metal compiler warnings continued sporadically.
-This is a provisional safety pass, not a performance pass. The next gate keeps
-the current settings and caches unchanged for one short warm-cache run.
+VSync ceiling, and retained intermittent stutter. At settings materially higher
+than the early baseline, an object-dense area became intolerably slow before
+the user changed resolution once and HBAO/SSAO several times. ESO recorded 13
+graphics-device/swapchain resets, while the MoltenVK pipeline cache changed and
+Metal compiler warnings continued sporadically. This is a provisional safety
+pass, not a performance pass or evidence that the candidate can hold 60 FPS at
+the raised quality profile.
+
+Warm run `20260827T110923.707262000Z-pid88869` lasted approximately 27 minutes
+across Khenarthi's Roost, Vvardenfell, and Stros M'Kai. It had no reported
+stutter, no loaded-world reset, and no bridge error, while the pipeline cache
+grew to 15,842,531 bytes. The user still perceived frame-rate loss and judged
+the High profile too demanding. No continuous FPS or GPU-time sample exists,
+so this is a qualitative quality-ceiling result. The next gate settles a
+medium-to-high profile and performs an argument-buffers-off versus-on frame-
+time A/B; another forced warm-up launch is unnecessary.
 
 The candidate retains Experiment 0044's exact inactive
 100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor

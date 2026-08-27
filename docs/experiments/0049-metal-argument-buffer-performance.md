@@ -1,8 +1,8 @@
 # Experiment 0049: Metal argument-buffer performance candidate
 
 - Date: 2026-08-27
-- Outcome: **first ESO safety run provisionally passed; performance result
-  contaminated by live graphics-setting changes**
+- Outcome: **warm run removed stutter; raised High profile did not hold the
+  user's perceived 60-FPS floor**
 - Rollback: **verified pristine loader and public 0.1.3 reference remain available**
 
 ## Question
@@ -113,9 +113,12 @@ intermittent stutter remained during play. No historical black/shadow-layer or
 solid-color corruption was reported, but this remains a provisional safety
 pass until visual correctness is explicitly confirmed.
 
-This was not a controlled performance run. The user changed resolution once
-and changed HBAO/SSAO settings several times during play. The ending settings
-were also materially higher than the early project baseline, including High
+This was not a controlled performance run. The user clarified that severe
+stutter in an object-dense area occurred first and motivated one resolution
+change and several HBAO/SSAO changes. The setting changes therefore cannot
+explain the initial dense-scene degradation, although they contaminate later
+frame-pacing observations. The ending settings were also materially higher
+than the early project baseline, including High
 subsampling, High shadows and planar reflections, character resolution 2,
 particle density 2, view distance 1.37, and 1920 x 1200 fullscreen rendering.
 
@@ -123,7 +126,9 @@ The ESO client log recorded 13 graphics-device/swapchain reset sequences. The
 later device-idle intervals were commonly about 15-16 ms, enough to consume
 roughly one 60-Hz frame before the rest of the reset work. These resets are
 consistent with live resolution and graphics-setting changes and provide a
-direct contaminant for the reported intermittent stutter. The macOS window
+direct contaminant for stutter around and after those changes. They do not
+explain the severe object-dense-area slowdown that preceded the changes. The
+macOS window
 server initially denied focus while ESO presented no window, then routed
 frontmost and keyboard focus to ESO; this recovered launch-focus event is not
 evidence that argument buffers caused the focus behavior.
@@ -137,6 +142,31 @@ sporadic records. This supports pipeline creation/cache population as a
 plausible contributor to first-run and intermittent stutter, but neither the
 warning count nor the cache rewrite proves causation. The cache is preserved.
 
+## Second installed ESO run
+
+Warm run `20260827T110923.707262000Z-pid88869` used the same exact argument-
+buffer candidate for approximately 27 minutes. The user reported no stutter,
+but did perceive sustained frame-rate loss and concluded that the raised High
+profile was too demanding. ESO traversed Khenarthi's Roost, Vvardenfell, and
+Stros M'Kai. The bridge again activated all 17 redirects, suppressed exactly
+79 startup draws, latched forwarding at ordinal 150, completed at ordinal 180,
+and recorded no error, overflow, or device loss.
+
+The client log contains only the two startup graphics resets at 20:09:24-25
+and no loaded-world reset. This cleanly distinguishes the second run from the
+13-reset first run and supports reset/setting transitions and cache population
+as contributors to the earlier intermittent stutter. It does not prove which
+contributor dominated.
+
+The active pipeline cache grew from 13,557,217 to 15,842,531 bytes and changed
+to SHA-256
+`0e7108f3e1993c62480120ad76e357ee7a1213038fba1ac7741f94d38f18ecdb`.
+The ending profile retained 1920 x 1200, High subsampling, High shadows and
+planar reflections, character resolution 2, particle density 2, SSAO value 1,
+and reduced view distance 1.15. The project has no continuous FPS or GPU-time
+sample for this run, so the frame-rate result is correctly recorded as a user-
+perceived loss rather than a measured FPS value.
+
 ## Interpretation
 
 Confirmed: argument buffers materially improve this descriptor-heavy MoltenVK
@@ -146,18 +176,22 @@ Confirmed historical risk: MoltenVK 1.4.1 argument buffers were the sole
 changed variable strongly implicated in black/shadow-layer flicker. The new
 non-game passes cannot prove that ESO's complete descriptor shapes are safe.
 
-The first installed run is a provisional rendering-safety pass and a useful
-cold-candidate observation, not evidence of a steady-state FPS improvement.
-Live graphics-setting changes, 13 device resets, focus recovery, and pipeline
-cache population prevent attributing its stutter to argument buffers.
+The two installed runs are a provisional rendering-safety pass, not evidence
+of a steady-state FPS improvement. The warm run removed the first run's
+intermittent stutter without a loaded-world reset, strengthening but not
+proving the cache/reset-transient explanation. The candidate did not make the
+raised High profile sustain the user's perceived 60-FPS floor in object-dense
+areas. Because there is no same-settings argument-buffers-off control, this
+does not establish an argument-buffer regression; it establishes that the
+candidate's descriptor-path gain is insufficient to overcome this quality
+profile's total scene cost.
 
 ## Next gate
 
-Keep the candidate and both caches unchanged for one ordinary warm-cache run
-with the current graphics settings held fixed. Avoid resolution, HBAO/SSAO,
-display-mode, and focus changes; use one familiar zone/route for at most five
-minutes. A clear reduction in startup and intermittent stutter would support,
-but not prove, a pipeline-population explanation. Persistent stutter or any
-visual corruption blocks the controlled frame-time A/B and may reject the
-candidate. A rendering-correct warm run advances to an argument-buffers-off
-versus-on A/B with identical settings and scene.
+Keep the candidate and both caches unchanged while the user selects a
+sustainable medium-to-high quality profile. The next performance gate is no
+longer another forced warm-up run: it is an argument-buffers-off versus-on A/B
+with identical settled settings and an object-dense scene, using frame-time and
+GPU-time evidence rather than the in-game FPS counter alone. Any visual
+corruption rejects the candidate. Until that A/B, the public 0.1.3 profile
+remains the production and rollback reference.

@@ -140,9 +140,14 @@ single-variable experiment.
    Official MoltenVK 1.4.2 reduced the descriptor-heavy CPU submit interval by
    14.899% and passed exact-pixel 24-cycle reset probes both off and on. The
    fail-closed source mode passed its full build and first installed safety
-   gate, but the run included resolution and HBAO/SSAO changes, 13 graphics
-   resets, and pipeline-cache population. Hold the now-higher settings and both
-   caches fixed for one short warm run before any off-versus-on frame-time A/B.
+   gate, but an object-dense area fell below the user's 60-FPS floor before
+   resolution and HBAO/SSAO changes. The later changes, 13 graphics resets, and
+   pipeline-cache population prevent attribution, not recognition of the
+   preceding slowdown. A subsequent approximately 27-minute warm run had no
+   stutter or loaded-world reset, but the High profile still produced perceived
+   frame-rate loss. Settle a sustainable medium-to-high profile, then perform
+   an off-versus-on frame-time A/B in an object-dense scene. Do not request
+   another warm-up-only launch.
    ESO's prior single-variable 1.4.1 result tied argument buffers to rendering
    corruption; never make this the default on the non-game gain alone.
 3. Test maximum concurrent pipeline compilation only for startup compilation
