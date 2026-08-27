@@ -27,6 +27,26 @@ the running process. Mach-O text pages are patched through a private
 `VM_PROT_COPY` mapping, followed by instruction-cache invalidation and RX
 restoration.
 
+## ESO host loop outside MoltenVK
+
+ESO's AppKit host loop is a distinct control layer above the Vulkan bridge.
+Read-only analysis of the exact 12.0.8 executable shows that its outer loop
+sends `platformMainLoop`, reads a process-global application-active byte, and
+calls `usleep(100000)` when that byte is false. The activation and resignation
+callbacks feed true and false through one setter to the same byte. This fixed
+inactive path can impose an approximately-10-Hz cadence before graphics-
+pipeline creation and is separate from both MoltenVK and ESO's configurable
+background-FPS limit.
+
+The installed Experiment 0041 source candidate is not yet a production release
+profile. It retains the 0.1.2 MoltenVK path and replaces only the exact inactive
+sleep block with a bounded state-observing hook that returns without sleeping.
+It does not alter AppKit callbacks or synthesize focus. The exact build map,
+control-flow offsets, confidence boundaries, renderer relationship, and update
+invariants are maintained in
+[ESO host runtime structure](ESO-HOST-RUNTIME.md); the run-specific evidence
+remains in [Experiment 0041](experiments/0041-inactive-pacing-bypass.md).
+
 ## Compatibility layer
 
 ESO was written against embedded MoltenVK 1.0.18 behavior. The production

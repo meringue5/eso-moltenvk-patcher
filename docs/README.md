@@ -19,6 +19,7 @@ claims belong in `PRODUCTION.md`, `STATUS.md`, and the top-level README.
 | What should happen next? | [Roadmap](ROADMAP.md) |
 | What has been established across experiments? | [Findings](FINDINGS.md) |
 | How does the bridge work? | [Architecture](ARCHITECTURE.md) |
+| How does ESO's host loop gate application activity and pacing? | [ESO host runtime structure](ESO-HOST-RUNTIME.md) |
 | How is a launcher update checked and rebased? | [Update runbook](UPDATES.md) |
 | What does the production bridge log? | [Logging policy](LOGGING.md) |
 | How is the public DMG built and released? | [Release packaging](RELEASE.md) |

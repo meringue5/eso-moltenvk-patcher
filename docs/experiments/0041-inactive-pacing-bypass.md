@@ -130,3 +130,11 @@ expected and is not a failure. Stop on a crash, persistent solid/black output,
 or another severe rendering regression. The bridge state-transition record and
 the user's FPS observation determine the result; no forced repetition is
 required.
+
+## Documentation promotion
+
+The read-only reverse-engineering result is broader than this individual run.
+Its durable component map, outer-loop control flow, activation callbacks,
+shared state, renderer boundary, and update invariants are maintained in
+[ESO host runtime structure](../ESO-HOST-RUNTIME.md). This experiment remains
+the evidence record for the candidate design, installation, and user result.

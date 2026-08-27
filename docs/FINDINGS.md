@@ -772,3 +772,8 @@ AppKit activation as the leading trigger hypothesis, not yet a captured fact.
 Pink startup rendering is not evidence for or against this path. The inactive
 sleep is in ESO's AppKit outer loop and is independent of MoltenVK compositor
 substitution and graphics-pipeline creation.
+
+The durable build map, callback-to-state flow, exact outer-loop offsets, patch
+boundary, and update invariants are maintained in
+[ESO host runtime structure](ESO-HOST-RUNTIME.md). Experiment 0041 remains the
+run-specific evidence record rather than the owner of that architecture.

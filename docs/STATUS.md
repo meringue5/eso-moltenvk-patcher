@@ -70,16 +70,23 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the Experiment 0038 source control, derived from public 0.1.1,
-installed on the exact 12.0.8 target. Its bridge, enable marker, and official
-1.4.2 runtime are current. The active 1.4.2 pipeline cache, pre-bridge backup,
-historical 1.4.1 cache backup, shader cache, and settings retained identical
-hashes across restore/install. The bridge is byte-identical to committed
-source build `8f59bac`, uses non-maximized compilation, omits the failed
-readiness canary, and records only bounded graphics-pipeline call timing. It
-deliberately disables compositor neutralization and all supporting startup
-audits. This installed state is a diagnostic control, not a public release
-claim.
+The user has the Experiment 0041 source candidate installed on the exact
+12.0.8 target. Its marker selects `startup-inactive-pacing-bypass`; its bridge,
+retagged original Bink, and official MoltenVK 1.4.2 payloads exactly match the
+committed build identities. The pristine loader matches the selected target
+manifest, and the active 1.4.2 pipeline cache, pre-bridge backup, and historical
+1.4.1 cache backup all retain valid identities across the cache-preserving
+restore/install cycle.
+
+The candidate retains the complete 0.1.2 no-neutralizer MoltenVK configuration
+and bounded graphics-pipeline timing. It additionally replaces only ESO's
+exact 12-byte inactive 100-ms outer-loop sleep with a bounded state-observing
+hook. AppKit callbacks, focus propagation, settings, caches, pink output, and
+the launcher path remain unchanged. Source and non-game gates pass; the next
+gate is the user's ordinary Steam-authenticated launch. This installed state is
+a diagnostic release candidate, not a public release claim. See
+[ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
+[0041](experiments/0041-inactive-pacing-bypass.md).
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
