@@ -4,16 +4,6 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## P0: complete the 0.2.0 promotion
-
-- Keep the installed bridge fixed while collecting one ordinary user-controlled
-  startup result for mouse capture, pink, FPS/stutter, and the new bounded log.
-- If that exact gate passes, publish a newly built `0.2.0` ZIP whose bridge is
-  byte-identical to the tested runtime; do not replace or modify 0.1.3.
-- Verify the committed source, annotated tag, GitHub latest endpoint, server
-  asset digest, exact package layout, and zero artificial verification download
-  before declaring the release complete.
-
 ## Reliability guardrails for performance successors
 
 - Keep Metal argument buffers disabled. Experiment 0049's candidate is rejected
@@ -46,10 +36,10 @@ This roadmap contains future work only. Current verified state is in
   control; a producer-side successor must independently preserve FPS, focus,
   fail-open forwarding, and update recovery.
 
-## P2: monitor the production baseline after the 0.2.0 gate
+## P2: monitor the 0.2.0 production baseline
 
-- Keep public 0.1.3 as the rollback baseline until 0.2.0 passes its exact
-  startup and publication gates. Preserve each release identity afterward.
+- Preserve public 0.1.3 as the prior rollback release and keep both release
+  identities immutable.
 - Observe natural launches instead of forcing repetitive starts. If pink or
   low FPS recurs, capture the exact run before retrying and compare pacing,
   suppression, latch, and finished-gate records without deleting caches.

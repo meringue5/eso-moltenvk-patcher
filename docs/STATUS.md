@@ -4,12 +4,14 @@ Last updated: 2026-08-27
 
 ## Current public production baseline
 
-ESO MoltenVK Patcher 0.1.3 remains the public production release until the
-0.2.0 user-launch gate and publication audit pass. The latest-release endpoint
-currently selects annotated tag `v0.1.3` and its one immutable-by-policy asset,
-`ESO-MoltenVK-Patcher-0.1.3.zip`, has server-reported SHA-256
-`26ca4273aae669231dcc3a04e998d59b74038361e97da0b5f746434c1d02a4d7`.
-The point-in-time download count remains zero as of the 0.2.0 preflight check.
+ESO MoltenVK Patcher 0.2.0 is the current public production release. GitHub's
+latest-release endpoint selects annotated tag `v0.2.0`, which peels to release
+commit `c063214ac9f0a8eaa56c11eb4c04c6dd282f1f2d`. Its one asset,
+`ESO-MoltenVK-Patcher-0.2.0.zip`, has matching local and server SHA-256
+`b65d608010d46836813d3a36df3bd7c44e3ada4c583cbf9e803fbe01c4c0d508`
+and size 3,419,041 bytes. The server-reported download count was zero after
+publication; verification did not download the asset. Public 0.1.3 remains
+unchanged as the prior rollback release.
 
 The supported exact target is macOS ESO 12.0.8, databuild `3288357`, SHA-256
 `a819aa2313e91676bdfa3987ae650d594a86faf2429ad56c736b5e6992680609`,
@@ -19,13 +21,14 @@ disabled, ESO's exact inactive 100-ms sleep branch is bypassed, generation-2
 placeholder draws 71 through 149 are suppressed, normal forwarding latches at
 ordinal 150, and startup bookkeeping finishes at ordinal 180.
 
-The durable runtime and recovery evidence for 0.1.3 is owned by Experiments
+The durable runtime and recovery evidence inherited from 0.1.3 is owned by
+Experiments
 [0044](experiments/0044-compositor-neutralize-pacing-bypass.md),
 [0045](experiments/0045-measurement-stripped-release-profile.md),
 [0046](experiments/0046-original-loader-generation-aware-recovery.md), and
 [0047](experiments/0047-stable-0.1.3-release.md).
 
-## 0.2.0 release candidate
+## Current 0.2.0 production package
 
 Version 0.2.0 is an architecture-backed operations release. It deliberately
 retains the exact 0.1.3 runtime control instead of introducing another startup
@@ -43,12 +46,12 @@ or performance variable. It adds:
   and
 - correct same-payload RC-to-final re-attestation and package-version status.
 
-Distribution candidate `0.2.0-rc.8` has ZIP SHA-256
-`130e9c3ae4c341eab1e4017b47ac3cc5103076ecf03b319d2144b8f215524eb9`.
+The final ZIP has SHA-256
+`b65d608010d46836813d3a36df3bd7c44e3ada4c583cbf9e803fbe01c4c0d508`.
 Its bridge SHA-256 is
 `954e8ff6cd3aceb3bfd5f874140f655aac1672394f30557eaa3bff57896683ce`.
-The installed RC6 runtime has that exact bridge SHA; RC7 and RC8 changed only
-installer, Status, tests, and documentation.
+The user-tested RC6 runtime and final installed 0.2.0 have those exact bridge
+bytes; intervening RCs changed only installer, Status, tests, and documentation.
 
 Agent-only gates currently pass:
 
@@ -64,23 +67,28 @@ Agent-only gates currently pass:
 - clean archive layout, executable bits, LF, checksums, prohibited-file search,
   and ZIP metadata hygiene.
 
-The exact-target and shared idle gates passed before installing RC6 with
-`--skip-settings`. Recovery and runtime identities verify. `UserSettings.txt`
-and the active pipeline cache remained byte-for-byte unchanged at SHA-256
+The exact-target and shared idle gates passed before installing the candidate
+and promoting the same payload to final 0.2.0 with `--skip-settings`. Recovery
+and runtime identities verify. `UserSettings.txt` remained byte-for-byte
+unchanged at SHA-256
 `0ae3c133862e0313e7622880effdafc7cf621074e5da6678078f881421bed178`
-and `c9d996a9c2207e57f3e8960e80a1023a44f01ee10edf78a64e2d782496324f88`.
+before the user launch. Ordinary gameplay advanced the pipeline cache to
+`4f3baa1e13bc25c158f7cd3d274ebae138165d3ba9c1ff5380cee29efa076f60`;
+the final package-state promotion preserved that new cache byte-for-byte.
 
-The latest production log still belongs to the preceding control run,
-`20260827T123612.412745000Z-pid374`; its PASS classification proves the common
-runtime invariants but is not evidence that the newly installed candidate has
-launched. Experiment [0050](experiments/0050-architecture-backed-diagnostics-release.md)
-owns the complete 0.2.0 requirements and evidence.
+The final bridge's production run `20260827T142452.659250000Z-pid71549`
+started `active=yes`, matched the full MoltenVK configuration, activated all 17
+redirects, latched after 79 suppressed draws at ordinal 150, finished at
+ordinal 180, and emitted no bridge error or per-draw info row. The user reported
+normal focus, no pink, and normal gameplay. Experiment
+[0050](experiments/0050-architecture-backed-diagnostics-release.md) owns the
+complete 0.2.0 requirements and evidence.
 
-## Active release gate
+## Release verification
 
 One ordinary user-controlled Steam/ZeniMax-path launch of the exact installed
-bridge remains mandatory. No forced launch loop, cache replacement, settings
-change, or launcher workaround is requested. The gate requires:
+bridge passed without a forced launch loop, cache replacement, settings change,
+or launcher workaround. It verified:
 
 - normal initial mouse capture;
 - no visible pink placeholder;
@@ -92,9 +100,9 @@ change, or launcher workaround is requested. The gate requires:
 - no individual suppression rows at default info level; and
 - the production log tightened to 0600, with rotation remaining bounded.
 
-User observation is required because the log cannot measure FPS, image color,
-or effective mouse capture. ESO, Steam, and the launcher are never started by
-the agent.
+The user supplied the visual, focus, and performance observation because the
+log cannot measure those properties. ESO, Steam, and the launcher were not
+started by the agent.
 
 ## Known limits
 
@@ -127,9 +135,8 @@ the agent.
 
 ## Next gate
 
-After the user observation and new log both pass, rebuild the same source as
-`0.2.0`, verify that its bridge SHA matches the tested runtime, update the
-production baseline and experiment result, commit and push `main`, create and
-push annotated tag `v0.2.0`, publish a new GitHub Release ZIP without modifying
-0.1.3, and verify the latest endpoint, tag target, server asset digest, asset
-layout, and download count without downloading the asset.
+Monitor natural launches through public Status and privacy-filtered Diagnostics
+without forced repetition or cache deletion. Preserve exact run evidence before
+changing the production baseline if pink, low FPS, focus loss, update recovery,
+or uninstall behavior regresses. Performance and quality successors remain
+separate single-variable work under [Roadmap](ROADMAP.md).

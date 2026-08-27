@@ -1,7 +1,7 @@
 # Experiment 0050: architecture-backed 0.2.0 diagnostics release
 
 - Date: 2026-08-27
-- Outcome: **in progress**
+- Outcome: **succeeded**
 - Rollback: **public 0.1.3 package and verified pristine loader remain available**
 
 ## Question
@@ -127,4 +127,18 @@ verified recovery and runtime profile, and the new run PASS.
 The final ZIP SHA-256 is
 `b65d608010d46836813d3a36df3bd7c44e3ada4c583cbf9e803fbe01c4c0d508`.
 Its bridge is byte-identical to the user-tested runtime. Public tag, release,
-and server-asset verification remain the only pending evidence.
+and server-asset verification then passed:
+
+- release commit: `c063214ac9f0a8eaa56c11eb4c04c6dd282f1f2d`;
+- annotated tag object: `d7d9fc3ad4cbe0f4223d65e8a3cc806119c76f41`;
+- the tag peels to the exact release commit;
+- GitHub's latest endpoint selects non-draft, non-prerelease `v0.2.0`;
+- the single uploaded asset is exactly
+  `ESO-MoltenVK-Patcher-0.2.0.zip`, 3,419,041 bytes;
+- the server digest equals the local ZIP digest
+  `b65d608010d46836813d3a36df3bd7c44e3ada4c583cbf9e803fbe01c4c0d508`;
+  and
+- the point-in-time download count is zero. Verification used API metadata and
+  did not download the public asset.
+
+No rollback was required. Public 0.1.3 and its asset remain unchanged.
