@@ -4,7 +4,7 @@ Last updated: 2026-08-27
 
 ## Current production baseline
 
-ESO MoltenVK Patcher 0.1.3 is the validated production maintenance candidate. Its
+ESO MoltenVK Patcher 0.1.3 is the current production maintenance release. Its
 selected exact target is macOS ESO 12.0.8, databuild `3288357`, on Apple
 Silicon through Rosetta, and it loads official MoltenVK 1.4.2. The extended
 performance baseline remains the 12.0.7 gameplay checkpoint; 12.0.8 passed a
@@ -53,13 +53,14 @@ upgrade or uninstall directly on the same ESO and original generation; a
 bridge retained across an executable update requires launcher Repair, and a
 different launcher-provided original is preserved byte-for-byte.
 
-The public `v0.1.2` release remains live until the fully validated 0.1.3
-candidate is published. Its freshly downloaded ZIP and GitHub's
-server-reported asset digest both match SHA-256
-`7b587caa68bf729ec4ea75888223c72908672fb70c853a382d7215407d21e830`.
-The packaged bridge is byte-identical to the user-validated Experiment 0038
-installation. See Experiment
-[0039](experiments/0039-performance-first-0.1.2-release.md).
+The public `v0.1.3` release is live and selected by GitHub's latest-release
+endpoint. Its single `ESO-MoltenVK-Patcher-0.1.3.zip` asset has local and
+server-reported SHA-256
+`26ca4273aae669231dcc3a04e998d59b74038361e97da0b5f746434c1d02a4d7`.
+The annotated tag resolves to release commit `bc3a5b8`, and the point-in-time
+download count was 0 immediately after publication. The public asset was not
+downloaded during verification, avoiding an artificial counter increment. See
+Experiment [0047](experiments/0047-stable-0.1.3-release.md).
 
 Version 0.1.2 remains preserved as historical evidence but has an open
 reliability incident: the exact installed no-neutralizer profile later

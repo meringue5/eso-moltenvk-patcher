@@ -57,6 +57,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0044 | 2026-08-27 | Fixed-window compositor neutralization with pacing bypass | Succeeded twice; no pink, normal FPS, and the inactive sleep was bypassed in the `active=no` run | [Run](0044-compositor-neutralize-pacing-bypass.md) |
 | 0045 | 2026-08-27 | Measurement-stripped compositor/pacing release profile | Succeeded; exact 0.1.3 package candidate launched without pink or low FPS and all bounded log gates passed | [Run](0045-measurement-stripped-release-profile.md) |
 | 0046 | 2026-08-27 | Original-loader generation-aware install and uninstall recovery | Succeeded in disposable fixture; retained bridges require launcher Repair and different originals are preserved | [Run](0046-original-loader-generation-aware-recovery.md) |
+| 0047 | 2026-08-27 | Stable 0.1.3 public release | Succeeded; public latest release, tag target, and server asset digest verified without incrementing its download count | [Run](0047-stable-0.1.3-release.md) |
 
 ## Recording policy
 
