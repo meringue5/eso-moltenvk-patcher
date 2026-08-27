@@ -1,7 +1,8 @@
 # Experiment 0049: Metal argument-buffer performance candidate
 
 - Date: 2026-08-27
-- Outcome: **installed; non-game gates passed and user rendering gate pending**
+- Outcome: **first ESO safety run provisionally passed; performance result
+  contaminated by live graphics-setting changes**
 - Rollback: **verified pristine loader and public 0.1.3 reference remain available**
 
 ## Question
@@ -100,6 +101,42 @@ One normal Steam/launcher launch is sufficient for the first safety gate:
 5. Report rendering correctness and whether FPS feels normal; controlled
    performance measurement is a later gate, not part of this first launch.
 
+## First installed ESO run
+
+The user launched through the normal Steam/launcher path and played run
+`20260827T105710.534190000Z-pid87213` for approximately seven minutes. The
+exact candidate was active with Metal argument buffers enabled, 79 compositor
+substitutions at ordinals 71-149, the ordinal-150 forwarding latch, and the
+ordinal-180 finished gate. The bridge recorded no error, overflow, or device
+loss. FPS initially stuttered and then recovered to the 60-FPS VSync ceiling;
+intermittent stutter remained during play. No historical black/shadow-layer or
+solid-color corruption was reported, but this remains a provisional safety
+pass until visual correctness is explicitly confirmed.
+
+This was not a controlled performance run. The user changed resolution once
+and changed HBAO/SSAO settings several times during play. The ending settings
+were also materially higher than the early project baseline, including High
+subsampling, High shadows and planar reflections, character resolution 2,
+particle density 2, view distance 1.37, and 1920 x 1200 fullscreen rendering.
+
+The ESO client log recorded 13 graphics-device/swapchain reset sequences. The
+later device-idle intervals were commonly about 15-16 ms, enough to consume
+roughly one 60-Hz frame before the rest of the reset work. These resets are
+consistent with live resolution and graphics-setting changes and provide a
+direct contaminant for the reported intermittent stutter. The macOS window
+server initially denied focus while ESO presented no window, then routed
+frontmost and keyboard focus to ESO; this recovered launch-focus event is not
+evidence that argument buffers caused the focus behavior.
+
+The active MoltenVK pipeline cache changed from
+`f271894e906a4177fc90d50dc645ee7efe114e64ceb20b7573a78a7ed3554b48` to
+`69b75a8d6866523843a0e2cdfaf8dd5609e649fbf76555940c1935d82f56126a`
+and ended at 13,557,217 bytes. Unified logging contained 210 privacy-redacted
+Metal compiler warnings, concentrated during startup/world loading with later
+sporadic records. This supports pipeline creation/cache population as a
+plausible contributor to first-run and intermittent stutter, but neither the
+warning count nor the cache rewrite proves causation. The cache is preserved.
+
 ## Interpretation
 
 Confirmed: argument buffers materially improve this descriptor-heavy MoltenVK
@@ -109,8 +146,18 @@ Confirmed historical risk: MoltenVK 1.4.1 argument buffers were the sole
 changed variable strongly implicated in black/shadow-layer flicker. The new
 non-game passes cannot prove that ESO's complete descriptor shapes are safe.
 
+The first installed run is a provisional rendering-safety pass and a useful
+cold-candidate observation, not evidence of a steady-state FPS improvement.
+Live graphics-setting changes, 13 device resets, focus recovery, and pipeline
+cache population prevent attributing its stutter to argument buffers.
+
 ## Next gate
 
-Classify the installed user run first. Only a rendering-correct pass advances
-to a fixed-scene frame-time A/B. Any visual corruption rejects the candidate
-and triggers cache-preserving restoration of the public 0.1.3 profile.
+Keep the candidate and both caches unchanged for one ordinary warm-cache run
+with the current graphics settings held fixed. Avoid resolution, HBAO/SSAO,
+display-mode, and focus changes; use one familiar zone/route for at most five
+minutes. A clear reduction in startup and intermittent stutter would support,
+but not prove, a pipeline-population explanation. Persistent stutter or any
+visual corruption blocks the controlled frame-time A/B and may reject the
+candidate. A rendering-correct warm run advances to an argument-buffers-off
+versus-on A/B with identical settings and scene.

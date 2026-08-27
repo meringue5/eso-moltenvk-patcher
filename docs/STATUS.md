@@ -27,9 +27,12 @@ Experiment 0048 measured the residual cached-wrapper tax at
 only single-digit nanoseconds per hot call and deferred a self-retiring
 trampoline. Experiment 0049 found a 14.899% CPU descriptor-encoding gain from
 MoltenVK 1.4.2 Metal argument buffers and exact-pixel passes in both 24-cycle
-reset configurations. Its fail-closed experimental mode is installed for one
-user-controlled rendering gate. The historical 1.4.1 rendering-corruption
-boundary still blocks adoption until ESO rendering correctness is revalidated.
+reset configurations. Its fail-closed experimental mode remains installed
+after a provisional ESO rendering-safety pass: FPS recovered to 60 and no
+historical corruption was reported, but live resolution and HBAO/SSAO changes,
+13 graphics resets, and pipeline-cache population invalidate a performance
+conclusion. The historical 1.4.1 rendering-corruption boundary still blocks
+adoption pending a fixed-settings warm-cache run and controlled A/B.
 
 The bundled M4 settings template now selects High subsampling
 (`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
@@ -91,7 +94,16 @@ marker `startup-release-argument-buffers`. It is byte-identical to the current
 validated build and changes one runtime variable from public 0.1.3: Metal
 argument buffers are enabled. The public 0.1.3 package remains the production
 and rollback reference; the experimental candidate is not released or
-supported pending its user-controlled rendering gate.
+supported pending its user-controlled rendering and performance gates.
+
+First installed run `20260827T105710.534190000Z-pid87213` activated the exact
+candidate without bridge errors, recovered from initial stutter to the 60-FPS
+VSync ceiling, and retained intermittent stutter. The user changed resolution
+once and HBAO/SSAO several times at settings materially higher than the early
+baseline. ESO recorded 13 graphics-device/swapchain resets, while the MoltenVK
+pipeline cache changed and Metal compiler warnings continued sporadically.
+This is a provisional safety pass, not a performance pass. The next gate keeps
+the current settings and caches unchanged for one short warm-cache run.
 
 The candidate retains Experiment 0044's exact inactive
 100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor

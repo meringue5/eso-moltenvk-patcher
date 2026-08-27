@@ -139,11 +139,12 @@ single-variable experiment.
 2. Complete Experiment 0049's high-risk Metal argument-buffer candidate.
    Official MoltenVK 1.4.2 reduced the descriptor-heavy CPU submit interval by
    14.899% and passed exact-pixel 24-cycle reset probes both off and on. The
-   fail-closed source mode is prepared, but ESO's prior single-variable 1.4.1
-   result tied argument buffers to rendering corruption. Finish the full build
-   gate, then require rendering correctness at character selection and world
-   entry before any controlled frame-time A/B. Never make this the default on
-   the non-game gain alone.
+   fail-closed source mode passed its full build and first installed safety
+   gate, but the run included resolution and HBAO/SSAO changes, 13 graphics
+   resets, and pipeline-cache population. Hold the now-higher settings and both
+   caches fixed for one short warm run before any off-versus-on frame-time A/B.
+   ESO's prior single-variable 1.4.1 result tied argument buffers to rendering
+   corruption; never make this the default on the non-game gain alone.
 3. Test maximum concurrent pipeline compilation only for startup compilation
    latency and stutter. The retained 64 calls are already fast once ESO issues
    them, so do not expect or claim a steady-state FPS gain without direct
