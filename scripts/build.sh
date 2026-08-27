@@ -54,7 +54,8 @@ cp -p "$MVK" "$BUILD/libMoltenVK.teso4m4.dylib"
 xcrun clang -fobjc-arc -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
   -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
-  "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_compat.c" \
+  "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_log_policy.c" \
+  "$ROOT/src/mvk_compat.c" \
   "$ROOT/src/eso_fx_sentinel.c" "$ROOT/src/eso_inactive_pacing.c" \
   "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_reset_trace.c" \
   "$ROOT/src/mvk_render_audit.c" "$ROOT/src/mvk_present_pixel.m" \
@@ -77,6 +78,9 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O0 \
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O0 \
   -I"$ROOT/src" "$ROOT/tools/probe_inactive_pacing.c" \
   "$ROOT/src/eso_inactive_pacing.c" -o "$BUILD/probe_inactive_pacing"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
+  -I"$ROOT/src" "$ROOT/tools/probe_log_policy.c" \
+  "$ROOT/src/mvk_log_policy.c" -o "$BUILD/probe_log_policy"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" -o "$BUILD/probe_vulkan"
@@ -123,6 +127,7 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_self_patch"
 "$BUILD/probe_fx_sentinel"
 "$BUILD/probe_inactive_pacing"
+"$BUILD/probe_log_policy"
 "$BUILD/probe_hdr_filter"
 "$BUILD/probe_lifecycle"
 "$BUILD/probe_reset_trace"

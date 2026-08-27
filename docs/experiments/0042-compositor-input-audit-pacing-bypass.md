@@ -1,7 +1,7 @@
 # Experiment 0042: compositor input audit with inactive pacing bypass
 
 - Date: 2026-08-27
-- Outcome: **candidate installed; one user-controlled launch pending**
+- Outcome: **inconclusive; default production log filtered audit evidence**
 - Rollback: **available and verified; caches and settings preserved**
 
 ## Question
@@ -99,7 +99,31 @@ UserSettings:    104e894803e70dae30fdab887474a8f3116387375614484d36c3755c58745fb
 ```
 
 No game, launcher, or Steam process was launched by the agent. The one
-user-controlled launch remains pending.
+user-controlled launch remained pending at installation time.
+
+## User result and audit failure
+
+The user completed one ordinary Steam-path launch. Exact run
+`20260827T053611.563842000Z-pid26073` selected the intended combined mode,
+loaded official MoltenVK 1.4.2, installed the inactive pacing bypass, and
+redirected all 17 entry points. The user reported visible pink and normal FPS.
+The internal active state was `active=yes`; graphics-pipeline call 5 began at
+12.330 seconds and returned successfully in 1.455 milliseconds. All 64 bounded
+pipeline calls returned `VK_SUCCESS` with non-null output.
+
+The dedicated compositor analyzer returned `INCONCLUSIVE`. The log contains
+the mode record and pipeline timing but none of the color, present-pixel, draw,
+input, descriptor-class, or compositor-image records. Source inspection
+identifies the exact integration failure: the production log classifier emits
+only `info` by default, while these bounded audit records were classified as
+`debug` or `trace`. The audit ran in memory, but its evidence was discarded
+before writing. This run cannot distinguish scene from GUI and must not be
+reinterpreted as absence of magenta input.
+
+The normal-FPS result is still a useful no-regression observation for the
+forward-only tracking path. It does not validate the audit's evidence path.
+Experiment 0043 repairs only bounded audit log visibility before requesting a
+replacement launch.
 
 ## Interpretation
 

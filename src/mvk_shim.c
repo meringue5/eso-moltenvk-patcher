@@ -22,6 +22,7 @@
 #include "eso_fx_sentinel.h"
 #include "eso_inactive_pacing.h"
 #include "mvk_lifecycle.h"
+#include "mvk_log_policy.h"
 #include "mvk_present_pixel.h"
 #include "mvk_reset_trace.h"
 
@@ -46,14 +47,6 @@ static bool g_startup_compositor_audit_enabled;
 static bool g_startup_compositor_neutralize_enabled;
 static bool g_startup_pipeline_timing_enabled;
 static bool g_inactive_pacing_bypass_enabled;
-
-typedef enum {
-    TESO4M4_LOG_ERROR = 0,
-    TESO4M4_LOG_WARN,
-    TESO4M4_LOG_INFO,
-    TESO4M4_LOG_DEBUG,
-    TESO4M4_LOG_TRACE,
-} Teso4m4LogLevel;
 
 static Teso4m4LogLevel g_log_level = TESO4M4_LOG_INFO;
 
@@ -125,40 +118,6 @@ static void configure_log_level(void) {
     }
 }
 
-static bool starts_with(const char* message, const char* prefix) {
-    return strncmp(message, prefix, strlen(prefix)) == 0;
-}
-
-static Teso4m4LogLevel classify_log_message(const char* message) {
-    if (starts_with(message, "ERROR:") || starts_with(message, "FATAL:") ||
-        starts_with(message, "GIPA_ERROR:") ||
-        starts_with(message, "GDPA_ERROR:") ||
-        strstr(message, "_ERROR:") != NULL) {
-        return TESO4M4_LOG_ERROR;
-    }
-    if (starts_with(message, "SKIP:")) {
-        return TESO4M4_LOG_WARN;
-    }
-    if (starts_with(message, "GIPA:") || starts_with(message, "GDPA:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS:") ||
-        starts_with(message, "STARTUP_COLOR_")) {
-        return TESO4M4_LOG_TRACE;
-    }
-    if (starts_with(message, "RUN_START:") || starts_with(message, "MODE:") ||
-        starts_with(message, "MOLTENVK_CONFIG:") ||
-        starts_with(message, "MOLTENVK:") || starts_with(message, "HDR_") ||
-        starts_with(message, "ACTIVE:") ||
-        starts_with(message, "INACTIVE_PACING_") ||
-        starts_with(message, "RUNTIME_READINESS:") ||
-        starts_with(message, "STARTUP_PIPELINE_") ||
-        starts_with(message, "ESO SHA-256:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")) {
-        return TESO4M4_LOG_INFO;
-    }
-    return TESO4M4_LOG_DEBUG;
-}
-
 static FILE* open_production_log(void) {
     const char* home = getenv("HOME");
     if (home && home[0] != '\0') {
@@ -196,7 +155,7 @@ static void log_message(const char* format, ...) {
     va_start(arguments, format);
     vsnprintf(message, sizeof(message), format, arguments);
     va_end(arguments);
-    if (classify_log_message(message) > g_log_level) {
+    if (teso4m4_classify_log_message(message) > g_log_level) {
         return;
     }
     flockfile(g_log);

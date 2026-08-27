@@ -85,11 +85,21 @@ It adds a bounded forward-only audit of the final compositor's `Sampler0`
 scene and `Sampler1` GUI images. It does not replace draws or alter output.
 AppKit callbacks, focus propagation, settings, caches, and the launcher path
 remain unchanged. Source and non-game gates pass. The first two earlier 0041
-starts both had normal FPS with pink and logged only `active=yes`; the next
-single launch is the first 0042 image-classification gate. This installed state
-is a diagnostic release candidate, not a public release claim. See
+starts both had normal FPS with pink and logged only `active=yes`; the first
+0042 launch also had normal FPS with pink but exposed the evidence-path failure
+described below. This installed state is a diagnostic release candidate, not a
+public release claim. See
 [ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
 [0042](experiments/0042-compositor-input-audit-pacing-bypass.md).
+
+The first 0042 launch had normal FPS with pink, but its compositor verdict is
+inconclusive because the production `info` log discarded every analyzer-
+required bounded audit record as `debug` or `trace`. Experiment
+[0043](experiments/0043-bounded-audit-log-visibility.md) fixes only that
+evidence path. Its logging policy is now covered by a dedicated probe, and its
+fresh build, 135 Python tests, release transaction regression, static checks,
+and official/embedded Metal-backed probes pass. The running 0042 installation
+is unchanged until ESO and the launcher close.
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
@@ -245,18 +255,15 @@ Visible pink alone remains cosmetic; do not reintroduce its neutralizer or
 claim launcher/cache causality while the activation event-order trigger is
 unresolved.
 
-At the user's direction, Experiment
-[0042](experiments/0042-compositor-input-audit-pacing-bypass.md) is now the
-prepared next diagnostic gate for the optional pink repair. The previously
-completed but unrun Experiment 0029 two-input sampler has been combined with
-0041's inactive-sleep bypass, non-maximized compilation, and bounded pipeline
-timing. Its fresh build, lifecycle/image probe, 135 Python tests, release
-transaction regression, static checks, and official/embedded Metal-backed
-non-game probes pass. It forwards all ESO draws unchanged and only samples the
-bound `Sampler0` scene and `Sampler1` GUI images during the bounded startup
-window. The cache-preserving installation now passes and 0042 is active. The
-next gate is one ordinary user-controlled launch reporting pink visibility and
-FPS state, followed by the dedicated compositor-input analyzer.
+At the user's direction, the optional pink-repair audit keeps 0041's inactive-
+sleep bypass, non-maximized compilation, and bounded pipeline timing. It
+forwards all ESO draws unchanged and only samples the bound `Sampler0` scene
+and `Sampler1` GUI images during the bounded startup window. Experiment 0042
+proved the forward-only path can retain normal FPS with visible pink but lost
+its evidence to log filtering. Experiment 0043 is the prepared replacement
+gate. After its cache-preserving installation, one ordinary user-controlled
+launch reporting pink visibility and FPS state is required before the
+dedicated compositor-input analyzer can identify the source.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).
