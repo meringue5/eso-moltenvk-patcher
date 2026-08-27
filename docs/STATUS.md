@@ -104,7 +104,13 @@ fresh build, 135 Python tests, release transaction regression, static checks,
 and official/embedded Metal-backed probes pass. A cache-preserving restore and
 installation completed after the shared bundle-idle gate passed; the installed
 payloads match the built candidates and the preserved user-file hashes did not
-change. The replacement user launch is pending.
+change. The replacement launch then retained normal FPS with visible pink and
+produced the decisive
+`COMPOSITOR-GUI-MAGENTA-IN-PLACE-CONTENT-CHANGE` verdict. The second
+GUI-classified compositor image contained exact magenta at all sampled points
+in ordinals 80 through 140 and ordinary colors at ordinals 150 through 180
+without changing image identity. The first scene-classified image was not
+magenta in either interval.
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
@@ -265,10 +271,18 @@ sleep bypass, non-maximized compilation, and bounded pipeline timing. It
 forwards all ESO draws unchanged and only samples the bound `Sampler0` scene
 and `Sampler1` GUI images during the bounded startup window. Experiment 0042
 proved the forward-only path can retain normal FPS with visible pink but lost
-its evidence to log filtering. Experiment 0043 is now installed with the same
-forward-only behavior and corrected bounded log visibility. One ordinary
-user-controlled launch reporting pink visibility and FPS state is required
-before the dedicated compositor-input analyzer can identify the source.
+its evidence to log filtering. Experiment 0043 corrected the bounded log
+visibility and closed the source boundary: the GUI-classified second image
+directly contains the full-screen magenta and changes contents in place.
+
+Experiment [0044](experiments/0044-compositor-neutralize-pacing-bypass.md)
+combines the already validated Experiment 0031 fixed-window neutralizer with
+the independent inactive pacing bypass. It disables pixel readback and adds no
+new rendering mutation. Its fresh build, focused mode/analyzer/log probes, 136
+Python tests, release transaction regression, syntax, and diff checks pass.
+Official and embedded Metal-backed non-game probes also pass. Cache-preserving
+installation remains pending; the user continues to run installed Experiment
+0043 until the shared bundle-idle and identity gates pass.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

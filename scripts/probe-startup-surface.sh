@@ -41,6 +41,8 @@ xcrun clang++ -fobjc-arc -std=c++17 -arch x86_64 \
   -L"$DYLIB_DIRECTORY" -lMoltenVK \
   -Wl,-rpath,"$DYLIB_DIRECTORY" \
   -framework AppKit -framework Metal -framework QuartzCore \
+  -framework Foundation -framework IOKit -framework CoreGraphics \
+  -framework IOSurface -lc++ \
   -o "$OUTPUT"
 
 run_probe() {

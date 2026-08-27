@@ -23,11 +23,11 @@ Teso4m4LogLevel teso4m4_classify_log_message(const char* message) {
         starts_with(message, "STARTUP_DRAW_AUDIT_BEGIN:") ||
         starts_with(message, "STARTUP_INPUT_AUDIT_BEGIN:") ||
         starts_with(message, "STARTUP_COMPOSITOR_AUDIT_BEGIN:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_IMAGE_")) {
+        starts_with(message, "STARTUP_COMPOSITOR_IMAGE_") ||
+        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_")) {
         return TESO4M4_LOG_INFO;
     }
     if (starts_with(message, "GIPA:") || starts_with(message, "GDPA:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS:") ||
         starts_with(message, "STARTUP_COLOR_")) {
         return TESO4M4_LOG_TRACE;
     }
@@ -38,9 +38,7 @@ Teso4m4LogLevel teso4m4_classify_log_message(const char* message) {
         starts_with(message, "INACTIVE_PACING_") ||
         starts_with(message, "RUNTIME_READINESS:") ||
         starts_with(message, "STARTUP_PIPELINE_") ||
-        starts_with(message, "ESO SHA-256:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")) {
+        starts_with(message, "ESO SHA-256:")) {
         return TESO4M4_LOG_INFO;
     }
     return TESO4M4_LOG_DEBUG;

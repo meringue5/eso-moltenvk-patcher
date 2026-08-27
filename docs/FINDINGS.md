@@ -583,6 +583,27 @@ against the compositor-placeholder cause. Any successor using descriptor
 state must anchor its eligibility to the proven magenta/scene interval rather
 than treating the first changed recording-time signature as the scene boundary.
 
+Experiment 0043 closes the two-image boundary on the exact 12.0.8 target. In
+run `20260827T054945.100479000Z-pid33219`, the user observed normal FPS with
+visible pink while all twenty aligned output samples and twenty-two compositor-
+image samples completed without error or skip. At every exact-magenta output
+frame from generation-2 ordinals 80 through 140, all five sampled points of the
+second set-1 image at binding 2 were exact magenta. At the four ordinary-scene
+frames from ordinals 150 through 180, none of those five points were near
+magenta. The first set-1 image at binding 1 was not near magenta in either
+interval.
+
+The second image retained signature `e39762f9424185a9`, format, dimensions,
+subresource, and descriptor identity across both intervals. The analyzer's
+decisive verdict is `COMPOSITOR-GUI-MAGENTA-IN-PLACE-CONTENT-CHANGE`: under the
+scene/GUI semantics recovered from the retained compositor MSL, the GUI-
+classified input directly supplies the full-screen magenta and later acquires
+ordinary contents in place. This supersedes the earlier inference that an
+aggregate descriptor-update transition weakened an in-place fill explanation;
+that aggregate also included six changing buffer descriptors and did not
+separate the two images. The upstream command or subsystem writing the second
+image is still unresolved.
+
 Experiment 0031 validates the corrected intervention boundary twice. Exact
 runs `20260801T174801.999163000Z-pid29680` and
 `20260801T174822.766268000Z-pid29762` each replaced 79 contiguous exact-target

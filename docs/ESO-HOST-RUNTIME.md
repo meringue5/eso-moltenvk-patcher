@@ -133,6 +133,27 @@ before character selection and before ESO issues its normal bulk graphics-
 pipeline wave. Pink remains evidence that rendering reached the placeholder
 path; it is not evidence that the inactive pacing branch did or did not run.
 
+### Exact startup compositor input path
+
+The retained MoltenVK pipeline cache maps the isolated final compositor to two
+sampled images: a scene-classified `Sampler0` and a GUI-classified `Sampler1`.
+Experiment 0043 directly sampled both bound images before presentation on the
+exact 12.0.8 target:
+
+```text
+set 1 binding 1 / Sampler0: not magenta in either interval
+set 1 binding 2 / Sampler1: exact magenta at ordinals 80--140
+                            ordinary colors at ordinals 150--180
+descriptor/image identity: unchanged across the transition
+```
+
+Thus the compositor shader does not synthesize pink by combining two non-pink
+inputs. Its GUI-classified second image already contains the full-screen
+magenta and later receives ordinary contents in place. The exact upstream
+writer and readiness event are not yet mapped. This rendering-path transition
+is structurally independent of the AppKit active-state byte and its 100-ms host
+sleep.
+
 Confirmed, inferred, and unresolved claims must remain distinct:
 
 - **Confirmed:** the exact build contains the callbacks, shared active-state
@@ -176,6 +197,7 @@ RX restoration must all pass. The ESO executable remains unchanged on disk.
 
 - [Experiment 0040: exact 0.1.2 low-FPS recurrence](experiments/0040-no-neutralizer-low-fps-recurrence.md)
 - [Experiment 0041: inactive pacing bypass](experiments/0041-inactive-pacing-bypass.md)
+- [Experiment 0043: bounded compositor input audit](experiments/0043-bounded-audit-log-visibility.md)
 - [Durable findings](FINDINGS.md#eso-has-a-separate-hard-coded-inactive-10-fps-outer-loop-path)
 - [Exact target manifest](../config/targets-eso-2026-08-11.json)
 - [Inactive pacing implementation](../src/eso_inactive_pacing.c)

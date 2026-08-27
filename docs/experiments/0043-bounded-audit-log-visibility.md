@@ -1,7 +1,7 @@
 # Experiment 0043: bounded compositor audit log visibility
 
 - Date: 2026-08-27
-- Outcome: **candidate installed; user launch pending**
+- Outcome: **succeeded; GUI-classified input contains in-place magenta**
 - Rollback: **not started; Experiment 0043 remains installed and active**
 
 ## Question
@@ -92,7 +92,43 @@ three preserved pipeline-cache headers as valid, and the marker as
 `startup-compositor-audit-pacing-bypass`. The bridge re-exports the retagged
 original Bink. Installed payload hashes exactly match the built candidates
 above, and all three user-file hashes remain unchanged. No game or launcher was
-started. One ordinary user-controlled Steam-path launch remains pending.
+started by the agent. One ordinary user-controlled Steam-path launch was the
+remaining gate at this installation boundary.
+
+The user then performed one ordinary Steam-path launch and reported normal FPS
+with visible pink. Exact run `20260827T054945.100479000Z-pid33219` selected the
+combined audit/pacing mode, activated all 17 redirects, logged the inactive
+pacing state as `active=yes`, completed the bounded ordinal-180 audit, and
+retained 64 successful non-null graphics-pipeline calls. No audit error, skip,
+overflow, or lifecycle error was recorded.
+
+The dedicated analyzer returned the decisive verdict:
+
+```text
+startup-compositor-audit-verdict: COMPOSITOR-GUI-MAGENTA-IN-PLACE-CONTENT-CHANGE
+magenta output frames: generation 2 ordinals 80,90,100,110,120,130,140
+normal-scene output frames: generation 2 ordinals 150,160,170,180
+Sampler0/scene-classified input near-magenta: 0/5 at every compared frame
+Sampler1/GUI-classified input near-magenta: 5/5 in every magenta frame,
+                                            0/5 in every normal-scene frame
+Sampler1 image signature: e39762f9424185a9 in both intervals
+```
+
+At ordinal 80, the second input at set 1 binding 2 is a full-surface BGRA8
+image whose five sampled points are all exact magenta. At ordinal 150, the same
+descriptor/image identity contains ordinary colors at all five points. The
+first input at set 1 binding 1 is not magenta in either interval. The visible
+pink therefore comes directly from the compositor's GUI-classified second
+image, and the transition occurs by changing the contents of the same image
+resource rather than replacing its descriptor identity.
+
+This result does not identify the upstream command that writes the second
+image. It does, however, remove the need to speculate between scene, GUI, and
+combined shader output. A root repair would target that image's producer or
+readiness transition. The immediate bounded cosmetic candidate can instead
+combine Experiment 0031's already validated exact compositor window with
+Experiment 0041's independent host-loop pacing bypass; it requires no image
+readback or new resource substitution.
 
 ## Rollback
 

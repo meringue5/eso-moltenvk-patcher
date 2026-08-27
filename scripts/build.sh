@@ -137,4 +137,5 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-pipeline-timing-control
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-inactive-pacing-bypass
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-audit-pacing-bypass
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-neutralize-pacing-bypass
 echo "Built teso4m4 artifacts in $BUILD"

@@ -69,27 +69,26 @@ This roadmap contains future work only. Current verified state is in
 ## P1: isolate an optional pink repair
 
 - Keep visible pink as an accepted cosmetic limitation in 0.1.2.
-- Build a forward-only two-input compositor audit before choosing another
-  repair. Distinguish `Sampler0` scene content from `Sampler1` GUI content,
-  record which bound image supplies exact magenta, and identify the descriptor
-  or image-content transition that produces the ordinal-150 normal scene.
+- Preserve Experiment 0043's decisive two-input result: the GUI-classified
+  second image supplies exact magenta at ordinals 80 through 140 and ordinary
+  colors at ordinals 150 through 180 while retaining the same image identity.
+  The scene-classified first image is not magenta in either interval.
 - Experiment 0042 has completed that forward-only source preparation while
   retaining the inactive pacing bypass and non-maximized compilation. Its
   cache-preserving installation passed the shared bundle-idle and identity
   gates, but its first normal-FPS/pink run was inconclusive because the default
   production log filtered every bounded audit record. Experiment 0043's
-  dedicated log-policy probe and all non-game gates pass, and its exact-target
-  cache-preserving installation retained all settings and cache identities.
-  Use one ordinary visible-pink startup to classify scene, GUI, multiple, or
-  combined input without changing compositor output.
-- Use that producer/transition boundary for any root repair. Prefer a bounded
-  placeholder-input substitution or readiness transition over a fixed ordinal
-  window; keep the host-loop FPS bypass unchanged during this work.
-- Before any compositor substitution returns, build a forward-only control that
-  retains equivalent tracking and locking without replacing draws. This must
-  separate tracking overhead from the 79 draw-to-clear substitutions.
-- Do not hold the completed 0.1.2 release branch open for this optional work;
-  use a new branch and experiment only when the investigation resumes.
+  dedicated log-policy probe, exact-target cache-preserving installation, and
+  ordinary user launch all passed; the result is now owned by Findings and the
+  experiment record.
+- Complete Experiment 0044's remaining install gate. Its isolated
+  mode combines the twice-validated fixed-window black neutralizer with the
+  independent host-loop pacing bypass, disables pixel readback, and keeps the
+  current runtime, compilation, settings, cache, focus, and launcher behavior.
+  Require both no pink and normal FPS in one ordinary launch.
+- If a root repair is later preferred over presentation neutralization, trace
+  the producer/readiness transition of the proven GUI-classified image. Do not
+  add per-frame image readback merely to replace the already bounded repair.
 
 ## P2: preserve the 1.4.2 production release
 

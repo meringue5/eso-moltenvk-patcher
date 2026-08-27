@@ -27,7 +27,26 @@ TIMING_MODE = (
     "pipeline_timing=bounded readiness_canary=disabled "
     "pixel_readback=disabled fallback=forward"
 )
-MODES = (LEGACY_MODE, TIMING_MODE)
+PACING_BYPASS_MODE = (
+    "MODE: startup compositor neutralize pacing bypass enabled "
+    "live_resources=0 metal_argument_buffers=0 use_mtlheap=1 "
+    "command_pooling=1 synchronous_queue_submits=0 "
+    "maximize_concurrent_compilation=0 generation_limit=2 "
+    "generation_2_present_limit=180 draw_provenance=enabled "
+    "input_provenance=enabled pipeline_timing=bounded "
+    "readiness_canary=disabled pixel_readback=disabled "
+    "fallback=forward inactive_100ms_sleep=bypassed"
+)
+MODES = (LEGACY_MODE, TIMING_MODE, PACING_BYPASS_MODE)
+PACING_READY = (
+    "INACTIVE_PACING_READY: branch_offset=0x30f78 "
+    "active_flag_offset=0x4a0c93c original_delay_us=100000 "
+    "replacement=observe-and-return"
+)
+PACING_ACTIVE = (
+    "INACTIVE_PACING_ACTIVE: inactive_100ms_sleep=bypassed "
+    "focus_event_propagation=unchanged transition_log_limit=16"
+)
 BEGIN = (
     "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 first_present=71 "
     "last_present=150 max_suppressed_draws=96 strategy=ordinal-window "
@@ -68,6 +87,9 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
         ),
     )
     reasons: list[str] = []
+    if PACING_BYPASS_MODE in lines:
+        if lines.count(PACING_READY) != 1 or lines.count(PACING_ACTIVE) != 1:
+            reasons.append("the exact inactive pacing bypass was not active")
     if FINISH not in lines:
         reasons.append("the bounded two-generation window did not finish")
     if any(
