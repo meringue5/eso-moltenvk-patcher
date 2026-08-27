@@ -52,7 +52,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0039 | 2026-08-25 | Performance-first 0.1.2 release | Succeeded; public release and freshly downloaded asset digest verified | [Run](0039-performance-first-0.1.2-release.md) |
 | 0040 | 2026-08-27 | No-neutralizer low-FPS recurrence | Failed as a reliability repair; exact 0.1.2 alternate-path evidence captured | [Run](0040-no-neutralizer-low-fps-recurrence.md) |
 | 0041 | 2026-08-27 | Inactive application pacing bypass | Candidate installed; first two starts had normal FPS with pink and `active=yes` | [Run](0041-inactive-pacing-bypass.md) |
-| 0042 | 2026-08-27 | Compositor input audit with inactive pacing bypass | Source/non-game gates passed; cache-preserving installation pending | [Run](0042-compositor-input-audit-pacing-bypass.md) |
+| 0042 | 2026-08-27 | Compositor input audit with inactive pacing bypass | Candidate installed with caches/settings preserved; one launch pending | [Run](0042-compositor-input-audit-pacing-bypass.md) |
 
 ## Recording policy
 

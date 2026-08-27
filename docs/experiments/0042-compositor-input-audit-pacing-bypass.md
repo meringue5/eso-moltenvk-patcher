@@ -1,8 +1,8 @@
 # Experiment 0042: compositor input audit with inactive pacing bypass
 
 - Date: 2026-08-27
-- Outcome: **source and non-game gates passed; installation pending**
-- Rollback: **not started; Experiment 0041 remains installed**
+- Outcome: **candidate installed; one user-controlled launch pending**
+- Rollback: **available and verified; caches and settings preserved**
 
 ## Question
 
@@ -32,8 +32,8 @@ magenta inputs, combined-input candidate, or inconclusive.
 - Exact target remains ESO 12.0.8, databuild `3288357`, SHA-256
   `a819aa2313e91676bdfa3987ae650d594a86faf2429ad56c736b5e6992680609`.
 - `scripts/check-update.sh` reports `CURRENT` before candidate preparation.
-- Experiment 0041 remains installed while the user controls ESO; no bundle
-  mutation occurs during source preparation.
+- Experiment 0041 remained installed while the user controlled ESO; no bundle
+  mutation occurred during source preparation.
 - Before installation, require a verified restore path, rebuilt source,
   synthetic lifecycle/image probes, configuration probe, Python tests, shell
   syntax, `git diff --check`, and both Metal-backed non-game Vulkan probes.
@@ -74,7 +74,32 @@ warnings in the executable SHA-256 read loop at `mvk_shim.c:323`; neither is
 in or reached from this mode-selection change. The warnings are preserved as
 known analyzer debt rather than being silently described as a clean pass.
 
-Installation and the user-controlled launch remain pending.
+## Installation state
+
+The shared bundle-idle gate found ESO and the ZeniMax launcher closed. Steam
+remained open but held no ESO file and had no ESO update activity. The
+cache-preserving restore produced the exact original loader state with the
+enable marker absent. Both pipeline caches and `UserSettings.txt` retained
+their pre-restore hashes.
+
+The same gate passed again immediately before installing only
+`startup-compositor-audit-pacing-bypass`. Post-install update and status checks
+select the same exact 12.0.8 target, report the bridge and official MoltenVK
+current, and pass all three pipeline-cache identity checks. Installed payloads
+match the built candidate:
+
+```text
+marker:          startup-compositor-audit-pacing-bypass
+bridge:          475ce59dc8af503f3231900fc090b5173eddff1f8107c364a8a927b42c976668
+original Bink:   f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927
+MoltenVK:        aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+active cache:    34437fdc95001f02ee3e9bdf8c896236af85bc96f0078c8a6bdfcf3256d65fc3
+old cache:       72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+UserSettings:    104e894803e70dae30fdab887474a8f3116387375614484d36c3755c58745fb0
+```
+
+No game, launcher, or Steam process was launched by the agent. The one
+user-controlled launch remains pending.
 
 ## Interpretation
 
@@ -87,5 +112,6 @@ does not discard the current FPS-priority pacing bypass.
 
 ## Rollback
 
-Not started. Experiment 0041 remains installed with its pristine restore path
-and caches verified.
+The pristine loader remains the verified restore source. The cache-preserving
+restore/install cycle proved the rollback path before installing 0042, and no
+cache or setting was replaced.

@@ -70,25 +70,26 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the Experiment 0041 source candidate installed on the exact
-12.0.8 target. Its marker selects `startup-inactive-pacing-bypass`; its bridge,
-retagged original Bink, and official MoltenVK 1.4.2 payloads exactly match the
-committed build identities. The pristine loader matches the selected target
-manifest, and the active 1.4.2 pipeline cache, pre-bridge backup, and historical
-1.4.1 cache backup all retain valid identities across the cache-preserving
+The user has the Experiment 0042 source candidate installed on the exact
+12.0.8 target. Its marker selects
+`startup-compositor-audit-pacing-bypass`; its bridge, retagged original Bink,
+and official MoltenVK 1.4.2 payloads exactly match the committed build
+identities. The pristine loader matches the selected target manifest, and the
+active 1.4.2 pipeline cache, pre-bridge backup, historical 1.4.1 cache backup,
+and `UserSettings.txt` retain their identities across the cache-preserving
 restore/install cycle.
 
-The candidate retains the complete 0.1.2 no-neutralizer MoltenVK configuration
-and bounded graphics-pipeline timing. It additionally replaces only ESO's
-exact 12-byte inactive 100-ms outer-loop sleep with a bounded state-observing
-hook. AppKit callbacks, focus propagation, settings, caches, pink output, and
-the launcher path remain unchanged. Source and non-game gates pass. The first
-two recorded user starts both had normal FPS with pink and logged only
-`active=yes`; they pass the initial no-regression gate but do not yet exercise
-the bypassed false-state path. This installed state is a diagnostic release
-candidate, not a public release claim. See
+The candidate retains 0041's no-neutralizer MoltenVK configuration, bounded
+graphics-pipeline timing, and exact inactive 100-ms outer-loop sleep bypass.
+It adds a bounded forward-only audit of the final compositor's `Sampler0`
+scene and `Sampler1` GUI images. It does not replace draws or alter output.
+AppKit callbacks, focus propagation, settings, caches, and the launcher path
+remain unchanged. Source and non-game gates pass. The first two earlier 0041
+starts both had normal FPS with pink and logged only `active=yes`; the next
+single launch is the first 0042 image-classification gate. This installed state
+is a diagnostic release candidate, not a public release claim. See
 [ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
-[0041](experiments/0041-inactive-pacing-bypass.md).
+[0042](experiments/0042-compositor-input-audit-pacing-bypass.md).
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
@@ -253,8 +254,9 @@ timing. Its fresh build, lifecycle/image probe, 135 Python tests, release
 transaction regression, static checks, and official/embedded Metal-backed
 non-game probes pass. It forwards all ESO draws unchanged and only samples the
 bound `Sampler0` scene and `Sampler1` GUI images during the bounded startup
-window. Experiment 0041 remains installed until the user closes ESO and the
-launcher; installation must preserve all settings and cache identities.
+window. The cache-preserving installation now passes and 0042 is active. The
+next gate is one ordinary user-controlled launch reporting pink visibility and
+FPS state, followed by the dedicated compositor-input analyzer.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).
