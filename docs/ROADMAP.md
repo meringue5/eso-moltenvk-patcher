@@ -145,9 +145,10 @@ single-variable experiment.
    pipeline-cache population prevent attribution, not recognition of the
    preceding slowdown. A subsequent approximately 27-minute warm run had no
    stutter or loaded-world reset, but the High profile still produced perceived
-   frame-rate loss. Settle a sustainable medium-to-high profile, then perform
-   an off-versus-on frame-time A/B in an object-dense scene. Do not request
-   another warm-up-only launch.
+   frame-rate loss. The user-approved medium-to-high profile now retains High
+   subsampling and SSAO while reducing planar reflections, particle density,
+   and shadows from 2 to 1. Hold it fixed for an off-versus-on frame-time A/B
+   in an object-dense scene. Do not request another warm-up-only launch.
    ESO's prior single-variable 1.4.1 result tied argument buffers to rendering
    corruption; never make this the default on the non-game gain alone.
 3. Test maximum concurrent pipeline compilation only for startup compilation

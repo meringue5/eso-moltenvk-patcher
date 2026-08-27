@@ -167,6 +167,26 @@ and reduced view distance 1.15. The project has no continuous FPS or GPU-time
 sample for this run, so the frame-rate result is correctly recorded as a user-
 perceived loss rather than a measured FPS value.
 
+## Medium-to-high profile applied
+
+After ESO exited, the user approved a quality-profile reduction. The complete
+live `UserSettings.txt` was preserved as
+`UserSettings.txt.teso4m4-before-medium-high-20260827T114452Z` and verified
+byte-identical to the pre-change file. Exactly three settings changed:
+
+| Setting | Before | After |
+|---|---:|---:|
+| `PLANAR_WATER_REFLECTION_QUALITY` | `2` | `1` |
+| `PARTICLE_DENSITY` | `2` | `1` |
+| `SHADOWS` | `2` | `1` |
+
+The profile retains 1920 x 1200, High subsampling `2`, character resolution
+`2`, SSAO `1`, high-resolution shadows `1`, screen-space water reflections
+`1`, and view distance `1.14999998`. The backup SHA-256 is
+`9a351631881626e0711a389d3aaa1634d20958b853c62c6594d5f3f084d3a344`;
+the applied full-file SHA-256 is
+`ea4b007281c44144fa55ed15c2e20ff83d35e56913b36d15f32650c855bf862d`.
+
 ## Interpretation
 
 Confirmed: argument buffers materially improve this descriptor-heavy MoltenVK
@@ -188,10 +208,10 @@ profile's total scene cost.
 
 ## Next gate
 
-Keep the candidate and both caches unchanged while the user selects a
-sustainable medium-to-high quality profile. The next performance gate is no
-longer another forced warm-up run: it is an argument-buffers-off versus-on A/B
-with identical settled settings and an object-dense scene, using frame-time and
-GPU-time evidence rather than the in-game FPS counter alone. Any visual
-corruption rejects the candidate. Until that A/B, the public 0.1.3 profile
-remains the production and rollback reference.
+Keep the candidate, both caches, and the newly applied medium-to-high profile
+unchanged. The next performance gate is no longer another forced warm-up run:
+it is an argument-buffers-off versus-on A/B with these identical settings and
+an object-dense scene, using frame-time and GPU-time evidence rather than the
+in-game FPS counter alone. Any visual corruption rejects the candidate. Until
+that A/B, the public 0.1.3 profile remains the production and rollback
+reference.

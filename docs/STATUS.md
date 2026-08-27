@@ -117,6 +117,13 @@ so this is a qualitative quality-ceiling result. The next gate settles a
 medium-to-high profile and performs an argument-buffers-off versus-on frame-
 time A/B; another forced warm-up launch is unnecessary.
 
+The approved medium-to-high live profile is now applied. It retains 1920 x
+1200, High subsampling, character resolution 2, SSAO, high-resolution shadows,
+and view distance 1.15 while reducing planar water reflections, particle
+density, and shadows from 2 to 1. The complete pre-change settings file is
+preserved and hash-verified. This profile is the fixed settings side of the
+next Experiment 0049 A/B; it is not yet a validated 60-FPS recommendation.
+
 The candidate retains Experiment 0044's exact inactive
 100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor
 substitution, and ordinal-150 fail-open forwarding latch. It removes the first-
