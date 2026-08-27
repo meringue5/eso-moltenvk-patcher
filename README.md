@@ -37,10 +37,12 @@ remains unchanged on disk, and the override disappears when ESO exits.*
   Vulkan behavior.
 - **The normal Steam path stays intact.** Launch and authentication continue
   through Steam; the patch does not replace the launcher or bypass login.
-- **Compatible game updates recover automatically and other updates fail
-  safely.** Re-running the same installer re-attests an update only when its
-  embedded MoltenVK, patch bytes, references, and proc routes remain
-  compatible. Original files and caches are preserved.
+- **Compatible game updates do not cross original-loader generations.**
+  Re-running Install may re-attest a structurally compatible executable after
+  the launcher restores the same supported original Bink. If the bridge
+  remains active, the installer requires launcher Repair rather than restoring
+  a possibly obsolete backup. A different original Bink requires a newer
+  patcher profile. Original generations and caches are preserved.
 
 ### See it running
 
@@ -206,7 +208,11 @@ The current bridge is deliberately audited software. The selected 12.0.8
 target is exact; a later launcher update is accepted only when the packaged
 auditor proves the embedded runtime and complete bridge-facing structure are
 compatible, after which the runtime rechecks the installed executable
-attestation. The tested result applies to the combined runtime, bridge profile,
+attestation. If an update leaves the bridge active, run the ESO launcher's
+Repair before Install or Uninstall: the patcher will not substitute a prior
+backup for the unavailable current vendor original. A different
+launcher-provided original remains untouched until a newer patcher explicitly
+supports that generation. The tested result applies to the combined runtime, bridge profile,
 settings, and cache checkpoint on the listed M4; other Apple GPUs and ESO
 builds require their own validation.
 

@@ -36,8 +36,11 @@ original library, running game/launcher, active Steam update, or indeterminate
 bundle state stops without changing files.
 
 After the ESO launcher updates or repairs the client, quit ESO and the launcher
-and run the same Install.command again. It safely recovers whether the update
-restored the original loader or left the prior bridge installed.
+and run Status. If the same supported original loader is active, run
+Install.command again. If the bridge remains active with a stale attestation,
+run the ESO launcher's Repair first; Install and Uninstall will not restore the
+previous backup across an executable update. A different launcher-provided
+original loader is preserved and requires a newer compatible patcher release.
 
 If you choose settings application, only the template's 48 allowlisted keys
 are merged into UserSettings.txt. The complete file is never replaced with a

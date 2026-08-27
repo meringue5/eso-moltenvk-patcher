@@ -104,11 +104,19 @@ blindly continue copying from the last line: it verifies the journal and
 backup, restores a clean baseline, and restarts the transaction safely.
 
 After the ESO launcher updates or repairs the game, quit ESO and the launcher
-and run the same `Install.command` again. It recognizes both cases: the launcher
-may restore the original loader, or it may leave the prior bridge installed
-with a stale executable attestation. The installer preserves the verified
-recovery record and reinstalls only after the updated executable passes its
-compatibility audit.
+and run Status. If the launcher restored the same supported original loader,
+`Install.command` preserves the recovery record and reinstalls only after the
+updated executable passes its compatibility audit. If the bridge remains with
+a stale executable attestation, run the ESO launcher's Repair first: Install
+and Uninstall both stop without restoring the prior backup.
+
+Repair may install a different original Bink generation. An older patcher
+leaves that file untouched and asks for a newer compatible release. A newer
+release that explicitly supports it archives the prior recovery record and
+backup, makes a fresh backup from the newly verified original, and only then
+installs. Uninstall follows the same rule: it restores a backup only when the
+active bridge, executable attestation, and recorded original generation still
+match; otherwise it preserves the launcher-provided non-bridge loader.
 
 For technical release details and supported-build policy, see
 [Release packaging](RELEASE.md) and [Production baseline](PRODUCTION.md).

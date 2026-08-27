@@ -36,6 +36,7 @@ OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
 MANIFEST="$(teso4m4_resolve_target_manifest "$ROOT")"
 PRESERVE_CACHE_STATE="${TESO4M4_PRESERVE_CACHE_STATE:-}"
 EXPECTED_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "$MANIFEST")"
+EXPECTED_ORIGINAL_BINK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["original_bink_sha256"])' "$MANIFEST")"
 EXPECTED_MVK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["analysis"]["replacement_runtime"]["sha256"])' "$MANIFEST")"
 
 teso4m4_require_bundle_idle "$ESO_APP"
@@ -64,6 +65,10 @@ fi
   echo "Enable marker already exists; restore and re-check status first."
   exit 1
 }
+[[ "$(shasum -a 256 "$BINK" | awk '{print $1}')" == "$EXPECTED_ORIGINAL_BINK_SHA" ]] || {
+  echo "Active Bink does not match the original-loader generation selected by this target; refusing."
+  exit 1
+}
 if [[ "$PRESERVE_CACHE_STATE" == "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
   [[ -f "$PIPELINE_CACHE" && -f "$OLD_PIPELINE_CACHE" ]] || {
     echo "Cache-preserving rebase requires both active and old-backup caches."
@@ -78,6 +83,10 @@ fi
 if [[ ! -f "$PRISTINE" ]]; then
   cp -p "$BINK" "$PRISTINE"
 fi
+[[ "$(shasum -a 256 "$PRISTINE" | awk '{print $1}')" == "$EXPECTED_ORIGINAL_BINK_SHA" ]] || {
+  echo "Pristine backup belongs to a different original-loader generation; refusing."
+  exit 1
+}
 cmp -s "$BINK" "$PRISTINE" || {
   echo "Active Bink does not match the pristine restore source; refusing."
   exit 1

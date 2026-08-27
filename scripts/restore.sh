@@ -20,8 +20,21 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 teso4m4_require_bundle_idle "$ESO_APP"
 [[ -f "$PRISTINE" ]] || { echo "Pristine Bink backup is missing."; exit 1; }
 EXPECTED_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "$MANIFEST")"
+EXPECTED_ORIGINAL_BINK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["original_bink_sha256"])' "$MANIFEST")"
 ACTUAL_SHA="$(shasum -a 256 "$ESO" | awk '{print $1}')"
 [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]] || { echo "Unknown ESO build; refusing."; exit 1; }
+[[ "$(shasum -a 256 "$PRISTINE" | awk '{print $1}')" == "$EXPECTED_ORIGINAL_BINK_SHA" ]] || {
+  echo "Pristine backup belongs to a different original-loader generation; refusing."
+  exit 1
+}
+ACTIVE_BINK_SHA="$(shasum -a 256 "$BINK" | awk '{print $1}')"
+if ! otool -L "$BINK" 2>/dev/null \
+    | grep -q 'libBink2Macx64.teso4m4-original.dylib.*reexport'; then
+  [[ "$ACTIVE_BINK_SHA" == "$EXPECTED_ORIGINAL_BINK_SHA" ]] || {
+    echo "A different launcher-provided Bink generation is already active; refusing to overwrite it with the older backup."
+    exit 1
+  }
+fi
 if [[ -n "$PRESERVE_CACHE_STATE" && "$PRESERVE_CACHE_STATE" != "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
   echo "Unsupported TESO4M4_PRESERVE_CACHE_STATE value."
   exit 1

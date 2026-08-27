@@ -140,9 +140,13 @@ After a launcher update, re-running its `Install.command` first requires an
 unchanged embedded MoltenVK archive, then validates all compiled patch bytes,
 old-runtime text references, and proc-query multiplicities. If those match, it
 records the new executable SHA-256 in the marker; the bridge independently
-checks that attestation before changing memory. It also recovers both a
-launcher-restored original loader and a retained stale bridge loader from the
-verified backup.
+checks that attestation before changing memory. The next release also binds the
+restore backup to its executable/original-loader generation. A retained stale
+bridge requires the ESO launcher Repair path because the current vendor
+original cannot be observed safely; the old backup is not restored. A
+launcher-restored original is reused only when its hash matches the release
+profile. A newer supported original generation rotates the old recovery pair
+into history before receiving a fresh backup.
 
 This packaged path avoids a new release for relocation-only ESO updates. It
 does not prove lobby or world rendering and must stop when the archive,

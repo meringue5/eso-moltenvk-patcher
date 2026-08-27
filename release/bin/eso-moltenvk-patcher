@@ -19,6 +19,11 @@ if [[ "$UI_TTY" == true && -z "${NO_COLOR:-}" ]]; then
 fi
 MUTATION_STARTED=false
 INSTALL_ALREADY_CURRENT=false
+RECOVERY_GENERATION_REBASE=false
+RECOVERY_REBASE_SUFFIX=""
+RECORDED_EXECUTABLE_SHA256=""
+RECORDED_ORIGINAL_BINK_SHA256=""
+REMOVE_RESTORE_ACTION="none"
 UI_ACTION=""
 UI_COMPLETED=0
 typeset -a UI_STEP_LABELS
@@ -142,6 +147,11 @@ die() {
   exit 1
 }
 sha256() { shasum -a 256 "$1" | awk '{print $1}'; }
+
+state_value() {
+  local key="$1" file="$2"
+  sed -n "s/^${key}=//p" "$file" | head -1
+}
 
 usage() {
   cat <<'EOF'
@@ -338,6 +348,60 @@ require_supported_original() {
   [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The Bink library is not the exact original expected by this release. No files were changed."
 }
 
+active_loader_kind() {
+  local dependencies
+  dependencies="$(otool -L "$BINK" 2>/dev/null)" \
+    || die "The active Bink library could not be classified. No files were changed."
+  if [[ "$dependencies" == *"libBink2Macx64.teso4m4-original.dylib"*"reexport"* ]]; then
+    print -- bridge
+  else
+    print -- non-bridge
+  fi
+}
+
+load_verified_recovery_record() {
+  [[ -f "$BACKUP" && -f "$STATE" ]] \
+    || die "A complete verified recovery record was not found. No files were changed."
+  RECORDED_EXECUTABLE_SHA256="$(state_value executable_sha256 "$STATE")"
+  RECORDED_ORIGINAL_BINK_SHA256="$(state_value original_bink_sha256 "$STATE")"
+  [[ -n "$RECORDED_EXECUTABLE_SHA256" \
+    && -n "$RECORDED_ORIGINAL_BINK_SHA256" \
+    && "$(sha256 "$BACKUP")" == "$RECORDED_ORIGINAL_BINK_SHA256" ]] \
+    || die "The recovery record and its original-loader backup do not match. No files were changed."
+}
+
+archive_previous_recovery_generation() {
+  [[ "$RECOVERY_GENERATION_REBASE" == true ]] || return 0
+  load_verified_recovery_record
+  local suffix="$RECOVERY_REBASE_SUFFIX"
+  local archived_backup="$STATE_DIR/original-libBink2Macx64.before-${suffix}.dylib"
+  local archived_state="$STATE_DIR/install-state.before-${suffix}.env"
+  if [[ -e "$archived_backup" ]]; then
+    [[ -f "$archived_backup" \
+      && "$(sha256 "$archived_backup")" == "$(sha256 "$BACKUP")" ]] \
+      || die "The archived original-loader generation conflicts with the verified backup. No files were changed."
+  else
+    copy_verified "$BACKUP" "$archived_backup"
+  fi
+  if [[ -e "$archived_state" ]]; then
+    [[ -f "$archived_state" && "$(sha256 "$archived_state")" == "$(sha256 "$STATE")" ]] \
+      || die "The archived recovery state conflicts with the current verified record. No files were changed."
+  else
+    copy_verified "$STATE" "$archived_state"
+  fi
+  if [[ -f "$MARKER" ]]; then
+    local archived_marker="$STATE_DIR/enable-marker.before-${suffix}"
+    if [[ -e "$archived_marker" ]]; then
+      [[ -f "$archived_marker" && "$(sha256 "$archived_marker")" == "$(sha256 "$MARKER")" ]] \
+        || die "The archived enable marker conflicts with the current marker. No files were changed."
+    else
+      copy_verified "$MARKER" "$archived_marker"
+    fi
+  fi
+  rm -f "$BACKUP" "$STATE"
+  print -- "  Preserved the previous original-loader generation: ${archived_backup:t}"
+}
+
 require_supported_executable() {
   ACTUAL_ESO_SHA256="$(sha256 "$ESO")"
   TARGET_COMPATIBILITY=exact
@@ -399,6 +463,10 @@ record_state() {
   print -r -- "executable_sha256=${ACTUAL_ESO_SHA256:-$(sha256 "$ESO")}" > "$STATE"
   print -r -- "profile_sha256=$EXPECTED_ESO_SHA256" >> "$STATE"
   print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
+  print -r -- "bridge_sha256=$(sha256 "$PAYLOAD/libBink2Macx64.dylib")" >> "$STATE"
+  print -r -- "moltenvk_sha256=$(sha256 "$PAYLOAD/libMoltenVK.teso4m4.dylib")" >> "$STATE"
+  print -r -- "active_bink_sha256=$(sha256 "$BINK")" >> "$STATE"
+  print -r -- "remove_restore_action=${REMOVE_RESTORE_ACTION:-none}" >> "$STATE"
   print -r -- "release_version=${RELEASE_VERSION:-unknown}" >> "$STATE"
   print -r -- "transaction_phase=$phase" >> "$STATE"
   print -r -- "settings_choice=${settings_choice:-skip}" >> "$STATE"
@@ -424,32 +492,43 @@ recover_incomplete_install() {
   local current_bink="$(sha256 "$BINK")"
   local payload_bink="$(sha256 "$PAYLOAD/libBink2Macx64.dylib")"
   if [[ -e "$MARKER" && "$current_bink" == "$payload_bink" ]]; then
-    [[ -f "$BACKUP" && -f "$STATE" \
-      && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] \
-      || die "The updated active state has no verified restore record. No files were changed."
-    local recorded_sha recorded_original
-    recorded_sha="$(sed -n 's/^executable_sha256=//p' "$STATE" | head -1)"
-    recorded_original="$(sed -n 's/^original_bink_sha256=//p' "$STATE" | head -1)"
-    [[ "$recorded_original" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] \
-      || die "The updated active state has an invalid restore record. No files were changed."
-    if [[ "$recorded_sha" == "$ACTUAL_ESO_SHA256" ]]; then
+    load_verified_recovery_record
+    [[ "$RECORDED_ORIGINAL_BINK_SHA256" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] \
+      || die "The installed bridge belongs to an older original-loader generation. Run the ESO launcher Repair first; no files were changed."
+    if [[ "$RECORDED_EXECUTABLE_SHA256" == "$ACTUAL_ESO_SHA256" ]]; then
       INSTALL_ALREADY_CURRENT=true
       return 0
     fi
-    print -- "  Detected an ESO update that left the bridge loader installed; restoring the verified baseline."
-    copy_verified "$BACKUP" "$BINK"
-    current_bink="$EXPECTED_ORIGINAL_BINK_SHA256"
+    die "ESO was updated while the bridge loader remained active. Run the ESO launcher Repair to materialize the current original Bink library, then run Install again. The previous backup was not restored. No files were changed."
   fi
   if [[ -e "$MARKER" && "$current_bink" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
     if [[ -e "$BACKUP" || -e "$STATE" ]]; then
-      [[ -f "$BACKUP" && -f "$STATE" \
-        && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] \
-        || die "The updated inactive state has no verified restore record. No files were changed."
+      load_verified_recovery_record
+      if [[ "$RECORDED_ORIGINAL_BINK_SHA256" != "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
+        RECOVERY_GENERATION_REBASE=true
+        RECOVERY_REBASE_SUFFIX="${RECORDED_EXECUTABLE_SHA256[1,12]}-${RECORDED_ORIGINAL_BINK_SHA256[1,12]}"
+        print -- "  A newly supported original Bink generation is active; the previous recovery generation will be preserved."
+      fi
     fi
     print -- "  Detected an ESO update that restored the original loader; preserving recovery state."
     return 0
   fi
-  [[ ! -e "$MARKER" ]] || die "The patch is already installed. Use status or remove."
+  if [[ -e "$MARKER" ]]; then
+    if [[ "$(active_loader_kind)" == bridge ]]; then
+      die "An unrecognized bridge loader is active after an ESO update. Run the ESO launcher Repair before installing. No files were changed."
+    fi
+    die "ESO installed a different original Bink library. This patcher release does not support that loader generation; the existing backup was not restored. Install a newer compatible patcher. No files were changed."
+  fi
+  if [[ "$current_bink" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
+    && ( -e "$BACKUP" || -e "$STATE" ) ]]; then
+    load_verified_recovery_record
+    if [[ "$RECORDED_ORIGINAL_BINK_SHA256" != "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
+      RECOVERY_GENERATION_REBASE=true
+      RECOVERY_REBASE_SUFFIX="${RECORDED_EXECUTABLE_SHA256[1,12]}-${RECORDED_ORIGINAL_BINK_SHA256[1,12]}"
+      print -- "  A newly supported original Bink generation is active; the previous recovery generation will be preserved."
+      return 0
+    fi
+  fi
   if [[ ! -e "$RENAMED" && ! -e "$MVK" && "$current_bink" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
     return 0
   fi
@@ -495,16 +574,27 @@ check() {
         print -- "Supported ESO client; patch installed."
         [[ -f "$VERSION_FILE" ]] && print -- "Installed release: $(<"$VERSION_FILE")"
       else
-        print -- "Supported ESO client; update left a stale bridge attestation. Re-run Install."
+        print -- "Supported ESO client; update left the bridge installed with a stale attestation."
+        print -- "Run the ESO launcher Repair before Install or Uninstall; the previous original backup must not be restored across generations."
       fi
     elif [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
       print -- "Supported ESO client; update restored the original loader. Re-run Install."
     else
-      die "Incomplete patch state: marker and loader differ. No files were changed."
+      if [[ "$(active_loader_kind)" == bridge ]]; then
+        die "Incomplete patch state: an unrecognized bridge is active. Run the ESO launcher Repair. No files were changed."
+      fi
+      print -- "Patch not active; ESO has a different original-loader generation."
+      print -- "This release will preserve that loader. Use a newer compatible patcher before reinstalling."
     fi
   else
-    [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "Unsupported or already-modified Bink library."
-    print -- "Supported ESO client; patch not installed."
+    if [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
+      print -- "Supported ESO client; patch not installed."
+    elif [[ "$(active_loader_kind)" == bridge ]]; then
+      die "Unsupported or already-modified bridge loader. No files were changed."
+    else
+      print -- "Patch not installed; the active original loader belongs to a different generation."
+      print -- "This release will not overwrite it."
+    fi
   fi
   print -- "Compatibility: $TARGET_COMPATIBILITY"
   print -- "Location: $ESO_APP"
@@ -556,6 +646,7 @@ install() {
   MUTATION_STARTED=true
   mkdir -p "$STATE_DIR"
   chmod 700 "$STATE_DIR"
+  archive_previous_recovery_generation
   if [[ -e "$BACKUP" || -e "$STATE" ]]; then
     [[ -f "$BACKUP" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The existing restore backup is incomplete or does not match this client."
     [[ ! -e "$STATE" || -f "$STATE" ]] || die "The existing restore record is invalid."
@@ -602,6 +693,16 @@ install() {
   print -- "Verified restore backup: $BACKUP"
 }
 
+remove_owned_companion_if_exact() {
+  local target_file="$1" expected_sha="$2" label="$3"
+  [[ -e "$target_file" ]] || return 0
+  if [[ -f "$target_file" && "$(sha256 "$target_file")" == "$expected_sha" ]]; then
+    write_command "${target_file:h}" rm -f "$target_file"
+  else
+    print -- "  Preserved unexpected $label at: $target_file"
+  fi
+}
+
 remove() {
   ui_plan_start "Restore the original ESO runtime" \
     "Finding patched ESO installation" \
@@ -612,24 +713,61 @@ remove() {
   ui_step 1 4 "Finding patched ESO installation"
   require_idle
   ui_step 2 4 "Checking game, launcher, and recovery state"
-  [[ -f "$BACKUP" && -f "$STATE" ]] || die "A verified restore record was not found. No files were changed."
+  ACTUAL_ESO_SHA256="$(sha256 "$ESO")"
+  load_verified_recovery_record
   source "$STATE"
-  [[ -n "${executable_sha256:-}" && "$(sha256 "$ESO")" == "$executable_sha256" ]] || die "The selected ESO executable changed. No files were changed."
-  [[ "${original_bink_sha256:-}" == "$EXPECTED_ORIGINAL_BINK_SHA256" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The restore backup does not match the supported original."
+  local current_bink payload_bink marker_sha loader_kind active_before
+  current_bink="$(sha256 "$BINK")"
+  payload_bink="$(sha256 "$PAYLOAD/libBink2Macx64.dylib")"
+  marker_sha=""
+  [[ -f "$MARKER" ]] \
+    && marker_sha="$(state_value eso_sha256 "$MARKER")"
+  active_before="$current_bink"
+  if [[ "$current_bink" == "$payload_bink" ]]; then
+    [[ "$RECORDED_EXECUTABLE_SHA256" == "$ACTUAL_ESO_SHA256" \
+      && "$marker_sha" == "$ACTUAL_ESO_SHA256" ]] \
+      || die "ESO changed while the bridge remained active. Run the ESO launcher Repair before Uninstall; the previous original backup was not restored. No files were changed."
+    REMOVE_RESTORE_ACTION=verified-backup-restored
+  else
+    loader_kind="$(active_loader_kind)"
+    [[ "$loader_kind" != bridge ]] \
+      || die "An unrecognized bridge loader is active. Run the ESO launcher Repair before Uninstall. No files were changed."
+    REMOVE_RESTORE_ACTION=external-original-preserved
+  fi
   MUTATION_STARTED=true
-  copy_verified "$BACKUP" "$BINK"
-  write_command "$GAME_MAC" rm -f "$RENAMED" "$MVK" "$MARKER"
+  if [[ "$REMOVE_RESTORE_ACTION" == verified-backup-restored ]]; then
+    copy_verified "$BACKUP" "$BINK"
+  else
+    print -- "  The launcher already replaced the bridge; the active Bink library was left untouched."
+  fi
+  remove_owned_companion_if_exact \
+    "$RENAMED" "$EXPECTED_RETAGGED_ORIGINAL_BINK_SHA256" \
+    "renamed original-loader companion"
+  remove_owned_companion_if_exact \
+    "$MVK" "$(sha256 "$PAYLOAD/libMoltenVK.teso4m4.dylib")" \
+    "MoltenVK companion"
+  write_command "$GAME_MAC" rm -f "$MARKER"
   ui_step 3 4 "Restoring original runtime files"
   restore_settings_if_safe
   record_state removed
-  [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" && ! -e "$MARKER" ]] \
-    || die "Final uninstall verification failed."
+  if [[ "$REMOVE_RESTORE_ACTION" == verified-backup-restored ]]; then
+    [[ "$(sha256 "$BINK")" == "$RECORDED_ORIGINAL_BINK_SHA256" ]] \
+      || die "Final uninstall verification failed."
+  else
+    [[ "$(sha256 "$BINK")" == "$active_before" ]] \
+      || die "Final uninstall verification failed: the externally restored loader changed."
+  fi
+  [[ ! -e "$MARKER" ]] || die "Final uninstall verification failed."
   ui_step 4 4 "Verifying settings and removal"
   MUTATION_STARTED=false
   ui_complete "Uninstall complete"
   print -- ""
   print -- "  ESO:      $ESO_APP"
-  print -- "  Runtime:  Original Bink loader restored"
+  if [[ "$REMOVE_RESTORE_ACTION" == verified-backup-restored ]]; then
+    print -- "  Runtime:  Matching original Bink loader restored"
+  else
+    print -- "  Runtime:  Launcher-provided Bink loader preserved"
+  fi
   print -- "  Backup:   Retained for verification"
   print -- ""
   print -- "Removed from: $ESO_APP"

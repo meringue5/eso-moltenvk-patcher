@@ -117,11 +117,20 @@ Install writes a journaled per-installation state, preserves the original
 loader, stages files before atomic replacement, records the package version,
 attests the audited executable SHA-256 in the enable marker, and verifies the
 resulting bridge/runtime/marker identity. Re-running Install after a launcher
-update recovers whether the launcher restored the original loader or retained
-the stale bridge loader. Interrupted transactions are restored to the verified
-baseline before restarting.
-Uninstall restores the verified original and preserves later user settings
-when they differ from the installer's recorded merge result.
+update reuses a launcher-restored original only when it belongs to the release's
+supported generation. A retained bridge is not evidence of the launcher's
+current original, so Install and Uninstall stop and require launcher Repair
+instead of restoring an older backup. When a newer release explicitly supports
+a different original generation, it archives the prior state, backup, and
+marker before making a fresh backup. Interrupted transactions are restored to
+their verified same-generation baseline before restarting.
+
+Uninstall applies the same generation rule. It restores a backup only when the
+active bridge, marker attestation, executable, and recorded backup belong to the
+same generation. If the launcher already supplied a non-bridge loader,
+Uninstall leaves that active file byte-for-byte unchanged and removes only
+exact patch-owned companions. Later user settings remain preserved when they
+differ from the installer's recorded merge result.
 
 Historical 1.4.1 runtime and cache backups are recognized only so maintenance
 and restore operations do not destroy evidence. They are not packaged payloads

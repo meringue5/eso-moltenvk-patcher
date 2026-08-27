@@ -124,6 +124,10 @@ This roadmap contains future work only. Current verified state is in
   template with validated High subsampling.
 - Keep release install and uninstall transactional, idempotent, and fail-closed
   on unknown files or incomplete recovery state.
+- Package the Experiment 0046 generation-aware installer state machine with the
+  measurement-stripped runtime candidate. Verify the assembled ZIP repeats the
+  retained-bridge repair refusal, external-original preservation, and
+  supported-generation rotation fixture before publication.
 - Treat regressions in ordinary play, live graphics resets, startup color, or
   restore behavior as release blockers.
 
@@ -222,6 +226,9 @@ baseline.
 - Allow the packaged auditor to re-attest relocation-only executable updates
   only when embedded MoltenVK, patch sites, reference shape, proc routes, and
   runtime boundaries remain compatible; any mismatch requires manual analysis.
+- Require launcher Repair when an executable update leaves the bridge active;
+  never use an older original-loader backup as a substitute for observing the
+  vendor's current original generation.
 - Add a new supported target only after rebuild, non-game probes, disposable
   install/remove testing, and a user-controlled normal-launch smoke test.
 - Never turn an unknown build into best-effort compatibility.

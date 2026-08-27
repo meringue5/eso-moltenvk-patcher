@@ -58,8 +58,8 @@ interruption never trusts a partial binary: it validates the exact executable,
 state, backup, and active Bink identity, restores the verified original, removes
 only patch-owned artifacts, and restarts from the clean baseline.
 
-Version 0.1.2 retains repeated Install support after a compatible game update
-and selects the performance-first `startup-pipeline-timing-control` profile.
+Version 0.1.2 retained repeated Install support after a compatible game update
+and selected the performance-first `startup-pipeline-timing-control` profile.
 The original pink startup placeholder may remain visible; the compositor
 neutralizer is deliberately excluded because low-FPS avoidance has priority.
 The package
@@ -68,8 +68,10 @@ first requires the embedded MoltenVK archive hash to remain unchanged, then
 runs the bundled native compatibility auditor over every compiled patch
 signature, old-runtime text-boundary reference, and proc-query multiplicity.
 The audited executable SHA-256 is stored in the marker and rechecked by the
-runtime. Launcher-restored-original and bridge-retained update states both
-restore from the verified backup before reinstalling.
+runtime. Its bridge-retained update path restored the existing backup before
+reinstalling; that historical behavior is superseded for the next release
+because it cannot prove that a future update did not replace the vendor Bink
+generation.
 
 ## Installer behavior
 
@@ -89,9 +91,13 @@ restore from the verified backup before reinstalling.
 - Optionally merges exactly 48 allowlisted M4-profile keys into a verified
   `UserSettings.txt` backup. Remove restores the backup only if the applied
   settings have not subsequently changed.
-- Restores the original Bink library on Remove only after the saved restore
-  record, backup hash, and selected executable still match the exact profile;
-  it does not launch ESO or alter account authentication.
+- Binds executable attestation and original-Bink SHA-256 as one recovery
+  generation. A stale retained bridge requires launcher Repair; a different
+  launcher-provided original is never overwritten by an older backup.
+- Restores the original Bink library on Remove only when the active bridge,
+  marker, executable, state, and backup match one generation. If the launcher
+  already supplied a non-bridge loader, Remove preserves it byte-for-byte and
+  deletes only exact patch-owned companions.
 
 An unrecognized client build fails closed. This permits a shared Steam/direct
 client profile when its exact executable matches, without assuming that either
@@ -99,7 +105,8 @@ path is trustworthy.
 
 Release assembly runs a disposable end-to-end fixture covering a deliberately
 interrupted install and verified recovery, Status, Install, Remove, reinstall,
-launcher-restored update recovery, and bridge-retained update recovery;
+launcher-restored update recovery, retained-bridge repair refusal,
+launcher-provided-original preservation, and supported generation rotation;
 verifies LF line endings and every payload checksum; and rejects
 ZIPs containing `.DS_Store`, AppleDouble `._` entries, or `__MACOSX`.
 

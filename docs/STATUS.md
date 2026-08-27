@@ -48,6 +48,16 @@ attestation before redirecting. Launcher-restored-original and
 bridge-retained update states are both covered by the disposable release
 transaction fixture.
 
+That bridge-retained behavior is now a known safety gap in the published 0.1.2
+installer: after an executable update it cannot prove whether the vendor's
+original Bink generation also changed, yet it restores the earlier backup. The
+next release is blocked on the Experiment 0046 generation-aware installer. Its
+source candidate requires launcher Repair when a stale bridge remains, never
+overwrites a different launcher-provided non-bridge loader, applies the same
+rule to Uninstall, and rotates an older recovery generation only after a newer
+release explicitly recognizes the current original. The expanded disposable
+fixture passes; the public 0.1.2 asset remains unchanged.
+
 The public `v0.1.2` release is live. Its freshly downloaded ZIP and GitHub's
 server-reported asset digest both match SHA-256
 `7b587caa68bf729ec4ea75888223c72908672fb70c853a382d7215407d21e830`.
