@@ -70,30 +70,27 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the Experiment 0043 source candidate installed on the exact
+The user has the Experiment 0044 source candidate installed on the exact
 12.0.8 target. Its marker selects
-`startup-compositor-audit-pacing-bypass`; its bridge, retagged original Bink,
-and official MoltenVK 1.4.2 payloads exactly match the committed build
-identities. The pristine loader matches the selected target manifest, and the
+`startup-compositor-neutralize-pacing-bypass`; its bridge, retagged original
+Bink, and official MoltenVK 1.4.2 payloads exactly match the committed build
+identities. The pristine loader matches the selected target manifest. The
 active 1.4.2 pipeline cache, pre-bridge backup, historical 1.4.1 cache backup,
 and `UserSettings.txt` retain their identities across the cache-preserving
-restore/install cycle.
+restore/install cycle, and all three cache headers pass.
 
-The candidate retains 0041's no-neutralizer MoltenVK configuration, bounded
-graphics-pipeline timing, and exact inactive 100-ms outer-loop sleep bypass.
-It retains 0042's bounded forward-only audit of the final compositor's
-`Sampler0` scene and `Sampler1` GUI images, and promotes only the bounded audit
-families required by the analyzer to the production `info` log level. It does
-not replace draws or alter output. AppKit callbacks, focus propagation,
-settings, caches, and the launcher path remain unchanged. Source, non-game,
-restore, installation, payload-identity, cache-identity, and settings-
-preservation gates pass. The first two earlier 0041 starts both had normal FPS
-with pink and logged only `active=yes`; the first 0042 launch also had normal
-FPS with pink but exposed the evidence-path failure described below. This
-installed state is a diagnostic release candidate, not a public release claim.
-See
+The candidate retains 0041's exact inactive 100-ms outer-loop sleep bypass,
+the current non-maximized MoltenVK compilation policy, and bounded first-64
+graphics-pipeline timing. It combines those with Experiment 0031's proven
+fixed-window neutralizer: only exact final-compositor draws at generation-2
+ordinals 71 through 149 are replaced by opaque black, and ordinal 150 onward
+is forwarded. Pixel readback and the 0043 image sampler are disabled. AppKit
+callbacks, focus propagation, settings, caches, and the launcher path remain
+unchanged. Source, non-game, restore, installation, payload-identity, cache-
+identity, and settings-preservation gates pass. This installed state is a
+diagnostic release candidate, not a public release claim. See
 [ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
-[0043](experiments/0043-bounded-audit-log-visibility.md).
+[0044](experiments/0044-compositor-neutralize-pacing-bypass.md).
 
 The first 0042 launch had normal FPS with pink, but its compositor verdict is
 inconclusive because the production `info` log discarded every analyzer-
@@ -280,9 +277,10 @@ combines the already validated Experiment 0031 fixed-window neutralizer with
 the independent inactive pacing bypass. It disables pixel readback and adds no
 new rendering mutation. Its fresh build, focused mode/analyzer/log probes, 136
 Python tests, release transaction regression, syntax, and diff checks pass.
-Official and embedded Metal-backed non-game probes also pass. Cache-preserving
-installation remains pending; the user continues to run installed Experiment
-0043 until the shared bundle-idle and identity gates pass.
+Official and embedded Metal-backed non-game probes also pass. The exact-target
+cache-preserving installation passed the shared bundle-idle, restore, payload,
+cache, and settings-preservation gates. One ordinary user-controlled launch
+must now report both pink visibility and FPS state.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

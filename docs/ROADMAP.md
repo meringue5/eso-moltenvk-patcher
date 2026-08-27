@@ -81,11 +81,11 @@ This roadmap contains future work only. Current verified state is in
   dedicated log-policy probe, exact-target cache-preserving installation, and
   ordinary user launch all passed; the result is now owned by Findings and the
   experiment record.
-- Complete Experiment 0044's remaining install gate. Its isolated
-  mode combines the twice-validated fixed-window black neutralizer with the
-  independent host-loop pacing bypass, disables pixel readback, and keeps the
-  current runtime, compilation, settings, cache, focus, and launcher behavior.
-  Require both no pink and normal FPS in one ordinary launch.
+- Experiment 0044 is installed after passing the exact-target, restore,
+  payload, cache, and settings-preservation gates. Its isolated mode combines
+  the twice-validated fixed-window black neutralizer with the independent host-
+  loop pacing bypass and disables pixel readback. Require both no pink and
+  normal FPS in one ordinary launch.
 - If a root repair is later preferred over presentation neutralization, trace
   the producer/readiness transition of the proven GUI-classified image. Do not
   add per-frame image readback merely to replace the already bounded repair.

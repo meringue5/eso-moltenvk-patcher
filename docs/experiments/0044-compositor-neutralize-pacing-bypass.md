@@ -1,8 +1,8 @@
 # Experiment 0044: fixed-window compositor neutralization with pacing bypass
 
 - Date: 2026-08-27
-- Outcome: **source and all non-game gates passed; installation pending**
-- Rollback: **not started; Experiment 0043 remains installed and active**
+- Outcome: **candidate installed; user launch pending**
+- Rollback: **not started; Experiment 0044 remains installed and active**
 
 ## Question
 
@@ -98,9 +98,27 @@ retagged original Bink SHA-256: f166982931adfef53a23165bc2f73be18016a9a25d1c396d
 MoltenVK SHA-256: aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
 ```
 
-Installation and the user launch remain pending. No running game or bundle file
-was modified during source preparation.
+No running game or bundle file was modified during source preparation.
+
+After ESO and the launcher closed, the shared bundle-idle gate allowed the
+transaction with idle Steam because it had no ESO file or update activity. The
+installed 0043 bridge was restored to the verified pristine loader while
+preserving the active cache, old-runtime cache backup, and `UserSettings.txt`:
+
+```text
+active pipeline cache SHA-256: a3cc45c753c8158ba81dfd14caf8acff34ef44f64f6f471cf066a9b06be6413d
+old-runtime cache backup SHA-256: 72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+UserSettings.txt SHA-256: 104e894803e70dae30fdab887474a8f3116387375614484d36c3755c58745fb0
+```
+
+The same idle gate passed for installation. Post-install status recognizes the
+exact ESO 12.0.8 target and all three pipeline-cache identities. The marker is
+exactly `startup-compositor-neutralize-pacing-bypass`; the bridge re-exports
+the retagged original Bink; all installed payload hashes match the prepared
+build; and all three user-file hashes remain unchanged. No game or launcher was
+started by the agent. One ordinary user-controlled Steam-path launch remains.
 
 ## Rollback
 
-Not started. The verified pristine loader remains available.
+Not started. The verified pristine loader remains available and was exercised
+during the cache-preserving restore/install transaction.
