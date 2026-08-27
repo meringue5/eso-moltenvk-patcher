@@ -110,5 +110,6 @@ bool teso4m4_inactive_pacing_prepare(
 void teso4m4_inactive_pacing_did_install(void) {
   atomic_store(&g_installed, true);
   pacing_log("INACTIVE_PACING_ACTIVE: inactive_100ms_sleep=bypassed "
-             "focus_event_propagation=unchanged transition_log_limit=16");
+             "focus_callbacks=unmodified active_byte=observed-only "
+             "transition_log_limit=16");
 }

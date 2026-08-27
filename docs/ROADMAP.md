@@ -4,7 +4,29 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## P0: isolate the 0.1.2 low-FPS release incident
+## P0: eliminate startup activation/focus divergence without restoring 10 Hz
+
+- Reject Experiment 0049's argument-buffer candidate. Three consecutive starts
+  opened visibly but failed to capture mouse focus until the user switched to
+  another application and back.
+- Preserve the exact discriminator: all three candidate runs began with ESO's
+  internal `application_active` byte false, while WindowServer later marked ESO
+  frontmost and routed keyboard focus to its PID. The first two internal states
+  became true only after the user focus bounce; the third stayed false to exit.
+- Restore the argument-buffers-off 0.1.3 behavior with caches and the new
+  medium-to-high settings preserved, then use one ordinary launch as the focus
+  control. Do not resume the performance A/B first.
+- Treat argument buffers as a likely timing trigger, not a proven direct focus
+  mechanism. One earlier argument-buffers-off Experiment 0044 run also began
+  inactive without a reported focus defect.
+- Replace the misleading guarantee `focus_event_propagation=unchanged` with a
+  structural statement that callbacks and the active byte are unmodified.
+- Prepare a single-variable pacing successor that retains a short inactive
+  yield instead of replacing the entire 100-ms branch with immediate return.
+  Do not force the active byte, synthesize focus events, or call private AppKit
+  activation APIs.
+
+The original low-FPS incident remains the architectural constraint:
 
 - Treat Experiment 0040 as falsifying the no-neutralizer profile as a
   reliability repair. The exact 0.1.2 control reproduced pink and low FPS,

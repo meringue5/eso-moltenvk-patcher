@@ -82,8 +82,9 @@ profile, not independently supported toggles.
 
 The 0.1.3 production profile combines two exact-target repairs. It replaces
 ESO's fixed inactive `usleep(100000)` branch with an observe-and-return hook
-without changing AppKit focus propagation, and it suppresses only the proven
-final-compositor placeholder draws at generation-2 ordinals 71 through 149.
+without patching the AppKit callbacks or active-state byte, and it suppresses
+only the proven final-compositor placeholder draws at generation-2 ordinals 71
+through 149.
 The compositor path latches permanently to direct forwarding at ordinal 150
 and the bounded startup lifecycle finishes at ordinal 180.
 

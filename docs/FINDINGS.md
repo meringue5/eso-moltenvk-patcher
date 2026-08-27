@@ -809,9 +809,11 @@ This explains why a low start can be slow from the first 2D loading screen,
 before character selection or the delayed graphics-pipeline bulk wave. It also
 fits Experiment 0010's WindowServer evidence: a comparable approximately
 8-FPS/cursor-mode start was still frontmost and held keyboard focus. The
-remaining unconfirmed link is the event sequence that leaves ESO's internal
-active byte false despite foreground OS state. Treat missed or misordered
-AppKit activation as the leading trigger hypothesis, not yet a captured fact.
+Experiment 0049 later captured the missing event sequence three times: the OS
+made ESO frontmost and routed keyboard focus to it while the internal active
+byte remained false. Missed or misordered AppKit activation is now a confirmed
+state divergence; the component or timing change that triggers it remains
+unproven.
 
 Pink startup rendering is not evidence for or against this path. The inactive
 sleep is in ESO's AppKit outer loop and is independent of MoltenVK compositor
@@ -821,6 +823,31 @@ The durable build map, callback-to-state flow, exact outer-loop offsets, patch
 boundary, and update invariants are maintained in
 [ESO host runtime structure](ESO-HOST-RUNTIME.md). Experiment 0041 remains the
 run-specific evidence record rather than the owner of that architecture.
+
+## OS frontmost focus can diverge from ESO's internal active state
+
+Experiment 0049 captured the previously missing event sequence across three
+consecutive argument-buffer starts. WindowServer initially denied ESO's
+front-process requests while it presented zero windows, then marked the game
+frontmost and routed keyboard focus to its PID. ESO's AppKit-fed internal
+application-active byte nevertheless remained false. The user observed that
+the visible game window did not capture the mouse until switching to another
+application and back; the first two bridge logs changed to `active=yes` only
+after that recovery action, while the third remained false until exit.
+
+This promotes the activation-state divergence from a leading hypothesis to a
+confirmed repeated observation. It does not prove that Metal argument buffers
+directly affect focus. Argument buffers were the single runtime change from the
+0.1.3 profile and are a plausible startup-timing trigger, while the complete
+removal of the inactive 100-ms yield is a plausible interacting condition. One
+earlier argument-buffers-off run began inactive without a reported focus defect,
+so neither condition is independently sufficient on current evidence.
+
+The pacing patch leaves the callback code and active byte unmodified, but that
+structural fact must not be described as a guarantee that focus-event
+propagation succeeded. Future pacing work should preserve a short scheduler
+yield and test initial mouse capture without forcing state or synthesizing
+activation events.
 
 ## Fixed-window pink neutralization and inactive pacing bypass coexist
 

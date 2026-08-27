@@ -56,7 +56,8 @@ PACING_READY = (
 )
 PACING_ACTIVE = (
     "INACTIVE_PACING_ACTIVE: inactive_100ms_sleep=bypassed "
-    "focus_event_propagation=unchanged transition_log_limit=16"
+    "focus_callbacks=unmodified active_byte=observed-only "
+    "transition_log_limit=16"
 )
 BEGIN = (
     "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: generation=2 first_present=71 "

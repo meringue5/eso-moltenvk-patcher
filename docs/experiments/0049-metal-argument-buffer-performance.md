@@ -1,8 +1,8 @@
 # Experiment 0049: Metal argument-buffer performance candidate
 
 - Date: 2026-08-27
-- Outcome: **warm run removed stutter; raised High profile did not hold the
-  user's perceived 60-FPS floor**
+- Outcome: **rejected after three consecutive startup mouse-focus failures;
+  cache-preserving rollback pending launcher exit**
 - Rollback: **verified pristine loader and public 0.1.3 reference remain available**
 
 ## Question
@@ -187,6 +187,60 @@ The profile retains 1920 x 1200, High subsampling `2`, character resolution
 the applied full-file SHA-256 is
 `ea4b007281c44144fa55ed15c2e20ff83d35e56913b36d15f32650c855bf862d`.
 
+## Three-run activation/focus regression
+
+The user clarified that all three consecutive argument-buffer starts opened a
+visible game window without initially capturing mouse focus. Recovery required
+an explicit switch to another application and back to ESO. The exact runs were:
+
+```text
+20260827T105710.534190000Z-pid87213
+20260827T110923.707262000Z-pid88869
+20260827T114657.462339000Z-pid90235
+```
+
+All three selected the exact candidate and first recorded ESO's internal
+application-active byte as `active=no` with the inactive 100-ms sleep bypassed.
+The first two later recorded `active=yes` after the user performed the focus
+bounce. The third remained `active=no` until exit, matching the run in which
+the user reported the issue and quit without retaining the recovered state.
+
+macOS unified logging independently shows the same sequence on all three
+starts. WindowServer first rejected repeated front-process requests because ESO
+presented zero windows, then designated ESO frontmost and routed keyboard focus
+to its PID once the window existed. Despite that OS-level focal state, ESO's
+own AppKit-fed active byte remained false. The evidence therefore identifies an
+OS/ESO activation-state divergence rather than an absent visible window or an
+ordinary background application.
+
+Confirmed: the focus failure repeated on all three argument-buffer starts and
+correlated exactly with an initial false ESO active state. Confirmed: the
+existing pacing patch does not modify the AppKit callbacks or active byte, but
+its former `focus_event_propagation=unchanged` log wording is only a structural
+claim and did not guarantee successful callback delivery.
+
+Inference: Metal argument buffers do not directly call AppKit, but they are the
+single runtime variable changed from the 0.1.3 release profile and plausibly
+shift startup timing into the repeatable zero-window activation race. The
+complete removal of ESO's inactive 100-ms yield may then amplify or preserve
+the missed internal activation state. This is an interaction hypothesis, not a
+proven direct argument-buffer focus mechanism. One earlier Experiment 0044
+argument-buffers-off run also began `active=no` without a reported focus
+failure, so the inactive state alone is not sufficient evidence of the symptom.
+
+The repeated input defect rejects the candidate regardless of its descriptor
+benchmark or warm-cache stutter result. A cache-preserving restore attempt
+stopped before mutation because the ZeniMax launcher was still running. The
+candidate therefore remains installed only until the launcher exits.
+
+The source log wording was corrected from the disproven propagation guarantee
+to `focus_callbacks=unmodified active_byte=observed-only`. This is an
+observability correction, not a focus repair. A fresh build passed every C
+smoke probe, exact MoltenVK configuration probe, 138 Python tests, Python
+compilation, shell syntax, and whitespace checks. The prepared bridge SHA-256
+is `9e55acc377a151d1dbe38d406b2d8846054a0630ab1b6ead3e6573dfcb72c660`;
+it is not installed while the launcher remains open.
+
 ## Interpretation
 
 Confirmed: argument buffers materially improve this descriptor-heavy MoltenVK
@@ -196,8 +250,8 @@ Confirmed historical risk: MoltenVK 1.4.1 argument buffers were the sole
 changed variable strongly implicated in black/shadow-layer flicker. The new
 non-game passes cannot prove that ESO's complete descriptor shapes are safe.
 
-The two installed runs are a provisional rendering-safety pass, not evidence
-of a steady-state FPS improvement. The warm run removed the first run's
+The first two installed runs were a provisional rendering-safety pass, not
+evidence of a steady-state FPS improvement. The warm run removed the first run's
 intermittent stutter without a loaded-world reset, strengthening but not
 proving the cache/reset-transient explanation. The candidate did not make the
 raised High profile sustain the user's perceived 60-FPS floor in object-dense
@@ -208,10 +262,12 @@ profile's total scene cost.
 
 ## Next gate
 
-Keep the candidate, both caches, and the newly applied medium-to-high profile
-unchanged. The next performance gate is no longer another forced warm-up run:
-it is an argument-buffers-off versus-on A/B with these identical settings and
-an object-dense scene, using frame-time and GPU-time evidence rather than the
-in-game FPS counter alone. Any visual corruption rejects the candidate. Until
-that A/B, the public 0.1.3 profile remains the production and rollback
-reference.
+After the launcher exits, restore and install the argument-buffers-off 0.1.3
+behavior while preserving both caches and the newly applied medium-to-high
+profile. One ordinary launch then serves as the focus control. A normal initial
+mouse capture supports an argument-buffer timing interaction; another failure
+falsifies argument buffers as a sufficient cause and exposes a latent issue in
+the release pacing bypass itself. Do not resume the performance A/B until this
+P0 activation defect is resolved. A successor pacing experiment should retain
+a short inactive yield instead of immediately returning, without forcing the
+active byte or synthesizing AppKit focus events.

@@ -22,19 +22,19 @@ The production profile combines:
 - measurement-stripped post-window direct forwarding with pipeline timing
   disabled.
 
-Performance successor research is active while leaving public 0.1.3 unchanged.
+Performance successor research is paused while leaving public 0.1.3 unchanged.
 Experiment 0048 measured the residual cached-wrapper tax at
 only single-digit nanoseconds per hot call and deferred a self-retiring
 trampoline. Experiment 0049 found a 14.899% CPU descriptor-encoding gain from
 MoltenVK 1.4.2 Metal argument buffers and exact-pixel passes in both 24-cycle
-reset configurations. Its fail-closed experimental mode remains installed
-after two ESO runs without a reported recurrence of historical corruption.
-The second, approximately 27-minute warm run had no stutter or loaded-world
-graphics reset, strengthening the cache/reset-transient interpretation of the
-first run. The raised High profile still produced a user-perceived frame-rate
-loss in object-dense play and did not hold the 60-FPS quality target. The
-historical 1.4.1 rendering-corruption boundary and lack of a same-settings
-control still block adoption pending a controlled argument-buffer A/B.
+reset configurations. Its fail-closed experimental mode is rejected after
+three consecutive starts opened without ESO initially capturing mouse focus.
+Every run began with ESO's internal active byte false even though WindowServer
+later made ESO frontmost and routed keyboard focus to it; an application switch
+out and back was required to recover. Argument buffers are the single runtime
+change from 0.1.3 and likely shift the activation timing, but a causal focus API
+mechanism is not proven. Performance work is blocked until an argument-buffers-
+off focus control and a yield-preserving pacing successor resolve this P0.
 
 The bundled M4 settings template now selects High subsampling
 (`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
@@ -96,7 +96,18 @@ marker `startup-release-argument-buffers`. It is byte-identical to the current
 validated build and changes one runtime variable from public 0.1.3: Metal
 argument buffers are enabled. The public 0.1.3 package remains the production
 and rollback reference; the experimental candidate is not released or
-supported pending its user-controlled rendering and performance gates.
+supported. It is rejected and awaiting cache-preserving rollback after the
+ZeniMax launcher exits.
+
+The rejected candidate's three exact starts were
+`20260827T105710.534190000Z-pid87213`,
+`20260827T110923.707262000Z-pid88869`, and
+`20260827T114657.462339000Z-pid90235`. All began `active=no`; the first two
+changed to `active=yes` only after the user's application switch, and the third
+remained false until exit. WindowServer independently recorded initial
+zero-window front-process denials followed by OS-level frontmost and keyboard-
+focus routing to ESO. The mismatch localizes the defect to missed or misordered
+ESO/AppKit activation state rather than an invisible or background game window.
 
 First installed run `20260827T105710.534190000Z-pid87213` activated the exact
 candidate without bridge errors, recovered from initial stutter to the 60-FPS
@@ -123,6 +134,11 @@ and view distance 1.15 while reducing planar water reflections, particle
 density, and shadows from 2 to 1. The complete pre-change settings file is
 preserved and hash-verified. This profile is the fixed settings side of the
 next Experiment 0049 A/B; it is not yet a validated 60-FPS recommendation.
+
+The first rollback attempt stopped safely before changing any file because the
+ZeniMax launcher was running. Both pipeline caches, the medium-to-high settings,
+the verified pristine loader, and the public 0.1.3 rollback reference remain
+available.
 
 The candidate retains Experiment 0044's exact inactive
 100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor
