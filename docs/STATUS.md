@@ -82,9 +82,11 @@ The candidate retains the complete 0.1.2 no-neutralizer MoltenVK configuration
 and bounded graphics-pipeline timing. It additionally replaces only ESO's
 exact 12-byte inactive 100-ms outer-loop sleep with a bounded state-observing
 hook. AppKit callbacks, focus propagation, settings, caches, pink output, and
-the launcher path remain unchanged. Source and non-game gates pass; the next
-gate is the user's ordinary Steam-authenticated launch. This installed state is
-a diagnostic release candidate, not a public release claim. See
+the launcher path remain unchanged. Source and non-game gates pass. The first
+two recorded user starts both had normal FPS with pink and logged only
+`active=yes`; they pass the initial no-regression gate but do not yet exercise
+the bypassed false-state path. This installed state is a diagnostic release
+candidate, not a public release claim. See
 [ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
 [0041](experiments/0041-inactive-pacing-bypass.md).
 
@@ -230,12 +232,13 @@ The installed bridge, renamed original, and MoltenVK hashes exactly match the
 built candidate; the marker selects `startup-inactive-pacing-bypass`; the
 restore source remains available; and every preserved cache identity passes.
 
-The next gate is one user-controlled ordinary Steam-authenticated launch.
-Preserve the current MoltenVK runtime, compilation policy, visible pink output,
-settings, caches, focus-event propagation, and launcher path. Correlate the
-user's FPS result with the new bounded active-state log. Device/swapchain/
-present tracing is no longer the first diagnostic boundary unless the focused
-bypass fails to remove the low-FPS state.
+The initial user gate now contains two normal-FPS starts with pink and
+`active=yes`. Continue ordinary use without forced retries. The decisive next
+evidence is the first natural `active=no` or low-FPS start, correlated with the
+bounded state log. Preserve the current MoltenVK runtime, compilation policy,
+settings, caches, focus-event propagation, and launcher path. Device/swapchain/
+present tracing is no longer the first low-FPS diagnostic boundary unless the
+focused bypass fails to remove the low-FPS state.
 
 Visible pink alone remains cosmetic; do not reintroduce its neutralizer or
 claim launcher/cache causality while the activation event-order trigger is

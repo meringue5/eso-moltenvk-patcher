@@ -17,10 +17,11 @@ This roadmap contains future work only. Current verified state is in
 - Treat the exact ESO inactive-loop path as the leading mechanism: when its
   internal application-active byte is false, `GameClient::mainLoop` calls
   `usleep(100000)`, directly imposing an approximately 10-Hz outer loop.
-- Run one user-controlled ordinary Steam-authenticated launch of the installed
-  Experiment 0041 candidate. Classify normal versus low FPS and correlate the
-  observation with the bounded internal application-active state log. Pink
-  alone remains an expected cosmetic result rather than a failure.
+- Continue ordinary use without forced repeats. Treat the two initial
+  Experiment 0041 starts—both normal FPS with pink and `active=yes`—as the
+  no-regression baseline, then classify the first natural `active=no` or
+  low-FPS start against the bounded state log. The initial pair did not
+  exercise the bypassed false-state path.
 - Use a bounded, forward-only device/swapchain/queue/present trace only if the
   focused inactive-loop bypass does not eliminate low FPS. Do not re-enable
   the pink neutralizer in either diagnostic.
@@ -68,6 +69,13 @@ This roadmap contains future work only. Current verified state is in
 ## P1: isolate an optional pink repair
 
 - Keep visible pink as an accepted cosmetic limitation in 0.1.2.
+- Build a forward-only two-input compositor audit before choosing another
+  repair. Distinguish `Sampler0` scene content from `Sampler1` GUI content,
+  record which bound image supplies exact magenta, and identify the descriptor
+  or image-content transition that produces the ordinal-150 normal scene.
+- Use that producer/transition boundary for any root repair. Prefer a bounded
+  placeholder-input substitution or readiness transition over a fixed ordinal
+  window; keep the host-loop FPS bypass unchanged during this work.
 - Before any compositor substitution returns, build a forward-only control that
   retains equivalent tracking and locking without replacing draws. This must
   separate tracking overhead from the 79 draw-to-clear substitutions.

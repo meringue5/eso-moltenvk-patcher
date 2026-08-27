@@ -1,7 +1,7 @@
 # Experiment 0041: inactive application pacing bypass
 
 - Date: 2026-08-27
-- Outcome: **candidate installed after source, non-game, restore, and payload gates passed; user launch pending**
+- Outcome: **candidate installed; first two recorded starts had normal FPS with pink and `active=yes`; natural recurrence gate remains**
 - Rollback: **available and verified through the pristine loader; caches preserved**
 
 ## Question
@@ -138,3 +138,29 @@ Its durable component map, outer-loop control flow, activation callbacks,
 shared state, renderer boundary, and update invariants are maintained in
 [ESO host runtime structure](../ESO-HOST-RUNTIME.md). This experiment remains
 the evidence record for the candidate design, installation, and user result.
+
+## Initial user-controlled observations
+
+The first two exact bridge starts after installation are:
+
+```text
+20260827T044900.700688000Z-pid17430
+20260827T050537.435829000Z-pid19907
+```
+
+The user reported no low-FPS recurrence across these starts and continued to
+observe the pink startup output. Both runs selected
+`startup-inactive-pacing-bypass`, installed the exact host-loop patch, and
+recorded only the initial state `active=yes`; neither recorded an `active=no`
+transition. Graphics-pipeline call 5 arrived at 13.616 seconds in the first run
+and 12.193 seconds in the second, then returned successfully in 1.568 and 1.420
+milliseconds respectively. All 64 retained calls in both runs succeeded with
+non-null output.
+
+These starts pass the initial no-regression gate and provide a clean structural
+separation: visible pink can coexist with an active host state and normal FPS.
+They do not yet prove that bypassing the sleep repairs a naturally occurring
+bad state, because neither process observed the internal byte as false. Do not
+force launches to manufacture that state. The decisive future observation is
+the first natural `active=no` or low-FPS start, classified against the user's
+visible result.
