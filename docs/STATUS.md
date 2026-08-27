@@ -91,13 +91,13 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-Experiment 0049's source candidate is installed on exact ESO 12.0.8 with
-marker `startup-release-argument-buffers`. It is byte-identical to the current
-validated build and changes one runtime variable from public 0.1.3: Metal
-argument buffers are enabled. The public 0.1.3 package remains the production
-and rollback reference; the experimental candidate is not released or
-supported. It is rejected and awaiting cache-preserving rollback after the
-ZeniMax launcher exits.
+Experiment 0049's rejected argument-buffer candidate has been replaced on exact
+ESO 12.0.8 by the source control marker
+`startup-compositor-neutralize-pacing-release`. It is byte-identical to the
+fresh validated build, disables Metal argument buffers, and retains the 0.1.3
+runtime behavior with corrected focus-observability wording. The public 0.1.3
+package remains the production and rollback reference; the control exists only
+to classify the repeated startup focus defect.
 
 The rejected candidate's three exact starts were
 `20260827T105710.534190000Z-pid87213`,
@@ -136,9 +136,11 @@ preserved and hash-verified. This profile is the fixed settings side of the
 next Experiment 0049 A/B; it is not yet a validated 60-FPS recommendation.
 
 The first rollback attempt stopped safely before changing any file because the
-ZeniMax launcher was running. Both pipeline caches, the medium-to-high settings,
-the verified pristine loader, and the public 0.1.3 rollback reference remain
-available.
+ZeniMax launcher was running. A fresh process check then found ESO and the
+launcher exited, and the shared idle gate passed. The verified pristine loader
+was restored and the OFF control installed. Both pipeline caches and the
+medium-to-high settings stayed byte-identical. The installed bridge SHA-256 is
+`9e55acc377a151d1dbe38d406b2d8846054a0630ab1b6ead3e6573dfcb72c660`.
 
 The candidate retains Experiment 0044's exact inactive
 100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor

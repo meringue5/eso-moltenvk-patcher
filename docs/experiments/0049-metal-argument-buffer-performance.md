@@ -2,7 +2,7 @@
 
 - Date: 2026-08-27
 - Outcome: **rejected after three consecutive startup mouse-focus failures;
-  cache-preserving rollback pending launcher exit**
+  cache-preserving argument-buffers-off control installed**
 - Rollback: **verified pristine loader and public 0.1.3 reference remain available**
 
 ## Question
@@ -229,17 +229,27 @@ argument-buffers-off run also began `active=no` without a reported focus
 failure, so the inactive state alone is not sufficient evidence of the symptom.
 
 The repeated input defect rejects the candidate regardless of its descriptor
-benchmark or warm-cache stutter result. A cache-preserving restore attempt
-stopped before mutation because the ZeniMax launcher was still running. The
-candidate therefore remains installed only until the launcher exits.
+benchmark or warm-cache stutter result. The first cache-preserving restore
+attempt stopped before mutation because the ZeniMax launcher was still running.
+After a fresh process check showed both ESO and the launcher exited, the shared
+idle gate passed with idle Steam and no ESO file or update activity.
 
 The source log wording was corrected from the disproven propagation guarantee
 to `focus_callbacks=unmodified active_byte=observed-only`. This is an
 observability correction, not a focus repair. A fresh build passed every C
 smoke probe, exact MoltenVK configuration probe, 138 Python tests, Python
 compilation, shell syntax, and whitespace checks. The prepared bridge SHA-256
-is `9e55acc377a151d1dbe38d406b2d8846054a0630ab1b6ead3e6573dfcb72c660`;
-it is not installed while the launcher remains open.
+is `9e55acc377a151d1dbe38d406b2d8846054a0630ab1b6ead3e6573dfcb72c660`.
+
+The verified pristine loader was restored and the same freshly built bridge
+was installed in `startup-compositor-neutralize-pacing-release` mode. This
+retains the 0.1.3 behavior while disabling Metal argument buffers and changing
+only the corrected observability wording. Installed and built bridge hashes
+match exactly at the SHA-256 above. The medium-to-high settings remained
+`ea4b007281c44144fa55ed15c2e20ff83d35e56913b36d15f32650c855bf862d`;
+the active and old pipeline caches remained
+`036fd84abe8bb3552e9f5960eb643757a97e3614a8f9a9685639e599b86f4de4`
+and `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 
 ## Interpretation
 
@@ -262,9 +272,8 @@ profile's total scene cost.
 
 ## Next gate
 
-After the launcher exits, restore and install the argument-buffers-off 0.1.3
-behavior while preserving both caches and the newly applied medium-to-high
-profile. One ordinary launch then serves as the focus control. A normal initial
+One ordinary launch of the installed argument-buffers-off behavior now serves
+as the focus control. A normal initial
 mouse capture supports an argument-buffer timing interaction; another failure
 falsifies argument buffers as a sufficient cause and exposes a latent issue in
 the release pacing bypass itself. Do not resume the performance A/B until this

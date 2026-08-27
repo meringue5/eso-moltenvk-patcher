@@ -13,8 +13,8 @@ This roadmap contains future work only. Current verified state is in
   internal `application_active` byte false, while WindowServer later marked ESO
   frontmost and routed keyboard focus to its PID. The first two internal states
   became true only after the user focus bounce; the third stayed false to exit.
-- Restore the argument-buffers-off 0.1.3 behavior with caches and the new
-  medium-to-high settings preserved, then use one ordinary launch as the focus
+- The argument-buffers-off 0.1.3 behavior is restored with caches and the new
+  medium-to-high settings preserved. Use one ordinary launch as the focus
   control. Do not resume the performance A/B first.
 - Treat argument buffers as a likely timing trigger, not a proven direct focus
   mechanism. One earlier argument-buffers-off Experiment 0044 run also began
