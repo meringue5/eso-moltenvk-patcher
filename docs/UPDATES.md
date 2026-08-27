@@ -140,7 +140,7 @@ After a launcher update, re-running its `Install.command` first requires an
 unchanged embedded MoltenVK archive, then validates all compiled patch bytes,
 old-runtime text references, and proc-query multiplicities. If those match, it
 records the new executable SHA-256 in the marker; the bridge independently
-checks that attestation before changing memory. The next release also binds the
+checks that attestation before changing memory. Version 0.1.3 also binds the
 restore backup to its executable/original-loader generation. A retained stale
 bridge requires the ESO launcher Repair path because the current vendor
 original cannot be observed safely; the old backup is not restored. A

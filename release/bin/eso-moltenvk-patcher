@@ -24,6 +24,10 @@ RECOVERY_REBASE_SUFFIX=""
 RECORDED_EXECUTABLE_SHA256=""
 RECORDED_ORIGINAL_BINK_SHA256=""
 REMOVE_RESTORE_ACTION="none"
+PATCH_UPGRADE=false
+PREVIOUS_SETTINGS_CHOICE=""
+PREVIOUS_SETTINGS_BACKUP=""
+RETAIN_PREVIOUS_SETTINGS_RECORD=false
 UI_ACTION=""
 UI_COMPLETED=0
 typeset -a UI_STEP_LABELS
@@ -460,6 +464,12 @@ retag_original() {
 
 record_state() {
   local phase="$1"
+  local recorded_settings_choice="${settings_choice:-skip}"
+  local recorded_settings_backup="${SETTINGS_BACKUP_NAME:-${settings_backup:-}}"
+  if [[ "$RETAIN_PREVIOUS_SETTINGS_RECORD" == true ]]; then
+    recorded_settings_choice=apply
+    recorded_settings_backup="$PREVIOUS_SETTINGS_BACKUP"
+  fi
   print -r -- "executable_sha256=${ACTUAL_ESO_SHA256:-$(sha256 "$ESO")}" > "$STATE"
   print -r -- "profile_sha256=$EXPECTED_ESO_SHA256" >> "$STATE"
   print -r -- "original_bink_sha256=$EXPECTED_ORIGINAL_BINK_SHA256" >> "$STATE"
@@ -469,8 +479,8 @@ record_state() {
   print -r -- "remove_restore_action=${REMOVE_RESTORE_ACTION:-none}" >> "$STATE"
   print -r -- "release_version=${RELEASE_VERSION:-unknown}" >> "$STATE"
   print -r -- "transaction_phase=$phase" >> "$STATE"
-  print -r -- "settings_choice=${settings_choice:-skip}" >> "$STATE"
-  print -r -- "settings_backup=${SETTINGS_BACKUP_NAME:-${settings_backup:-}}" >> "$STATE"
+  print -r -- "settings_choice=$recorded_settings_choice" >> "$STATE"
+  print -r -- "settings_backup=$recorded_settings_backup" >> "$STATE"
   print -r -- "recorded_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
   print -r -- "${RELEASE_VERSION:-unknown}" > "$VERSION_FILE"
 }
@@ -515,6 +525,18 @@ recover_incomplete_install() {
   fi
   if [[ -e "$MARKER" ]]; then
     if [[ "$(active_loader_kind)" == bridge ]]; then
+      load_verified_recovery_record
+      local marker_sha
+      marker_sha="$(state_value eso_sha256 "$MARKER")"
+      if [[ "$RECORDED_EXECUTABLE_SHA256" == "$ACTUAL_ESO_SHA256" \
+        && "$RECORDED_ORIGINAL_BINK_SHA256" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
+        && "$marker_sha" == "$ACTUAL_ESO_SHA256" ]]; then
+        PATCH_UPGRADE=true
+        PREVIOUS_SETTINGS_CHOICE="$(state_value settings_choice "$STATE")"
+        PREVIOUS_SETTINGS_BACKUP="$(state_value settings_backup "$STATE")"
+        print -- "  Detected a verified earlier patcher on the same ESO and original-loader generation; it will be upgraded in place."
+        return 0
+      fi
       die "An unrecognized bridge loader is active after an ESO update. Run the ESO launcher Repair before installing. No files were changed."
     fi
     die "ESO installed a different original Bink library. This patcher release does not support that loader generation; the existing backup was not restored. Install a newer compatible patcher. No files were changed."
@@ -626,7 +648,7 @@ install() {
     print -- "  ESO: $ESO_APP"
     return 0
   fi
-  require_supported_original
+  [[ "$PATCH_UPGRADE" == true ]] || require_supported_original
   if [[ "$assume_yes" != true ]]; then
     [[ -t 0 && "$UI_TTY" == true ]] \
       || die "Non-interactive installation requires --yes to confirm the ESO target."
@@ -647,13 +669,27 @@ install() {
   mkdir -p "$STATE_DIR"
   chmod 700 "$STATE_DIR"
   archive_previous_recovery_generation
+  if [[ "$PATCH_UPGRADE" == true ]]; then
+    copy_verified "$BACKUP" "$BINK"
+    [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] \
+      || die "The verified same-generation baseline could not be restored for upgrade."
+  fi
   if [[ -e "$BACKUP" || -e "$STATE" ]]; then
     [[ -f "$BACKUP" && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] || die "The existing restore backup is incomplete or does not match this client."
     [[ ! -e "$STATE" || -f "$STATE" ]] || die "The existing restore record is invalid."
   else
     copy_verified "$BINK" "$BACKUP"
   fi
-  prepare_settings_template
+  if [[ "$settings_choice" == skip \
+    && "$PREVIOUS_SETTINGS_CHOICE" == apply \
+    && -n "$PREVIOUS_SETTINGS_BACKUP" \
+    && -f "$STATE_DIR/$PREVIOUS_SETTINGS_BACKUP" \
+    && -f "$SETTINGS_PATH_FILE" \
+    && -f "$SETTINGS_APPLIED_SHA_FILE" ]]; then
+    RETAIN_PREVIOUS_SETTINGS_RECORD=true
+  else
+    prepare_settings_template
+  fi
   preserve_previous_state
   record_state prepared
   ui_step 4 6 "Preparing verified recovery backup"
@@ -662,8 +698,8 @@ install() {
   copy_verified "$PAYLOAD/libBink2Macx64.dylib" "$BINK"
   copy_verified "$PAYLOAD/libMoltenVK.teso4m4.dylib" "$MVK"
   ui_step 5 6 "Installing runtime bridge"
-  commit_settings_template
-  print -r -- 'mode=startup-pipeline-timing-control' > "$STATE_DIR/enable-marker"
+  [[ -n "${SETTINGS_BACKUP_NAME:-}" ]] && commit_settings_template
+  print -r -- 'mode=startup-compositor-neutralize-pacing-release' > "$STATE_DIR/enable-marker"
   print -r -- "eso_sha256=$ACTUAL_ESO_SHA256" >> "$STATE_DIR/enable-marker"
   copy_verified "$STATE_DIR/enable-marker" "$MARKER"
   rm -f "$STATE_DIR/enable-marker"
@@ -730,9 +766,15 @@ remove() {
     REMOVE_RESTORE_ACTION=verified-backup-restored
   else
     loader_kind="$(active_loader_kind)"
-    [[ "$loader_kind" != bridge ]] \
-      || die "An unrecognized bridge loader is active. Run the ESO launcher Repair before Uninstall. No files were changed."
-    REMOVE_RESTORE_ACTION=external-original-preserved
+    if [[ "$loader_kind" == bridge ]]; then
+      [[ "$RECORDED_EXECUTABLE_SHA256" == "$ACTUAL_ESO_SHA256" \
+        && "$RECORDED_ORIGINAL_BINK_SHA256" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
+        && "$marker_sha" == "$ACTUAL_ESO_SHA256" ]] \
+        || die "An unrecognized bridge loader is active. Run the ESO launcher Repair before Uninstall. No files were changed."
+      REMOVE_RESTORE_ACTION=verified-backup-restored
+    else
+      REMOVE_RESTORE_ACTION=external-original-preserved
+    fi
   fi
   MUTATION_STARTED=true
   if [[ "$REMOVE_RESTORE_ACTION" == verified-backup-restored ]]; then

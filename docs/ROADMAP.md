@@ -91,45 +91,22 @@ This roadmap contains future work only. Current verified state is in
   the producer/readiness transition of the proven GUI-classified image. Do not
   add per-frame image readback merely to replace the already bounded repair.
 
-## P2: derive and release a measurement-stripped Experiment 0044 repair
+## P2: monitor the stable 0.1.3 baseline
 
-- Freeze Experiment 0044's functional behavior, not its diagnostic
-  instrumentation: retain the exact inactive 100-ms sleep bypass, MoltenVK
-  configuration, fail-open compositor identity checks, 79-draw fixed-window
-  suppression, and ordinal-150 forwarding latch.
-- Complete the Experiment 0045 non-game gate for the separately prepared
-  release profile. Prove that its finished gate leaves every retained wrapper
-  in direct-forward operation without lifecycle-table locking, mutation, or
-  diagnostic logging.
-- Prove functional equivalence with non-game and exact-log probes: the release profile must
-  suppress the same exact 79 draws, forward at ordinal 150, fail open on every
-  incomplete identity, emit no pipeline-timing records, and show no post-finish
-  lifecycle bookkeeping. Keep bounded operational begin/suppress/latch/error
-  evidence needed to diagnose a failed repair.
-- Treat Experiment 0044's two successful starts as evidence for the functional
-  combination only. Require a user-controlled ordinary start of the stripped
-  profile before packaging; do not infer binary equivalence merely from disabled
-  flags.
-- Do not mix the optional performance candidates below into this release or
-  invalidate its attribution. A more elaborate self-retiring dispatch/trampoline
-  remains follow-up work unless the post-finish direct-forward probe exposes a
-  material residual cost.
-- After the ordinary-use reliability gate remains clean, promote the exact
-  validated release-profile bridge and runtime through a new immutable release
-  rather than replacing the existing 0.1.2 asset.
-- Keep official MoltenVK 1.4.2 and the verified inactive-sleep and bounded
-  compositor repair identities together as one release baseline.
-- Preserve the pristine loader, release restore record, historical runtime
-  backups, all pipeline-cache generations, and the 48-key sanitized settings
-  template with validated High subsampling.
-- Keep release install and uninstall transactional, idempotent, and fail-closed
-  on unknown files or incomplete recovery state.
-- Package the Experiment 0046 generation-aware installer state machine with the
-  measurement-stripped runtime candidate. Verify the assembled ZIP repeats the
-  retained-bridge repair refusal, external-original preservation, and
-  supported-generation rotation fixture before publication.
-- Treat regressions in ordinary play, live graphics resets, startup color, or
-  restore behavior as release blockers.
+- Preserve Experiments 0045 and 0046 as the immutable functional, packaging,
+  and recovery evidence for 0.1.3; do not fold new performance experiments into
+  that release identity.
+- Observe natural launches instead of forcing repetitive starts. If pink or
+  low FPS recurs, capture the exact run before retrying and compare pacing,
+  suppression, latch, and finished-gate records without deleting caches.
+- Keep official MoltenVK 1.4.2, the inactive-pacing bypass, bounded compositor
+  repair, generation-aware recovery, and verified Uninstall path together as
+  one supported baseline.
+- Treat regressions in ordinary play, live graphics resets, startup color,
+  update recovery, or uninstall behavior as release blockers for successors.
+- Consider a self-retiring dispatch/trampoline only as a separately measured
+  successor experiment; the current post-window direct-forward path is the
+  released stability baseline.
 
 ## P3: research three 60-FPS-constrained performance directions
 

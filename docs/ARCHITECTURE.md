@@ -78,24 +78,24 @@ After `dlopen`, the bridge reads the effective `MVKConfiguration` and stops
 before patching if any required value differs. The settings are one validated
 profile, not independently supported toggles.
 
-## Performance-first startup control
+## Stable bounded startup control
 
-The 0.1.2 production profile deliberately does not replace ESO's early
-canonical-magenta compositor draws. The original pink placeholder can remain
-visible. This is an accepted cosmetic issue because the first no-neutralizer
-control returned to normal FPS and the normal renderer-completion path, while
-the preceding neutralized run reproduced the intermittent low-FPS path.
+The 0.1.3 production profile combines two exact-target repairs. It replaces
+ESO's fixed inactive `usleep(100000)` branch with an observe-and-return hook
+without changing AppKit focus propagation, and it suppresses only the proven
+final-compositor placeholder draws at generation-2 ordinals 71 through 149.
+The compositor path latches permanently to direct forwarding at ordinal 150
+and the bounded startup lifecycle finishes at ordinal 180.
 
-Only the first 64 `vkCreateGraphicsPipelines` calls receive a bounded timing
-wrapper. Every argument and result is forwarded unchanged; all other lifecycle,
-draw, descriptor, presentation, and compositor entry points are returned
-directly to MoltenVK. The timing evidence distinguishes delayed ESO requests
-from slow or failed downstream compilation without changing caches or adding a
-readiness wait.
+Graphics-pipeline timing, pixel readback, readiness canaries, and compositor
+image sampling are disabled. The startup identity wrappers required for the
+fail-open repair remain active only through the bounded window; every retained
+destroy/free/reset wrapper checks the common finished gate and direct-forwards
+without lifecycle-table mutation afterward.
 
-The former bounded neutralizer and its evidence remain preserved in
-Experiments 0026 through 0031 and 0038. They are diagnostic history, not the
-0.1.2 production path.
+Experiments 0038 and earlier timing/audit modes remain diagnostic history, not
+the 0.1.3 production path. Experiments 0044 and 0045 establish the functional
+repair and its measurement-stripped release form.
 
 ## Installer transaction
 
@@ -158,8 +158,9 @@ maintenance gates.
 
 The source retains bounded lifecycle, descriptor, draw, and compositor
 instrumentation for historical experiments and future exact-target diagnosis.
-Only bounded pipeline timing is active in 0.1.2. These facilities are not
-public configuration promises. Abandoned
+The 0.1.3 release retains only bounded operational evidence for the startup
+repair and disables pipeline timing and post-window bookkeeping. These
+facilities are not public configuration promises. Abandoned
 1.4.1 source patches and failed legacy feature masking are not part of the
 production tree.
 

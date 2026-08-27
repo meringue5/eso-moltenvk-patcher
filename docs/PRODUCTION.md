@@ -2,7 +2,7 @@
 
 Promoted: 2026-08-01
 
-Current maintenance baseline: 2026-08-25 performance-first checkpoint
+Current maintenance baseline: 2026-08-27 stable startup checkpoint
 
 `teso4m4` is a production runtime patch from this promotion point onward. The
 project's prior work remains preserved as research and experiment history; it
@@ -13,14 +13,14 @@ if it had been production at the time.
 
 | Component | Production baseline |
 |---|---|
-| Product | ESO MoltenVK Patcher 0.1.2 |
+| Product | ESO MoltenVK Patcher 0.1.3 |
 | Current exact ESO client | Steam macOS ESO 12.0.8, databuild `3288357` |
 | Extended gameplay client | Steam macOS ESO 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
-| Bridge profile | `startup-pipeline-timing-control`; compositor neutralizer disabled |
+| Bridge profile | `startup-compositor-neutralize-pacing-release`; inactive pacing bypass and bounded compositor repair |
 | Validated hardware | Apple M4 MacBook Air, through Rosetta |
 | Gameplay evidence | Roughly 93 minutes of ordinary play at the observed 60 FPS VSync ceiling, including live graphics and resolution changes |
-| Startup evidence | Historical neutralizer runs preserved; first no-neutralizer control retained pink and returned to normal FPS and renderer timing |
+| Startup evidence | Exact packaged 0.1.3 candidate had no pink or low FPS; 79 bounded suppressions, ordinal-150 forwarding, and no pipeline timing or lifecycle errors |
 | Standard settings | 2048 x 1280 profile with High subsampling (`SUB_SAMPLING "2"`) |
 | Safety boundary | Exact selected identity or complete structural compatibility audit, original patch bytes, executable attestation, backup, and restore path must all pass |
 
@@ -35,6 +35,9 @@ update-compatible checkpoint after ESO 12.0.8 passed static, installer,
 runtime-activation, and user-controlled gameplay gates.
 Version 0.1.2 promotes the Experiment 0038 performance-first control after an
 exact user launch separated normal FPS from the still-visible pink placeholder.
+Version 0.1.3 promotes Experiments 0044-0046 after the measurement-stripped
+package candidate passed its exact user launch and generation-aware recovery
+fixture.
 
 ## Promotion boundary
 
@@ -58,6 +61,14 @@ startup audits while retaining non-maximized compilation and bounded pipeline
 timing. Its first user-controlled launch followed the normal renderer path and
 normal FPS with pink visible. The result selects the 0.1.2 product tradeoff; it
 does not prove long-term recurrence absence.
+Experiment 0044 then validates the exact inactive 100-ms pacing bypass and
+bounded 79-draw compositor repair twice, including one run that exercised the
+inactive branch. Experiment 0045 removes diagnostic pipeline timing and post-
+window lifecycle bookkeeping without changing that functional repair; its
+exact 0.1.3 package candidate launched without pink or low FPS and passed all
+bounded log gates. Experiment 0046 makes install and uninstall recovery aware
+of the executable/original-loader generation and prevents obsolete backup
+restoration across an update.
 
 ## Supported scope today
 
@@ -89,9 +100,9 @@ bundle race rather than the presence of the authentication client.
 - Preserve a verified restore path for each selected installation.
 - Keep account login and game launch under the user's normal Steam or ZeniMax
   launcher flow.
-- Prioritize the normal-FPS startup path over cosmetic startup suppression.
-  Leave ESO's pink placeholder visible until a neutralizer can be shown not to
-  increase low-FPS risk.
+- Keep the normal-FPS startup path and verified bounded pink suppression as one
+  target-specific release invariant. Fail open after ordinal 150 and do not
+  reintroduce persistent diagnostic timing or lifecycle bookkeeping.
 - Do not claim that shader or pipeline-cache warm-up causes the reported
   restart-dependent cold-start slowdown until a controlled comparison separates
   it from launcher lifetime and other startup resource state.

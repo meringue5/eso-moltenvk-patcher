@@ -4,7 +4,7 @@
 Online** from its
 statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
 1.4.2 release. The current patch and installer are validated on the normal
-Steam launch path. The current 0.1.2 release supports ESO 12.0.8 and can
+Steam launch path. The current 0.1.3 release supports ESO 12.0.8 and can
 re-attest later relocation-only game updates when their embedded MoltenVK and
 complete bridge-facing structure remain unchanged. On the tested M4 MacBook
 Air, a 2048 x 1280 medium-to-high
@@ -191,7 +191,7 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 | Current supported ESO | Steam macOS client 12.0.8, databuild `3288357` |
 | Extended gameplay baseline | Steam macOS client 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
-| Bridge profile | Performance-first 1.4.2 profile; compositor neutralizer disabled |
+| Bridge profile | Stable 1.4.2 profile; inactive-pacing bypass plus bounded compositor repair |
 | Display profile | 2048 x 1280, VSync enabled |
 | Graphics profile | Mixed medium-to-high settings with SSAO and high-resolution shadows |
 | Ordinary-play validation | Roughly 93 minutes across multiple zones |
@@ -216,14 +216,14 @@ supports that generation. The tested result applies to the combined runtime, bri
 settings, and cache checkpoint on the listed M4; other Apple GPUs and ESO
 builds require their own validation.
 
-Version 0.1.2 prioritizes FPS reliability over cosmetic startup suppression.
-It deliberately leaves ESO's original full-screen pink placeholder visible
-during startup and removes the bounded compositor substitution that was the
-leading remaining trigger for an intermittent approximately-10-FPS startup
-path. The first exact control launch retained pink but returned to the normal
-renderer path and normal FPS. Because the fault is intermittent, continued
-natural-start monitoring remains explicit; the release does not claim that
-one control proves the exact internal race. See the
+Version 0.1.3 is the strongest startup-stability release validated so far on
+the exact M4 and ESO 12.0.8 target. It bypasses ESO's stale inactive 100-ms
+host-pacing branch, suppresses only the proven 79-draw pink-placeholder window,
+and retires diagnostic pipeline timing and lifecycle bookkeeping after the
+bounded startup interval. The exact packaged candidate launched with no pink
+and normal FPS; its log confirmed ordinal-150 forwarding and no timing,
+lifecycle-error, or overflow records. This is concrete target-specific evidence,
+not a universal FPS guarantee for every Mac. See the
 [current project status](docs/STATUS.md).
 
 ## Source build and maintenance installation

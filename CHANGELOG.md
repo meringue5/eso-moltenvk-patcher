@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.1.3 - 2026-08-27
+
+- Promotes the strongest startup-reliability profile validated so far on the
+  exact M4 and ESO 12.0.8 target. It combines the exact inactive 100-ms host-
+  pacing bypass with the bounded compositor repair that suppresses only the 79
+  verified pink-placeholder draws and forwards the normal scene at ordinal
+  150.
+- Removes first-64 graphics-pipeline timing from the release profile and makes
+  retained lifecycle wrappers direct-forward without table bookkeeping after
+  the bounded startup window. Functional safety evidence remains, while
+  diagnostic work no longer persists into ordinary gameplay.
+- The exact packaged candidate passed its user-controlled Steam launch with no
+  pink and normal FPS. Its bounded log recorded exactly 79 suppressions,
+  ordinal-150 forwarding, ordinal-180 completion, zero pipeline-timing
+  records, and zero lifecycle errors or overflows. A short battery-mode mid-
+  high observation also remained smooth, but is not presented as a sustained
+  battery or cross-hardware benchmark.
+- Makes Install, Status, and Uninstall original-loader-generation aware. If an
+  ESO update leaves the bridge active, the patcher fails closed and requires
+  launcher Repair instead of restoring a possibly obsolete Bink backup.
+- Preserves a different launcher-provided original Bink byte-for-byte during
+  Uninstall. A newer patcher may adopt that generation only after explicitly
+  recognizing it, archiving the prior recovery generation, and creating a new
+  verified backup.
+- Extends the disposable release transaction fixture across retained-bridge
+  refusal, externally restored original preservation, generation rotation,
+  and interrupted archive resumption.
+- Retains official MoltenVK 1.4.2, the exact ESO 12.0.8 target and structural
+  update auditor, normal Steam/ZeniMax authentication, existing cache state,
+  verified reversibility, and the optional 48-key M4 settings merge.
+
 ## 0.1.2 - 2026-08-25
 
 - Prioritized startup FPS reliability over cosmetic pink-screen suppression.

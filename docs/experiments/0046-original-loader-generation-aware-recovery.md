@@ -100,3 +100,20 @@ its historical bridge-retained recovery behavior.
 
 No rollback was required. All mutations occurred inside a disposable temporary
 fixture that was removed by the test harness.
+
+## 2026-08-27 amendment: same-target patcher upgrades
+
+Release-candidate testing added the adjacent upgrade case without weakening the
+update boundary. A newer patcher may replace or uninstall an earlier bridge
+directly only when all of the following agree: current ESO SHA-256, marker
+attestation, recorded executable SHA-256, recorded original-loader SHA-256, and
+the verified backup. The restore occurs only after install confirmation and the
+transaction mutation boundary begins. If the earlier installation applied the
+settings template and the player selects settings-skip for the binary-only
+upgrade, the existing conflict-safe settings restore record is retained.
+
+The disposable fixture changes the bridge Mach-O identity to produce a distinct
+earlier-patcher hash while preserving its bridge classification. It proves
+same-generation Install replacement, settings-record retention, and Uninstall
+of that earlier bridge. Executable-update cases still fail closed and require
+launcher Repair. The complete 0.1.3 release transaction fixture passes.

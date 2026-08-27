@@ -1,8 +1,8 @@
 # Experiment 0045: measurement-stripped compositor/pacing release profile
 
 - Date: 2026-08-27
-- Outcome: **planned; source and non-game preparation in progress**
-- Rollback: **not applicable; installed Experiment 0044 state unchanged**
+- Outcome: **succeeded; exact packaged candidate passed the user-controlled launch**
+- Rollback: **verified public-installer backup retained; Uninstall is available**
 
 ## Question
 
@@ -71,6 +71,37 @@ contiguous target suppressions at ordinals 71-149, the single ordinal-150
 forwarding latch, ordinal-180 finish, no `STARTUP_PIPELINE_*` records, and no
 lifecycle error or overflow. Any low-FPS result fails regardless of pink.
 
+## User result
+
+The exact packaged candidate passed on run
+`20260827T071558.350339000Z-pid73173`. The user observed no pink and normal
+performance, then raised graphics from mid-low to mid-high while on battery and
+reported that it continued to run well for approximately one minute. The user
+ended the test after macOS produced a low-battery warning. This short battery
+observation is supporting confidence, not a sustained-performance or battery-
+efficiency claim.
+
+The bounded bridge log independently confirms:
+
+```text
+mode: startup-compositor-neutralize-pacing-release
+pipeline_timing: disabled
+post_window_bookkeeping: disabled
+inactive_100ms_sleep: bypassed
+inactive state observed: active=yes, action=forward
+suppression: 79 exact draws, generation 2 ordinals 71-149
+forward latch: one, generation 2 ordinal 150, present-deadline
+finished: generation 2 ordinal 180
+STARTUP_PIPELINE_* records: 0
+errors or overflow records: 0
+```
+
+This exact run did not enter the inactive branch because the observed state was
+active. Experiment 0044 already exercised the same compiled bypass with
+`active=no` and `action=sleep-bypassed`; the release candidate retains that
+exact patch identity while removing only diagnostic pipeline timing and post-
+window lifecycle bookkeeping.
+
 ## Preparation result
 
 The separate mode is implemented in source. Its configuration probe matches
@@ -87,11 +118,48 @@ reset, render-audit, and MoltenVK configuration probes. The full Python suite,
 release transaction fixture, Python compilation, shell syntax, and diff checks
 also passed before this record was written.
 
-The installed game bundle remains on Experiment 0044. Experiment 0045 is not
-yet an installed or gameplay-validated release candidate.
+The complete non-game gate was repeated for the versioned 0.1.3 package:
+
+```text
+fresh bridge build and all bridge probes: PASS
+Python tests: 138 PASS
+release transaction fixture: PASS
+same-target earlier-patcher Install/Uninstall upgrade: PASS
+retained-bridge update refusal and generation rotation: PASS
+Python compile, shell syntax, git diff check: PASS
+official MoltenVK 1.4.2 Metal compatibility/surface probes: PASS on Apple M4
+embedded MoltenVK 1.0.18 comparison probes: PASS on Apple M4
+startup-surface Metal probe: PASS
+runtime-readiness compiler canary: 10/10 PASS
+internal package checksums and archive hygiene: PASS
+candidate ZIP SHA-256: 26ca4273aae669231dcc3a04e998d59b74038361e97da0b5f746434c1d02a4d7
+bridge SHA-256: 24735b44e83f1f6986cf2c36bca57616b8468fd026bc4ffa11062ed31a98f569
+retagged original Bink SHA-256: f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927
+MoltenVK SHA-256: aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
+```
+
+After the shared bundle-idle gate passed, the Experiment 0044 bridge was
+restored to the verified pristine loader with every pipeline-cache generation
+preserved. The exact `Install.command` extracted from
+`ESO-MoltenVK-Patcher-0.1.3.zip` then installed the candidate with settings
+explicitly unchanged. Package Status reports release 0.1.3 on the exact target.
+The installed bridge and MoltenVK hashes equal the packaged payloads, and the
+following user-file hashes remained unchanged across the transaction:
+
+```text
+UserSettings.txt:                         104e894803e70dae30fdab887474a8f3116387375614484d36c3755c58745fb0
+PipelineCache.esopc:                      34fb06cd57d009caf207a0ce7dcedd10c3c04e25932f1f9c9ac1311ff4a80ef8
+PipelineCache.esopc.teso4m4-old-backup:  72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+```
+
+The marker selects `startup-compositor-neutralize-pacing-release` and attests
+the exact ESO SHA-256. The recovery state records release 0.1.3, the exact
+original-loader generation, the bridge and MoltenVK hashes, and an installed
+transaction phase. No game or launcher was started by the agent. The remaining
+gate was the ordinary user-controlled launch recorded above, which passed.
 
 ## Rollback
 
-No rollback was required because source preparation did not modify the game
-bundle. The verified pristine loader and Experiment 0044 installation remain
-unchanged.
+No rollback has been required. The packaged Uninstall command retains the
+verified original-loader backup and passed exact-generation and previous-
+patcher removal tests in the disposable fixture.

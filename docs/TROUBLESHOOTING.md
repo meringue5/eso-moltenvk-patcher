@@ -15,17 +15,17 @@ restart recorded ten connection events and six successful Metal compilation
 jobs. Failure to enter the normal pipeline-compilation path is now the leading
 hypothesis, but cause and consequence are not yet separated.
 
-Version 0.1.2 removes the cosmetic compositor neutralizer and its supporting
-startup audits. In the first exact control, the pink placeholder remained but
-FPS and renderer timing returned to normal. Pink alone therefore does not mean
-the bridge failed or that low FPS will follow; it is an accepted cosmetic
-limitation in the performance-first release.
+Version 0.1.3 combines the independently identified inactive 100-ms host-pacing
+bypass with the exact bounded compositor repair. Its packaged candidate started
+without pink or low FPS and its log confirmed all 79 suppressions, normal-scene
+forwarding at ordinal 150, and no retained pipeline timing. This is the
+strongest target-specific repair evidence so far, but an intermittent condition
+cannot be declared impossible from one release-candidate start.
 
-The low-FPS condition is intermittent, so one normal control is not proof of
-permanent resolution. If low FPS occurs under 0.1.2, exit normally and report
-the run before retrying. Preserve all caches. Do not delete them or distribute
-a warmed cache as a workaround. Capture cache metadata, process boundaries,
-fixed-scene FPS/GPU timing, memory, thermal state, and the bridge/interface logs.
+If low FPS or pink recurs under 0.1.3, exit normally and report the run before
+retrying. Preserve all caches. Do not delete them or distribute a warmed cache
+as a workaround. Capture cache metadata, process boundaries, fixed-scene
+FPS/GPU timing, memory, thermal state, and the bridge/interface logs.
 
 ## Exit crash and settings not saving
 

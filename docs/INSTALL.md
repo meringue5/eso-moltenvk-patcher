@@ -84,10 +84,11 @@ After a successful summary, close Terminal and start ESO through the same
 Steam or official ESO launcher you normally use. The patcher does not replace
 authentication and does not need to remain open.
 
-Version 0.1.2 may show ESO's original full-screen pink placeholder during
-startup. This is an accepted cosmetic limitation of the performance-first
-profile and does not by itself mean installation failed. Use the included
-Status command when the bridge identity needs verification.
+Version 0.1.3 suppresses only the verified bounded pink-placeholder interval
+and bypasses ESO's stale inactive 100-ms pacing path. The exact packaged
+candidate started without pink or low FPS on the validated M4/ESO 12.0.8
+target. This does not guarantee identical performance on every Mac; use the
+included Status command when the bridge identity needs verification.
 
 To uninstall, quit ESO and the launcher and double-click `Uninstall.command`. It
 verifies and restores the recorded original library. Keep the patcher folder

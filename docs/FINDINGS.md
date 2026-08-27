@@ -823,3 +823,22 @@ together without reproducing either symptom in the tested pair. It does not
 yet prove that every future cold start will enter the same bounded lifecycle or
 exclude another low-FPS mechanism, so long-term reliability remains an
 ordinary-use observation gate rather than a completed release claim.
+
+Experiment 0045 establishes that the same functional combination survives
+removal of diagnostic pipeline timing and post-window lifecycle bookkeeping.
+The exact packaged 0.1.3 candidate passed a third ordinary Steam-path start
+with no visible pink and normal FPS. Run
+`20260827T071558.350339000Z-pid73173` recorded the release mode, exactly 79
+suppressed draws at ordinals 71-149, one ordinal-150 forward latch, ordinal-180
+completion, zero `STARTUP_PIPELINE_*` records, and zero error or overflow
+records. The state was `active=yes`, so this third run complements rather than
+repeats the prior direct `active=no` sleep-bypass observation.
+
+The user briefly raised graphics from mid-low to mid-high while on battery and
+reported smooth behavior for approximately one minute before ending on a macOS
+low-battery warning. That short interval supports release confidence but is not
+a sustained performance, power-efficiency, or cross-hardware measurement.
+Across the exact functional pair and the stripped packaged successor, the
+bounded repair has three clean starts and one direct inactive-branch exercise.
+Natural-start monitoring remains appropriate because finite clean runs cannot
+prove that another intermittent mechanism is impossible.

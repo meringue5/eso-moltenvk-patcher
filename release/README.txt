@@ -10,9 +10,12 @@ QUICK START
    validated M4 2048 x 1280 settings template. There is no default choice.
 3. To uninstall, double-click Uninstall.command.
 
-Version 0.1.2 prioritizes FPS reliability. ESO's original pink placeholder may
-remain visible briefly during startup; this cosmetic screen alone does not
-mean the patch failed.
+Version 0.1.3 is the strongest startup-stability release so far for the
+validated M4 and ESO 12.0.8 target. It prevents ESO's stale inactive 100-ms
+pacing path, suppresses only the verified bounded pink-placeholder window,
+and retires diagnostic timing and lifecycle bookkeeping after startup. This
+does not promise identical FPS on every Mac, but it directly addresses both
+observed sides of the intermittent pink-and-low-FPS startup condition.
 
 Support diagnostics and payload files are kept in a hidden internal folder;
 they are not separate installation steps. Keep this folder together and do not

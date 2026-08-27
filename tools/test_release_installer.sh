@@ -58,6 +58,7 @@ run_tool() {
   PATH="$MOCK_BIN:$PATH" ESO_MOLTENVK_PATCHER_STATE_ROOT="$STATE_ROOT" \
     "$TOOL" "$@" --eso-app "$ESO_APP"
 }
+INSTALL_ID="$(print -rn -- "$ESO_APP" | shasum -a 256 | awk '{print $1}')"
 
 initial_choice_output="$(run_tool install --yes 2>&1 || true)"
 if [[ "$initial_choice_output" != *'Choose settings explicitly'* ]]; then
@@ -97,7 +98,7 @@ install_output="$(run_tool install --apply-settings --settings-file "$SETTINGS_F
 [[ -f "$GAME_MAC/.teso4m4-enable" \
   && -f "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
   && -f "$GAME_MAC/libMoltenVK.teso4m4.dylib" ]]
-grep -q '^mode=startup-pipeline-timing-control$' \
+grep -q '^mode=startup-compositor-neutralize-pacing-release$' \
   "$GAME_MAC/.teso4m4-enable"
 status_output="$(run_tool status)"
 [[ "$status_output" == *'Installed release: fixture-1.0.0'* ]]
@@ -106,19 +107,34 @@ reinstall_output="$(run_tool install --skip-settings --yes)"
 [[ "$reinstall_output" == *'No files were changed.'* ]]
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" \
   == "$(shasum -a 256 "$PAYLOAD/libBink2Macx64.dylib" | awk '{print $1}')" ]]
+# A newer patcher may directly replace an earlier bridge only when the ESO
+# executable, marker attestation, recovery record, and original generation all
+# still match. Skipping settings during that binary-only upgrade must retain
+# the earlier settings restore record.
+cp "$PAYLOAD/libBink2Macx64.dylib" "$TEST_ROOT/earlier-bridge.dylib"
+install_name_tool -id '@executable_path/libBink2Macx64.earlier-patcher.dylib' \
+  "$TEST_ROOT/earlier-bridge.dylib"
+cp "$TEST_ROOT/earlier-bridge.dylib" "$GAME_MAC/libBink2Macx64.dylib"
+upgrade_output="$(run_tool install --skip-settings --yes)"
+[[ "$upgrade_output" == *'verified earlier patcher on the same ESO and original-loader generation'* ]]
+[[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" \
+  == "$(shasum -a 256 "$PAYLOAD/libBink2Macx64.dylib" | awk '{print $1}')" ]]
+grep -q '^settings_choice=apply$' "$STATE_ROOT/$INSTALL_ID/install-state.env"
+grep -q '^settings_backup=settings-backup-' "$STATE_ROOT/$INSTALL_ID/install-state.env"
 grep -q '^SET FULLSCREEN "2"$' "$SETTINGS_FILE"
 grep -q '^SET LANGUAGE.2 "en"$' "$SETTINGS_FILE"
 [[ "$(awk '$1 == "SET" {seen[$2]++} END {print seen["FULLSCREEN"]}' "$SETTINGS_FILE")" == 1 ]]
 
+cp "$TEST_ROOT/earlier-bridge.dylib" "$GAME_MAC/libBink2Macx64.dylib"
 remove_output="$(run_tool remove)"
 [[ "$remove_output" == *"Removed from: $ESO_APP"* ]]
+[[ "$remove_output" == *'Matching original Bink loader restored'* ]]
 [[ "$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')" == "$SETTINGS_ORIGINAL_SHA" ]]
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$EXPECTED_BINK_SHA" ]]
 [[ ! -e "$GAME_MAC/.teso4m4-enable" \
   && ! -e "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
   && ! -e "$GAME_MAC/libMoltenVK.teso4m4.dylib" ]]
 
-INSTALL_ID="$(print -rn -- "$ESO_APP" | shasum -a 256 | awk '{print $1}')"
 mkdir "$STATE_ROOT/$INSTALL_ID/enable-marker"
 if run_tool install --apply-settings --settings-file "$SETTINGS_FILE" --yes >/dev/null 2>&1; then
   print -u2 -- 'Expected the post-settings interrupted install to fail.'
@@ -223,4 +239,4 @@ find "$STATE_ROOT/$INSTALL_ID" -name 'original-libBink2Macx64.before-*.dylib' \
 run_tool remove >/dev/null
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$NEW_ORIGINAL_BINK_SHA" ]]
 find "$STATE_ROOT" -name .version -type f -exec grep -q 'fixture-1.0.0' {} \;
-print -- 'Release installer transaction: PASS (settings, interruption recovery, exact install/remove, update repair gate, external-original preservation, and original-generation rotation)'
+print -- 'Release installer transaction: PASS (settings, interruption recovery, same-generation patcher upgrade/remove, update repair gate, external-original preservation, and original-generation rotation)'

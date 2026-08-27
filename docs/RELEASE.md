@@ -58,20 +58,21 @@ interruption never trusts a partial binary: it validates the exact executable,
 state, backup, and active Bink identity, restores the verified original, removes
 only patch-owned artifacts, and restarts from the clean baseline.
 
-Version 0.1.2 retained repeated Install support after a compatible game update
-and selected the performance-first `startup-pipeline-timing-control` profile.
-The original pink startup placeholder may remain visible; the compositor
-neutralizer is deliberately excluded because low-FPS avoidance has priority.
-The package
+Version 0.1.3 selects the measurement-stripped
+`startup-compositor-neutralize-pacing-release` profile. It retains the exact
+inactive 100-ms pacing bypass and bounded 79-draw compositor repair while
+disabling pipeline timing and post-window lifecycle bookkeeping. The exact
+packaged candidate passed without pink or low FPS on the validated target. The
+package
 accepts its selected exact profile directly. For a different executable it
 first requires the embedded MoltenVK archive hash to remain unchanged, then
 runs the bundled native compatibility auditor over every compiled patch
 signature, old-runtime text-boundary reference, and proc-query multiplicity.
 The audited executable SHA-256 is stored in the marker and rechecked by the
-runtime. Its bridge-retained update path restored the existing backup before
-reinstalling; that historical behavior is superseded for the next release
-because it cannot prove that a future update did not replace the vendor Bink
-generation.
+runtime. The 0.1.3 installer binds executable attestation and original-loader
+identity as one recovery generation and supports a verified same-target upgrade
+from an earlier patcher. A bridge retained across an executable update still
+requires launcher Repair because the current vendor original cannot be proven.
 
 ## Installer behavior
 

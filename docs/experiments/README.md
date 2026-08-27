@@ -55,7 +55,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0042 | 2026-08-27 | Compositor input audit with inactive pacing bypass | Inconclusive; normal FPS/pink run lost audit records to default log filtering | [Run](0042-compositor-input-audit-pacing-bypass.md) |
 | 0043 | 2026-08-27 | Bounded compositor audit log visibility | Succeeded; GUI-classified input contains in-place magenta while FPS remained normal | [Run](0043-bounded-audit-log-visibility.md) |
 | 0044 | 2026-08-27 | Fixed-window compositor neutralization with pacing bypass | Succeeded twice; no pink, normal FPS, and the inactive sleep was bypassed in the `active=no` run | [Run](0044-compositor-neutralize-pacing-bypass.md) |
-| 0045 | 2026-08-27 | Measurement-stripped compositor/pacing release profile | Planned; source and non-game preparation in progress, installed 0044 state unchanged | [Run](0045-measurement-stripped-release-profile.md) |
+| 0045 | 2026-08-27 | Measurement-stripped compositor/pacing release profile | Succeeded; exact 0.1.3 package candidate launched without pink or low FPS and all bounded log gates passed | [Run](0045-measurement-stripped-release-profile.md) |
 | 0046 | 2026-08-27 | Original-loader generation-aware install and uninstall recovery | Succeeded in disposable fixture; retained bridges require launcher Repair and different originals are preserved | [Run](0046-original-loader-generation-aware-recovery.md) |
 
 ## Recording policy

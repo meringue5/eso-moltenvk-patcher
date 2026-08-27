@@ -4,7 +4,7 @@ Last updated: 2026-08-27
 
 ## Current production baseline
 
-ESO MoltenVK Patcher 0.1.2 is the current production maintenance release. Its
+ESO MoltenVK Patcher 0.1.3 is the validated production maintenance candidate. Its
 selected exact target is macOS ESO 12.0.8, databuild `3288357`, on Apple
 Silicon through Rosetta, and it loads official MoltenVK 1.4.2. The extended
 performance baseline remains the 12.0.7 gameplay checkpoint; 12.0.8 passed a
@@ -16,8 +16,11 @@ The production profile combines:
 - disabled Metal argument buffers;
 - asynchronous queue submission and non-maximized pipeline compilation;
 - the validated `performance-aggressive` resource-check setting; and
-- the performance-first Experiment 0038 path with compositor neutralization
-  and its supporting startup audits disabled.
+- the exact inactive 100-ms host-pacing bypass;
+- the bounded 79-draw compositor repair with ordinal-150 fail-open forwarding;
+  and
+- measurement-stripped post-window direct forwarding with pipeline timing
+  disabled.
 
 The bundled M4 settings template now selects High subsampling
 (`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
@@ -38,34 +41,27 @@ and Uninstall commands, exact Steam/ZeniMax client discovery, custom-path
 fallback, verified backup and recovery state, explicit settings-template
 choice, and transaction recovery after an interrupted install.
 
-Version 0.1.2 retains 0.1.1's ESO 12.0.8 support and packaged compatibility
-auditor, then promotes the Experiment 0038 performance-first startup profile.
+Version 0.1.3 retains ESO 12.0.8 support and the packaged compatibility auditor,
+then promotes the Experiment 0045 measurement-stripped startup profile.
 An updated executable is accepted only when its embedded
 MoltenVK archive is unchanged and its exact patch bytes, complete old-runtime
 reference boundary, and proc-query shape match the compiled profile. Install
 then records the audited executable hash, and the runtime rechecks that
-attestation before redirecting. Launcher-restored-original and
-bridge-retained update states are both covered by the disposable release
-transaction fixture.
+attestation before redirecting. Experiment 0046 binds that executable and the
+original Bink hash as one recovery generation. A verified earlier patcher may
+upgrade or uninstall directly on the same ESO and original generation; a
+bridge retained across an executable update requires launcher Repair, and a
+different launcher-provided original is preserved byte-for-byte.
 
-That bridge-retained behavior is now a known safety gap in the published 0.1.2
-installer: after an executable update it cannot prove whether the vendor's
-original Bink generation also changed, yet it restores the earlier backup. The
-next release is blocked on the Experiment 0046 generation-aware installer. Its
-source candidate requires launcher Repair when a stale bridge remains, never
-overwrites a different launcher-provided non-bridge loader, applies the same
-rule to Uninstall, and rotates an older recovery generation only after a newer
-release explicitly recognizes the current original. The expanded disposable
-fixture passes; the public 0.1.2 asset remains unchanged.
-
-The public `v0.1.2` release is live. Its freshly downloaded ZIP and GitHub's
+The public `v0.1.2` release remains live until the fully validated 0.1.3
+candidate is published. Its freshly downloaded ZIP and GitHub's
 server-reported asset digest both match SHA-256
 `7b587caa68bf729ec4ea75888223c72908672fb70c853a382d7215407d21e830`.
 The packaged bridge is byte-identical to the user-validated Experiment 0038
 installation. See Experiment
 [0039](experiments/0039-performance-first-0.1.2-release.md).
 
-Release packaging and digests remain verified, but 0.1.2 has an open
+Version 0.1.2 remains preserved as historical evidence but has an open
 reliability incident: the exact installed no-neutralizer profile later
 reproduced pink and low FPS. It is not a demonstrated low-FPS repair. See
 Experiment [0040](experiments/0040-no-neutralizer-low-fps-recurrence.md).
@@ -80,46 +76,31 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the Experiment 0044 source candidate installed on the exact
-12.0.8 target. Its marker selects
-`startup-compositor-neutralize-pacing-bypass`; its bridge, retagged original
-Bink, and official MoltenVK 1.4.2 payloads exactly match the committed build
-identities. The pristine loader matches the selected target manifest. The
-active 1.4.2 pipeline cache, pre-bridge backup, historical 1.4.1 cache backup,
-and `UserSettings.txt` retain their identities across the cache-preserving
-restore/install cycle, and all three cache headers pass.
+The exact `ESO-MoltenVK-Patcher-0.1.3.zip` candidate is installed on ESO 12.0.8
+through its packaged `Install.command`. Its marker selects
+`startup-compositor-neutralize-pacing-release`; the installed bridge, retagged
+original Bink, and official MoltenVK 1.4.2 exactly match the packaged payload.
+Package Status reports release 0.1.3 and exact compatibility.
 
-The installed diagnostic candidate retains 0041's exact inactive 100-ms
-outer-loop sleep bypass, the current non-maximized MoltenVK compilation policy,
-and bounded first-64 graphics-pipeline timing. It combines those with Experiment
-0031's proven fixed-window neutralizer: only exact final-compositor draws at
-generation-2 ordinals 71 through 149 are replaced by opaque black, and ordinal
-150 onward is forwarded. Pixel readback and the 0043 image sampler are disabled. AppKit
-callbacks, focus propagation, settings, caches, and the launcher path remain
-unchanged. Source, non-game, restore, installation, payload-identity, cache-
-identity, and settings-preservation gates pass. This installed state is a
-diagnostic release candidate, not a public release claim. See
-[ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
-[0044](experiments/0044-compositor-neutralize-pacing-bypass.md).
+This measurement-stripped profile retains Experiment 0044's exact inactive
+100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor
+substitution, and ordinal-150 fail-open forwarding latch. It removes the first-
+64 graphics-pipeline timing path and makes every identified lifecycle wrapper
+direct-forward without table mutation after the ordinal-180 finished gate.
+Pixel readback and compositor image sampling remain disabled.
 
-Experiment 0044 is a functional validation checkpoint, not the exact binary to
-package. Its first-64 graphics-pipeline clocking and records are diagnostic-only
-and must be disabled in the release profile. The bounded compositor repair still
-needs startup pipeline, layout, descriptor, draw, swapchain, and presentation
-identity until its fail-open forwarding latch is reached; those functional
-wrappers may remain only for that bounded window. Packaging is blocked until a
-separate measurement-stripped profile proves the same 79-draw suppression and
-ordinal-150 forwarding behavior, emits no `STARTUP_PIPELINE_*` timing records,
-and performs no lifecycle-table bookkeeping after the startup window closes.
-
-Experiment 0045 now owns that release-profile derivation. Its separate
-`startup-compositor-neutralize-pacing-release` source mode retains the 0044
-functional combination while leaving pipeline timing disabled and making every
-identified tracked destroy/free/reset path honor the finished gate. A fresh
-build, lifecycle and configuration probes, 138 Python tests, release transaction
-fixture, Python compilation, shell syntax, and diff checks pass. The candidate
-has not been installed or gameplay-validated; the exact Experiment 0044 payload
-remains active.
+The 0.1.3 build, 138 Python tests, generation-aware installer transaction
+fixture, official and embedded Metal probes, startup-surface probe, ten runtime-
+readiness compiler canaries, internal checksums, and ZIP hygiene all pass. The
+cache-preserving restore/install transaction left `UserSettings.txt`, the
+active 1.4.2 cache, and the old-runtime cache backup byte-identical. The
+verified public-installer backup and Uninstall path remain available. Exact run
+`20260827T071558.350339000Z-pid73173` passed the final user gate with no pink
+and normal FPS. It logged 79 suppressions at ordinals 71-149, one ordinal-150
+forward latch, ordinal-180 completion, no pipeline timing, and no errors or
+overflows. A short battery-mode mid-high observation remained smooth but is not
+a sustained battery or cross-hardware benchmark. See Experiment
+[0045](experiments/0045-measurement-stripped-release-profile.md).
 
 Two consecutive ordinary user-controlled starts passed the 0044 gate with no
 visible pink and normal FPS. Exact runs
