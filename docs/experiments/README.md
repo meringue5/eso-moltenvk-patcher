@@ -53,7 +53,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0040 | 2026-08-27 | No-neutralizer low-FPS recurrence | Failed as a reliability repair; exact 0.1.2 alternate-path evidence captured | [Run](0040-no-neutralizer-low-fps-recurrence.md) |
 | 0041 | 2026-08-27 | Inactive application pacing bypass | Candidate installed; first two starts had normal FPS with pink and `active=yes` | [Run](0041-inactive-pacing-bypass.md) |
 | 0042 | 2026-08-27 | Compositor input audit with inactive pacing bypass | Inconclusive; normal FPS/pink run lost audit records to default log filtering | [Run](0042-compositor-input-audit-pacing-bypass.md) |
-| 0043 | 2026-08-27 | Bounded compositor audit log visibility | Source/non-game gates passed; cache-preserving installation pending | [Run](0043-bounded-audit-log-visibility.md) |
+| 0043 | 2026-08-27 | Bounded compositor audit log visibility | Candidate installed with caches/settings preserved; user launch pending | [Run](0043-bounded-audit-log-visibility.md) |
 
 ## Recording policy
 

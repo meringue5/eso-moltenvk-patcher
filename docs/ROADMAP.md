@@ -78,8 +78,9 @@ This roadmap contains future work only. Current verified state is in
   cache-preserving installation passed the shared bundle-idle and identity
   gates, but its first normal-FPS/pink run was inconclusive because the default
   production log filtered every bounded audit record. Experiment 0043's
-  dedicated log-policy probe and all non-game gates now pass. After installing
-  0043, use one visible-pink startup to classify scene, GUI, multiple, or
+  dedicated log-policy probe and all non-game gates pass, and its exact-target
+  cache-preserving installation retained all settings and cache identities.
+  Use one ordinary visible-pink startup to classify scene, GUI, multiple, or
   combined input without changing compositor output.
 - Use that producer/transition boundary for any root repair. Prefer a bounded
   placeholder-input substitution or readiness transition over a fixed ordinal

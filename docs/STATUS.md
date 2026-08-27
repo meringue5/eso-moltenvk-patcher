@@ -70,7 +70,7 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The user has the Experiment 0042 source candidate installed on the exact
+The user has the Experiment 0043 source candidate installed on the exact
 12.0.8 target. Its marker selects
 `startup-compositor-audit-pacing-bypass`; its bridge, retagged original Bink,
 and official MoltenVK 1.4.2 payloads exactly match the committed build
@@ -81,25 +81,30 @@ restore/install cycle.
 
 The candidate retains 0041's no-neutralizer MoltenVK configuration, bounded
 graphics-pipeline timing, and exact inactive 100-ms outer-loop sleep bypass.
-It adds a bounded forward-only audit of the final compositor's `Sampler0`
-scene and `Sampler1` GUI images. It does not replace draws or alter output.
-AppKit callbacks, focus propagation, settings, caches, and the launcher path
-remain unchanged. Source and non-game gates pass. The first two earlier 0041
-starts both had normal FPS with pink and logged only `active=yes`; the first
-0042 launch also had normal FPS with pink but exposed the evidence-path failure
-described below. This installed state is a diagnostic release candidate, not a
-public release claim. See
+It retains 0042's bounded forward-only audit of the final compositor's
+`Sampler0` scene and `Sampler1` GUI images, and promotes only the bounded audit
+families required by the analyzer to the production `info` log level. It does
+not replace draws or alter output. AppKit callbacks, focus propagation,
+settings, caches, and the launcher path remain unchanged. Source, non-game,
+restore, installation, payload-identity, cache-identity, and settings-
+preservation gates pass. The first two earlier 0041 starts both had normal FPS
+with pink and logged only `active=yes`; the first 0042 launch also had normal
+FPS with pink but exposed the evidence-path failure described below. This
+installed state is a diagnostic release candidate, not a public release claim.
+See
 [ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
-[0042](experiments/0042-compositor-input-audit-pacing-bypass.md).
+[0043](experiments/0043-bounded-audit-log-visibility.md).
 
 The first 0042 launch had normal FPS with pink, but its compositor verdict is
 inconclusive because the production `info` log discarded every analyzer-
 required bounded audit record as `debug` or `trace`. Experiment
 [0043](experiments/0043-bounded-audit-log-visibility.md) fixes only that
-evidence path. Its logging policy is now covered by a dedicated probe, and its
+evidence path. Its logging policy is covered by a dedicated probe, and its
 fresh build, 135 Python tests, release transaction regression, static checks,
-and official/embedded Metal-backed probes pass. The running 0042 installation
-is unchanged until ESO and the launcher close.
+and official/embedded Metal-backed probes pass. A cache-preserving restore and
+installation completed after the shared bundle-idle gate passed; the installed
+payloads match the built candidates and the preserved user-file hashes did not
+change. The replacement user launch is pending.
 
 Historical runtime and cache backups are preservation data, not supported
 runtime choices. Do not delete them automatically. Source maintenance retains
@@ -260,10 +265,10 @@ sleep bypass, non-maximized compilation, and bounded pipeline timing. It
 forwards all ESO draws unchanged and only samples the bound `Sampler0` scene
 and `Sampler1` GUI images during the bounded startup window. Experiment 0042
 proved the forward-only path can retain normal FPS with visible pink but lost
-its evidence to log filtering. Experiment 0043 is the prepared replacement
-gate. After its cache-preserving installation, one ordinary user-controlled
-launch reporting pink visibility and FPS state is required before the
-dedicated compositor-input analyzer can identify the source.
+its evidence to log filtering. Experiment 0043 is now installed with the same
+forward-only behavior and corrected bounded log visibility. One ordinary
+user-controlled launch reporting pink visibility and FPS state is required
+before the dedicated compositor-input analyzer can identify the source.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

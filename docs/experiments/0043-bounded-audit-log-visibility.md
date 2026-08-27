@@ -1,8 +1,8 @@
 # Experiment 0043: bounded compositor audit log visibility
 
 - Date: 2026-08-27
-- Outcome: **source and non-game gates passed; installation pending**
-- Rollback: **not started; Experiment 0042 remains installed and active**
+- Outcome: **candidate installed; user launch pending**
+- Rollback: **not started; Experiment 0043 remains installed and active**
 
 ## Question
 
@@ -70,12 +70,31 @@ Python compile, shell syntax, git diff check: PASS
 official MoltenVK 1.4.2 Metal compatibility/surface probes: PASS on Apple M4
 embedded MoltenVK 1.0.18 comparison probes: PASS on Apple M4
 bridge SHA-256: 13cfbe01e6427b26f5a3a1dbf36a85627e35014324d1770315406824191f5d34
+retagged original Bink SHA-256: f166982931adfef53a23165bc2f73be18016a9a25d1c396dbeb586109f1c9927
 MoltenVK SHA-256: aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f
 ```
 
-No running game or bundle file was modified during preparation. Installation
-and the replacement user launch remain pending.
+After ESO and the launcher closed, the shared bundle-idle gate allowed the
+cache-preserving transaction because Steam had no ESO file or update activity.
+The installed 0042 bridge was first restored to the verified pristine loader.
+The active pipeline cache, old-runtime cache backup, and `UserSettings.txt`
+then retained their exact pre-restore identities:
+
+```text
+active pipeline cache SHA-256: bdbfcb286b72fbfa842fedc5484e54af2e37851e8eaaeb731630d31e5a3c0807
+old-runtime cache backup SHA-256: 72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c
+UserSettings.txt SHA-256: 104e894803e70dae30fdab887474a8f3116387375614484d36c3755c58745fb0
+```
+
+The same idle gate passed again for installation. Post-install status recognizes
+the exact ESO 12.0.8 target, the installed bridge and MoltenVK as current, all
+three preserved pipeline-cache headers as valid, and the marker as
+`startup-compositor-audit-pacing-bypass`. The bridge re-exports the retagged
+original Bink. Installed payload hashes exactly match the built candidates
+above, and all three user-file hashes remain unchanged. No game or launcher was
+started. One ordinary user-controlled Steam-path launch remains pending.
 
 ## Rollback
 
-Not started. The pristine loader remains available.
+Not started. The pristine loader remains available and was verified during the
+restore/install transaction.
