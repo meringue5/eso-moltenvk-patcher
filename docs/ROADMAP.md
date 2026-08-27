@@ -4,6 +4,16 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
+## P0: complete the 0.2.0 promotion
+
+- Keep the installed bridge fixed while collecting one ordinary user-controlled
+  startup result for mouse capture, pink, FPS/stutter, and the new bounded log.
+- If that exact gate passes, publish a newly built `0.2.0` ZIP whose bridge is
+  byte-identical to the tested runtime; do not replace or modify 0.1.3.
+- Verify the committed source, annotated tag, GitHub latest endpoint, server
+  asset digest, exact package layout, and zero artificial verification download
+  before declaring the release complete.
+
 ## Reliability guardrails for performance successors
 
 - Keep Metal argument buffers disabled. Experiment 0049's candidate is rejected
@@ -25,31 +35,21 @@ This roadmap contains future work only. Current verified state is in
 
 ## P1: isolate an optional pink repair
 
-- Keep visible pink as an accepted cosmetic limitation in 0.1.2.
 - Preserve Experiment 0043's decisive two-input result: the GUI-classified
   second image supplies exact magenta at ordinals 80 through 140 and ordinary
   colors at ordinals 150 through 180 while retaining the same image identity.
   The scene-classified first image is not magenta in either interval.
-- Experiment 0042 has completed that forward-only source preparation while
-  retaining the inactive pacing bypass and non-maximized compilation. Its
-  cache-preserving installation passed the shared bundle-idle and identity
-  gates, but its first normal-FPS/pink run was inconclusive because the default
-  production log filtered every bounded audit record. Experiment 0043's
-  dedicated log-policy probe, exact-target cache-preserving installation, and
-  ordinary user launch all passed; the result is now owned by Findings and the
-  experiment record.
-- Experiment 0044 passed twice with no pink and normal FPS. Preserve that
-  result in the experiment record and Findings; only the optional underlying
-  GUI-placeholder producer repair remains future work here.
 - If a root repair is later preferred over presentation neutralization, trace
   the producer/readiness transition of the proven GUI-classified image. Do not
   add per-frame image readback merely to replace the already bounded repair.
+- Keep the proven bounded 79-draw presentation repair as the production
+  control; a producer-side successor must independently preserve FPS, focus,
+  fail-open forwarding, and update recovery.
 
-## P2: monitor the stable 0.1.3 baseline
+## P2: monitor the production baseline after the 0.2.0 gate
 
-- Preserve Experiments 0045 and 0046 as the immutable functional, packaging,
-  and recovery evidence for 0.1.3; do not fold new performance experiments into
-  that release identity.
+- Keep public 0.1.3 as the rollback baseline until 0.2.0 passes its exact
+  startup and publication gates. Preserve each release identity afterward.
 - Observe natural launches instead of forcing repetitive starts. If pink or
   low FPS recurs, capture the exact run before retrying and compare pacing,
   suppression, latch, and finished-gate records without deleting caches.
@@ -58,9 +58,8 @@ This roadmap contains future work only. Current verified state is in
   one supported baseline.
 - Treat regressions in ordinary play, live graphics resets, startup color,
   update recovery, or uninstall behavior as release blockers for successors.
-- Consider a self-retiring dispatch/trampoline only as a separately measured
-  successor experiment; the current post-window direct-forward path is the
-  released stability baseline.
+- Use public Status and privacy-filtered Diagnostics as the first support path;
+  retain source-only traces for a separately scoped exact-target experiment.
 
 ## P3: research three 60-FPS-constrained performance directions
 

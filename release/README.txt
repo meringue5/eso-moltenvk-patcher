@@ -8,18 +8,21 @@ QUICK START
 2. Double-click Install.command. It finds and verifies ESO, then asks before changing files.
    You must also explicitly choose y or n when asked whether to apply the
    balanced M4 1920 x 1200 settings template. There is no default choice.
-3. To uninstall, double-click Uninstall.command.
+3. Double-click Status.command at any time to verify the client, bridge,
+   recovery generation, settings profile, and the latest bounded startup run.
+4. Diagnostics.command writes a privacy-filtered support ZIP to your Desktop.
+   It never includes UserSettings.txt, caches, credentials, or game files.
+5. To uninstall, double-click Uninstall.command.
 
-Version 0.1.3 is the strongest startup-stability release so far for the
-validated M4 and ESO 12.0.8 target. It prevents ESO's stale inactive 100-ms
-pacing path, suppresses only the verified bounded pink-placeholder window,
-and retires diagnostic timing and lifecycle bookkeeping after startup. This
-does not promise identical FPS on every Mac, but it directly addresses both
-observed sides of the intermittent pink-and-low-FPS startup condition.
+Version 0.2.0 turns the validated runtime structure into public operational
+checks. It retains the strongest startup-stability profile for the validated
+M4 and ESO 12.0.8 target, records the Balanced M4 profile explicitly, verifies
+the package before every action, classifies the latest 79/150/180 startup run,
+and keeps the normal Steam/ZeniMax launch path unchanged. It does not promise
+identical FPS on every Mac or claim unmeasured Quality/Efficiency profiles.
 
-Support diagnostics and payload files are kept in a hidden internal folder;
-they are not separate installation steps. Keep this folder together and do not
-move Install.command or Uninstall.command out of it.
+Payload files are kept in a hidden internal folder. Keep the entire package
+together and do not move any command out of it.
 
 The scripts look in the known Steam and ZeniMax locations. If ESO is elsewhere,
 the Terminal asks you to drag eso.app or the ESO Launcher.app into the window.

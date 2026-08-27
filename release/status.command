@@ -1,3 +1,3 @@
 #!/bin/zsh
 ROOT="${0:A:h}"
-exec "$ROOT/bin/eso-moltenvk-patcher" status "$@"
+exec "$ROOT/.eso-moltenvk-patcher/bin/eso-moltenvk-patcher" status "$@"

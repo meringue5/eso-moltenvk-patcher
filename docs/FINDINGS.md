@@ -903,3 +903,31 @@ Across the exact functional pair and the stripped packaged successor, the
 bounded repair has three clean starts and one direct inactive-branch exercise.
 Natural-start monitoring remains appropriate because finite clean runs cannot
 prove that another intermittent mechanism is impossible.
+
+## Architecture-backed public diagnostics preserve the validated runtime
+
+Experiment 0050 changes the public operational surface without changing the
+validated runtime control. The exact installed and final-package bridge
+SHA-256 is
+`954e8ff6cd3aceb3bfd5f874140f655aac1672394f30557eaa3bff57896683ce`.
+User-controlled run `20260827T142452.659250000Z-pid71549` began with the
+internal active state true, activated all 17 redirects, used the complete
+argument-buffers-off MoltenVK configuration, latched after 79 suppressed draws
+at ordinal 150, and finished at ordinal 180. It emitted no error, fatal, or
+skip record. The user reported normal focus, no pink, and no gameplay problem.
+
+The same run directly verifies the new production-log boundary. At default
+info level it contains the begin, configuration, activation, latch, and finish
+milestones but zero individual suppression rows. Opening the inherited 0644
+log tightened it to 0600. A dedicated probe independently covers below-limit
+opening, inherited-permission correction, 1 MiB threshold rotation, replacement
+of the single prior generation, 0600 permissions on both files, and fail-open
+logging failure.
+
+Public Status correctly classifies the run while stating that it does not
+measure FPS or visual focus. Diagnostics exports only the state summary,
+checksums, and an allowlist of latest-run milestones; actual and fixture ZIPs
+contained no raw settings, cache, credential, proprietary game file, home path,
+loaded-runtime path, source offset, pointer trace, pipeline identity, or
+descriptor signature. These are durable support and privacy properties, not a
+new FPS mechanism.

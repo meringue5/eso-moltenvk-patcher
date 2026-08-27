@@ -80,7 +80,8 @@ profile, not independently supported toggles.
 
 ## Stable bounded startup control
 
-The 0.1.3 production profile combines two exact-target repairs. It replaces
+The 0.2.0 production profile retains the two exact-target repairs promoted in
+0.1.3. It replaces
 ESO's fixed inactive `usleep(100000)` branch with an observe-and-return hook
 without patching the AppKit callbacks or active-state byte, and it suppresses
 only the proven final-compositor placeholder draws at generation-2 ordinals 71
@@ -95,8 +96,10 @@ destroy/free/reset wrapper checks the common finished gate and direct-forwards
 without lifecycle-table mutation afterward.
 
 Experiments 0038 and earlier timing/audit modes remain diagnostic history, not
-the 0.1.3 production path. Experiments 0044 and 0045 establish the functional
-repair and its measurement-stripped release form.
+the production path. Experiments 0044 and 0045 establish the functional repair
+and its measurement-stripped release form. Experiment 0050 changes the public
+operational surface and logging bounds; it does not add another runtime-control
+variable.
 
 ## Installer transaction
 
@@ -133,6 +136,13 @@ Uninstall leaves that active file byte-for-byte unchanged and removes only
 exact patch-owned companions. Later user settings remain preserved when they
 differ from the installer's recorded merge result.
 
+The public settings merge is described by a versioned profile identifier and
+an exact key count. Version 0.2.0 exposes only the gameplay-validated Balanced
+M4 1920 x 1200 profile. Profile metadata is part of package integrity and the
+installed transaction record, so Status can distinguish unchanged, applied,
+subsequently customized, and legacy settings without treating a whole
+`UserSettings.txt` file as patch-owned state.
+
 Historical 1.4.1 runtime and cache backups are recognized only so maintenance
 and restore operations do not destroy evidence. They are not packaged payloads
 or selectable production runtimes.
@@ -159,9 +169,21 @@ maintenance gates.
 
 The source retains bounded lifecycle, descriptor, draw, and compositor
 instrumentation for historical experiments and future exact-target diagnosis.
-The 0.1.3 release retains only bounded operational evidence for the startup
-repair and disables pipeline timing and post-window bookkeeping. These
-facilities are not public configuration promises. Abandoned
+The 0.2.0 release retains only bounded operational evidence for the startup
+repair and disables pipeline timing and post-window bookkeeping. Repeated
+per-draw suppression rows are debug-only; the production log rotates before
+opening at 1 MiB, keeps one prior generation, and enforces owner-only file
+permissions.
+
+Public Status is a read-only synthesis of package state, recovery identity,
+runtime configuration, settings ownership, and the latest bounded launch
+evidence. Public Diagnostics exports that synthesis, checksums, and an allowlist
+of launch milestones. It excludes raw settings and caches, credentials, game
+files, system logs, source offsets, and internal pipeline or descriptor
+signatures. Package checksums detect corruption or incomplete extraction; they
+are not a substitute for code signing or an external authenticity channel.
+
+These facilities are not public configuration promises. Abandoned
 1.4.1 source patches and failed legacy feature masking are not part of the
 production tree.
 

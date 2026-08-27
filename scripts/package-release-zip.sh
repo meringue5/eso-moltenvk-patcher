@@ -17,11 +17,13 @@ rm -rf "$STAGE"
 mkdir -p "$INTERNAL/bin" "$INTERNAL/payload"
 cp "$ROOT/release/bin/eso-moltenvk-patcher" "$INTERNAL/bin/"
 cp "$ROOT/release/status.command" "$INTERNAL/"
-cp "$ROOT/release/Install.command" "$ROOT/release/Uninstall.command" "$STAGE/"
+cp "$ROOT/release/Install.command" "$ROOT/release/Uninstall.command" \
+  "$ROOT/release/Status.command" "$ROOT/release/Diagnostics.command" "$STAGE/"
 cp "$ROOT/release/README.txt" "$STAGE/"
 cp "$ROOT/build/libBink2Macx64.dylib" "$ROOT/build/libMoltenVK.teso4m4.dylib" \
   "$ROOT/build/eso-compat-audit" "$INTERNAL/payload/"
 cp "$ROOT/config/usersettings-m4-moltenvk-1.4.2-standard.txt" "$INTERNAL/payload/"
+cp "$ROOT/config/settings-profile.env" "$INTERNAL/payload/"
 python3 - "$TARGET" "$INTERNAL/payload/target-profile.env" "$VERSION" <<'PY'
 import json
 import shlex
@@ -47,13 +49,14 @@ chmod 755 "$INTERNAL/payload/eso-compat-audit"
 (cd "$ROOT" && ./tools/test_release_installer.sh)
 for text_file in "$INTERNAL/bin/eso-moltenvk-patcher" "$INTERNAL/status.command" \
   "$STAGE"/*.command "$STAGE/README.txt" "$INTERNAL/payload/target-profile.env" \
+  "$INTERNAL/payload/settings-profile.env" \
   "$INTERNAL/payload/usersettings-m4-moltenvk-1.4.2-standard.txt"; do
   LC_ALL=C grep -q $'\r' "$text_file" && { echo "CRLF is not allowed: $text_file" >&2; exit 1; }
 done
-(cd "$STAGE" && shasum -a 256 Install.command Uninstall.command README.txt \
-  .eso-moltenvk-patcher/bin/eso-moltenvk-patcher \
-  .eso-moltenvk-patcher/payload/* .eso-moltenvk-patcher/status.command \
-  > .eso-moltenvk-patcher/SHA256SUMS.txt)
+(cd "$INTERNAL" && shasum -a 256 \
+  ../Install.command ../Uninstall.command ../Status.command \
+  ../Diagnostics.command ../README.txt bin/eso-moltenvk-patcher \
+  payload/* status.command > SHA256SUMS.txt)
 rm -f "$OUTPUT"
 (cd "$ROOT/dist" && COPYFILE_DISABLE=1 zip -q -r -X "$OUTPUT" "$NAME")
 unzip -tq "$OUTPUT" >/dev/null
@@ -63,4 +66,5 @@ if [[ -n "$metadata_entries" ]]; then
   echo "$metadata_entries" >&2
   exit 1
 fi
+"$ROOT/tools/test_release_archive.sh" "$OUTPUT" "$VERSION"
 echo "Created $OUTPUT"

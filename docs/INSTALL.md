@@ -17,12 +17,11 @@ contain the prebuilt release payload.
 
 ![Release Assets example with the prebuilt ZIP highlighted](images/install/01-download.svg)
 
-Unzip the download. It opens as one folder containing three commands and its
-payload. Finder normally shows only `Install.command`, `Uninstall.command`,
-and `README.txt`; payloads, checksums, and support diagnostics remain in the
-hidden `.eso-moltenvk-patcher` folder.
+Unzip the download. Finder shows `Install.command`, `Uninstall.command`,
+`Status.command`, `Diagnostics.command`, and `README.txt`; payloads and
+checksums remain in the hidden `.eso-moltenvk-patcher` folder.
 
-![Package folder showing Install, Remove, and optional Status](images/install/02-package.svg)
+![Package folder showing Install, Status, Diagnostics, Uninstall, README, and hidden internals](images/install/02-package.svg)
 
 ## 2. Quit the game, then run Install
 
@@ -84,11 +83,24 @@ After a successful summary, close Terminal and start ESO through the same
 Steam or official ESO launcher you normally use. The patcher does not replace
 authentication and does not need to remain open.
 
-Version 0.1.3 suppresses only the verified bounded pink-placeholder interval
-and bypasses ESO's stale inactive 100-ms pacing path. The exact packaged
-candidate started without pink or low FPS on the validated M4/ESO 12.0.8
-target. This does not guarantee identical performance on every Mac; use the
-included Status command when the bridge identity needs verification.
+Version 0.2.0 retains the exact runtime behavior that suppresses only the
+verified bounded pink-placeholder interval and bypasses ESO's stale inactive
+100-ms pacing path. The preceding 0.1.3 packaged candidate started without
+pink or low FPS on the validated M4/ESO 12.0.8 target. This does not guarantee
+identical performance on every Mac; use the included Status command when the
+bridge identity needs verification.
+
+`Status.command` also classifies the latest production bridge run against the
+expected runtime mode, disabled Metal argument buffers, 17 redirects, pacing
+bypass, 79 suppressed placeholder draws, ordinal-150 forwarding, and
+ordinal-180 completion. It reports the observed initial active state but does
+not claim to measure FPS, visual focus, or image correctness.
+
+`Diagnostics.command` performs the same read-only checks and writes a
+privacy-filtered support ZIP to the Desktop. The ZIP contains checksums, client
+and installer state summaries, and a filtered latest-run record. It excludes
+`UserSettings.txt`, pipeline caches, credentials, proprietary game files, home
+paths, pointer-bearing trace records, and unrelated system logs.
 
 To uninstall, quit ESO and the launcher and double-click `Uninstall.command`. It
 verifies and restores the recorded original library. Keep the patcher folder

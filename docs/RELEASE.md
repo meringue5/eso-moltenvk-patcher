@@ -2,8 +2,9 @@
 
 The release artifact available without an Apple Developer membership is
 **ESO-MoltenVK-Patcher-<version>.zip**. It contains prebuilt payloads plus
-player-facing `Install.command`, `Uninstall.command`, and `README.txt`; it is an installer
-and maintenance tool, not a game launcher. A signed **ESO MoltenVK Patcher.app**
+player-facing `Install.command`, `Uninstall.command`, `Status.command`,
+`Diagnostics.command`, and `README.txt`; it is an installer and maintenance
+tool, not a game launcher. A signed **ESO MoltenVK Patcher.app**
 in a compressed DMG remains the future polished distribution channel.
 
 ## Build a release candidate
@@ -24,8 +25,9 @@ It also presents an explicit settings-template choice with Apply highlighted
 initially. In an interactive Terminal the player may use arrows or Y/N; non-interactive callers
 must pass `--apply-settings` or `--skip-settings`. `--yes` accepts only the ESO
 application target and never implies a settings choice.
-Payloads, checksums, and optional Status diagnostics live under the hidden
-`.eso-moltenvk-patcher` directory; `Uninstall.command` restores the original.
+Payloads and checksums live under the hidden `.eso-moltenvk-patcher` directory;
+`Status.command` reports read-only health, `Diagnostics.command` exports a
+privacy-filtered support ZIP, and `Uninstall.command` restores the original.
 If Finder
 does not permit a downloaded command to run directly, they can drag it into a
 Terminal window or run `zsh Install.command`; this is the unsigned-release
@@ -58,18 +60,20 @@ interruption never trusts a partial binary: it validates the exact executable,
 state, backup, and active Bink identity, restores the verified original, removes
 only patch-owned artifacts, and restarts from the clean baseline.
 
-Version 0.1.3 selects the measurement-stripped
+Version 0.2.0 retains the measurement-stripped
 `startup-compositor-neutralize-pacing-release` profile. It retains the exact
 inactive 100-ms pacing bypass and bounded 79-draw compositor repair while
-disabling pipeline timing and post-window lifecycle bookkeeping. The exact
-packaged candidate passed without pink or low FPS on the validated target. The
+disabling pipeline timing, post-window lifecycle bookkeeping, and Metal
+argument buffers. It adds package-integrity verification, a versioned Balanced
+M4 profile, public architecture-backed Status, privacy-filtered diagnostics,
+and bounded production-log rotation without changing the runtime control. The
 package
 accepts its selected exact profile directly. For a different executable it
 first requires the embedded MoltenVK archive hash to remain unchanged, then
 runs the bundled native compatibility auditor over every compiled patch
 signature, old-runtime text-boundary reference, and proc-query multiplicity.
 The audited executable SHA-256 is stored in the marker and rechecked by the
-runtime. The 0.1.3 installer binds executable attestation and original-loader
+runtime. The installer binds executable attestation and original-loader
 identity as one recovery generation and supports a verified same-target upgrade
 from an earlier patcher. A bridge retained across an executable update still
 requires launcher Repair because the current vendor original cannot be proven.
@@ -87,11 +91,14 @@ requires launcher Repair because the current vendor original cannot be proven.
 - Requires the selected bundle to be idle; idle Steam alone is not a blocker.
 - Creates an independently verified original-Bink backup in Application
   Support, while retaining the renamed original needed by the runtime proxy.
-- Exposes one-step Install and Uninstall while retaining hidden Status and CLI
-  Repair diagnostics.
-- Optionally merges exactly 48 allowlisted M4-profile keys into a verified
-  `UserSettings.txt` backup. Remove restores the backup only if the applied
-  settings have not subsequently changed.
+- Exposes visible one-step Install, Uninstall, read-only Status, and private
+  Diagnostics commands while retaining CLI Repair for recovery workflows.
+- Optionally merges the versioned `balanced-m4-1920x1200-v1` profile's exactly
+  48 allowlisted keys into a verified `UserSettings.txt` backup. Remove restores
+  the backup only if the applied settings have not subsequently changed.
+- Verifies checksums for every visible command and hidden payload before any
+  action, and emits a local 0600 support ZIP containing only allowlisted state
+  and latest-run evidence.
 - Binds executable attestation and original-Bink SHA-256 as one recovery
   generation. A stale retained bridge requires launcher Repair; a different
   launcher-provided original is never overwritten by an older backup.
@@ -104,12 +111,15 @@ An unrecognized client build fails closed. This permits a shared Steam/direct
 client profile when its exact executable matches, without assuming that either
 path is trustworthy.
 
-Release assembly runs a disposable end-to-end fixture covering a deliberately
-interrupted install and verified recovery, Status, Install, Remove, reinstall,
-launcher-restored update recovery, retained-bridge repair refusal,
-launcher-provided-original preservation, and supported generation rotation;
-verifies LF line endings and every payload checksum; and rejects
-ZIPs containing `.DS_Store`, AppleDouble `._` entries, or `__MACOSX`.
+Release assembly runs a disposable end-to-end fixture covering checksum
+refusal, a deliberately interrupted install and verified recovery, Status,
+privacy-filtered Diagnostics, versioned settings state, Install, Remove,
+reinstall, same-payload package promotion, launcher-restored update recovery,
+retained-bridge repair refusal, launcher-provided-original preservation, and
+supported generation rotation. A clean-extraction test verifies the exact
+visible layout, executable bits, LF line endings, and every package checksum,
+and rejects ZIPs containing `.DS_Store`, AppleDouble `._` entries, `__MACOSX`,
+settings, caches, or crash evidence.
 
 ## Optional signed DMG
 

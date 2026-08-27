@@ -23,7 +23,7 @@ int main(void) {
     failed |= check("STARTUP_COMPOSITOR_AUDIT_BEGIN: bounded", TESO4M4_LOG_INFO);
     failed |= check("STARTUP_COMPOSITOR_IMAGE_SUMMARY: bounded", TESO4M4_LOG_INFO);
     failed |= check("STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN: bounded", TESO4M4_LOG_INFO);
-    failed |= check("STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS: bounded", TESO4M4_LOG_INFO);
+    failed |= check("STARTUP_COMPOSITOR_NEUTRALIZE_SUPPRESS: bounded", TESO4M4_LOG_DEBUG);
     failed |= check("STARTUP_COMPOSITOR_NEUTRALIZE_LATCH: bounded", TESO4M4_LOG_INFO);
     failed |= check("STARTUP_COLOR_CLEAR: detail", TESO4M4_LOG_TRACE);
     failed |= check("GIPA: proc detail", TESO4M4_LOG_TRACE);

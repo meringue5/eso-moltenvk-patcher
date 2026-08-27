@@ -22,6 +22,7 @@
 #include "eso_fx_sentinel.h"
 #include "eso_inactive_pacing.h"
 #include "mvk_lifecycle.h"
+#include "mvk_log_file.h"
 #include "mvk_log_policy.h"
 #include "mvk_present_pixel.h"
 #include "mvk_reset_trace.h"
@@ -119,34 +120,6 @@ static void configure_log_level(void) {
     } else if (strcmp(requested, "trace") == 0) {
         g_log_level = TESO4M4_LOG_TRACE;
     }
-}
-
-static FILE* open_production_log(void) {
-    const char* home = getenv("HOME");
-    if (home && home[0] != '\0') {
-        char library[4096];
-        char logs[4096];
-        char product[4096];
-        char path[4096];
-        if (snprintf(library, sizeof(library), "%s/Library", home) <
-                (int)sizeof(library) &&
-            snprintf(logs, sizeof(logs), "%s/Logs", library) <
-                (int)sizeof(logs) &&
-            snprintf(product, sizeof(product), "%s/ESO MoltenVK Patcher", logs) <
-                (int)sizeof(product) &&
-            snprintf(path, sizeof(path), "%s/bridge.log", product) <
-                (int)sizeof(path)) {
-            if ((mkdir(library, 0700) == 0 || errno == EEXIST) &&
-                (mkdir(logs, 0700) == 0 || errno == EEXIST) &&
-                (mkdir(product, 0700) == 0 || errno == EEXIST)) {
-                FILE* file = fopen(path, "a");
-                if (file) {
-                    return file;
-                }
-            }
-        }
-    }
-    return fopen("/tmp/teso4m4.log", "a");
 }
 
 static void log_message(const char* format, ...) {
@@ -702,7 +675,7 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
 __attribute__((constructor)) static void teso4m4_init(void) {
     initialize_run_id();
     configure_log_level();
-    g_log = open_production_log();
+    g_log = teso4m4_open_production_log();
     if (!g_log) {
         return;
     }

@@ -4,12 +4,14 @@
 Online** from its
 statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
 1.4.2 release. The current patch and installer are validated on the normal
-Steam launch path. The current 0.1.3 release supports ESO 12.0.8 and can
+Steam launch path. The current 0.2.0 release supports ESO 12.0.8 and can
 re-attest later relocation-only game updates when their embedded MoltenVK and
 complete bridge-facing structure remain unchanged. On the tested M4 MacBook
-Air, a 2048 x 1280 medium-to-high
-graphics profile held the 60 FPS VSync ceiling throughout roughly 93 minutes
-of user-observed active gameplay.
+Air, an earlier 2048 x 1280 medium-to-high checkpoint held the 60 FPS VSync
+ceiling throughout roughly 93 minutes of user-observed active gameplay. The
+0.2.0 package identifies the later gameplay-accepted 1920 x 1200 Balanced M4
+profile separately rather than turning that older observation into a universal
+performance claim.
 
 [![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
 
@@ -149,9 +151,9 @@ ESO MoltenVK Patcher is **not** an ESO add-on. It cannot be installed in the gam
 client. A folder-copy add-on release would therefore be misleading and would
 not work.
 
-The initial release package is a GitHub Release ZIP containing prebuilt bridge
-payloads and one-step **Install** and **Remove** command scripts, plus optional
-**Status** diagnostics. It is an
+The release package is a GitHub Release ZIP containing prebuilt bridge payloads
+and visible **Install**, **Uninstall**, read-only **Status**, and private
+**Diagnostics** commands. It is an
 installation tool, not an app that must stay running while ESO is played. It bundles the
 verified bridge and runtime so players do not need Python, Xcode, or build
 scripts. A signed **ESO MoltenVK Patcher.app** DMG remains the future polished
@@ -192,8 +194,9 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 | Extended gameplay baseline | Steam macOS client 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
 | Bridge profile | Stable 1.4.2 profile; inactive-pacing bypass plus bounded compositor repair |
-| Display profile | 2048 x 1280, VSync enabled |
-| Graphics profile | Mixed medium-to-high settings with SSAO and high-resolution shadows |
+| Standard display profile | 1920 x 1200, VSync enabled |
+| Standard graphics profile | Versioned Balanced M4 profile with SSAO and high-resolution shadows |
+| Extended gameplay checkpoint | 2048 x 1280 medium-to-high profile |
 | Ordinary-play validation | Roughly 93 minutes across multiple zones |
 | Observed active-gameplay frame rate | 60 FPS VSync ceiling |
 | Graphics-device resets | Six complete sequences, zero logged reset errors |
@@ -201,10 +204,9 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 
 The 48 allowlisted settings are available as the
 [M4/MoltenVK 1.4.2 balanced standard profile](config/usersettings-m4-moltenvk-1.4.2-standard.txt).
-The current source template records the later user-selected 1920 x 1200
-quality/performance compromise; the published 0.1.3 asset retains its immutable
-2026-08-01 profile. It is a selective merge reference, not a complete
-`UserSettings.txt` replacement.
+Version 0.2.0 publishes the later user-selected 1920 x 1200 quality/performance
+compromise as `balanced-m4-1920x1200-v1`. It is a selective merge reference,
+not a complete `UserSettings.txt` replacement or a universal 60-FPS guarantee.
 
 The current bridge is deliberately audited software. The selected 12.0.8
 target is exact; a later launcher update is accepted only when the packaged
@@ -218,14 +220,17 @@ supports that generation. The tested result applies to the combined runtime, bri
 settings, and cache checkpoint on the listed M4; other Apple GPUs and ESO
 builds require their own validation.
 
-Version 0.1.3 is the strongest startup-stability release validated so far on
+Version 0.2.0 retains the strongest startup-stability profile validated on
 the exact M4 and ESO 12.0.8 target. It bypasses ESO's stale inactive 100-ms
 host-pacing branch, suppresses only the proven 79-draw pink-placeholder window,
 and retires diagnostic pipeline timing and lifecycle bookkeeping after the
-bounded startup interval. The exact packaged candidate launched with no pink
-and normal FPS; its log confirmed ordinal-150 forwarding and no timing,
-lifecycle-error, or overflow records. This is concrete target-specific evidence,
-not a universal FPS guarantee for every Mac. See the
+bounded startup interval. The exact final bridge launched with normal focus,
+no pink, and normal perceived FPS; its log confirmed all 17 redirects, the
+79/150/180 lifecycle, owner-only logging, and zero errors while omitting the 79
+repetitive info rows. Public Status, privacy-filtered Diagnostics, package
+checksums, and versioned settings identity make those structural guarantees
+visible without changing the runtime control. This is concrete target-specific
+evidence, not a universal FPS guarantee for every Mac. See the
 [current project status](docs/STATUS.md).
 
 ## Source build and maintenance installation

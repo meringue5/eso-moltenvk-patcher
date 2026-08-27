@@ -1,12 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-08-27
 
+- Productizes the architecture established by the host-loop and compositor
+  analysis. Public `Status.command` verifies package, client, bridge, recovery
+  generation, settings profile, and the latest bounded 79/150/180 startup run
+  without launching or changing the game.
+- Adds `Diagnostics.command`, which exports a privacy-filtered local support ZIP
+  containing checksums, state summaries, and only allowlisted latest-run events.
+  It excludes settings, caches, credentials, game files, home paths, pointer-
+  bearing traces, and unrelated system logs.
+- Verifies the package checksum manifest before every action, exposes a
+  versioned `balanced-m4-1920x1200-v1` settings identity, and preserves the
+  existing transaction-safe apply, upgrade, customization, and removal rules.
+- Bounds production logs to the current 1 MiB file plus one rotated generation
+  with owner-only permissions. The 79 repetitive per-draw suppression records
+  move from info to debug while begin, latch, finish, mode, pacing, and safety
+  evidence remain available to Status.
+- Passes an exact final-bridge user launch with normal focus, no pink, normal
+  perceived FPS, all 17 redirects, exact 79/150/180 startup control, and no
+  bridge errors.
 - Rejects the Metal argument-buffer performance candidate after three
   consecutive starts failed to capture mouse focus. The restored argument-
   buffers-off control captured focus normally and completed approximately 54
   minutes of ordinary play without a bridge error.
-- Fixes the next-release M4 standard template at the user's selected balanced
+- Fixes the 0.2.0 M4 standard template at the user's selected balanced
   1920 x 1200 profile: subsampling 1, character resolution 2, shadows 1,
   planar water reflections 0, particle density 1, SSAO, high-resolution
   shadows, view distance 1.15, and VSync.

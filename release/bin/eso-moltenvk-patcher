@@ -3,7 +3,15 @@ set -euo pipefail
 
 ROOT="${0:A:h:h}"
 PAYLOAD="$ROOT/payload"
+PACKAGE_CHECKSUMS="$ROOT/SHA256SUMS.txt"
+if [[ ! -f "$PACKAGE_CHECKSUMS" ]] ||
+   ! (cd "$ROOT" && shasum -a 256 -c "${PACKAGE_CHECKSUMS:t}" >/dev/null 2>&1); then
+  print -u2 -- "ESO MoltenVK Patcher package checksum verification failed."
+  print -u2 -- "Download a fresh release package; no files were changed."
+  exit 1
+fi
 source "$PAYLOAD/target-profile.env"
+source "$PAYLOAD/settings-profile.env"
 
 UI_TTY=false
 [[ -t 1 ]] && UI_TTY=true
@@ -27,6 +35,7 @@ REMOVE_RESTORE_ACTION="none"
 PATCH_UPGRADE=false
 PREVIOUS_SETTINGS_CHOICE=""
 PREVIOUS_SETTINGS_BACKUP=""
+PREVIOUS_SETTINGS_PROFILE=""
 RETAIN_PREVIOUS_SETTINGS_RECORD=false
 UI_ACTION=""
 UI_COMPLETED=0
@@ -157,15 +166,29 @@ state_value() {
   sed -n "s/^${key}=//p" "$file" | head -1
 }
 
+marker_mode_value() {
+  local value=""
+  [[ -f "$MARKER" ]] || return 1
+  value="$(state_value mode "$MARKER")"
+  if [[ -n "$value" ]]; then
+    print -r -- "$value"
+  else
+    head -1 "$MARKER"
+  fi
+}
+
 usage() {
   cat <<'EOF'
-Usage: eso-moltenvk-patcher <status|install|remove|repair> [options]
+Usage: eso-moltenvk-patcher <status|diagnose|install|remove|repair> [options]
 
 Install options:
   --apply-settings       selectively merge the bundled M4 settings template
   --skip-settings        leave UserSettings.txt unchanged
   --settings-file PATH   select UserSettings.txt when applying the template
   --yes                  accept the displayed ESO application target
+
+Diagnostics options:
+  --output PATH          write the privacy-filtered support ZIP to PATH
 
 PATH may be eso.app itself or an ESO Launcher.app containing game_mac.
 No game, Steam, or launcher is started by this tool.
@@ -179,6 +202,8 @@ selected="${ESO_APP:-}"
 selected_settings="${ESO_SETTINGS_FILE:-}"
 assume_yes=false
 settings_choice=""
+support_output=""
+PRODUCTION_LOG="${ESO_MOLTENVK_PATCHER_LOG_PATH:-$HOME/Library/Logs/ESO MoltenVK Patcher/bridge.log}"
 while (( $# )); do
   case "$1" in
     --eso-app) (( $# >= 2 )) || die "--eso-app needs a path"; selected="$2"; shift 2 ;;
@@ -186,10 +211,15 @@ while (( $# )); do
     --apply-settings) [[ -z "$settings_choice" ]] || die "Choose only one settings action."; settings_choice=apply; shift ;;
     --skip-settings) [[ -z "$settings_choice" ]] || die "Choose only one settings action."; settings_choice=skip; shift ;;
     --yes|-y) assume_yes=true; shift ;;
+    --output) (( $# >= 2 )) || die "--output needs a path"; support_output="$2"; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
 done
+[[ -z "$support_output" || "$command_name" == diagnose ]] \
+  || die "--output is available only with diagnose."
+[[ -z "$settings_choice" || "$command_name" == install || "$command_name" == repair ]] \
+  || die "Settings options are available only with install or repair."
 
 resolve_target() {
   local home_dir="$HOME"
@@ -275,21 +305,28 @@ resolve_settings_file() {
   [[ -n "$selected_settings" ]] || die "UserSettings.txt was not found. Re-run with --settings-file PATH."
   SETTINGS_FILE="${selected_settings:A}"
   [[ -f "$SETTINGS_FILE" ]] || die "The selected settings path is not a regular file: $SETTINGS_FILE"
-  [[ -f "$PAYLOAD/usersettings-m4-moltenvk-1.4.2-standard.txt" ]] || die "The settings template is missing from this release."
+  [[ "$SETTINGS_PROFILE_SCHEMA" == 1 \
+    && "$SETTINGS_PROFILE_ID" == balanced-m4-1920x1200-v1 \
+    && "$SETTINGS_PROFILE_FILE" == usersettings-m4-moltenvk-1.4.2-standard.txt \
+    && "$SETTINGS_PROFILE_KEY_COUNT" == 48 ]] \
+    || die "The settings profile metadata is not supported by this release."
+  [[ -f "$PAYLOAD/$SETTINGS_PROFILE_FILE" ]] || die "The settings template is missing from this release."
 }
 
 validate_settings_template() {
   [[ "$settings_choice" == apply ]] || return 0
-  local template="$PAYLOAD/usersettings-m4-moltenvk-1.4.2-standard.txt"
+  local template="$PAYLOAD/$SETTINGS_PROFILE_FILE"
   local count unique
   count="$(awk '$1 == "SET" {count++} END {print count + 0}' "$template")"
   unique="$(awk '$1 == "SET" {seen[$2] = 1} END {for (key in seen) count++; print count + 0}' "$template")"
-  [[ "$count" == 48 && "$unique" == 48 ]] || die "The bundled settings template is not the expected 48-key profile."
+  [[ "$count" == "$SETTINGS_PROFILE_KEY_COUNT" \
+    && "$unique" == "$SETTINGS_PROFILE_KEY_COUNT" ]] \
+    || die "The bundled settings template is not the expected $SETTINGS_PROFILE_KEY_COUNT-key profile."
 }
 
 prepare_settings_template() {
   [[ "$settings_choice" == apply ]] || return 0
-  local template="$PAYLOAD/usersettings-m4-moltenvk-1.4.2-standard.txt"
+  local template="$PAYLOAD/$SETTINGS_PROFILE_FILE"
   local backup temporary
   backup="$(mktemp "$STATE_DIR/settings-backup-XXXXXXXX")"
   temporary="$STATE_DIR/settings-merged.txt"
@@ -466,9 +503,13 @@ record_state() {
   local phase="$1"
   local recorded_settings_choice="${settings_choice:-skip}"
   local recorded_settings_backup="${SETTINGS_BACKUP_NAME:-${settings_backup:-}}"
+  local recorded_settings_profile=""
+  [[ "$recorded_settings_choice" == apply ]] \
+    && recorded_settings_profile="$SETTINGS_PROFILE_ID"
   if [[ "$RETAIN_PREVIOUS_SETTINGS_RECORD" == true ]]; then
     recorded_settings_choice=apply
     recorded_settings_backup="$PREVIOUS_SETTINGS_BACKUP"
+    recorded_settings_profile="$PREVIOUS_SETTINGS_PROFILE"
   fi
   print -r -- "executable_sha256=${ACTUAL_ESO_SHA256:-$(sha256 "$ESO")}" > "$STATE"
   print -r -- "profile_sha256=$EXPECTED_ESO_SHA256" >> "$STATE"
@@ -481,6 +522,7 @@ record_state() {
   print -r -- "transaction_phase=$phase" >> "$STATE"
   print -r -- "settings_choice=$recorded_settings_choice" >> "$STATE"
   print -r -- "settings_backup=$recorded_settings_backup" >> "$STATE"
+  print -r -- "settings_profile=$recorded_settings_profile" >> "$STATE"
   print -r -- "recorded_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$STATE"
   print -r -- "${RELEASE_VERSION:-unknown}" > "$VERSION_FILE"
 }
@@ -506,7 +548,20 @@ recover_incomplete_install() {
     [[ "$RECORDED_ORIGINAL_BINK_SHA256" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]] \
       || die "The installed bridge belongs to an older original-loader generation. Run the ESO launcher Repair first; no files were changed."
     if [[ "$RECORDED_EXECUTABLE_SHA256" == "$ACTUAL_ESO_SHA256" ]]; then
-      INSTALL_ALREADY_CURRENT=true
+      local marker_sha installed_version
+      marker_sha="$(state_value eso_sha256 "$MARKER")"
+      installed_version=""
+      [[ -f "$VERSION_FILE" ]] && installed_version="$(<"$VERSION_FILE")"
+      if [[ "$marker_sha" == "$ACTUAL_ESO_SHA256" \
+        && "$installed_version" == "${RELEASE_VERSION:-unknown}" ]]; then
+        INSTALL_ALREADY_CURRENT=true
+        return 0
+      fi
+      PATCH_UPGRADE=true
+      PREVIOUS_SETTINGS_CHOICE="$(state_value settings_choice "$STATE")"
+      PREVIOUS_SETTINGS_BACKUP="$(state_value settings_backup "$STATE")"
+      PREVIOUS_SETTINGS_PROFILE="$(state_value settings_profile "$STATE")"
+      print -- "  The verified bridge payload belongs to an earlier package state; it will be re-attested in place."
       return 0
     fi
     die "ESO was updated while the bridge loader remained active. Run the ESO launcher Repair to materialize the current original Bink library, then run Install again. The previous backup was not restored. No files were changed."
@@ -530,10 +585,13 @@ recover_incomplete_install() {
       marker_sha="$(state_value eso_sha256 "$MARKER")"
       if [[ "$RECORDED_EXECUTABLE_SHA256" == "$ACTUAL_ESO_SHA256" \
         && "$RECORDED_ORIGINAL_BINK_SHA256" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
-        && "$marker_sha" == "$ACTUAL_ESO_SHA256" ]]; then
+        && ( "$marker_sha" == "$ACTUAL_ESO_SHA256" \
+          || ( -z "$marker_sha" && "$ACTUAL_ESO_SHA256" == "$EXPECTED_ESO_SHA256" \
+            && "$(marker_mode_value || true)" == startup-compositor-neutralize-pacing-release ) ) ]]; then
         PATCH_UPGRADE=true
         PREVIOUS_SETTINGS_CHOICE="$(state_value settings_choice "$STATE")"
         PREVIOUS_SETTINGS_BACKUP="$(state_value settings_backup "$STATE")"
+        PREVIOUS_SETTINGS_PROFILE="$(state_value settings_profile "$STATE")"
         print -- "  Detected a verified earlier patcher on the same ESO and original-loader generation; it will be upgraded in place."
         return 0
       fi
@@ -583,43 +641,225 @@ recover_incomplete_install() {
   record_state recovered
 }
 
+latest_run_id() {
+  [[ -f "$PRODUCTION_LOG" ]] || return 1
+  sed -n 's/^\[run=\([^]]*\)\].*/\1/p' "$PRODUCTION_LOG" | tail -1
+}
+
+print_latest_run_summary() {
+  local run_id="" run_lines="" problems=0 initial_state="not recorded"
+  run_id="$(latest_run_id || true)"
+  if [[ -z "$run_id" ]]; then
+    print -- "Last launch: not available"
+    return 0
+  fi
+  run_lines="$(grep -F "[run=$run_id]" "$PRODUCTION_LOG" || true)"
+  [[ "$run_lines" == *"MODE: startup compositor neutralize pacing release enabled"* ]] || problems=$(( problems + 1 ))
+  [[ "$run_lines" == *"MOLTENVK_CONFIG: live_resources=0 metal_argument_buffers=0 use_mtlheap=1 synchronous_queue_submits=0 command_pooling=1 prefill=0 maximize_concurrent_compilation=0"* ]] \
+    || problems=$(( problems + 1 ))
+  [[ "$run_lines" == *"ACTIVE: redirected 17 Vulkan entry points"* ]] || problems=$(( problems + 1 ))
+  [[ "$run_lines" == *"ESO SHA-256: $ACTUAL_ESO_SHA256"* ]] || problems=$(( problems + 1 ))
+  [[ "$run_lines" == *"INACTIVE_PACING_ACTIVE: inactive_100ms_sleep=bypassed"* ]] || problems=$(( problems + 1 ))
+  [[ "$run_lines" == *"STARTUP_COMPOSITOR_NEUTRALIZE_LATCH: action=forward"*"ordinal=150"*"suppressed_draws=79"* ]] || problems=$(( problems + 1 ))
+  [[ "$run_lines" == *"STARTUP_COLOR_AUDIT_FINISH:"*"ordinal=180"* ]] || problems=$(( problems + 1 ))
+  if print -r -- "$run_lines" | grep -Eq '\] (ERROR:|FATAL:|SKIP:|[^ ]+_ERROR:)'; then
+    problems=$(( problems + 1 ))
+  fi
+  local first_state
+  first_state="$(print -r -- "$run_lines" | grep 'INACTIVE_PACING_STATE:' | head -1 || true)"
+  if [[ "$first_state" == *"active=yes"* ]]; then
+    initial_state="active=yes (observed)"
+  elif [[ "$first_state" == *"active=no"* ]]; then
+    initial_state="active=no, 100-ms sleep bypassed (observed)"
+  fi
+  if (( problems == 0 )); then
+    print -- "Last launch: PASS"
+  else
+    print -- "Last launch: REVIEW ($problems invariant checks failed)"
+  fi
+  print -- "  Run: $run_id"
+  print -- "  Initial activity: $initial_state"
+  print -- "  Startup control: 79 suppressed, ordinal 150 forwarded, ordinal 180 finished"
+  print -- "  Note: this log does not measure FPS or prove visual focus."
+}
+
+print_settings_status() {
+  [[ -f "$STATE" ]] || { print -- "Settings profile: not recorded"; return 0; }
+  local recorded_choice recorded_profile settings_path applied_sha
+  recorded_choice="$(state_value settings_choice "$STATE")"
+  recorded_profile="$(state_value settings_profile "$STATE")"
+  if [[ "$recorded_choice" != apply ]]; then
+    print -- "Settings profile: unchanged by patcher"
+    return 0
+  fi
+  [[ -n "$recorded_profile" ]] || recorded_profile="legacy-applied-profile"
+  if [[ ! -f "$SETTINGS_PATH_FILE" || ! -f "$SETTINGS_APPLIED_SHA_FILE" ]]; then
+    print -- "Settings profile: $recorded_profile (restore record incomplete)"
+    return 0
+  fi
+  settings_path="$(<"$SETTINGS_PATH_FILE")"
+  applied_sha="$(<"$SETTINGS_APPLIED_SHA_FILE")"
+  if [[ -f "$settings_path" && "$(sha256 "$settings_path")" == "$applied_sha" ]]; then
+    print -- "Settings profile: $recorded_profile (applied)"
+  else
+    print -- "Settings profile: $recorded_profile (customized after install; preserved)"
+  fi
+}
+
 check() {
   ui_clear
   ui_header "Installation status"
   resolve_target; state_directory
   require_supported_executable
+  local overall="READY" patch_state="unknown" marker_sha="" \
+    recorded_executable="" recorded_original="" marker_mode="" \
+    installed_version=""
   if [[ -e "$MARKER" ]]; then
     if [[ "$(sha256 "$BINK")" == "$(sha256 "$PAYLOAD/libBink2Macx64.dylib")" ]]; then
-      local marker_sha
       marker_sha="$(sed -n 's/^eso_sha256=//p' "$MARKER" | head -1)"
       if [[ "$marker_sha" == "$ACTUAL_ESO_SHA256" ]]; then
-        print -- "Supported ESO client; patch installed."
-        [[ -f "$VERSION_FILE" ]] && print -- "Installed release: $(<"$VERSION_FILE")"
+        patch_state=installed
+        [[ -f "$VERSION_FILE" ]] && installed_version="$(<"$VERSION_FILE")"
+        if [[ "$installed_version" == "${RELEASE_VERSION:-unknown}" ]]; then
+          print -- "Supported ESO client; patch installed."
+        else
+          print -- "Supported ESO client; verified bridge installed with an earlier package state. Re-run Install to upgrade."
+          overall="UPGRADE AVAILABLE"
+        fi
+        [[ -n "$installed_version" ]] && print -- "Installed release: $installed_version"
       else
         print -- "Supported ESO client; update left the bridge installed with a stale attestation."
         print -- "Run the ESO launcher Repair before Install or Uninstall; the previous original backup must not be restored across generations."
+        patch_state=stale
+        overall="ACTION REQUIRED"
       fi
     elif [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
       print -- "Supported ESO client; update restored the original loader. Re-run Install."
+      patch_state=not-installed
+      overall="ACTION REQUIRED"
     else
       if [[ "$(active_loader_kind)" == bridge ]]; then
-        die "Incomplete patch state: an unrecognized bridge is active. Run the ESO launcher Repair. No files were changed."
+        marker_sha="$(state_value eso_sha256 "$MARKER")"
+        recorded_executable="$(state_value executable_sha256 "$STATE" 2>/dev/null || true)"
+        recorded_original="$(state_value original_bink_sha256 "$STATE" 2>/dev/null || true)"
+        if [[ -f "$STATE" && -f "$BACKUP" \
+          && ( "$marker_sha" == "$ACTUAL_ESO_SHA256" \
+            || ( -z "$marker_sha" && "$ACTUAL_ESO_SHA256" == "$EXPECTED_ESO_SHA256" \
+              && "$(marker_mode_value || true)" == startup-compositor-neutralize-pacing-release ) ) \
+          && "$recorded_executable" == "$ACTUAL_ESO_SHA256" \
+          && "$recorded_original" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
+          && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
+          print -- "Supported ESO client; verified earlier patcher installed. Re-run Install to upgrade."
+          patch_state=earlier-installed
+          overall="UPGRADE AVAILABLE"
+          [[ -f "$VERSION_FILE" ]] && print -- "Installed release: $(<"$VERSION_FILE")"
+        else
+          die "Incomplete patch state: an unrecognized bridge is active. Run the ESO launcher Repair. No files were changed."
+        fi
+      else
+        print -- "Patch not active; ESO has a different original-loader generation."
+        print -- "This release will preserve that loader. Use a newer compatible patcher before reinstalling."
+        patch_state=unsupported-original
+        overall="ACTION REQUIRED"
       fi
-      print -- "Patch not active; ESO has a different original-loader generation."
-      print -- "This release will preserve that loader. Use a newer compatible patcher before reinstalling."
     fi
   else
     if [[ "$(sha256 "$BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
       print -- "Supported ESO client; patch not installed."
+      patch_state=not-installed
+      overall="NOT INSTALLED"
     elif [[ "$(active_loader_kind)" == bridge ]]; then
       die "Unsupported or already-modified bridge loader. No files were changed."
     else
       print -- "Patch not installed; the active original loader belongs to a different generation."
       print -- "This release will not overwrite it."
+      patch_state=unsupported-original
+      overall="ACTION REQUIRED"
     fi
   fi
+  if [[ "$patch_state" == installed || "$patch_state" == earlier-installed ]]; then
+    recorded_original="$(state_value original_bink_sha256 "$STATE" 2>/dev/null || true)"
+    marker_mode="$(marker_mode_value || true)"
+    if [[ -f "$BACKUP" && -f "$STATE" \
+      && "$recorded_original" == "$EXPECTED_ORIGINAL_BINK_SHA256" \
+      && "$(sha256 "$BACKUP")" == "$EXPECTED_ORIGINAL_BINK_SHA256" ]]; then
+      print -- "Recovery: verified"
+    else
+      print -- "Recovery: INVALID or incomplete"
+      overall="ACTION REQUIRED"
+    fi
+    if [[ -f "$MVK" && "$(sha256 "$MVK")" == "$(sha256 "$PAYLOAD/libMoltenVK.teso4m4.dylib")" \
+      && "$marker_mode" == startup-compositor-neutralize-pacing-release ]]; then
+      print -- "Runtime profile: startup-compositor-neutralize-pacing-release"
+    else
+      print -- "Runtime profile: INVALID or incomplete"
+      overall="ACTION REQUIRED"
+    fi
+  else
+    print -- "Recovery: not required for current state"
+  fi
+  print_settings_status
+  print -- "Overall: $overall"
   print -- "Compatibility: $TARGET_COMPATIBILITY"
   print -- "Location: $ESO_APP"
+  print -- "Production log: $PRODUCTION_LOG"
+  print_latest_run_summary
+}
+
+write_filtered_latest_run() {
+  local destination="$1" run_id=""
+  run_id="$(latest_run_id || true)"
+  if [[ -z "$run_id" ]]; then
+    print -- "No production bridge run is available." > "$destination"
+    return 0
+  fi
+  grep -F "[run=$run_id]" "$PRODUCTION_LOG" | grep -E \
+    '\] (RUN_START:|MODE:|MOLTENVK_CONFIG:|INACTIVE_PACING_ACTIVE:|INACTIVE_PACING_STATE:|ACTIVE:|ESO SHA-256:|STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:|STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:|STARTUP_COLOR_AUDIT_FINISH:|ERROR:|FATAL:|SKIP:|[^ ]+_ERROR:)' \
+    | sed -E -e "s|$HOME|<HOME>|g" -e "s|$ESO_APP|<ESO_APP>|g" \
+      -e 's/ pipeline=[^ ]+ descriptor_update_signature=[^ ]+//' \
+    > "$destination" || true
+}
+
+diagnose() {
+  local timestamp report_root report_dir raw_report output parent original_ui_tty
+  timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  output="${support_output:-$HOME/Desktop/ESO-MoltenVK-Patcher-Support-$timestamp.zip}"
+  output="${output:A}"
+  parent="${output:h}"
+  [[ -d "$parent" ]] || die "The support report destination does not exist: $parent"
+  [[ ! -e "$output" ]] || die "The support report already exists: $output"
+  report_root="$(mktemp -d /private/tmp/eso-moltenvk-support.XXXXXX)"
+  report_dir="$report_root/ESO-MoltenVK-Patcher-Support"
+  mkdir -m 700 "$report_dir"
+  raw_report="$report_root/status.raw"
+  original_ui_tty="$UI_TTY"
+  UI_TTY=false
+  check > "$raw_report"
+  UI_TTY="$original_ui_tty"
+  sed -e "s|$HOME|<HOME>|g" -e "s|$ESO_APP|<ESO_APP>|g" \
+    -e "s|$STATE_DIR|<STATE_DIR>|g" -e "s|$PRODUCTION_LOG|<PRODUCTION_LOG>|g" \
+    "$raw_report" \
+    > "$report_dir/report.txt"
+  {
+    print -- "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    print -- "Patcher package: ${RELEASE_VERSION:-unknown}"
+    print -- "Hardware architecture: $(uname -m)"
+    if command -v sw_vers >/dev/null 2>&1; then
+      print -- "macOS: $(sw_vers -productVersion)"
+    fi
+    print -- "ESO SHA-256: $ACTUAL_ESO_SHA256"
+    print -- "Bridge SHA-256: $(sha256 "$BINK")"
+    [[ -f "$MVK" ]] && print -- "MoltenVK SHA-256: $(sha256 "$MVK")"
+  } > "$report_dir/checksums.txt"
+  write_filtered_latest_run "$report_dir/latest-run.log"
+  chmod 600 "$report_dir"/*
+  (cd "$report_root" && COPYFILE_DISABLE=1 zip -q -r -X "$output" "${report_dir:t}")
+  chmod 600 "$output"
+  rm -f "$raw_report" "$report_dir/report.txt" "$report_dir/checksums.txt" \
+    "$report_dir/latest-run.log"
+  rmdir "$report_dir" "$report_root"
+  print -- "Privacy-filtered support report created: $output"
+  print -- "It contains no settings file, cache, credentials, proprietary game file, or raw system log."
 }
 
 install() {
@@ -717,7 +957,7 @@ install() {
   print -- "  ESO:      $ESO_APP"
   print -- "  Patcher:  ${RELEASE_VERSION:-unknown}"
   [[ "$settings_choice" == apply ]] \
-    && print -- "  Settings: Applied (48-key M4 profile)" \
+    && print -- "  Settings: Applied ($SETTINGS_PROFILE_NAME)" \
     || print -- "  Settings: Unchanged"
   print -- "  Backup:   Verified"
   print -- ""
@@ -818,6 +1058,7 @@ remove() {
 
 case "$command_name" in
   check|status) check ;;
+  diagnose) diagnose ;;
   install) install ;;
   remove) remove ;;
   repair)

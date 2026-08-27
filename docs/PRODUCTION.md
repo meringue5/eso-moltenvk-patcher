@@ -13,15 +13,15 @@ if it had been production at the time.
 
 | Component | Production baseline |
 |---|---|
-| Product | ESO MoltenVK Patcher 0.1.3 |
+| Product | ESO MoltenVK Patcher 0.2.0 |
 | Current exact ESO client | Steam macOS ESO 12.0.8, databuild `3288357` |
 | Extended gameplay client | Steam macOS ESO 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
 | Bridge profile | `startup-compositor-neutralize-pacing-release`; inactive pacing bypass and bounded compositor repair |
 | Validated hardware | Apple M4 MacBook Air, through Rosetta |
 | Gameplay evidence | Roughly 93 minutes of ordinary play at the observed 60 FPS VSync ceiling, including live graphics and resolution changes |
-| Startup evidence | Exact packaged 0.1.3 candidate had no pink or low FPS; 79 bounded suppressions, ordinal-150 forwarding, and no pipeline timing or lifecycle errors |
-| Standard settings | 2048 x 1280 profile with High subsampling (`SUB_SAMPLING "2"`) |
+| Startup evidence | Exact final bridge had normal focus, no pink, and normal perceived FPS; 79 bounded suppressions, ordinal-150 forwarding, ordinal-180 finish, and no bridge errors |
+| Standard settings | `balanced-m4-1920x1200-v1`; subsampling `1`, SSAO, high-resolution shadows, VSync |
 | Safety boundary | Exact selected identity or complete structural compatibility audit, original patch bytes, executable attestation, backup, and restore path must all pass |
 
 The first semantic product version is **ESO MoltenVK Patcher 0.1.0**, promoted
@@ -38,9 +38,14 @@ exact user launch separated normal FPS from the still-visible pink placeholder.
 Version 0.1.3 promotes Experiments 0044-0046 after the measurement-stripped
 package candidate passed its exact user launch and generation-aware recovery
 fixture.
+Version 0.2.0 promotes Experiment 0050 without changing that runtime control.
+It exposes architecture-backed Status, privacy-filtered Diagnostics, versioned
+Balanced settings identity, complete package checksums, and bounded owner-only
+production logging. Its exact final bridge passed a normal user-controlled
+launch and same-payload RC-to-final re-attestation.
 
-The source tree's next-release settings template is a distinct 2026-08-27
-balanced checkpoint, not a retroactive change to 0.1.3. It selects 1920 x 1200,
+The 0.2.0 settings template is a distinct 2026-08-27 balanced checkpoint, not a
+retroactive change to earlier assets. It selects 1920 x 1200,
 subsampling `1`, shadows `1`, planar water reflections `0`, particle density
 `1`, character resolution `2`, SSAO `1`, high-resolution shadows `1`, view
 distance `1.14999998`, and VSync. Its argument-buffers-off control captured
@@ -79,6 +84,10 @@ exact 0.1.3 package candidate launched without pink or low FPS and passed all
 bounded log gates. Experiment 0046 makes install and uninstall recovery aware
 of the executable/original-loader generation and prevents obsolete backup
 restoration across an update.
+Experiment 0050 productizes that structure while retaining the exact release
+profile. Run `20260827T142452.659250000Z-pid71549` started active, reached the
+79/150/180 gates, emitted no bridge error and no per-draw info rows, and matched
+the user's report of normal focus, no pink, and normal gameplay.
 
 ## Supported scope today
 

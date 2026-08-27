@@ -60,6 +60,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0047 | 2026-08-27 | Stable 0.1.3 public release | Succeeded; public latest release, tag target, and server asset digest verified without incrementing its download count | [Run](0047-stable-0.1.3-release.md) |
 | 0048 | 2026-08-27 | Post-window wrapper cost | Succeeded; cached wrapper tax measured in single-digit nanoseconds and trampoline work deferred | [Run](0048-post-window-wrapper-cost.md) |
 | 0049 | 2026-08-27 | Metal argument-buffer performance candidate | Rejected after three consecutive focus failures; argument-buffers-off control passed focus and approximately 54 minutes of ordinary play | [Run](0049-metal-argument-buffer-performance.md) |
+| 0050 | 2026-08-27 | Architecture-backed 0.2.0 diagnostics release | In progress; runtime-invariant public Status, private diagnostics export, balanced profile identity, and bounded logging | [Run](0050-architecture-backed-diagnostics-release.md) |
 
 ## Recording policy
 

@@ -1,11 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
-  <title id="title">Contents of the release folder</title><desc id="desc">An illustrated Finder window shows Install, Remove, Status, README, and Payload, with Install highlighted.</desc>
-  <rect width="1200" height="620" fill="#e9edf2"/><rect x="70" y="50" width="1060" height="520" rx="18" fill="#fff" stroke="#aab2bd" stroke-width="3"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Contents of the release folder</title><desc id="desc">An illustrated Finder window shows Install, Status, Diagnostics, Uninstall, README, and hidden internals, with Install highlighted.</desc>
+  <rect width="1200" height="760" fill="#e9edf2"/><rect x="70" y="50" width="1060" height="660" rx="18" fill="#fff" stroke="#aab2bd" stroke-width="3"/>
   <rect x="70" y="50" width="1060" height="76" rx="18" fill="#dfe4ea"/><circle cx="110" cy="88" r="10" fill="#ff5f57"/><circle cx="142" cy="88" r="10" fill="#febc2e"/><circle cx="174" cy="88" r="10" fill="#28c840"/>
   <text x="600" y="99" text-anchor="middle" fill="#20242a" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="26" font-weight="600">ESO MoltenVK Patcher</text>
   <rect x="110" y="160" width="980" height="86" rx="12" fill="#dcecff" stroke="#1677ff" stroke-width="3"/>
   <text x="150" y="212" fill="#111827" font-family="ui-monospace,SFMono-Regular,monospace" font-size="27" font-weight="700">Install.command</text><text x="840" y="212" fill="#1677ff" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22">Double-click this</text>
-  <text x="150" y="302" fill="#111827" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">Uninstall.command</text><text x="840" y="302" fill="#4b5563" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Restore original</text>
-  <text x="150" y="376" fill="#111827" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">README.txt</text><text x="840" y="376" fill="#4b5563" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Quick instructions</text>
-  <text x="150" y="450" fill="#6b7280" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">.eso-moltenvk-patcher/</text><text x="840" y="450" fill="#6b7280" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Hidden internals</text>
+  <text x="150" y="300" fill="#111827" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">Status.command</text><text x="840" y="300" fill="#4b5563" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Read-only health</text>
+  <text x="150" y="380" fill="#111827" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">Diagnostics.command</text><text x="840" y="380" fill="#4b5563" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Private support ZIP</text>
+  <text x="150" y="460" fill="#111827" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">Uninstall.command</text><text x="840" y="460" fill="#4b5563" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Restore original</text>
+  <text x="150" y="540" fill="#111827" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">README.txt</text><text x="840" y="540" fill="#4b5563" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Quick instructions</text>
+  <text x="150" y="620" fill="#6b7280" font-family="ui-monospace,SFMono-Regular,monospace" font-size="25">.eso-moltenvk-patcher/</text><text x="840" y="620" fill="#6b7280" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="21">Hidden internals</text>
 </svg>
