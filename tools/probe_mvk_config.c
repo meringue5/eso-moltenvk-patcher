@@ -48,7 +48,8 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "startup-inactive-pacing-bypass") != 0 &&
          strcmp(argv[2], "startup-compositor-audit-pacing-bypass") != 0 &&
          strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") != 0 &&
-         strcmp(argv[2], "startup-compositor-neutralize-pacing-release") != 0)) {
+         strcmp(argv[2], "startup-compositor-neutralize-pacing-release") != 0 &&
+         strcmp(argv[2], "startup-release-argument-buffers") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
@@ -63,7 +64,8 @@ int main(int argc, char** argv) {
             "startup-inactive-pacing-bypass|"
             "startup-compositor-audit-pacing-bypass|"
             "startup-compositor-neutralize-pacing-bypass|"
-            "startup-compositor-neutralize-pacing-release\n",
+            "startup-compositor-neutralize-pacing-release|"
+            "startup-release-argument-buffers\n",
             argv[0]);
         return 2;
     }
@@ -94,6 +96,7 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0 ||
+        strcmp(argv[2], "startup-release-argument-buffers") == 0 ||
         legacy_allocation;
     const bool no_command_pooling =
         strcmp(argv[2], "no-command-pooling") == 0;
@@ -112,7 +115,8 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-inactive-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") == 0 ||
-        strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0;
+        strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0 ||
+        strcmp(argv[2], "startup-release-argument-buffers") == 0;
     const bool performance_mode =
         performance_safe || performance_aggressive;
     const bool nonmaximized_compilation =
@@ -121,12 +125,17 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-inactive-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") == 0 ||
-        strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0;
+        strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0 ||
+        strcmp(argv[2], "startup-release-argument-buffers") == 0;
+    const bool argument_buffers =
+        strcmp(argv[2], "startup-release-argument-buffers") == 0;
     if (descriptor_compat &&
         (setenv(
              "MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES",
              performance_aggressive ? "0" : "1", 1) != 0 ||
-         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
+         setenv(
+             "MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS",
+             argument_buffers ? "1" : "0", 1) != 0 ||
          (legacy_allocation &&
           setenv("MVK_CONFIG_USE_MTLHEAP", "0", 1) != 0) ||
          (no_command_pooling &&
@@ -177,7 +186,7 @@ int main(int argc, char** argv) {
             ? VK_TRUE
             : VK_FALSE;
     const VkBool32 expected_argument_buffers =
-        descriptor_compat ? VK_FALSE : VK_TRUE;
+        descriptor_compat && !argument_buffers ? VK_FALSE : VK_TRUE;
     const MVKConfigUseMTLHeap expected_mtlheap =
         legacy_allocation
             ? MVK_CONFIG_USE_MTLHEAP_NEVER

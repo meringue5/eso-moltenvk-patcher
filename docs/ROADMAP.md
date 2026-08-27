@@ -131,22 +131,19 @@ single-variable experiment.
 
 ### Direction A: maximize FPS at fixed visual quality
 
-1. Measure and retire the post-startup bridge wrapper tax. The presentation
-   repair latches to forwarding at generation-2 ordinal 150 and its bounded
-   audit closes at ordinal 180, but ESO retains the intercepted draw,
-   descriptor, submit, and presentation function pointers for the process
-   lifetime. Compare direct MoltenVK against the current
-   post-window atomic fast paths in a non-game draw/descriptor benchmark. If
-   the difference is material, add a self-retiring direct-forward dispatch
-   after the verified finish without changing behavior inside the repair
-   window. This is the highest-confidence bridge-specific candidate because it
-   removes known work rather than changing rendering semantics.
-2. Re-evaluate Metal argument buffers only as a high-risk MoltenVK 1.4.2
-   experiment. Upstream describes them as a common performance path and 1.4.2
-   includes relevant alignment fixes, but ESO's prior single-variable result
-   tied them to rendering corruption. Require argument-buffer-on descriptor,
-   reset, shader-output, and exact ESO-era resource-shape probes before one
-   user-controlled game A/B. Never make this the default on theoretical gain.
+1. Keep Experiment 0048's post-window wrapper benchmark as a regression guard,
+   but defer self-retiring dispatch. Direct versus cached-wrapper measurements
+   found only 8-9 ns for an acquire/present pair, 5 ns per indexed draw, and
+   3 ns per descriptor update. That is too small to justify a mutable
+   trampoline without whole-frame evidence that another target amplifies it.
+2. Complete Experiment 0049's high-risk Metal argument-buffer candidate.
+   Official MoltenVK 1.4.2 reduced the descriptor-heavy CPU submit interval by
+   14.899% and passed exact-pixel 24-cycle reset probes both off and on. The
+   fail-closed source mode is prepared, but ESO's prior single-variable 1.4.1
+   result tied argument buffers to rendering corruption. Finish the full build
+   gate, then require rendering correctness at character selection and world
+   entry before any controlled frame-time A/B. Never make this the default on
+   the non-game gain alone.
 3. Test maximum concurrent pipeline compilation only for startup compilation
    latency and stutter. The retained 64 calls are already fast once ESO issues
    them, so do not expect or claim a steady-state FPS gain without direct

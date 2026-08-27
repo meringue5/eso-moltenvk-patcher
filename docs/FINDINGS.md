@@ -674,6 +674,29 @@ creation or cache reconstruction; it is not intrinsically an FPS optimization.
 The default is no compression, and the documented fastest candidate is LZ4,
 with the largest compressed representation among the provided algorithms.
 
+## Post-window wrapper tax is measurable but immaterial
+
+Experiment 0048 compared direct MoltenVK-shaped calls with the exact cached
+lifecycle wrappers after the ordinal-180 finished gate. Across five Rosetta
+runs, the residual tax was 8-9 ns for an acquire/present pair, 5 ns per indexed
+draw, and 3 ns per descriptor update. ESO retains the originally returned
+function pointers, so later proc queries cannot retire those wrappers, but a
+mutable trampoline is not justified by this scale without contradictory
+whole-frame evidence.
+
+## MoltenVK 1.4.2 argument buffers retain a material descriptor-path gain
+
+Experiment 0049 measured 20,000 alternating-resource draws in three balanced
+processes per configuration. Enabling Metal argument buffers reduced aggregate
+median CPU submit encoding from 176.475 to 150.181 ns per draw, or 14.899%.
+Both configurations also passed 24 alternating-resolution reset cycles with a
+full-lifetime descriptor set and exact expected pixels.
+
+This does not establish an ESO FPS gain or rendering safety. Experiment 0006's
+single-variable result still strongly implicates the 1.4.1 argument-buffer
+path in prior black/shadow-layer flicker, so the 1.4.2 candidate requires an
+ESO rendering-correctness gate before any performance conclusion.
+
 ## ESO 12.0.8 preserves the production MoltenVK bridge boundary
 
 Experiment 0034 establishes that ESO 12.0.8/databuild `3288357` changes the

@@ -24,6 +24,12 @@ static uint32_t g_compositor_image_sample_count;
 static bool g_compositor_image_arguments_valid;
 static uint32_t g_cmd_draw_indexed_forward_count;
 static uint32_t g_cmd_clear_attachments_count;
+static uint64_t g_post_window_direct_pair_ns;
+static uint64_t g_post_window_wrapper_pair_ns;
+static uint64_t g_post_window_direct_draw_ns;
+static uint64_t g_post_window_wrapper_draw_ns;
+static uint64_t g_post_window_direct_descriptor_ns;
+static uint64_t g_post_window_wrapper_descriptor_ns;
 
 static void test_log(const char* message) {
     const int written = snprintf(
@@ -366,6 +372,132 @@ static uint64_t monotonic_nanoseconds(void) {
     }
     return (uint64_t)value.tv_sec * 1000000000ULL +
            (uint64_t)value.tv_nsec;
+}
+
+static bool run_post_window_forwarding_benchmark(void) {
+    if (!check(
+            !teso4m4_lifecycle_startup_window_open(),
+            "post-window benchmark requires the finished startup gate")) {
+        return false;
+    }
+
+    teso4m4_lifecycle_set_startup_draw_audit(true);
+    teso4m4_lifecycle_set_startup_input_audit(true);
+    teso4m4_lifecycle_set_startup_compositor_neutralize(true);
+
+    PFN_vkAcquireNextImageKHR wrapped_acquire =
+        (PFN_vkAcquireNextImageKHR)teso4m4_lifecycle_intercept(
+            "vkAcquireNextImageKHR",
+            (PFN_vkVoidFunction)&fake_acquire_next_image);
+    PFN_vkQueuePresentKHR wrapped_present =
+        (PFN_vkQueuePresentKHR)teso4m4_lifecycle_intercept(
+            "vkQueuePresentKHR", (PFN_vkVoidFunction)&fake_queue_present);
+    PFN_vkCmdDrawIndexed wrapped_draw_indexed =
+        (PFN_vkCmdDrawIndexed)teso4m4_lifecycle_intercept(
+            "vkCmdDrawIndexed",
+            (PFN_vkVoidFunction)&fake_cmd_draw_indexed);
+    PFN_vkUpdateDescriptorSets wrapped_update_descriptor_sets =
+        (PFN_vkUpdateDescriptorSets)teso4m4_lifecycle_intercept(
+            "vkUpdateDescriptorSets",
+            (PFN_vkVoidFunction)&fake_update_descriptor_sets);
+    if (!check(
+            (PFN_vkVoidFunction)wrapped_acquire !=
+                    (PFN_vkVoidFunction)&fake_acquire_next_image &&
+                (PFN_vkVoidFunction)wrapped_present !=
+                    (PFN_vkVoidFunction)&fake_queue_present &&
+                (PFN_vkVoidFunction)wrapped_draw_indexed !=
+                    (PFN_vkVoidFunction)&fake_cmd_draw_indexed &&
+                (PFN_vkVoidFunction)wrapped_update_descriptor_sets !=
+                    (PFN_vkVoidFunction)&fake_update_descriptor_sets,
+            "post-window benchmark must exercise cached wrapper pointers")) {
+        return false;
+    }
+
+    const VkDevice device = HANDLE(VkDevice, 0xa1);
+    const VkQueue queue = HANDLE(VkQueue, 0xa2);
+    const VkSwapchainKHR swapchain = HANDLE(VkSwapchainKHR, 0xa3);
+    uint32_t image_index = 0;
+    VkResult item_result = VK_SUCCESS;
+    const VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain,
+        .pImageIndices = &image_index,
+        .pResults = &item_result,
+    };
+
+    enum { kPostWindowBenchmarkIterations = 1000000 };
+    uint64_t start = monotonic_nanoseconds();
+    for (unsigned int iteration = 0;
+         iteration < kPostWindowBenchmarkIterations; ++iteration) {
+        if (fake_acquire_next_image(
+                device, swapchain, 0, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                &image_index) != VK_SUCCESS ||
+            fake_queue_present(queue, &present_info) != VK_SUCCESS) {
+            return check(false, "direct post-window pair must forward");
+        }
+    }
+    uint64_t end = monotonic_nanoseconds();
+    g_post_window_direct_pair_ns =
+        (end - start) / kPostWindowBenchmarkIterations;
+
+    start = monotonic_nanoseconds();
+    for (unsigned int iteration = 0;
+         iteration < kPostWindowBenchmarkIterations; ++iteration) {
+        if (wrapped_acquire(
+                device, swapchain, 0, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                &image_index) != VK_SUCCESS ||
+            wrapped_present(queue, &present_info) != VK_SUCCESS) {
+            return check(false, "wrapped post-window pair must forward");
+        }
+    }
+    end = monotonic_nanoseconds();
+    g_post_window_wrapper_pair_ns =
+        (end - start) / kPostWindowBenchmarkIterations;
+
+    start = monotonic_nanoseconds();
+    for (unsigned int iteration = 0;
+         iteration < kPostWindowBenchmarkIterations; ++iteration) {
+        fake_cmd_draw_indexed(
+            HANDLE(VkCommandBuffer, 0xa4), 3, 1, 0, 0, 0);
+    }
+    end = monotonic_nanoseconds();
+    g_post_window_direct_draw_ns =
+        (end - start) / kPostWindowBenchmarkIterations;
+
+    start = monotonic_nanoseconds();
+    for (unsigned int iteration = 0;
+         iteration < kPostWindowBenchmarkIterations; ++iteration) {
+        wrapped_draw_indexed(
+            HANDLE(VkCommandBuffer, 0xa4), 3, 1, 0, 0, 0);
+    }
+    end = monotonic_nanoseconds();
+    g_post_window_wrapper_draw_ns =
+        (end - start) / kPostWindowBenchmarkIterations;
+
+    start = monotonic_nanoseconds();
+    for (unsigned int iteration = 0;
+         iteration < kPostWindowBenchmarkIterations; ++iteration) {
+        fake_update_descriptor_sets(device, 0, NULL, 0, NULL);
+    }
+    end = monotonic_nanoseconds();
+    g_post_window_direct_descriptor_ns =
+        (end - start) / kPostWindowBenchmarkIterations;
+
+    start = monotonic_nanoseconds();
+    for (unsigned int iteration = 0;
+         iteration < kPostWindowBenchmarkIterations; ++iteration) {
+        wrapped_update_descriptor_sets(device, 0, NULL, 0, NULL);
+    }
+    end = monotonic_nanoseconds();
+    g_post_window_wrapper_descriptor_ns =
+        (end - start) / kPostWindowBenchmarkIterations;
+
+    return check(
+        g_post_window_wrapper_pair_ns < 1000 &&
+            g_post_window_wrapper_draw_ns < 1000 &&
+            g_post_window_wrapper_descriptor_ns < 1000,
+        "post-window cached wrappers must remain below 1 us per call pair");
 }
 
 static bool fake_present_pixel_sampler(
@@ -1701,7 +1833,8 @@ int main(void) {
             0.0f, 0.0f, 0.0f, 1.0f, "rgba=0,0,0,1") ||
         !run_startup_color_case(
             "load-only startup submission must contain no clear record", false,
-            0.0f, 0.0f, 0.0f, 0.0f, NULL)) {
+            0.0f, 0.0f, 0.0f, 0.0f, NULL) ||
+        !run_post_window_forwarding_benchmark()) {
         return 1;
     }
     if (!run_present_pixel_schedule_case() ||
@@ -1716,7 +1849,15 @@ int main(void) {
         "Lifecycle trace smoke: yes startup_color_cases=3 "
         "present_pixel_cases=2 startup_draw_cases=1 startup_input_cases=1 "
         "startup_pipeline_timing_only_cases=1 release_strip_cases=1 "
-        "steady_pair_ns=%" PRIu64 "\n",
-        pair_nanoseconds);
+        "steady_pair_ns=%" PRIu64 " post_window_direct_pair_ns=%" PRIu64
+        " post_window_wrapper_pair_ns=%" PRIu64
+        " post_window_direct_draw_ns=%" PRIu64
+        " post_window_wrapper_draw_ns=%" PRIu64
+        " post_window_direct_descriptor_ns=%" PRIu64
+        " post_window_wrapper_descriptor_ns=%" PRIu64 "\n",
+        pair_nanoseconds, g_post_window_direct_pair_ns,
+        g_post_window_wrapper_pair_ns, g_post_window_direct_draw_ns,
+        g_post_window_wrapper_draw_ns, g_post_window_direct_descriptor_ns,
+        g_post_window_wrapper_descriptor_ns);
     return 0;
 }

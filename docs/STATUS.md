@@ -22,6 +22,15 @@ The production profile combines:
 - measurement-stripped post-window direct forwarding with pipeline timing
   disabled.
 
+Performance successor research is active while leaving public 0.1.3 unchanged.
+Experiment 0048 measured the residual cached-wrapper tax at
+only single-digit nanoseconds per hot call and deferred a self-retiring
+trampoline. Experiment 0049 found a 14.899% CPU descriptor-encoding gain from
+MoltenVK 1.4.2 Metal argument buffers and exact-pixel passes in both 24-cycle
+reset configurations. Its fail-closed experimental mode is installed for one
+user-controlled rendering gate. The historical 1.4.1 rendering-corruption
+boundary still blocks adoption until ESO rendering correctness is revalidated.
+
 The bundled M4 settings template now selects High subsampling
 (`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
 the same exact production build and reported no problem.
@@ -77,18 +86,21 @@ membership. The unsigned ZIP documents Gatekeeper's Open Anyway flow.
 
 ## Current installed state
 
-The exact `ESO-MoltenVK-Patcher-0.1.3.zip` candidate is installed on ESO 12.0.8
-through its packaged `Install.command`. Its marker selects
-`startup-compositor-neutralize-pacing-release`; the installed bridge, retagged
-original Bink, and official MoltenVK 1.4.2 exactly match the packaged payload.
-Package Status reports release 0.1.3 and exact compatibility.
+Experiment 0049's source candidate is installed on exact ESO 12.0.8 with
+marker `startup-release-argument-buffers`. It is byte-identical to the current
+validated build and changes one runtime variable from public 0.1.3: Metal
+argument buffers are enabled. The public 0.1.3 package remains the production
+and rollback reference; the experimental candidate is not released or
+supported pending its user-controlled rendering gate.
 
-This measurement-stripped profile retains Experiment 0044's exact inactive
+The candidate retains Experiment 0044's exact inactive
 100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor
 substitution, and ordinal-150 fail-open forwarding latch. It removes the first-
 64 graphics-pipeline timing path and makes every identified lifecycle wrapper
 direct-forward without table mutation after the ordinal-180 finished gate.
-Pixel readback and compositor image sampling remain disabled.
+Pixel readback and compositor image sampling remain disabled. Both active and
+old pipeline-cache files were preserved in place during the restore/install
+cycle.
 
 The 0.1.3 build, 138 Python tests, generation-aware installer transaction
 fixture, official and embedded Metal probes, startup-surface probe, ten runtime-
