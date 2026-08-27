@@ -90,10 +90,16 @@ This roadmap contains future work only. Current verified state is in
   the producer/readiness transition of the proven GUI-classified image. Do not
   add per-frame image readback merely to replace the already bounded repair.
 
-## P2: preserve the 1.4.2 production release
+## P2: freeze and release the Experiment 0044 repair
 
-- Keep official MoltenVK 1.4.2, the validated performance configuration, and
-  the exact no-neutralizer startup control as one release baseline.
+- Freeze the exact Experiment 0044 compositor-neutralize/pacing-bypass
+  configuration as the next release candidate. Do not mix the performance
+  candidates below into that release or invalidate its two-run attribution.
+- After the ordinary-use reliability gate remains clean, promote the exact
+  committed bridge and runtime through a new immutable release rather than
+  replacing the existing 0.1.2 asset.
+- Keep official MoltenVK 1.4.2 and the verified inactive-sleep and bounded
+  compositor repair identities together as one release baseline.
 - Preserve the pristine loader, release restore record, historical runtime
   backups, all pipeline-cache generations, and the 48-key sanitized settings
   template with validated High subsampling.
@@ -102,7 +108,95 @@ This roadmap contains future work only. Current verified state is in
 - Treat regressions in ordinary play, live graphics resets, startup color, or
   restore behavior as release blockers.
 
-## P3: maintain ESO update support
+## P3: research three 60-FPS-constrained performance directions
+
+Treat 60 FPS as the lower acceptance bound on the validated M4 target, not as
+a universal guarantee for every Mac. Share one measurement harness across all
+three directions, but keep each runtime or settings change in a separate
+single-variable experiment.
+
+### Shared evidence gate
+
+- Use one controlled low-variance scene and one repeatable high-load route.
+  Hold zone, camera, resolution, settings, cache generation, player-density
+  exposure, power source, and test duration as constant as practical.
+- Capture average FPS, 1% and 0.1% lows, frame-interval p95/p99, GPU time,
+  application and Metal memory, power, and thermal state. Do not accept the
+  in-game FPS counter alone as comparative evidence.
+- Preserve warm and naturally occurring cold-cache states separately. Do not
+  delete, replace, or distribute a pipeline cache to force a result.
+- Establish run-to-run noise before setting the minimum meaningful delta. A
+  candidate must exceed that noise, preserve rendering correctness and live
+  graphics resets, and retain the Experiment 0044 startup invariants.
+
+### Direction A: maximize FPS at fixed visual quality
+
+1. Measure and retire the post-startup bridge wrapper tax. The presentation
+   repair latches to forwarding at generation-2 ordinal 150 and its bounded
+   audit closes at ordinal 180, but ESO retains the intercepted draw,
+   descriptor, submit, and presentation function pointers for the process
+   lifetime. Compare direct MoltenVK against the current
+   post-window atomic fast paths in a non-game draw/descriptor benchmark. If
+   the difference is material, add a self-retiring direct-forward dispatch
+   after the verified finish without changing behavior inside the repair
+   window. This is the highest-confidence bridge-specific candidate because it
+   removes known work rather than changing rendering semantics.
+2. Re-evaluate Metal argument buffers only as a high-risk MoltenVK 1.4.2
+   experiment. Upstream describes them as a common performance path and 1.4.2
+   includes relevant alignment fixes, but ESO's prior single-variable result
+   tied them to rendering corruption. Require argument-buffer-on descriptor,
+   reset, shader-output, and exact ESO-era resource-shape probes before one
+   user-controlled game A/B. Never make this the default on theoretical gain.
+3. Test maximum concurrent pipeline compilation only for startup compilation
+   latency and stutter. The retained 64 calls are already fast once ESO issues
+   them, so do not expect or claim a steady-state FPS gain without direct
+   frame-time evidence.
+4. Use VSync-off only during the bounded throughput measurement. The current
+   100-FPS interval is a cap, not a performance mechanism; a high-refresh
+   display is required to validate visible output above 60 Hz.
+
+### Direction B: maximize visual quality while holding 60 FPS
+
+1. Restore `SUB_SAMPLING` from the current reduced value to High (`2`) first.
+   This has the clearest whole-scene visual benefit and already belongs to the
+   prior 2048 x 1280, 60-FPS M4 checkpoint.
+2. Restore `SHADOWS` from `1` to `2` as a separate A/B while retaining the
+   already enabled high-resolution shadow option.
+3. Restore `PLANAR_WATER_REFLECTION_QUALITY` from `0` to `1`, then to `2` only
+   if the first step holds the floor. Keep screen-space reflection unchanged
+   so the result remains attributable.
+4. Only after those known checkpoint values pass, evaluate antialiasing,
+   post-processing, particle density, view distance, and character resolution
+   one at a time in visual-benefit versus GPU-cost order.
+5. Reject any step that creates a sustained sub-60 interval in the controlled
+   gameplay window, worsens frame-time tails beyond measured noise, or breaks
+   rendering after a live graphics reset. The highest passing combination
+   becomes an optional, hardware-scoped `Quality 60` profile.
+
+### Direction C: minimize energy and resources at fixed quality and 60 FPS
+
+1. Reuse the post-startup wrapper-retirement candidate from Direction A, but
+   judge it by CPU time, package power, frame energy, and thermal behavior at a
+   60-FPS cap rather than by uncapped FPS.
+2. Benchmark `MVK_CONFIG_SHADER_COMPRESSION_ALGORITHM=3` (`LZ4`) only as a
+   retained-MSL-memory trade. It cannot make executing shaders faster; accept
+   it only if it materially reduces application/Metal memory without worsening
+   cache serialization, startup time, frame-time tails, or power.
+3. Compare maximum and non-maximum concurrent compilation for transient power,
+   thermal pressure, and compilation stutter. Retain non-maximum compilation
+   unless the maximum mode produces an evidence-backed net benefit.
+4. Treat macOS Low Power Mode and the 60-FPS cap as external measurement
+   factors, never settings that the patch silently changes. Any efficiency
+   profile must keep visual settings identical to its reference.
+
+If the three directions produce validated differences, expose them as
+explicit, hardware-scoped `Performance`, `Quality 60`, and `Efficiency 60`
+choices. Keep the runtime bridge common where possible, apply settings only by
+explicit player choice, and publish measured tradeoffs instead of naming one
+profile universally best. This program follows the Experiment 0044 release; it
+does not block or mutate that fixed candidate.
+
+## P4: maintain ESO update support
 
 - Run the quick update gate after every ESO or launcher content update.
 - Allow the packaged auditor to re-attest relocation-only executable updates
@@ -112,7 +206,7 @@ This roadmap contains future work only. Current verified state is in
   install/remove testing, and a user-controlled normal-launch smoke test.
 - Never turn an unknown build into best-effort compatibility.
 
-## P4: broaden verified compatibility
+## P5: broaden verified compatibility
 
 - Validate the same exact client through a direct ZeniMax installation when a
   suitable user-controlled test is available.
@@ -120,18 +214,10 @@ This roadmap contains future work only. Current verified state is in
 - Keep Steam and launcher discovery edition-neutral; authentication remains the
   responsibility of the user's normal launcher.
 
-## P5: improve distribution
+## P6: improve distribution
 
 - Collect feedback on the unsigned ZIP's Terminal and Gatekeeper experience.
 - Consider a signed/notarized app or DMG if Apple Developer membership becomes
   worthwhile.
 - Add release automation only if it preserves exact payload hashes, archive
   hygiene, release notes, and rollback verification.
-
-## Deferred performance work
-
-- Do not change the production profile merely for speculative FPS gains.
-- Reopen shader compression or other MoltenVK tuning only with a bounded
-  non-game benchmark, a clean A/B design, and unchanged compatibility gates.
-- Do not repeat failed 1.4.1-era experiments unless a new regression provides a
-  specific reason and new discriminating evidence.
