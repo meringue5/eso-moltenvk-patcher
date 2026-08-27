@@ -798,3 +798,28 @@ The durable build map, callback-to-state flow, exact outer-loop offsets, patch
 boundary, and update invariants are maintained in
 [ESO host runtime structure](ESO-HOST-RUNTIME.md). Experiment 0041 remains the
 run-specific evidence record rather than the owner of that architecture.
+
+## Fixed-window pink neutralization and inactive pacing bypass coexist
+
+Experiment 0044 combines the already validated generation-2 compositor window
+with the exact inactive-loop pacing patch, while disabling pixel readback and
+leaving MoltenVK, caches, settings, AppKit callbacks, focus propagation, and
+launcher behavior unchanged. Two consecutive ordinary Steam-path starts had
+no visible pink and normal FPS.
+
+Exact runs `20260827T060530.866920000Z-pid39106` and
+`20260827T060606.566512000Z-pid39189` each suppressed 79 contiguous target
+draws at ordinals 71 through 149, forwarded at ordinal 150, finished the
+bounded audit at ordinal 180, and retained 64/64 successful non-null graphics-
+pipeline calls. Neither run recorded a pipeline failure, neutralizer error,
+skip, overflow, or pixel-readback activation. The analyzer independently
+returned `WINDOW-NEUTRALIZED` for both.
+
+The first run observed `active=yes`; the second observed `active=no` and
+recorded `action=sleep-bypassed`. The latter directly exercises the branch that
+would otherwise impose a 100-ms sleep per outer-loop iteration. This shows that
+the deterministic presentation neutralizer and the pacing repair can operate
+together without reproducing either symptom in the tested pair. It does not
+yet prove that every future cold start will enter the same bounded lifecycle or
+exclude another low-FPS mechanism, so long-term reliability remains an
+ordinary-use observation gate rather than a completed release claim.

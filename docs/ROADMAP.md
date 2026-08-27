@@ -17,14 +17,16 @@ This roadmap contains future work only. Current verified state is in
 - Treat the exact ESO inactive-loop path as the leading mechanism: when its
   internal application-active byte is false, `GameClient::mainLoop` calls
   `usleep(100000)`, directly imposing an approximately 10-Hz outer loop.
-- Continue ordinary use without forced repeats. Treat the two initial
-  Experiment 0041 starts—both normal FPS with pink and `active=yes`—as the
-  no-regression baseline, then classify the first natural `active=no` or
-  low-FPS start against the bounded state log. The initial pair did not
-  exercise the bypassed false-state path.
-- Use a bounded, forward-only device/swapchain/queue/present trace only if the
-  focused inactive-loop bypass does not eliminate low FPS. Do not re-enable
-  the pink neutralizer in either diagnostic.
+- Keep the exact Experiment 0044 candidate installed for ordinary-use soak
+  without forced repeats. Its first two starts had no pink and normal FPS; the
+  second recorded `active=no` with `action=sleep-bypassed`, directly exercising
+  the patched false-state branch.
+- Classify the first natural recurrence against the bounded pacing,
+  neutralizer, pipeline, and ESO renderer records before changing the
+  candidate. Use a forward-only device/swapchain/queue/present trace only if
+  low FPS returns despite a recorded inactive-sleep bypass.
+- If ordinary starts remain clean, promote the exact committed configuration
+  through a new immutable release rather than replacing the 0.1.2 asset.
 
 - Treat Experiment 0035's back-to-back pair as the current discriminator: both
   starts activated the full bridge, but only the smooth restart engaged
@@ -39,7 +41,7 @@ This roadmap contains future work only. Current verified state is in
   supporting audits disabled, pink remained visible but FPS and renderer timing
   returned to the normal path.
 - Continue classifying naturally occurring starts without forcing repeated
-  gameplay; the low-FPS recurrence is now an open release incident.
+  gameplay; two successful 0044 starts do not yet close the release incident.
 - Repair the missing readiness-success production log record before reusing
   that canary as a diagnostic invariant; do not retain it as a claimed fix.
 - Classify each future start from direct graphics-pipeline call/return timing
@@ -81,11 +83,9 @@ This roadmap contains future work only. Current verified state is in
   dedicated log-policy probe, exact-target cache-preserving installation, and
   ordinary user launch all passed; the result is now owned by Findings and the
   experiment record.
-- Experiment 0044 is installed after passing the exact-target, restore,
-  payload, cache, and settings-preservation gates. Its isolated mode combines
-  the twice-validated fixed-window black neutralizer with the independent host-
-  loop pacing bypass and disables pixel readback. Require both no pink and
-  normal FPS in one ordinary launch.
+- Experiment 0044 passed twice with no pink and normal FPS. Preserve that
+  result in the experiment record and Findings; only the optional underlying
+  GUI-placeholder producer repair remains future work here.
 - If a root repair is later preferred over presentation neutralization, trace
   the producer/readiness transition of the proven GUI-classified image. Do not
   add per-frame image readback merely to replace the already bounded repair.

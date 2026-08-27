@@ -92,6 +92,17 @@ diagnostic release candidate, not a public release claim. See
 [ESO host runtime structure](ESO-HOST-RUNTIME.md) and Experiment
 [0044](experiments/0044-compositor-neutralize-pacing-bypass.md).
 
+Two consecutive ordinary user-controlled starts passed the 0044 gate with no
+visible pink and normal FPS. Exact runs
+`20260827T060530.866920000Z-pid39106` and
+`20260827T060606.566512000Z-pid39189` each suppressed exactly 79 target draws,
+forwarded at ordinal 150, finished at ordinal 180, and retained 64/64
+successful non-null graphics-pipeline calls without bounded lifecycle errors.
+The first run observed `active=yes`; the second observed `active=no` and
+recorded `action=sleep-bypassed`, directly exercising the patched 100-ms sleep
+branch. This is a two-run functional pass, not yet a long-term reliability or
+public-release claim.
+
 The first 0042 launch had normal FPS with pink, but its compositor verdict is
 inconclusive because the production `info` log discarded every analyzer-
 required bounded audit record as `debug` or `trace`. Experiment
@@ -237,50 +248,24 @@ creation, and compositor neutralization is excluded as a necessary cause.
 
 ## Next gate
 
-The 0.1.2 release-reliability incident is open, but its leading mechanism is
-now localized outside MoltenVK. The exact ESO main loop sleeps for 100,000
-microseconds per iteration whenever its internal AppKit active-state byte is
-false, matching the observed approximately 10-FPS mode. Experiment
-[0041](experiments/0041-inactive-pacing-bypass.md) implements the
-single-variable, exact-target runtime bypass of only that inactive-loop sleep,
-with bounded logging of the internal false state. Its build, dedicated x86_64
-patch probe, 134 Python tests, release transaction regression, static checks,
-and both Metal-backed Vulkan probes pass. After the user closed the launcher,
-a cache-preserving restore/install cycle passed the shared bundle-idle gate.
-The installed bridge, renamed original, and MoltenVK hashes exactly match the
-built candidate; the marker selects `startup-inactive-pacing-bypass`; the
-restore source remains available; and every preserved cache identity passes.
+Experiment [0044](experiments/0044-compositor-neutralize-pacing-bypass.md) has
+passed its declared user gate twice. Most importantly, the second normal-FPS
+start entered `active=no` and exercised the exact inactive-sleep bypass while
+the fixed-window compositor neutralizer still removed the visible magenta.
+This is the first direct combined evidence for both intended repairs.
 
-The initial user gate now contains two normal-FPS starts with pink and
-`active=yes`. Continue ordinary use without forced retries. The decisive next
-evidence is the first natural `active=no` or low-FPS start, correlated with the
-bounded state log. Preserve the current MoltenVK runtime, compilation policy,
-settings, caches, focus-event propagation, and launcher path. Device/swapchain/
-present tracing is no longer the first low-FPS diagnostic boundary unless the
-focused bypass fails to remove the low-FPS state.
+Keep the exact candidate installed for ordinary use without forced launch
+loops, cache replacement, settings changes, or launcher workarounds. The next
+gate is natural-use soak. If pink or low FPS recurs, preserve the exact run and
+classify its pacing state, neutralizer window, pipeline timing, and ESO renderer
+timing before changing the candidate. If repeated ordinary starts remain clean,
+promote this exact committed configuration through a new immutable release
+rather than replacing the existing 0.1.2 asset.
 
-Visible pink alone remains cosmetic; do not reintroduce its neutralizer or
-claim launcher/cache causality while the activation event-order trigger is
-unresolved.
-
-At the user's direction, the optional pink-repair audit keeps 0041's inactive-
-sleep bypass, non-maximized compilation, and bounded pipeline timing. It
-forwards all ESO draws unchanged and only samples the bound `Sampler0` scene
-and `Sampler1` GUI images during the bounded startup window. Experiment 0042
-proved the forward-only path can retain normal FPS with visible pink but lost
-its evidence to log filtering. Experiment 0043 corrected the bounded log
-visibility and closed the source boundary: the GUI-classified second image
-directly contains the full-screen magenta and changes contents in place.
-
-Experiment [0044](experiments/0044-compositor-neutralize-pacing-bypass.md)
-combines the already validated Experiment 0031 fixed-window neutralizer with
-the independent inactive pacing bypass. It disables pixel readback and adds no
-new rendering mutation. Its fresh build, focused mode/analyzer/log probes, 136
-Python tests, release transaction regression, syntax, and diff checks pass.
-Official and embedded Metal-backed non-game probes also pass. The exact-target
-cache-preserving installation passed the shared bundle-idle, restore, payload,
-cache, and settings-preservation gates. One ordinary user-controlled launch
-must now report both pink visibility and FPS state.
+The event-order condition that sometimes leaves ESO internally inactive is
+still unresolved, and two starts do not close long-term cold-start reliability.
+A bounded forward-only device/swapchain/queue/present trace becomes relevant
+only if low FPS returns despite a recorded `action=sleep-bypassed`.
 
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

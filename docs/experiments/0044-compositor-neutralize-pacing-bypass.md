@@ -1,7 +1,7 @@
 # Experiment 0044: fixed-window compositor neutralization with pacing bypass
 
 - Date: 2026-08-27
-- Outcome: **candidate installed; user launch pending**
+- Outcome: **succeeded; two consecutive user launches passed**
 - Rollback: **not started; Experiment 0044 remains installed and active**
 
 ## Question
@@ -60,7 +60,7 @@ Before installation require:
 9. shared bundle-idle, pristine restore, payload identity, cache identity, and
    settings-preservation gates.
 
-## Planned user gate
+## User gate
 
 One ordinary Steam-path launch. The user reports both pink visibility and FPS
 state. Pass requires:
@@ -116,7 +116,34 @@ exact ESO 12.0.8 target and all three pipeline-cache identities. The marker is
 exactly `startup-compositor-neutralize-pacing-bypass`; the bridge re-exports
 the retagged original Bink; all installed payload hashes match the prepared
 build; and all three user-file hashes remain unchanged. No game or launcher was
-started by the agent. One ordinary user-controlled Steam-path launch remains.
+started by the agent.
+
+## Result
+
+The user completed two consecutive ordinary Steam-path starts and reported no
+pink frame and normal FPS in both:
+
+- `20260827T060530.866920000Z-pid39106`
+- `20260827T060606.566512000Z-pid39189`
+
+The exact-run analyzer independently returned `WINDOW-NEUTRALIZED` for each
+run. Both logs contain 79 contiguous suppressions from generation-2 ordinals
+71 through 149, the single `present-deadline` forwarding latch at ordinal 150,
+and the bounded finish at ordinal 180. Each retained 64 successful, non-null
+graphics-pipeline calls with no pipeline failure, neutralizer error, skip,
+overflow, or pixel-readback activation.
+
+The pacing patch was active in both. The first run observed `active=yes` and
+forwarded normally; the second observed `active=no` and recorded
+`action=sleep-bypassed`. The second result therefore exercises the exact false-
+state branch that would otherwise sleep for 100 ms per outer-loop iteration,
+rather than merely repeating the earlier active-state no-regression case.
+
+The combined candidate passes its declared functional gate twice: the bounded
+presentation neutralizer removes the known magenta interval while the inactive
+pacing bypass preserves normal FPS. Two starts do not establish long-term
+cold-start reliability, so the installed candidate remains under ordinary-use
+soak rather than requiring forced launch repetition.
 
 ## Rollback
 
