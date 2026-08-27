@@ -77,6 +77,7 @@ typedef enum {
     TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE,
     TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL,
     TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS,
+    TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS,
 } Teso4m4Mode;
 
 static void initialize_run_id(void) {
@@ -441,6 +442,9 @@ static Teso4m4Mode marker_mode(const char* directory,
     if (strcmp(mode, "startup-inactive-pacing-bypass") == 0) {
         return TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
     }
+    if (strcmp(mode, "startup-compositor-audit-pacing-bypass") == 0) {
+        return TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -494,7 +498,8 @@ static bool verify_moltenvk_configuration(
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
-        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
     const VkBool32 expected_live_resources =
         (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
          mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
@@ -505,7 +510,8 @@ static bool verify_moltenvk_configuration(
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
          mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
-         mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS)
+         mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS)
             ? VK_FALSE
             : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
@@ -514,7 +520,8 @@ static bool verify_moltenvk_configuration(
         performance_mode &&
                 mode != TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE &&
                 mode != TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL &&
-                mode != TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS
+                mode != TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS &&
+                mode != TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS
             ? VK_TRUE
             : VK_FALSE;
     if (configuration.liveCheckAllResources != expected_live_resources ||
@@ -758,7 +765,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message("SKIP: selected target has no FX sentinel profile");
         return;
     }
-    if (mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS &&
+    if ((mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS) &&
         !ESO_HAS_INACTIVE_PACING_TARGET) {
         log_message("SKIP: selected target has no inactive pacing profile");
         return;
@@ -776,31 +784,38 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_present_pixel_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
     g_startup_draw_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_input_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_compositor_audit_enabled =
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT;
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
     g_startup_compositor_neutralize_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE;
     g_startup_pipeline_timing_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
-        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
     g_inactive_pacing_bypass_enabled =
-        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
         mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
@@ -812,7 +827,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
-        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS;
+        mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
     teso4m4_lifecycle_set_enabled(
         !performance_mode || g_startup_color_audit_enabled ||
         g_startup_pipeline_timing_enabled);
@@ -845,7 +861,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
              mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
-             mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS) ? "0" : "1",
+             mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+             mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS) ? "0" : "1",
             1) != 0 ||
         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1) != 0 ||
         (mode == TESO4M4_MODE_LEGACY_ALLOCATION &&
@@ -859,7 +876,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
              "MVK_CONFIG_SHOULD_MAXIMIZE_CONCURRENT_COMPILATION",
              (mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
               mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
-              mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS) ? "0" : "1",
+              mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
+              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS) ? "0" : "1",
              1) != 0)) {
         log_message("ERROR: could not set selected compatibility mode: %s",
                     strerror(errno));
@@ -967,6 +985,17 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             "lifecycle_trace=pipeline-only pipeline_timing=bounded "
             "readiness_canary=disabled compositor_neutralize=disabled "
             "inactive_100ms_sleep=bypassed");
+    } else if (mode ==
+               TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS) {
+        log_message(
+            "MODE: startup compositor audit pacing bypass enabled "
+            "live_resources=0 metal_argument_buffers=0 use_mtlheap=1 "
+            "command_pooling=1 synchronous_queue_submits=0 "
+            "maximize_concurrent_compilation=0 generation_limit=2 "
+            "generation_2_present_limit=180 pixel_samples=20 "
+            "draw_provenance=enabled input_provenance=enabled "
+            "descriptor_classes=enabled pipeline_timing=bounded "
+            "compositor_neutralize=disabled inactive_100ms_sleep=bypassed");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "

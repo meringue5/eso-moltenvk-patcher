@@ -45,7 +45,8 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "startup-compositor-audit") != 0 &&
          strcmp(argv[2], "startup-compositor-neutralize") != 0 &&
          strcmp(argv[2], "startup-pipeline-timing-control") != 0 &&
-         strcmp(argv[2], "startup-inactive-pacing-bypass") != 0)) {
+         strcmp(argv[2], "startup-inactive-pacing-bypass") != 0 &&
+         strcmp(argv[2], "startup-compositor-audit-pacing-bypass") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
@@ -57,7 +58,8 @@ int main(int argc, char** argv) {
             "startup-draw-audit|startup-input-audit|"
             "startup-compositor-audit|startup-compositor-neutralize|"
             "startup-pipeline-timing-control|"
-            "startup-inactive-pacing-bypass\n",
+            "startup-inactive-pacing-bypass|"
+            "startup-compositor-audit-pacing-bypass\n",
             argv[0]);
         return 2;
     }
@@ -85,6 +87,7 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-compositor-neutralize") == 0 ||
         strcmp(argv[2], "startup-pipeline-timing-control") == 0 ||
         strcmp(argv[2], "startup-inactive-pacing-bypass") == 0 ||
+        strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0 ||
         legacy_allocation;
     const bool no_command_pooling =
         strcmp(argv[2], "no-command-pooling") == 0;
@@ -100,13 +103,15 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-compositor-audit") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize") == 0 ||
         strcmp(argv[2], "startup-pipeline-timing-control") == 0 ||
-        strcmp(argv[2], "startup-inactive-pacing-bypass") == 0;
+        strcmp(argv[2], "startup-inactive-pacing-bypass") == 0 ||
+        strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0;
     const bool performance_mode =
         performance_safe || performance_aggressive;
     const bool nonmaximized_compilation =
         strcmp(argv[2], "startup-compositor-neutralize") == 0 ||
         strcmp(argv[2], "startup-pipeline-timing-control") == 0 ||
-        strcmp(argv[2], "startup-inactive-pacing-bypass") == 0;
+        strcmp(argv[2], "startup-inactive-pacing-bypass") == 0 ||
+        strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0;
     if (descriptor_compat &&
         (setenv(
              "MVK_CONFIG_LIVE_CHECK_ALL_RESOURCES",

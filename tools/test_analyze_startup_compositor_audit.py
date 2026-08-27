@@ -1,7 +1,7 @@
 import re
 import unittest
 
-from analyze_startup_compositor_audit import analyze
+from analyze_startup_compositor_audit import PACING_BYPASS_MODE, analyze
 from test_analyze_startup_input_audit import build_log as build_input_log
 
 
@@ -13,10 +13,12 @@ def build_log(
     magenta_input="scene",
     gui_scene_signature="6666666666666666",
     omit_class=False,
+    pacing_bypass=False,
 ):
     text = build_input_log()
     text = text.replace(
         "MODE: startup input audit enabled live_resources=0 metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 synchronous_queue_submits=0 maximize_concurrent_compilation=1 generation_limit=2 generation_2_present_limit=180 pixel_samples=20 draw_provenance=enabled input_provenance=enabled",
+        PACING_BYPASS_MODE if pacing_bypass else
         "MODE: startup compositor audit enabled live_resources=0 metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 synchronous_queue_submits=0 maximize_concurrent_compilation=1 generation_limit=2 generation_2_present_limit=180 pixel_samples=20 draw_provenance=enabled input_provenance=enabled descriptor_classes=enabled",
     )
     text = text.replace(
@@ -81,6 +83,13 @@ def build_log(
 
 
 class StartupCompositorAuditTests(unittest.TestCase):
+    def test_pacing_bypass_mode_is_accepted(self):
+        verdict, reasons = analyze(build_log(pacing_bypass=True), True)
+        self.assertEqual(
+            verdict, "COMPOSITOR-SCENE-MAGENTA-DESCRIPTOR-CHANGE"
+        )
+        self.assertEqual(reasons, [])
+
     def test_scene_descriptor_change_isolated(self):
         verdict, reasons = analyze(build_log(), True)
         self.assertEqual(

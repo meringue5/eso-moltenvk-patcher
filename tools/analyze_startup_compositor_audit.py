@@ -12,7 +12,7 @@ from analyze_startup_input_audit import DRAW_BEGIN, FINISH, INPUT, INPUT_BEGIN, 
 from check_startup_log import parse_runs, run_epoch
 
 
-MODE = (
+LEGACY_MODE = (
     "MODE: startup compositor audit enabled live_resources=0 "
     "metal_argument_buffers=0 use_mtlheap=1 command_pooling=1 "
     "synchronous_queue_submits=0 maximize_concurrent_compilation=1 "
@@ -20,6 +20,17 @@ MODE = (
     "pixel_samples=20 draw_provenance=enabled input_provenance=enabled "
     "descriptor_classes=enabled"
 )
+PACING_BYPASS_MODE = (
+    "MODE: startup compositor audit pacing bypass enabled "
+    "live_resources=0 metal_argument_buffers=0 use_mtlheap=1 "
+    "command_pooling=1 synchronous_queue_submits=0 "
+    "maximize_concurrent_compilation=0 generation_limit=2 "
+    "generation_2_present_limit=180 pixel_samples=20 "
+    "draw_provenance=enabled input_provenance=enabled "
+    "descriptor_classes=enabled pipeline_timing=bounded "
+    "compositor_neutralize=disabled inactive_100ms_sleep=bypassed"
+)
+MODES = (LEGACY_MODE, PACING_BYPASS_MODE)
 TARGET_PIPELINE = "c43e4410d3b33fe7"
 TARGET_VERTEX = "c8307556011c995e"
 TARGET_FRAGMENT = "6907bd3576e3a930"
@@ -72,7 +83,7 @@ def analyze(text: str, pink_observed: bool) -> tuple[str, list[str]]:
     candidates = [
         (run_epoch(run_id), order, run_id, lines)
         for order, (run_id, lines) in enumerate(parse_runs(text).items())
-        if MODE in lines
+        if any(mode in lines for mode in MODES)
     ]
     if not candidates:
         return "INVALID", ["no startup compositor audit run was found"]

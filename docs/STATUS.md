@@ -244,5 +244,17 @@ Visible pink alone remains cosmetic; do not reintroduce its neutralizer or
 claim launcher/cache causality while the activation event-order trigger is
 unresolved.
 
+At the user's direction, Experiment
+[0042](experiments/0042-compositor-input-audit-pacing-bypass.md) is now the
+prepared next diagnostic gate for the optional pink repair. The previously
+completed but unrun Experiment 0029 two-input sampler has been combined with
+0041's inactive-sleep bypass, non-maximized compilation, and bounded pipeline
+timing. Its fresh build, lifecycle/image probe, 135 Python tests, release
+transaction regression, static checks, and official/embedded Metal-backed
+non-game probes pass. It forwards all ESO draws unchanged and only samples the
+bound `Sampler0` scene and `Sampler1` GUI images during the bounded startup
+window. Experiment 0041 remains installed until the user closes ESO and the
+launcher; installation must preserve all settings and cache identities.
+
 Detailed historical results remain in [Findings](FINDINGS.md), the
 [experiment index](experiments/README.md), and [research](research/README.md).

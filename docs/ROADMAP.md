@@ -73,6 +73,11 @@ This roadmap contains future work only. Current verified state is in
   repair. Distinguish `Sampler0` scene content from `Sampler1` GUI content,
   record which bound image supplies exact magenta, and identify the descriptor
   or image-content transition that produces the ordinal-150 normal scene.
+- Experiment 0042 has completed that forward-only source preparation while
+  retaining the inactive pacing bypass and non-maximized compilation. Install
+  it only after the shared bundle-idle gate passes, then use one visible-pink
+  startup to classify scene, GUI, multiple, or combined input without changing
+  compositor output.
 - Use that producer/transition boundary for any root repair. Prefer a bounded
   placeholder-input substitution or readiness transition over a fixed ordinal
   window; keep the host-loop FPS bypass unchanged during this work.
