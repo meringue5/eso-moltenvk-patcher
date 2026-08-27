@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Rejects the Metal argument-buffer performance candidate after three
+  consecutive starts failed to capture mouse focus. The restored argument-
+  buffers-off control captured focus normally and completed approximately 54
+  minutes of ordinary play without a bridge error.
+- Fixes the next-release M4 standard template at the user's selected balanced
+  1920 x 1200 profile: subsampling 1, character resolution 2, shadows 1,
+  planar water reflections 0, particle density 1, SSAO, high-resolution
+  shadows, view distance 1.15, and VSync.
+- Leaves the published 0.1.3 asset and its historical settings checkpoint
+  immutable.
+
 ## 0.1.3 - 2026-08-27
 
 - Promotes the strongest startup-reliability profile validated so far on the

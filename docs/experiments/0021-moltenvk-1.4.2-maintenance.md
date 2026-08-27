@@ -228,7 +228,7 @@ The exact full settings file is preserved only in ignored evidence. Its
 SHA-256 is
 `470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`;
 the committed 48-key sanitized counterpart is
-[`config/usersettings-m4-moltenvk-1.4.2-standard.txt`](../../config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+[`config/usersettings-m4-moltenvk-1.4.2-2026-08-01.txt`](../../config/usersettings-m4-moltenvk-1.4.2-2026-08-01.txt).
 The active 1.4.2 pipeline cache is 7,754,395 bytes with UUID
 `db6602241a0502090000000100000000` and SHA-256
 `3bbd27ad1e37fce3981f8c7dc7dae419791149b147445d38cd9fab04d03413df`.

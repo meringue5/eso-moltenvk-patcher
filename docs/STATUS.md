@@ -22,7 +22,7 @@ The production profile combines:
 - measurement-stripped post-window direct forwarding with pipeline timing
   disabled.
 
-Performance successor research is paused while leaving public 0.1.3 unchanged.
+Performance successor research leaves public 0.1.3 unchanged.
 Experiment 0048 measured the residual cached-wrapper tax at
 only single-digit nanoseconds per hot call and deferred a self-retiring
 trampoline. Experiment 0049 found a 14.899% CPU descriptor-encoding gain from
@@ -33,12 +33,22 @@ Every run began with ESO's internal active byte false even though WindowServer
 later made ESO frontmost and routed keyboard focus to it; an application switch
 out and back was required to recover. Argument buffers are the single runtime
 change from 0.1.3 and likely shift the activation timing, but a causal focus API
-mechanism is not proven. Performance work is blocked until an argument-buffers-
-off focus control and a yield-preserving pacing successor resolve this P0.
+mechanism is not proven.
 
-The bundled M4 settings template now selects High subsampling
-(`SUB_SAMPLING "2"`). The user validated that setting in ordinary gameplay on
-the same exact production build and reported no problem.
+That OFF control has now passed. Run
+`20260827T123612.412745000Z-pid374` began `active=yes`, captured mouse focus
+normally, and remained stable through approximately 54 minutes of ordinary
+play. This supports an argument-buffer startup-timing interaction without
+proving a direct focus mechanism. Metal argument buffers remain rejected; a
+short-yield pacing successor is conditional on a natural recurrence with the
+OFF production behavior rather than a current blocker.
+
+The source tree's next-release M4 template now records the user's selected
+balanced profile: 1920 x 1200, subsampling `1`, character resolution `2`,
+shadows `1`, planar water reflections `0`, particle density `1`, SSAO `1`,
+high-resolution shadows `1`, view distance `1.14999998`, and VSync. The public
+0.1.3 asset remains immutable and still contains its earlier High-subsampling
+template.
 
 On the tested M4 MacBook Air, the validated 2048 x 1280 medium-to-high profile
 held the user-observed 60 FPS VSync ceiling during roughly 93 minutes of
@@ -96,8 +106,8 @@ ESO 12.0.8 by the source control marker
 `startup-compositor-neutralize-pacing-release`. It is byte-identical to the
 fresh validated build, disables Metal argument buffers, and retains the 0.1.3
 runtime behavior with corrected focus-observability wording. The public 0.1.3
-package remains the production and rollback reference; the control exists only
-to classify the repeated startup focus defect.
+package remains the production and rollback reference. The OFF control has now
+classified the repeated startup focus defect and remains the selected runtime.
 
 The rejected candidate's three exact starts were
 `20260827T105710.534190000Z-pid87213`,
@@ -124,16 +134,17 @@ across Khenarthi's Roost, Vvardenfell, and Stros M'Kai. It had no reported
 stutter, no loaded-world reset, and no bridge error, while the pipeline cache
 grew to 15,842,531 bytes. The user still perceived frame-rate loss and judged
 the High profile too demanding. No continuous FPS or GPU-time sample exists,
-so this is a qualitative quality-ceiling result. The next gate settles a
-medium-to-high profile and performs an argument-buffers-off versus-on frame-
-time A/B; another forced warm-up launch is unnecessary.
+so this is a qualitative quality-ceiling result. The subsequent focus
+regression rejects the argument-buffer A/B entirely.
 
-The approved medium-to-high live profile is now applied. It retains 1920 x
-1200, High subsampling, character resolution 2, SSAO, high-resolution shadows,
-and view distance 1.15 while reducing planar water reflections, particle
-density, and shadows from 2 to 1. The complete pre-change settings file is
-preserved and hash-verified. This profile is the fixed settings side of the
-next Experiment 0049 A/B; it is not yet a validated 60-FPS recommendation.
+After the OFF control's approximately 54-minute ordinary-play run, the user
+fixed the resulting profile as the quality/performance compromise. It retains
+1920 x 1200, character resolution 2, SSAO, high-resolution shadows, and view
+distance 1.15 while selecting subsampling 1, planar water reflections 0,
+particle density 1, and shadows 1. The ending full settings SHA-256 is
+`0ae3c133862e0313e7622880effdafc7cf621074e5da6678078f881421bed178`.
+Five reset sequences completed with zero reset errors. This is the next-release
+standard template, but not a continuously measured 60-FPS recommendation.
 
 The first rollback attempt stopped safely before changing any file because the
 ZeniMax launcher was running. A fresh process check then found ESO and the
@@ -142,7 +153,12 @@ was restored and the OFF control installed. Both pipeline caches and the
 medium-to-high settings stayed byte-identical. The installed bridge SHA-256 is
 `9e55acc377a151d1dbe38d406b2d8846054a0630ab1b6ead3e6573dfcb72c660`.
 
-The candidate retains Experiment 0044's exact inactive
+The passed OFF run retained the exact 79-draw compositor window, ordinal-150
+forwarding, and ordinal-180 completion with no bridge error, fatal, or overflow
+record. The active cache ended at SHA-256
+`c9d996a9c2207e57f3e8960e80a1023a44f01ee10edf78a64e2d782496324f88`.
+
+The installed OFF bridge retains Experiment 0044's exact inactive
 100-ms host-pacing bypass, fixed generation-2 ordinal 71-149 compositor
 substitution, and ordinal-150 fail-open forwarding latch. It removes the first-
 64 graphics-pipeline timing path and makes every identified lifecycle wrapper

@@ -2,44 +2,56 @@
 
 This document separates observed behavior from unverified internet advice.
 
-## Current M4/MoltenVK 1.4.2 standard
+## Current M4/MoltenVK 1.4.2 balanced standard
 
 The current sanitized template is
 [`config/usersettings-m4-moltenvk-1.4.2-standard.txt`](../config/usersettings-m4-moltenvk-1.4.2-standard.txt).
-It contains 48 allowlisted graphics, display, and performance keys copied
-exactly from the stable 2026-08-01 checkpoint. It deliberately excludes
-account, input, audio, UI, add-on, and machine-specific state and is not a
-complete replacement for `UserSettings.txt`.
+It contains 48 allowlisted graphics, display, and performance keys based on
+the user-selected 2026-08-27 compromise checkpoint. It deliberately
+excludes account, input, audio, UI, add-on, and machine-specific state and is
+not a complete replacement for `UserSettings.txt`.
 
-The public release bundles this template as an explicit install option. There
-initially highlights Apply: the player may confirm it or move to Skip. Application
-backs up the complete live file and selectively merges these 48 keys. Removal
-restores the backup only when the live file still matches the applied result,
-so settings changed after installation are not overwritten.
+The next release package will bundle this template as an explicit install
+option. The already published 0.1.3 asset remains immutable and therefore
+contains the earlier 2026-08-01 profile. Installation initially highlights
+Apply: the player may confirm it or move to Skip. The installer backs up the
+complete live file and selectively merges these 48 keys. Removal restores the
+backup only when the live file still matches the applied result, so settings
+changed after installation are not overwritten.
 
 Validated context:
 
 | Item | Value |
 |---|---:|
 | Hardware | Apple M4 MacBook Air |
-| ESO | 12.0.7, databuild 3281538 |
+| ESO | 12.0.8, databuild 3288357 |
 | Runtime | official MoltenVK 1.4.2 |
-| Bridge mode | `performance-aggressive` |
-| Display | exclusive fullscreen, 2048 x 1280 |
+| Bridge mode | `startup-compositor-neutralize-pacing-release`; Metal argument buffers off |
+| Display | exclusive fullscreen, 1920 x 1200 |
 | Character resolution | `2` |
-| Subsampling | `2` (High) |
-| Shadows / high-resolution shadows | `2` / `1` |
-| Planar / screen-space water reflections | `2` / `1` |
+| Subsampling | `1` |
+| Shadows / high-resolution shadows | `1` / `1` |
+| Planar / screen-space water reflections | `0` / `1` |
+| Particle density | `1` |
 | Ambient occlusion | `1` |
-| View distance | `1.03999996` |
+| View distance | `1.14999998` |
 | VSync | `1` |
 
 The source full-file SHA-256 is
-`470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`.
-The user reports normal rendering after live resolution and graphics-setting
-changes and comfortable gameplay at these relatively high settings. The latest
-client log independently confirms six completed reset sequences with zero
-error markers; visual correctness after those resets is the user's observation.
+`0ae3c133862e0313e7622880effdafc7cf621074e5da6678078f881421bed178`.
+The template deliberately keeps its portable 1024 x 768 windowed fallback
+instead of copying the source file's incidental window geometry; the selected
+exclusive-fullscreen graphics values match the accepted checkpoint.
+The sanitized 48-key template SHA-256 is
+`ff1d9bc5bf920e19ab7c2e143bc937299c8b2973461ecdc58d90f6b366e56f9f`.
+The approximately 54-minute ordinary-play run began with correct mouse focus,
+used the argument-buffers-off release behavior, and ended with this exact live
+settings identity. The client log contains five completed reset sequences and
+zero reset errors; three loaded-world resets coincide with the user's live
+option adjustments. The user judged the resulting quality/performance balance
+acceptable and explicitly selected it as the fixed profile. No continuous FPS,
+GPU-time, power, or thermal trace was collected, so this is a user-validated
+compromise rather than a sustained-60-FPS benchmark.
 
 The settings template and `SkipPregameVideos=1` do not themselves repair the
 formerly visible hot-pink startup frame. Experiment 0031 now neutralizes that
@@ -47,7 +59,17 @@ frame in the bridge with an exact, bounded compositor substitution while
 leaving this settings file unchanged. The template remains a settings record,
 not the mechanism for the startup presentation repair.
 
-## Historical Experiment 0003 snapshot
+## Historical 2026-08-01 standard and Experiment 0003 snapshot
+
+The published 0.1.3 package and the extended 93-minute gameplay evidence retain
+the earlier 2048 x 1280 profile: High subsampling `2`, shadows `2`, planar water
+reflections `2`, particle density `2`, view distance `1.03999996`, SSAO `1`, and
+high-resolution shadows `1`. Its source full-file SHA-256 is
+`470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382`.
+That evidence remains valid historical production evidence; it is no longer
+the settings template selected for the next release. Its exact allowlisted
+asset remains in
+[`config/usersettings-m4-moltenvk-1.4.2-2026-08-01.txt`](../config/usersettings-m4-moltenvk-1.4.2-2026-08-01.txt).
 
 The relevant values preserved after the Experiment 0003 long baseline session
 are stored in

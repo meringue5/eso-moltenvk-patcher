@@ -1,33 +1,28 @@
-# Sanitized balanced graphics checkpoint fixed on 2026-08-27.
+# Sanitized standard graphics checkpoint captured on 2026-08-01.
 #
 # Validated context:
 # - Apple M4 MacBook Air
-# - Steam ESO 12.0.8, databuild 3288357
+# - Steam ESO 12.0.7, databuild 3281538
 # - official MoltenVK 1.4.2
-# - startup-compositor-neutralize-pacing-release mode
-# - Metal argument buffers disabled
-# - user-controlled ordinary play for approximately 54 minutes
-# - evidence-source UserSettings.txt SHA-256:
-#   0ae3c133862e0313e7622880effdafc7cf621074e5da6678078f881421bed178
+# - teso4m4 performance-aggressive mode
+# - source UserSettings.txt SHA-256:
+#   470c9acaa599b61fabe8759c0089c69e31fb9723b34326c3949cd82db6a76382
 #
-# These are only allowlisted graphics, display, and performance settings.
-# This is documentation and a merge template, not a complete UserSettings.txt
-# replacement. The portable 1024 x 768 windowed fallback is retained instead
-# of copying the source file's incidental window geometry. Back up the live
-# file and apply keys selectively.
+# Historical evidence only. The next-release standard is maintained in
+# usersettings-m4-moltenvk-1.4.2-standard.txt.
 SET CHARACTER_RESOLUTION "2"
 SET OCCLUSION_CULLING_ENABLED "1"
 SET DistantFoliageEnabled "1"
 SET PFX_SUPPRESS_DISTANCE "35.00000000"
 SET PFX_GLOBAL_MAXIMUM "768"
-SET SUB_SAMPLING "1"
-SET PLANAR_WATER_REFLECTION_QUALITY "0"
+SET SUB_SAMPLING "2"
+SET PLANAR_WATER_REFLECTION_QUALITY "2"
 SET SCREENSPACE_WATER_REFLECTION_QUALITY "1"
 SET REFLECTION_QUALITY "0"
-SET PARTICLE_DENSITY "1"
+SET PARTICLE_DENSITY "2"
 SET HIGH_RESOLUTION_SHADOWS "1"
-SET SHADOWS "1"
-SET VIEW_DISTANCE "1.14999998"
+SET SHADOWS "2"
+SET VIEW_DISTANCE "1.03999996"
 SET GPUSmoothingFrames "10"
 SET MIP_LOAD_SKIP_LEVELS "0"
 SET RAIN_WETNESS "1"
@@ -54,8 +49,8 @@ SET VSYNC "1"
 SET PreferMaximizedWindow "0"
 SET PreferExclusiveFullscreen "1"
 SET FULLSCREEN "2"
-SET FullscreenHeight "1200"
-SET FullscreenWidth "1920"
+SET FullscreenHeight "1280"
+SET FullscreenWidth "2048"
 SET WindowedHeight "768"
 SET WindowedWidth "1024"
 SET MinFrameTime.2 "0.01000000"

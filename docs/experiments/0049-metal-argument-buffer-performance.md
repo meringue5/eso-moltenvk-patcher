@@ -2,7 +2,7 @@
 
 - Date: 2026-08-27
 - Outcome: **rejected after three consecutive startup mouse-focus failures;
-  cache-preserving argument-buffers-off control installed**
+  argument-buffers-off control passed initial focus and sustained ordinary play**
 - Rollback: **verified pristine loader and public 0.1.3 reference remain available**
 
 ## Question
@@ -251,6 +251,37 @@ the active and old pipeline caches remained
 `036fd84abe8bb3552e9f5960eb643757a97e3614a8f9a9685639e599b86f4de4`
 and `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 
+## Argument-buffers-off focus control and fixed profile
+
+The ordinary control run
+`20260827T123612.412745000Z-pid374` selected exact
+`startup-compositor-neutralize-pacing-release` behavior with
+`metal_argument_buffers=0`. Its first inactive-pacing observation was
+`active=yes action=forward`; the game captured mouse focus normally, and the
+user explicitly confirmed that the focus problem was resolved. The run
+retained the exact 79-draw suppression window, ordinal-150 forwarding, and
+ordinal-180 completion with no bridge error, fatal, or overflow record.
+
+The user played for approximately 54 minutes and selected the ending settings
+as the quality/performance compromise to fix for the next release. The client
+log contains five completed reset sequences and zero reset errors; three
+loaded-world resets occurred during the user's live graphics-option changes.
+The ending full settings SHA-256 is
+`0ae3c133862e0313e7622880effdafc7cf621074e5da6678078f881421bed178`,
+and the ending active MoltenVK cache SHA-256 is
+`c9d996a9c2207e57f3e8960e80a1023a44f01ee10edf78a64e2d782496324f88`.
+The fixed settings are 1920 x 1200 exclusive fullscreen, subsampling `1`,
+character resolution `2`, planar water reflections `0`, screen-space water
+reflections `1`, reflection quality `0`, particle density `1`, shadows `1`,
+high-resolution shadows `1`, SSAO `1`, view distance `1.14999998`, and VSync
+`1`.
+
+This is a qualitative ordinary-play acceptance result, not a measured sustained
+60-FPS, power, or thermal result. The control is nevertheless sufficient to
+reject enabling argument buffers in the production profile: it removes the
+three-run input regression while preserving the accepted runtime behavior and
+the user's chosen settings compromise.
+
 ## Interpretation
 
 Confirmed: argument buffers materially improve this descriptor-heavy MoltenVK
@@ -272,11 +303,11 @@ profile's total scene cost.
 
 ## Next gate
 
-One ordinary launch of the installed argument-buffers-off behavior now serves
-as the focus control. A normal initial
-mouse capture supports an argument-buffer timing interaction; another failure
-falsifies argument buffers as a sufficient cause and exposes a latent issue in
-the release pacing bypass itself. Do not resume the performance A/B until this
-P0 activation defect is resolved. A successor pacing experiment should retain
-a short inactive yield instead of immediately returning, without forcing the
-active byte or synthesizing AppKit focus events.
+Keep Metal argument buffers disabled and do not resume the off-versus-on ESO
+performance A/B. The passed control supports an argument-buffer startup-timing
+interaction, but it does not prove a direct focus mechanism. Revisit a short
+inactive yield only if the argument-buffers-off production behavior naturally
+repeats the initial mouse-capture failure; do not force the active byte,
+synthesize AppKit focus events, or trade the proven 10-Hz bypass for a cosmetic
+focus workaround. Continue the three-axis performance roadmap with changes
+that preserve this startup control.

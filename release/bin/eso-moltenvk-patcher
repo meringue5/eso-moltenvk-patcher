@@ -244,7 +244,7 @@ choose_settings_action() {
   [[ -t 0 ]] || die "Choose settings explicitly with --apply-settings or --skip-settings."
   if ui_choice_menu \
     "Settings profile" \
-    "Validated M4 2048 x 1280 profile; Apply is selected by default." \
+    "Balanced M4 1920 x 1200 profile; Apply is selected by default." \
     "Apply 48 allowlisted settings" \
     "Keep my current settings"; then
     settings_choice=apply

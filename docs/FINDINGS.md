@@ -849,6 +849,17 @@ propagation succeeded. Future pacing work should preserve a short scheduler
 yield and test initial mouse capture without forcing state or synthesizing
 activation events.
 
+The subsequent argument-buffers-off control
+`20260827T123612.412745000Z-pid374` began with ESO's internal active state true
+and captured mouse focus normally; the user explicitly confirmed the problem
+was resolved. The approximately 54-minute ordinary-play run retained the
+release pacing and compositor behavior and recorded no bridge error. This
+supports argument buffers as a startup-timing trigger strongly enough to reject
+the candidate, but still does not establish a direct argument-buffer/AppKit
+mechanism. A short-yield pacing successor is therefore conditional on a natural
+focus recurrence with argument buffers off, not required for the current
+production behavior.
+
 ## Fixed-window pink neutralization and inactive pacing bypass coexist
 
 Experiment 0044 combines the already validated generation-2 compositor window

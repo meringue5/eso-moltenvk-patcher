@@ -200,9 +200,11 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 | Crash result | No subsequent ESO crash report |
 
 The 48 allowlisted settings are available as the
-[M4/MoltenVK 1.4.2 standard profile](config/usersettings-m4-moltenvk-1.4.2-standard.txt).
-It is a selective merge reference, not a complete `UserSettings.txt`
-replacement.
+[M4/MoltenVK 1.4.2 balanced standard profile](config/usersettings-m4-moltenvk-1.4.2-standard.txt).
+The current source template records the later user-selected 1920 x 1200
+quality/performance compromise; the published 0.1.3 asset retains its immutable
+2026-08-01 profile. It is a selective merge reference, not a complete
+`UserSettings.txt` replacement.
 
 The current bridge is deliberately audited software. The selected 12.0.8
 target is exact; a later launcher update is accepted only when the packaged

@@ -53,7 +53,7 @@ you intend to patch. The installer then verifies the exact game build,
 original library, payload checksums, idle state, and recoverable backup.
 
 The installer also requires an explicit `y` or `n` response for the bundled
-M4 2048×1280 settings template. Pressing Return alone does not choose a
+balanced M4 1920×1200 settings template. Pressing Return alone does not choose a
 default; the question repeats. Choosing `y` backs up `UserSettings.txt` and
 selectively merges only the 48 allowlisted keys. Choosing `n` leaves all game
 settings unchanged.

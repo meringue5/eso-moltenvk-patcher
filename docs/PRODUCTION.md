@@ -39,6 +39,16 @@ Version 0.1.3 promotes Experiments 0044-0046 after the measurement-stripped
 package candidate passed its exact user launch and generation-aware recovery
 fixture.
 
+The source tree's next-release settings template is a distinct 2026-08-27
+balanced checkpoint, not a retroactive change to 0.1.3. It selects 1920 x 1200,
+subsampling `1`, shadows `1`, planar water reflections `0`, particle density
+`1`, character resolution `2`, SSAO `1`, high-resolution shadows `1`, view
+distance `1.14999998`, and VSync. Its argument-buffers-off control captured
+mouse focus normally and completed approximately 54 minutes of user-controlled
+ordinary play. Because no continuous frame-time, power, or thermal trace was
+captured, this is the accepted compromise profile rather than a new sustained-
+60-FPS claim.
+
 ## Promotion boundary
 
 The project was research-only through the controlled experiment sequence that

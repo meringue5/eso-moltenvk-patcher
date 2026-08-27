@@ -4,92 +4,24 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## P0: eliminate startup activation/focus divergence without restoring 10 Hz
+## Reliability guardrails for performance successors
 
-- Reject Experiment 0049's argument-buffer candidate. Three consecutive starts
-  opened visibly but failed to capture mouse focus until the user switched to
-  another application and back.
-- Preserve the exact discriminator: all three candidate runs began with ESO's
-  internal `application_active` byte false, while WindowServer later marked ESO
-  frontmost and routed keyboard focus to its PID. The first two internal states
-  became true only after the user focus bounce; the third stayed false to exit.
-- The argument-buffers-off 0.1.3 behavior is restored with caches and the new
-  medium-to-high settings preserved. Use one ordinary launch as the focus
-  control. Do not resume the performance A/B first.
-- Treat argument buffers as a likely timing trigger, not a proven direct focus
-  mechanism. One earlier argument-buffers-off Experiment 0044 run also began
-  inactive without a reported focus defect.
-- Replace the misleading guarantee `focus_event_propagation=unchanged` with a
-  structural statement that callbacks and the active byte are unmodified.
-- Prepare a single-variable pacing successor that retains a short inactive
-  yield instead of replacing the entire 100-ms branch with immediate return.
-  Do not force the active byte, synthesize focus events, or call private AppKit
-  activation APIs.
-
-The original low-FPS incident remains the architectural constraint:
-
-- Treat Experiment 0040 as falsifying the no-neutralizer profile as a
-  reliability repair. The exact 0.1.2 control reproduced pink and low FPS,
-  delayed graphics-pipeline call 5 to 32.698 seconds, and delayed renderer
-  completion to 13.762 seconds even though all retained calls succeeded
-  quickly.
-- Exclude compositor neutralization as a necessary cause and do not describe
-  0.1.2 as a demonstrated low-FPS fix. Its packaging, exact-target, and
-  reversibility claims remain independently verified.
-- Treat the exact ESO inactive-loop path as the leading mechanism: when its
-  internal application-active byte is false, `GameClient::mainLoop` calls
-  `usleep(100000)`, directly imposing an approximately 10-Hz outer loop.
-- Keep the exact Experiment 0044 candidate installed for ordinary-use soak
-  without forced repeats. Its first two starts had no pink and normal FPS; the
-  second recorded `active=no` with `action=sleep-bypassed`, directly exercising
-  the patched false-state branch.
-- Classify the first natural recurrence against the bounded pacing,
-  neutralizer, pipeline, and ESO renderer records before changing the
-  candidate. Use a forward-only device/swapchain/queue/present trace only if
-  low FPS returns despite a recorded inactive-sleep bypass.
-- If ordinary starts remain clean, preserve Experiment 0044's exact functional
-  behavior in the measurement-stripped release profile described in P2, then
-  publish a new immutable release rather than replacing the 0.1.2 asset.
-
-- Treat Experiment 0035's back-to-back pair as the current discriminator: both
-  starts activated the full bridge, but only the smooth restart engaged
-  `MTLCompilerService` and completed Metal compilation jobs.
-- Treat Experiment 0036 as a failed fix: its process-unique canary reached the
-  compiler service and completed both immediate jobs in a later low-FPS
-  process, so readiness alone does not trigger ESO's normal pipeline path.
-- Treat Experiment 0037 as a failed repair and successful diagnostic: low FPS
-  recurred with 64/64 successful fast pipeline calls because ESO delayed
-  issuing the bulk wave by about 20.8 seconds.
-- Preserve Experiment 0038's first normal result: with neutralization and all
-  supporting audits disabled, pink remained visible but FPS and renderer timing
-  returned to the normal path.
-- Continue classifying naturally occurring starts without forcing repeated
-  gameplay; two successful 0044 starts do not yet close the release incident.
-- Repair the missing readiness-success production log record before reusing
-  that canary as a diagnostic invariant; do not retain it as a claimed fix.
-- Classify each future start from direct graphics-pipeline call/return timing
-  and user-visible state. Treat compiler-service engagement only as supporting
-  evidence: one normal process remained canary-only for more than nine minutes.
-- Record ESO and launcher process identity for correlation, but do not make
-  launcher restart a required workaround or causal assumption. One four-run
-  sequence recovered after a launcher restart, while prior recovery did not
-  always require it.
-- Snapshot pipeline-cache identity, size, and modification time around every
-  start, preserve each naturally occurring generation before the next retry,
-  and separate ESO restart effects from launcher restart effects. Two
-  consecutive low-FPS exits already rewrote the same-size active cache to
-  different hashes without normal ESO compilation.
-- Capture fixed-scene FPS, GPU time, frame interval, app/Metal memory, and
-  thermal state for the first bad and first clean starts.
-- Treat the alternate ESO renderer-initialization path as confirmed: low starts
-  pass through the game-data/character-data waits and delay `RENDERER Complete`
-  to about 13 seconds versus about 2.7 seconds in the preceding normal start.
-  Maximum concurrent compilation has been falsified as a repair; retain cache
-  revalidation and other startup resource state as alternatives and do not
-  delete or replace caches to force a result.
-- Add a prelaunch preparation step only if it can be proven safe without
-  starting ESO, bypassing authentication, or distributing proprietary cache
-  data.
+- Keep Metal argument buffers disabled. Experiment 0049's candidate is rejected
+  after three consecutive initial mouse-focus failures, while the subsequent
+  OFF control captured focus normally and completed approximately 54 minutes of
+  ordinary play.
+- Preserve the current inactive 100-ms pacing bypass and bounded compositor
+  repair while testing performance changes. Do not force ESO's active byte,
+  synthesize AppKit focus events, or call private activation APIs.
+- Treat argument buffers as a supported startup-timing hypothesis, not a proven
+  direct focus mechanism. Revisit a short inactive yield only if the OFF
+  production behavior naturally repeats the mouse-capture failure.
+- Preserve the fixed 1920 x 1200 balanced profile as the standard settings
+  control. Performance and quality experiments must use separate opt-in
+  profiles and must not silently mutate this checkpoint.
+- On any natural pink, low-FPS, focus, or reset recurrence, preserve the exact
+  run and cache identities before retrying. Do not require launcher restarts or
+  delete caches as a workaround.
 
 ## P1: isolate an optional pink repair
 
@@ -158,21 +90,11 @@ single-variable experiment.
    found only 8-9 ns for an acquire/present pair, 5 ns per indexed draw, and
    3 ns per descriptor update. That is too small to justify a mutable
    trampoline without whole-frame evidence that another target amplifies it.
-2. Complete Experiment 0049's high-risk Metal argument-buffer candidate.
-   Official MoltenVK 1.4.2 reduced the descriptor-heavy CPU submit interval by
-   14.899% and passed exact-pixel 24-cycle reset probes both off and on. The
-   fail-closed source mode passed its full build and first installed safety
-   gate, but an object-dense area fell below the user's 60-FPS floor before
-   resolution and HBAO/SSAO changes. The later changes, 13 graphics resets, and
-   pipeline-cache population prevent attribution, not recognition of the
-   preceding slowdown. A subsequent approximately 27-minute warm run had no
-   stutter or loaded-world reset, but the High profile still produced perceived
-   frame-rate loss. The user-approved medium-to-high profile now retains High
-   subsampling and SSAO while reducing planar reflections, particle density,
-   and shadows from 2 to 1. Hold it fixed for an off-versus-on frame-time A/B
-   in an object-dense scene. Do not request another warm-up-only launch.
-   ESO's prior single-variable 1.4.1 result tied argument buffers to rendering
-   corruption; never make this the default on the non-game gain alone.
+2. Exclude Metal argument buffers from further production A/B work. Their
+   14.899% non-game descriptor-path gain did not justify three consecutive
+   initial mouse-focus failures, and the OFF control passed without that user-
+   visible regression. Preserve the benchmark as evidence, not as a pending
+   default candidate.
 3. Test maximum concurrent pipeline compilation only for startup compilation
    latency and stutter. The retained 64 calls are already fast once ESO issues
    them, so do not expect or claim a steady-state FPS gain without direct
@@ -183,9 +105,9 @@ single-variable experiment.
 
 ### Direction B: maximize visual quality while holding 60 FPS
 
-1. Restore `SUB_SAMPLING` from the current reduced value to High (`2`) first.
-   This has the clearest whole-scene visual benefit and already belongs to the
-   prior 2048 x 1280, 60-FPS M4 checkpoint.
+1. Test `SUB_SAMPLING` from the fixed standard value `1` to High (`2`) first in
+   a separate opt-in profile. This has the clearest whole-scene visual benefit
+   and belongs to the prior 2048 x 1280, 60-FPS M4 checkpoint.
 2. Restore `SHADOWS` from `1` to `2` as a separate A/B while retaining the
    already enabled high-resolution shadow option.
 3. Restore `PLANAR_WATER_REFLECTION_QUALITY` from `0` to `1`, then to `2` only

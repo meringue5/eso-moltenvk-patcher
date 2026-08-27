@@ -7,7 +7,7 @@ QUICK START
 1. Quit ESO and the ZeniMax launcher. Steam may remain open if ESO is not updating.
 2. Double-click Install.command. It finds and verifies ESO, then asks before changing files.
    You must also explicitly choose y or n when asked whether to apply the
-   validated M4 2048 x 1280 settings template. There is no default choice.
+   balanced M4 1920 x 1200 settings template. There is no default choice.
 3. To uninstall, double-click Uninstall.command.
 
 Version 0.1.3 is the strongest startup-stability release so far for the
