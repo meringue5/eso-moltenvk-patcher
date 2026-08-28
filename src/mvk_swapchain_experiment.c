@@ -14,6 +14,11 @@ enum {
     kMaxSwapchainRecords = 32,
     kMaxSamples = 65536,
     kWarmupPresentsPerSwapchain = 300,
+    kFirstCheckpointSamples = 600,
+    kCheckpointIntervalSamples = 3600,
+    kDurationHistogramWidthUs = 10,
+    kIntervalHistogramWidthUs = 100,
+    kHistogramBins = 10001,
 };
 
 typedef struct {
@@ -42,6 +47,9 @@ static SwapchainRecord g_swapchains[kMaxSwapchainRecords];
 static uint64_t g_acquire_samples[kMaxSamples];
 static uint64_t g_present_samples[kMaxSamples];
 static uint64_t g_interval_samples[kMaxSamples];
+static uint64_t g_acquire_histogram[kHistogramBins];
+static uint64_t g_present_histogram[kHistogramBins];
+static uint64_t g_interval_histogram[kHistogramBins];
 static size_t g_acquire_sample_count;
 static size_t g_present_sample_count;
 static size_t g_interval_sample_count;
@@ -143,9 +151,20 @@ static SwapchainRecord* remember_swapchain(
     return NULL;
 }
 
-static void add_sample(uint64_t* samples, size_t* count, uint64_t value) {
+static void add_sample(
+    uint64_t* samples,
+    uint64_t* histogram,
+    uint64_t histogram_width_us,
+    size_t* count,
+    uint64_t value) {
     if (value != 0 && *count < kMaxSamples) {
         samples[(*count)++] = value;
+        const uint64_t value_us = value / 1000;
+        uint64_t bin = value_us / histogram_width_us;
+        if (bin >= kHistogramBins) {
+            bin = kHistogramBins - 1;
+        }
+        ++histogram[bin];
     }
 }
 
@@ -170,6 +189,93 @@ static uint64_t percentile_permille(
     }
     const size_t index = ((count - 1) * permille) / 1000;
     return samples[index];
+}
+
+static uint64_t histogram_percentile_us(
+    const uint64_t* histogram,
+    size_t count,
+    uint64_t width_us,
+    size_t permille) {
+    if (count == 0) {
+        return 0;
+    }
+    const uint64_t target =
+        ((uint64_t)count * (uint64_t)permille + 999) / 1000;
+    uint64_t cumulative = 0;
+    for (size_t index = 0; index < kHistogramBins; ++index) {
+        cumulative += histogram[index];
+        if (cumulative >= target) {
+            return (uint64_t)(index + 1) * width_us;
+        }
+    }
+    return (uint64_t)kHistogramBins * width_us;
+}
+
+static const char* experiment_mode_name(void) {
+    return g_mode == TESO4M4_SWAPCHAIN_EXPERIMENT_TRIPLE_BUFFER
+        ? "triple" : "control";
+}
+
+static void log_checkpoint_locked(void) {
+    experiment_log(
+        "SWAPCHAIN_EXPERIMENT_CHECKPOINT: mode=%s creates=%" PRIu64
+        " promoted=%" PRIu64 " forwarded=%" PRIu64
+        " capability_misses=%" PRIu64
+        " returned_two=%" PRIu64 " returned_three=%" PRIu64
+        " returned_count_mismatches=%" PRIu64
+        " acquire_samples=%zu acquire_p50_us=%" PRIu64
+        " acquire_p95_us=%" PRIu64 " acquire_p99_us=%" PRIu64
+        " acquire_p999_us=%" PRIu64 " acquire_max_us=0"
+        " present_samples=%zu present_p50_us=%" PRIu64
+        " present_p95_us=%" PRIu64 " present_p99_us=%" PRIu64
+        " present_p999_us=%" PRIu64
+        " interval_samples=%zu interval_p50_us=%" PRIu64
+        " interval_p95_us=%" PRIu64 " interval_p99_us=%" PRIu64
+        " interval_p999_us=%" PRIu64
+        " acquire_errors=%" PRIu64 " present_errors=%" PRIu64,
+        experiment_mode_name(), g_create_count, g_promoted_count,
+        g_forwarded_count, g_capability_miss_count, g_returned_two_count,
+        g_returned_three_count, g_returned_count_mismatch_count,
+        g_acquire_sample_count,
+        histogram_percentile_us(
+            g_acquire_histogram, g_acquire_sample_count,
+            kDurationHistogramWidthUs, 500),
+        histogram_percentile_us(
+            g_acquire_histogram, g_acquire_sample_count,
+            kDurationHistogramWidthUs, 950),
+        histogram_percentile_us(
+            g_acquire_histogram, g_acquire_sample_count,
+            kDurationHistogramWidthUs, 990),
+        histogram_percentile_us(
+            g_acquire_histogram, g_acquire_sample_count,
+            kDurationHistogramWidthUs, 999),
+        g_present_sample_count,
+        histogram_percentile_us(
+            g_present_histogram, g_present_sample_count,
+            kDurationHistogramWidthUs, 500),
+        histogram_percentile_us(
+            g_present_histogram, g_present_sample_count,
+            kDurationHistogramWidthUs, 950),
+        histogram_percentile_us(
+            g_present_histogram, g_present_sample_count,
+            kDurationHistogramWidthUs, 990),
+        histogram_percentile_us(
+            g_present_histogram, g_present_sample_count,
+            kDurationHistogramWidthUs, 999),
+        g_interval_sample_count,
+        histogram_percentile_us(
+            g_interval_histogram, g_interval_sample_count,
+            kIntervalHistogramWidthUs, 500),
+        histogram_percentile_us(
+            g_interval_histogram, g_interval_sample_count,
+            kIntervalHistogramWidthUs, 950),
+        histogram_percentile_us(
+            g_interval_histogram, g_interval_sample_count,
+            kIntervalHistogramWidthUs, 990),
+        histogram_percentile_us(
+            g_interval_histogram, g_interval_sample_count,
+            kIntervalHistogramWidthUs, 999),
+        g_acquire_error_count, g_present_error_count);
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL traced_get_surface_capabilities(
@@ -325,7 +431,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_acquire_next_image(
     pthread_mutex_lock(&g_lock);
     SwapchainRecord* record = find_swapchain(swapchain);
     if (record && record->present_count >= kWarmupPresentsPerSwapchain) {
-        add_sample(g_acquire_samples, &g_acquire_sample_count, end - start);
+        add_sample(
+            g_acquire_samples, g_acquire_histogram,
+            kDurationHistogramWidthUs, &g_acquire_sample_count, end - start);
     }
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         ++g_acquire_error_count;
@@ -351,11 +459,20 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
     if (record) {
         ++record->present_count;
         if (record->present_count > kWarmupPresentsPerSwapchain) {
-            add_sample(g_present_samples, &g_present_sample_count, end - start);
+            add_sample(
+                g_present_samples, g_present_histogram,
+                kDurationHistogramWidthUs, &g_present_sample_count,
+                end - start);
             if (record->last_present_start_ns != 0) {
                 add_sample(
-                    g_interval_samples, &g_interval_sample_count,
+                    g_interval_samples, g_interval_histogram,
+                    kIntervalHistogramWidthUs, &g_interval_sample_count,
                     start - record->last_present_start_ns);
+            }
+            if (g_interval_sample_count == kFirstCheckpointSamples ||
+                (g_interval_sample_count > kFirstCheckpointSamples &&
+                 g_interval_sample_count % kCheckpointIntervalSamples == 0)) {
+                log_checkpoint_locked();
             }
         }
         record->last_present_start_ns = start;
@@ -376,6 +493,9 @@ void teso4m4_swapchain_experiment_reset(void) {
     g_acquire_sample_count = 0;
     g_present_sample_count = 0;
     g_interval_sample_count = 0;
+    memset(g_acquire_histogram, 0, sizeof(g_acquire_histogram));
+    memset(g_present_histogram, 0, sizeof(g_present_histogram));
+    memset(g_interval_histogram, 0, sizeof(g_interval_histogram));
     g_create_count = 0;
     g_promoted_count = 0;
     g_forwarded_count = 0;
@@ -448,8 +568,7 @@ void teso4m4_swapchain_experiment_log_summary(void) {
     qsort(g_acquire_samples, g_acquire_sample_count, sizeof(uint64_t), compare_u64);
     qsort(g_present_samples, g_present_sample_count, sizeof(uint64_t), compare_u64);
     qsort(g_interval_samples, g_interval_sample_count, sizeof(uint64_t), compare_u64);
-    const char* mode = g_mode == TESO4M4_SWAPCHAIN_EXPERIMENT_TRIPLE_BUFFER
-        ? "triple" : "control";
+    const char* mode = experiment_mode_name();
     experiment_log(
         "SWAPCHAIN_EXPERIMENT_SUMMARY: mode=%s creates=%" PRIu64
         " promoted=%" PRIu64 " forwarded=%" PRIu64

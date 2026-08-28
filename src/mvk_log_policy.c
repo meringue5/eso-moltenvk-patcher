@@ -25,7 +25,9 @@ Teso4m4LogLevel teso4m4_classify_log_message(const char* message) {
         starts_with(message, "STARTUP_COMPOSITOR_AUDIT_BEGIN:") ||
         starts_with(message, "STARTUP_COMPOSITOR_IMAGE_") ||
         starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")) {
+        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:") ||
+        starts_with(message, "SWAPCHAIN_EXPERIMENT_CHECKPOINT:") ||
+        starts_with(message, "SWAPCHAIN_EXPERIMENT_SUMMARY:")) {
         return TESO4M4_LOG_INFO;
     }
     if (starts_with(message, "GIPA:") || starts_with(message, "GDPA:") ||

@@ -12,6 +12,7 @@ from check_startup_log import parse_runs, run_epoch
 
 
 SUMMARY_PREFIX = "SWAPCHAIN_EXPERIMENT_SUMMARY: "
+CHECKPOINT_PREFIX = "SWAPCHAIN_EXPERIMENT_CHECKPOINT: "
 PAIR = re.compile(r"(?P<key>[a-z0-9_]+)=(?P<value>[^ ]+)")
 
 
@@ -46,7 +47,9 @@ def analyze(
         epoch = run_epoch(run_id)
         if after_epoch is not None and (epoch is None or epoch < after_epoch):
             continue
-        if any(line.startswith(SUMMARY_PREFIX) for line in lines):
+        if any(
+            line.startswith((SUMMARY_PREFIX, CHECKPOINT_PREFIX)) for line in lines
+        ):
             eligible.append(
                 (epoch if epoch is not None else float("-inf"), order, run_id, lines)
             )
@@ -55,13 +58,16 @@ def analyze(
 
     _, _, run_id, lines = max(eligible)
     summaries = [line for line in lines if line.startswith(SUMMARY_PREFIX)]
+    checkpoints = [line for line in lines if line.startswith(CHECKPOINT_PREFIX)]
     reasons: list[str] = []
-    if len(summaries) != 1:
-        reasons.append("run did not contain exactly one experiment summary")
+    if len(summaries) > 1:
+        reasons.append("run contained more than one final experiment summary")
+    selected = summaries[-1] if summaries else checkpoints[-1]
     values = {
         match.group("key"): match.group("value")
-        for match in PAIR.finditer(summaries[-1] if summaries else "")
+        for match in PAIR.finditer(selected)
     }
+    values["source"] = "summary" if summaries else "checkpoint"
     mode = values.get("mode")
     if mode not in {"control", "triple"}:
         reasons.append("summary mode is not control or triple")
@@ -132,7 +138,7 @@ def main() -> int:
     print(f"swapchain-experiment-run: {result.run_id or 'none'}")
     print(f"swapchain-experiment-verdict: {'PASS' if result.passed else 'FAIL'}")
     for key in (
-        "mode", "creates", "promoted", "forwarded", "returned_two",
+        "source", "mode", "creates", "promoted", "forwarded", "returned_two",
         "returned_three", "acquire_samples", "acquire_p95_us",
         "acquire_p99_us", "acquire_p999_us", "present_p95_us",
         "present_p99_us", "present_p999_us", "interval_p95_us",

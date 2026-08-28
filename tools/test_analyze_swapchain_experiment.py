@@ -37,6 +37,17 @@ class AnalyzeSwapchainExperimentTests(unittest.TestCase):
         )
         self.assertTrue(result.passed, result.reasons)
 
+    def test_accepts_latest_periodic_checkpoint_without_destructor(self) -> None:
+        text = log_line(
+            "control", promoted=0, forwarded=2, two=2, three=0
+        ).replace(
+            "SWAPCHAIN_EXPERIMENT_SUMMARY:",
+            "SWAPCHAIN_EXPERIMENT_CHECKPOINT:",
+        )
+        result = analyze(text, expected_mode="control")
+        self.assertTrue(result.passed, result.reasons)
+        self.assertEqual(result.values["source"], "checkpoint")
+
     def test_rejects_partial_promotion_and_short_run(self) -> None:
         text = log_line("triple", promoted=1, forwarded=1, two=1, three=1).replace(
             "interval_samples=1000", "interval_samples=20"

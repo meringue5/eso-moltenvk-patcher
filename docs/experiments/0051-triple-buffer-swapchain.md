@@ -1,7 +1,7 @@
 # Experiment 0051: measured triple-buffer swapchain
 
 - Date: 2026-08-28
-- Outcome: **running; A1 measured control installed**
+- Outcome: **running; first A1 lacked a final timing summary**
 - Rollback: **verified pristine loader available; caches preserved**
 
 ## Question
@@ -38,8 +38,10 @@ visible startup, focus, rendering, reset, or stability regression.
   forwards ESO's original request unchanged.
 - Both modes exclude the first 300 presents of each swapchain and collect the
   same bounded acquire-call, present-call, and present-entry-interval samples.
-  One exit summary reports p50, p95, p99, p99.9, maxima, errors, promotion
-  counts, and actual returned image counts. No per-frame log is emitted.
+  A checkpoint after 600 samples and then every 3,600 samples reports p50,
+  p95, p99, p99.9, errors, promotion counts, and actual returned image counts.
+  A final exit summary remains a best-effort exact-sample record. No per-frame
+  log is emitted.
 
 ## Preflight
 
@@ -129,11 +131,32 @@ A1 installation checkpoint:
   `4f3baa1e13bc25c158f7cd3d274ebae138165d3ba9c1ff5380cee29efa076f60`
   and `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 
-No user-controlled A1, B, or A2 result exists yet.
+First A1 run:
+
+- Run `20260828T102522.338344000Z-pid54063` activated the exact control mode,
+  all 17 redirects, the bounded compositor repair, and the ordinal-180 finish.
+- The user completed play and no crash report was created. Settings remained
+  byte-for-byte identical.
+- The active pipeline cache advanced from SHA-256 `4f3baa1e...076f60` to
+  `dc4412c9...1fe86`; the old-backup cache remained byte-for-byte identical.
+- No `SWAPCHAIN_EXPERIMENT_SUMMARY` reached the production log. Confirmed root
+  cause: the new experiment prefix fell through the log policy to `debug`, so
+  the normal `info` profile discarded it. Destructor execution cannot be
+  inferred from the absence of a row that policy had already filtered.
+- This run is valid for activation, settings, cache, and crash evidence, but is
+  excluded from the quantitative A1-B-A2 comparison.
+
+The source now classifies only bounded checkpoint/final-summary rows as `info`,
+emits in-run histogram checkpoints after 600 samples and every 3,600 samples,
+and keeps per-create/per-frame details below production visibility. The analyzer
+accepts the latest checkpoint when a final summary is absent. The optimized
+policy probe and 142 Python tests pass after this amendment.
 
 ## Result
 
-The A1 control is installed; controlled gameplay evidence is pending.
+The first A1 control run completed with its summary filtered and is therefore
+excluded from quantitative comparison. The checkpoint-capable B build is
+prepared; B gameplay evidence is pending.
 
 ## Interpretation
 
@@ -146,12 +169,16 @@ tail. This remains unproven until the A1-B-A2 gameplay sequence.
 
 ## Rollback
 
-The A1 control bridge is installed. Its only runtime difference from production
-is the common swapchain timing wrapper; it forwards the two-image request.
+The original A1 control bridge remains installed until the log-policy-corrected
+B build is committed and the launcher becomes idle. Its only runtime difference
+from production is the common swapchain timing wrapper; it forwards the
+two-image request.
 The verified pristine-loader restore path remains available. Settings and all
 pipeline-cache generations are preserved in place.
 
 ## Follow-up
 
-The user performs A1 through the ordinary authenticated path. Do not begin B
-until A1's summary, Metal HUD capture, and user observation are preserved.
+After the launcher is closed, preserve the invalid-A1 evidence, restore the
+verified loader with caches unchanged, and install log-policy-corrected B. After
+B, collect at least two checkpoint-capable control runs so candidate deltas can
+still be compared against a measured control range.

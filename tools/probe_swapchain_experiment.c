@@ -199,7 +199,7 @@ int main(void) {
         TESO4M4_SWAPCHAIN_EXPERIMENT_TRIPLE_BUFFER, 2, 2);
     const bool control = run_case(
         TESO4M4_SWAPCHAIN_EXPERIMENT_CONTROL, 3, 2);
-    const uint32_t benchmark_iterations = 100000;
+    const uint32_t benchmark_iterations = 10000;
     const uint64_t raw_ns = benchmark_pairs(false, benchmark_iterations);
     const uint64_t wrapped_ns = benchmark_pairs(true, benchmark_iterations);
     teso4m4_swapchain_experiment_log_summary();

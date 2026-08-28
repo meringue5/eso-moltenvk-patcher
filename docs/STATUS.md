@@ -136,13 +136,16 @@ started by the agent.
 ## Next gate
 
 Public production 0.2.0 remains the supported baseline, but the exact local
-target currently has Experiment [0051](experiments/0051-triple-buffer-swapchain.md)
-A1 installed. This control retains the production behavior and two-image FIFO
-request while adding the common bounded timing wrapper. Its capability-gated
-candidate, sub-0.25-us non-game overhead, and full-resolution three-image probe
-pass. Exact target, restore, source build, shared bundle-idle, post-install
-attestation, and cache-preservation gates passed at source commit `d234586`.
-The next gate is one user-controlled 8-10 minute fixed-route A1 run and Metal
-HUD capture. Do not install the triple candidate until A1's exit summary and
-user observation are preserved; do not change or delete caches or settings
-between A1-B-A2.
+target currently retains Experiment [0051](experiments/0051-triple-buffer-swapchain.md)
+A1 while B is prepared. The first A1 play activated the exact two-image control,
+completed without a crash report or settings change, and advanced only the
+active cache, but the new summary prefix fell through the production log policy
+to `debug` and was discarded. It is therefore excluded from quantitative
+comparison. The bridge now promotes only bounded checkpoint/summary rows to
+`info`, emits an in-run checkpoint after 600 samples and every 3,600 samples,
+and leaves detailed rows hidden. The analyzer accepts the latest checkpoint,
+and the policy probe plus 142 Python tests pass. The next gate is a fresh
+build/commit and log-policy-corrected triple
+B installation after the user closes the ZeniMax launcher. Preserve all cache
+generations and settings. After B, collect at least two measured control runs
+before drawing a performance conclusion.
