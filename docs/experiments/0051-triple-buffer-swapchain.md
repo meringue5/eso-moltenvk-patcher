@@ -244,6 +244,13 @@ Provisional B-versus-C1 comparison:
   equivalence and control noise are not established, so none of these deltas is
   yet attributed to the third image.
 
+C2 installation checkpoint:
+
+- With C1 evidence preserved and the bundle idle, the verified restore and
+  identical corrected control reinstall completed.
+- Marker, bridge bytes, settings, and both cache generations verify. The active
+  cache begins C2 at C1's post-run SHA-256 `64d5a045...b340920`.
+
 ## Result
 
 The corrected B and C1 runs both succeeded structurally. B's frame p99 is lower
@@ -264,12 +271,11 @@ drawable-starvation mechanism.
 
 ## Rollback
 
-The corrected two-image C1 control is installed. The verified pristine-loader
+The corrected two-image C2 control is installed. The verified pristine-loader
 restore path remains available, and caches/settings were preserved. Its bridge
 bytes are exactly the same as B; only the attested mode differs.
 
 ## Follow-up
 
-Reinstall the same corrected control as C2 and repeat the fixed route. Compare B
-only after C1-C2 establish the tail-latency range; retain B as experimental
-until memory/power cost is bounded.
+Repeat the fixed route as C2. Compare B only after C1-C2 establish the tail-
+latency range; retain B as experimental until memory/power cost is bounded.

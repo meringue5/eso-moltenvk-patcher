@@ -167,3 +167,6 @@ returns, zero API errors, and 34,195 samples. Acquire p99 is identical to B at
 close. The mechanism and improvement remain unproven because C1 is shorter and
 control noise is unknown. The immediate gate is the same corrected control
 reinstalled as C2, plus the user's C1 focus/pink/perceived-FPS classification.
+C2 is now installed with identical bridge bytes, exact two-image mode, and C1's
+post-run cache preserved. The immediate gate is the unchanged C2 fixed-route
+run and initial focus observation.
