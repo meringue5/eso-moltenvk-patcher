@@ -137,7 +137,7 @@ started by the agent.
 
 Public production 0.2.0 remains the supported baseline, but the exact local
 target currently retains Experiment [0051](experiments/0051-triple-buffer-swapchain.md)
-A1 while B is prepared. The first A1 play activated the exact two-image control,
+B. The first A1 play activated the exact two-image control,
 completed without a crash report or settings change, and advanced only the
 active cache, but the new summary prefix fell through the production log policy
 to `debug` and was discarded. The user also reported initial mouse focus did
@@ -149,7 +149,9 @@ checkpoint after 600 samples and every 3,600 samples, leaves detailed rows
 hidden, and forwards acquire/present without measurement overhead until the
 existing ordinal-180 startup gate finishes. The analyzer accepts the latest
 checkpoint, and the policy probe plus 142 Python tests pass. The next gate is a
-fresh build/commit and log-policy/startup-gate-corrected triple
-B installation after the user closes the ZeniMax launcher. Preserve all cache
-generations and settings. After B, collect at least two measured control runs
-before drawing a performance conclusion.
+log-policy/startup-gate-corrected triple B user run. B is now installed from
+source commit `28fdc51`; exact target, fresh build, shared idle, installed-byte,
+and cache-preservation checks pass. Require normal initial focus, exact three-
+image checkpoint counts, zero fallback/errors, and an 8-10 minute fixed-route
+observation. After B, collect at least two measured control runs before drawing
+a performance conclusion.

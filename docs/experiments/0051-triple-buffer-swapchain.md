@@ -1,7 +1,7 @@
 # Experiment 0051: measured triple-buffer swapchain
 
 - Date: 2026-08-28
-- Outcome: **running; first A1 lacked a final timing summary**
+- Outcome: **running; corrected triple-buffer B installed**
 - Rollback: **verified pristine loader available; caches preserved**
 
 ## Question
@@ -165,11 +165,27 @@ B must still prove the actual three-image creation. The policy probe proves the
 startup gate. Focus remains a mandatory B and corrected-control acceptance
 check; B is not compared numerically with the invalid first A1.
 
+B installation checkpoint:
+
+- Source commit: `28fdc515`.
+- Fresh build, policy probe, startup-gate probe, and 142 Python tests passed.
+- The shared idle gate found ESO and the ZeniMax launcher absent and Steam idle
+  with no ESO file/update operation.
+- A1 was restored through the verified pristine loader, then
+  `startup-release-triple-buffer` was installed with settings and every cache
+  generation preserved.
+- The installed bridge and fresh build match at SHA-256
+  `e429d14e3a1cc9d8e9c41e12922ecf02fe49e78e022a450d4250c503f4bee737`;
+  MoltenVK matches the exact target runtime.
+- Active and old-backup cache SHA-256 values remained respectively
+  `dc4412c9f97a30cdc9c925e8fd37ee42f782c33393bce0c5693ba7ebc571fe86`
+  and `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+
 ## Result
 
 The first A1 control run completed with its summary filtered and initial focus
 failure, so it is excluded from quantitative comparison. The log-policy- and
-startup-gate-corrected B build is prepared; B gameplay evidence is pending.
+startup-gate-corrected B build is installed; B gameplay evidence is pending.
 
 ## Interpretation
 
@@ -182,16 +198,15 @@ tail. This remains unproven until the A1-B-A2 gameplay sequence.
 
 ## Rollback
 
-The original A1 control bridge remains installed until the log-policy-corrected
-B build is committed and the launcher becomes idle. Its only runtime difference
-from production is the common swapchain timing wrapper; it forwards the
-two-image request.
+The corrected triple-buffer B bridge is installed. The verified pristine-loader
+restore path remains available, and caches/settings were preserved. After B,
+the same corrected binary can return to control by marker-selected reinstall.
 The verified pristine-loader restore path remains available. Settings and all
 pipeline-cache generations are preserved in place.
 
 ## Follow-up
 
-After the launcher is closed, preserve the invalid-A1 evidence, restore the
-verified loader with caches unchanged, and install log-policy-corrected B. After
-B, collect at least two checkpoint-capable control runs so candidate deltas can
-still be compared against a measured control range.
+The user performs B through the ordinary authenticated path. Collect the latest
+checkpoint after exit and require exact three-image counts with zero fallback or
+errors. Then collect at least two checkpoint-capable control runs so candidate
+deltas can still be compared against a measured control range.
