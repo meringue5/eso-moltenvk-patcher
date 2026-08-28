@@ -1,8 +1,8 @@
 # Experiment 0051: measured triple-buffer swapchain
 
 - Date: 2026-08-28
-- Outcome: **planned; source and non-game gates pass**
-- Rollback: **production 0.2.0 remains installed**
+- Outcome: **running; A1 measured control installed**
+- Rollback: **verified pristine loader available; caches preserved**
 
 ## Question
 
@@ -58,6 +58,13 @@ visible startup, focus, rendering, reset, or stability regression.
 - Before each bundle mutation, repeat the exact update, restore, source-build,
   and shared bundle-idle gates. Preserve caches and settings byte-for-byte.
 
+The launcher's last complete `noUpdateRequired` repository snapshot was about
+19.5 hours old, so it was stale under the ordinary one-hour quick-check window.
+For evidence preparation only, the snapshot was retained under an explicit
+24-hour maximum and recorded as `CURRENT_REMOTE`; every repository identifier
+matched. This did not replace the current executable/content fingerprint or the
+separate bundle-idle gate, both of which passed immediately before mutation.
+
 ## Procedure
 
 Use an A1-B-A2 sequence so the candidate must beat ordinary run-to-run noise:
@@ -108,11 +115,25 @@ Confirmed before installation:
 - Measurement overhead is below 0.25 us in the non-game probe and common to
   both arms.
 
+A1 installation checkpoint:
+
+- Source commit: `d23458698f155e3c05f4c4a359e6b51b2e349f16`.
+- The shared idle gate found ESO and the launcher absent, no open file in the
+  bundle, and idle Steam with no ESO content operation.
+- The production bridge was restored to its verified pristine loader with all
+  cache generations preserved, then `startup-release-swapchain-control` was
+  installed from the fresh build.
+- Post-install update status remains exact and the marker is exactly
+  `startup-release-swapchain-control`.
+- Active and old-backup pipeline-cache SHA-256 values remained respectively
+  `4f3baa1e13bc25c158f7cd3d274ebae138165d3ba9c1ff5380cee29efa076f60`
+  and `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
+
 No user-controlled A1, B, or A2 result exists yet.
 
 ## Result
 
-Pending controlled gameplay evidence.
+The A1 control is installed; controlled gameplay evidence is pending.
 
 ## Interpretation
 
@@ -125,11 +146,12 @@ tail. This remains unproven until the A1-B-A2 gameplay sequence.
 
 ## Rollback
 
-The production 0.2.0 bridge remains installed at this pre-install checkpoint.
-Every experimental arm has the existing verified pristine-loader restore path;
-settings and pipeline caches are preserved in place.
+The A1 control bridge is installed. Its only runtime difference from production
+is the common swapchain timing wrapper; it forwards the two-image request.
+The verified pristine-loader restore path remains available. Settings and all
+pipeline-cache generations are preserved in place.
 
 ## Follow-up
 
-Install A1 only after the bundle-idle gate passes. Do not begin B until A1's
-summary, Metal HUD capture, and user observation are preserved.
+The user performs A1 through the ordinary authenticated path. Do not begin B
+until A1's summary, Metal HUD capture, and user observation are preserved.
