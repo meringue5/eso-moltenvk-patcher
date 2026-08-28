@@ -10,6 +10,7 @@ ROOT="${0:A:h:h}"
 OUTPUT="$1"
 ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 SETTINGS="$ESO_LIVE/UserSettings.txt"
+PRODUCTION_LOG="${TESO4M4_LOG_PATH:-$HOME/Library/Logs/ESO MoltenVK Patcher/bridge.log}"
 START_EPOCH_FILE="$OUTPUT/started-at-epoch.txt"
 START_UTC_FILE="$OUTPUT/started-at-utc.txt"
 [[ -d "$OUTPUT" ]] || { echo "Missing evidence directory: $OUTPUT"; exit 1; }
@@ -20,10 +21,13 @@ START_UTC_FILE="$OUTPUT/started-at-utc.txt"
 START_EPOCH="$(<"$START_EPOCH_FILE")"
 [[ "$START_EPOCH" == <-> ]] || { echo "Invalid start epoch"; exit 1; }
 
-if [[ -f /tmp/teso4m4.log ]]; then
+if [[ -f "$PRODUCTION_LOG" ]]; then
+  cp -p "$PRODUCTION_LOG" "$OUTPUT/bridge-log-after.txt"
+elif [[ -f /tmp/teso4m4.log ]]; then
   cp -p /tmp/teso4m4.log "$OUTPUT/bridge-log-after.txt"
 else
-  echo "No /tmp/teso4m4.log was present." > "$OUTPUT/bridge-log-missing.txt"
+  echo "No production or legacy bridge log was present." \
+    > "$OUTPUT/bridge-log-missing.txt"
   : > "$OUTPUT/bridge-log-after.txt"
 fi
 VERDICT_EXIT=0

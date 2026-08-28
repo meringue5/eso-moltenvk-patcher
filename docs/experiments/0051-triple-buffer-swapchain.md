@@ -181,32 +181,60 @@ B installation checkpoint:
   `dc4412c9f97a30cdc9c925e8fd37ee42f782c33393bce0c5693ba7ebc571fe86`
   and `72ac0b0dcb4a7bb3bb5b12b150fe923f5814cf38284eb0afe9b12ed6dea07e1c`.
 
+B gameplay checkpoint:
+
+- Run `20260828T105055.379587000Z-pid58260` activated the exact triple mode,
+  all 17 redirects, the production compositor/pacing behavior, ordinal-150
+  forwarding, and the ordinal-180 measurement gate.
+- Both observed swapchain generations requested two images, were promoted to
+  three, and returned exactly three. There were zero forwarded/fallback creates,
+  capability misses, count mismatches, acquire errors, or present errors.
+- The final exact summary reached the 65,536-sample bound for acquire, present,
+  and present-entry interval. Acquire p95/p99/p99.9 were 9/12/19 us; present
+  call p95/p99/p99.9 were 12/16/24 us.
+- Present-entry interval p50/p95/p99/p99.9 were 16.699/18.610/20.230/36.880 ms.
+  Inverting p99 and p99.9 gives 49.43 and 27.11 FPS tail proxies. These are
+  cumulative outlier proxies, not a conventional sliding-window 1% low.
+- The user reported everything normal, including the specifically requested
+  startup/focus and ordinary-play checks. No crash report or settings change
+  was found. The active cache advanced to SHA-256
+  `fb1e43bb9f5b37ece6c5a7342a7a994493d59d9da99b7f14f991d2a405f7d57f`;
+  the old-backup cache remained unchanged.
+- No paired Metal HUD numeric capture was supplied, so GPU time, app/Metal
+  memory, power, and thermal comparison remain unavailable for this run.
+- Evidence collection initially copied the extant legacy `/tmp` log instead of
+  the production bridge log. The collector now prefers the production path;
+  re-collection produced a passing swapchain verdict from the preserved run.
+
 ## Result
 
-The first A1 control run completed with its summary filtered and initial focus
-failure, so it is excluded from quantitative comparison. The log-policy- and
-startup-gate-corrected B build is installed; B gameplay evidence is pending.
+The corrected B run succeeded structurally and in user-observed operation. It
+proves exact three-image use and negligible acquire/present call tails on this
+run, but it does not prove improvement over two images because the first A1 is
+quantitatively invalid. Corrected control measurements remain pending.
 
 ## Interpretation
 
-Confirmed: the bridge can safely request and render through a three-image
-MoltenVK swapchain on the exact non-game path, and can measure the intended wait
-and frame-interval tails with negligible common-mode CPU cost.
+Confirmed: the bridge requested and used three images in two real ESO swapchain
+generations, completed a long bounded measurement with no API errors, and passed
+the user's focus/rendering/performance observation. The B acquire p99 of 12 us
+is consistent with no material drawable wait in this arm.
 
-Hypothesis: the additional image will reduce ESO's real drawable-starvation
-tail. This remains unproven until the A1-B-A2 gameplay sequence.
+Unproven: that three images caused an improvement. Corrected two-image controls
+are required to determine whether their acquire or frame-interval tails are
+worse than B and whether B exceeds ordinary run-to-run noise.
 
 ## Rollback
 
-The corrected triple-buffer B bridge is installed. The verified pristine-loader
-restore path remains available, and caches/settings were preserved. After B,
-the same corrected binary can return to control by marker-selected reinstall.
+The corrected triple-buffer B bridge remains installed. The verified pristine-
+loader restore path remains available, and caches/settings were preserved. The
+same corrected binary can return to control by marker-selected reinstall.
 The verified pristine-loader restore path remains available. Settings and all
 pipeline-cache generations are preserved in place.
 
 ## Follow-up
 
-The user performs B through the ordinary authenticated path. Collect the latest
-checkpoint after exit and require exact three-image counts with zero fallback or
-errors. Then collect at least two checkpoint-capable control runs so candidate
-deltas can still be compared against a measured control range.
+Install the corrected two-image control after the launcher and bundle are idle,
+then collect two fixed-route runs. Compare B only after those controls establish
+the tail-latency range; retain B as experimental until memory/power cost is also
+bounded.

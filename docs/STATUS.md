@@ -148,10 +148,13 @@ promotes only bounded checkpoint/summary rows to `info`, emits an in-run
 checkpoint after 600 samples and every 3,600 samples, leaves detailed rows
 hidden, and forwards acquire/present without measurement overhead until the
 existing ordinal-180 startup gate finishes. The analyzer accepts the latest
-checkpoint, and the policy probe plus 142 Python tests pass. The next gate is a
-log-policy/startup-gate-corrected triple B user run. B is now installed from
-source commit `28fdc51`; exact target, fresh build, shared idle, installed-byte,
-and cache-preservation checks pass. Require normal initial focus, exact three-
-image checkpoint counts, zero fallback/errors, and an 8-10 minute fixed-route
-observation. After B, collect at least two measured control runs before drawing
-a performance conclusion.
+checkpoint, and the policy probe plus 142 Python tests pass. The B run used
+exactly three images in both
+swapchain generations with zero fallback, mismatch, acquire error, or present
+error. Its 65,536-sample final summary reports acquire p99 12 us and present-
+entry interval p50/p95/p99/p99.9 of 16.699/18.610/20.230/36.880 ms. The user
+reported everything normal, including startup/focus and ordinary play; settings
+remained exact and no crash report appeared. This proves B operation, not a
+performance improvement. The invalid first A1 cannot supply a comparison, and
+no Metal HUD memory/power capture exists. The next gate is two runs of the same
+corrected binary in two-image control mode, followed by tail-range comparison.
