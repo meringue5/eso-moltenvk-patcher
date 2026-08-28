@@ -206,6 +206,18 @@ B gameplay checkpoint:
   the production bridge log. The collector now prefers the production path;
   re-collection produced a passing swapchain verdict from the preserved run.
 
+C1 installation checkpoint:
+
+- After preserving B, the shared idle gate again found ESO and the launcher
+  absent and Steam free of ESO file/update activity.
+- The verified pristine-loader restore and corrected
+  `startup-release-swapchain-control` reinstall completed with every cache and
+  setting preserved.
+- Installed and built bridge bytes remain identical at SHA-256
+  `e429d14e3a1cc9d8e9c41e12922ecf02fe49e78e022a450d4250c503f4bee737`.
+- The pre-C1 active and old-backup cache hashes are exactly B's post-run
+  `fb1e43bb...f7d57f` and the unchanged `72ac0b0d...a07e1c`.
+
 ## Result
 
 The corrected B run succeeded structurally and in user-observed operation. It
@@ -226,15 +238,12 @@ worse than B and whether B exceeds ordinary run-to-run noise.
 
 ## Rollback
 
-The corrected triple-buffer B bridge remains installed. The verified pristine-
-loader restore path remains available, and caches/settings were preserved. The
-same corrected binary can return to control by marker-selected reinstall.
-The verified pristine-loader restore path remains available. Settings and all
-pipeline-cache generations are preserved in place.
+The corrected two-image C1 control is installed. The verified pristine-loader
+restore path remains available, and caches/settings were preserved. Its bridge
+bytes are exactly the same as B; only the attested mode differs.
 
 ## Follow-up
 
-Install the corrected two-image control after the launcher and bundle are idle,
-then collect two fixed-route runs. Compare B only after those controls establish
-the tail-latency range; retain B as experimental until memory/power cost is also
-bounded.
+Run C1 through the ordinary authenticated path, then collect C2 after another
+verified control reinstall. Compare B only after both controls establish the
+tail-latency range; retain B as experimental until memory/power cost is bounded.

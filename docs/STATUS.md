@@ -158,3 +158,7 @@ remained exact and no crash report appeared. This proves B operation, not a
 performance improvement. The invalid first A1 cannot supply a comparison, and
 no Metal HUD memory/power capture exists. The next gate is two runs of the same
 corrected binary in two-image control mode, followed by tail-range comparison.
+C1 is now installed with bridge bytes identical to B and only the attested mode
+changed. Exact target, shared idle, restore, installed-byte, and cache-
+preservation checks pass. The immediate gate is one unchanged C1 fixed-route
+run with initial focus observation.
