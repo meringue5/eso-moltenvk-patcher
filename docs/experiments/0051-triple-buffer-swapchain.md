@@ -218,12 +218,37 @@ C1 installation checkpoint:
 - The pre-C1 active and old-backup cache hashes are exactly B's post-run
   `fb1e43bb...f7d57f` and the unchanged `72ac0b0d...a07e1c`.
 
+C1 gameplay checkpoint:
+
+- Run `20260828T112013.300354000Z-pid60755` forwarded both observed swapchain
+  generations unchanged and returned exactly two images for each. Promotion,
+  three-image returns, capability misses, count mismatches, acquire errors, and
+  present errors were all zero.
+- The final summary contains 34,195 samples. Acquire p95/p99/p99.9 were
+  8/12/21 us; present-call p95/p99/p99.9 were 12/16/21 us.
+- Present-entry interval p95/p99/p99.9 were 18.809/21.931/37.258 ms, giving
+  p99/p99.9 inverse-rate proxies of 45.60/26.84 FPS.
+- No crash report or settings change was found. The active cache advanced to
+  SHA-256 `64d5a0455928a4124b792b57c2360662e8dc746fd391b4efa99966588b340920`;
+  the old-backup cache remained unchanged.
+- The user's explicit focus/pink/perceived-FPS classification remains pending.
+
+Provisional B-versus-C1 comparison:
+
+- Acquire p99 is identical at 12 us. This does not support the predicted
+  drawable-starvation reduction.
+- Present-call p99 is identical at 16 us. B p99.9 is 24 us versus C1 21 us.
+- B frame interval p95 is 18.610 ms versus C1 18.809 ms; p99 is 20.230 ms
+  versus 21.931 ms (B 7.8% shorter); p99.9 is 36.880 ms versus 37.258 ms.
+- B ran to the 65,536-sample cap while C1 collected 34,195 samples. Route/load
+  equivalence and control noise are not established, so none of these deltas is
+  yet attributed to the third image.
+
 ## Result
 
-The corrected B run succeeded structurally and in user-observed operation. It
-proves exact three-image use and negligible acquire/present call tails on this
-run, but it does not prove improvement over two images because the first A1 is
-quantitatively invalid. Corrected control measurements remain pending.
+The corrected B and C1 runs both succeeded structurally. B's frame p99 is lower
+than C1's while acquire p99 is identical, but one corrected control cannot
+separate an image-count effect from route/duration noise. C2 remains pending.
 
 ## Interpretation
 
@@ -232,9 +257,10 @@ generations, completed a long bounded measurement with no API errors, and passed
 the user's focus/rendering/performance observation. The B acquire p99 of 12 us
 is consistent with no material drawable wait in this arm.
 
-Unproven: that three images caused an improvement. Corrected two-image controls
-are required to determine whether their acquire or frame-interval tails are
-worse than B and whether B exceeds ordinary run-to-run noise.
+Unproven: that three images caused the observed frame-p99 difference. C2 is
+required to establish whether C1 is repeatable and whether B falls outside the
+corrected control range. The unchanged acquire tail weakens the original
+drawable-starvation mechanism.
 
 ## Rollback
 
@@ -244,6 +270,6 @@ bytes are exactly the same as B; only the attested mode differs.
 
 ## Follow-up
 
-Run C1 through the ordinary authenticated path, then collect C2 after another
-verified control reinstall. Compare B only after both controls establish the
-tail-latency range; retain B as experimental until memory/power cost is bounded.
+Reinstall the same corrected control as C2 and repeat the fixed route. Compare B
+only after C1-C2 establish the tail-latency range; retain B as experimental
+until memory/power cost is bounded.

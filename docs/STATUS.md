@@ -161,4 +161,9 @@ corrected binary in two-image control mode, followed by tail-range comparison.
 C1 is now installed with bridge bytes identical to B and only the attested mode
 changed. Exact target, shared idle, restore, installed-byte, and cache-
 preservation checks pass. The immediate gate is one unchanged C1 fixed-route
-run with initial focus observation.
+run with initial focus observation. C1 has now completed with exact two-image
+returns, zero API errors, and 34,195 samples. Acquire p99 is identical to B at
+12 us; B frame p99 is 20.230 ms versus C1 21.931 ms, while p95 and p99.9 are
+close. The mechanism and improvement remain unproven because C1 is shorter and
+control noise is unknown. The immediate gate is the same corrected control
+reinstalled as C2, plus the user's C1 focus/pink/perceived-FPS classification.
