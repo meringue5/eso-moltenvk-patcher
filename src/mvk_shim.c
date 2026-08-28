@@ -751,6 +751,8 @@ __attribute__((constructor)) static void teso4m4_init(void) {
                 ? TESO4M4_SWAPCHAIN_EXPERIMENT_TRIPLE_BUFFER
                 : TESO4M4_SWAPCHAIN_EXPERIMENT_CONTROL,
             &compat_log_message);
+        teso4m4_swapchain_experiment_set_startup_window_function(
+            &teso4m4_lifecycle_startup_window_open);
     }
     if (mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE &&
         !ESO_HAS_FX_SENTINEL_TARGET) {

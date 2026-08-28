@@ -15,6 +15,11 @@ static VkSwapchainKHR g_swapchain;
 static PFN_vkAcquireNextImageKHR g_wrapped_acquire;
 static PFN_vkQueuePresentKHR g_wrapped_present;
 static volatile uint64_t g_fake_present_calls;
+static bool g_startup_window_open;
+
+static bool startup_window_open(void) {
+    return g_startup_window_open;
+}
 
 static uint64_t monotonic_ns(void) {
     struct timespec value = {0};
@@ -113,6 +118,8 @@ static bool run_case(
     uint32_t expected_images) {
     teso4m4_swapchain_experiment_reset();
     teso4m4_swapchain_experiment_configure(mode, &record_log);
+    teso4m4_swapchain_experiment_set_startup_window_function(
+        &startup_window_open);
     PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR get_capabilities =
         (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
             teso4m4_swapchain_experiment_intercept(
@@ -193,31 +200,41 @@ static uint64_t benchmark_pairs(bool wrapped, uint32_t iterations) {
 }
 
 int main(void) {
+    g_startup_window_open = false;
     const bool promoted = run_case(
         TESO4M4_SWAPCHAIN_EXPERIMENT_TRIPLE_BUFFER, 3, 3);
     const bool bounded = run_case(
         TESO4M4_SWAPCHAIN_EXPERIMENT_TRIPLE_BUFFER, 2, 2);
     const bool control = run_case(
         TESO4M4_SWAPCHAIN_EXPERIMENT_CONTROL, 3, 2);
+    g_startup_window_open = true;
+    (void)benchmark_pairs(true, 1000);
+    teso4m4_swapchain_experiment_log_summary();
+    const bool startup_gate =
+        strstr(g_log, "present_samples=0") != NULL &&
+        strstr(g_log, "interval_samples=0") != NULL;
+    g_log[0] = '\0';
+    g_startup_window_open = false;
     const uint32_t benchmark_iterations = 10000;
     const uint64_t raw_ns = benchmark_pairs(false, benchmark_iterations);
     const uint64_t wrapped_ns = benchmark_pairs(true, benchmark_iterations);
     teso4m4_swapchain_experiment_log_summary();
     const bool summary = strstr(
         g_log, "SWAPCHAIN_EXPERIMENT_SUMMARY: mode=control") != NULL;
-    if (!promoted || !bounded || !control || !summary || wrapped_ns == 0 ||
-        wrapped_ns > UINT64_C(100000)) {
+    if (!promoted || !bounded || !control || !startup_gate || !summary ||
+        wrapped_ns == 0 || wrapped_ns > UINT64_C(100000)) {
         fprintf(
             stderr,
             "Swapchain experiment smoke: FAIL promoted=%d bounded=%d "
-            "control=%d summary=%d raw_ns=%llu wrapped_ns=%llu\n%s",
-            promoted, bounded, control, summary,
+            "control=%d startup_gate=%d summary=%d raw_ns=%llu "
+            "wrapped_ns=%llu\n%s",
+            promoted, bounded, control, startup_gate, summary,
             (unsigned long long)raw_ns, (unsigned long long)wrapped_ns, g_log);
         return 1;
     }
     printf(
         "Swapchain experiment smoke: PASS promoted=3 unsupported=2 "
-        "control=2 raw_pair_ns=%llu measured_pair_ns=%llu "
+        "control=2 startup_gate=1 raw_pair_ns=%llu measured_pair_ns=%llu "
         "cpu_budget_at_60fps=%.6f%%\n",
         (unsigned long long)raw_ns, (unsigned long long)wrapped_ns,
         (double)wrapped_ns * 60.0 / 10000000.0);

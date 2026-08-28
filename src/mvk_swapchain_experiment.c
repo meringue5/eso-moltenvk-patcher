@@ -42,6 +42,7 @@ typedef struct {
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 static Teso4m4SwapchainExperimentMode g_mode;
 static Teso4m4SwapchainLogFunction g_logger;
+static Teso4m4SwapchainStartupWindowFunction g_startup_window_open;
 static SurfaceRecord g_surfaces[kMaxSurfaceRecords];
 static SwapchainRecord g_swapchains[kMaxSwapchainRecords];
 static uint64_t g_acquire_samples[kMaxSamples];
@@ -424,6 +425,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_acquire_next_image(
     if (!g_next_acquire_next_image) {
         return VK_ERROR_INITIALIZATION_FAILED;
     }
+    if (g_startup_window_open && g_startup_window_open()) {
+        return g_next_acquire_next_image(
+            device, swapchain, timeout, semaphore, fence, image_index);
+    }
     const uint64_t start = monotonic_ns();
     const VkResult result = g_next_acquire_next_image(
         device, swapchain, timeout, semaphore, fence, image_index);
@@ -447,6 +452,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL traced_queue_present(
     const VkPresentInfoKHR* present_info) {
     if (!g_next_queue_present) {
         return VK_ERROR_INITIALIZATION_FAILED;
+    }
+    if (g_startup_window_open && g_startup_window_open()) {
+        return g_next_queue_present(queue, present_info);
     }
     const uint64_t start = monotonic_ns();
     const VkResult result = g_next_queue_present(queue, present_info);
@@ -488,6 +496,7 @@ void teso4m4_swapchain_experiment_reset(void) {
     pthread_mutex_lock(&g_lock);
     g_mode = TESO4M4_SWAPCHAIN_EXPERIMENT_DISABLED;
     g_logger = NULL;
+    g_startup_window_open = NULL;
     memset(g_surfaces, 0, sizeof(g_surfaces));
     memset(g_swapchains, 0, sizeof(g_swapchains));
     g_acquire_sample_count = 0;
@@ -520,6 +529,13 @@ void teso4m4_swapchain_experiment_configure(
     pthread_mutex_lock(&g_lock);
     g_mode = mode;
     g_logger = logger;
+    pthread_mutex_unlock(&g_lock);
+}
+
+void teso4m4_swapchain_experiment_set_startup_window_function(
+    Teso4m4SwapchainStartupWindowFunction startup_window_open) {
+    pthread_mutex_lock(&g_lock);
+    g_startup_window_open = startup_window_open;
     pthread_mutex_unlock(&g_lock);
 }
 

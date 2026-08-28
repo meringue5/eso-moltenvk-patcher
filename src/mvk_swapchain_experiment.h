@@ -10,6 +10,7 @@
 #endif
 
 typedef void (*Teso4m4SwapchainLogFunction)(const char* message);
+typedef bool (*Teso4m4SwapchainStartupWindowFunction)(void);
 
 typedef enum {
     TESO4M4_SWAPCHAIN_EXPERIMENT_DISABLED = 0,
@@ -21,6 +22,9 @@ TESO4M4_SWAPCHAIN_HIDDEN void teso4m4_swapchain_experiment_reset(void);
 TESO4M4_SWAPCHAIN_HIDDEN void teso4m4_swapchain_experiment_configure(
     Teso4m4SwapchainExperimentMode mode,
     Teso4m4SwapchainLogFunction logger);
+TESO4M4_SWAPCHAIN_HIDDEN void
+teso4m4_swapchain_experiment_set_startup_window_function(
+    Teso4m4SwapchainStartupWindowFunction startup_window_open);
 TESO4M4_SWAPCHAIN_HIDDEN PFN_vkVoidFunction
 teso4m4_swapchain_experiment_intercept(
     const char* name,

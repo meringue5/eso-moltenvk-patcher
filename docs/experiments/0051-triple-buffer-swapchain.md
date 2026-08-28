@@ -145,6 +145,11 @@ First A1 run:
   inferred from the absence of a row that policy had already filtered.
 - This run is valid for activation, settings, cache, and crash evidence, but is
   excluded from the quantitative A1-B-A2 comparison.
+- The user reported that initial mouse focus did not attach to the game. The
+  periodic/final experiment rows were filtered, so log-file I/O cannot explain
+  this occurrence. The common acquire/present timing wrapper was active from
+  the first frame, however, and a natural recurrence also remains possible.
+  This focus result is a regression observation, not proof of either cause.
 
 The source now classifies only bounded checkpoint/final-summary rows as `info`,
 emits in-run histogram checkpoints after 600 samples and every 3,600 samples,
@@ -152,11 +157,19 @@ and keeps per-create/per-frame details below production visibility. The analyzer
 accepts the latest checkpoint when a final summary is absent. The optimized
 policy probe and 142 Python tests pass after this amendment.
 
+Before B, the timing wrapper was further gated by the existing bounded startup
+window: acquire and present forward directly, without clocks, mutexes, sampling,
+or checkpoint logging, through generation 2 ordinal 180. Measurement begins on
+the following frame. Swapchain capability/count tracking remains active because
+B must still prove the actual three-image creation. The policy probe proves the
+startup gate. Focus remains a mandatory B and corrected-control acceptance
+check; B is not compared numerically with the invalid first A1.
+
 ## Result
 
-The first A1 control run completed with its summary filtered and is therefore
-excluded from quantitative comparison. The checkpoint-capable B build is
-prepared; B gameplay evidence is pending.
+The first A1 control run completed with its summary filtered and initial focus
+failure, so it is excluded from quantitative comparison. The log-policy- and
+startup-gate-corrected B build is prepared; B gameplay evidence is pending.
 
 ## Interpretation
 

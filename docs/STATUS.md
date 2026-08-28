@@ -140,12 +140,16 @@ target currently retains Experiment [0051](experiments/0051-triple-buffer-swapch
 A1 while B is prepared. The first A1 play activated the exact two-image control,
 completed without a crash report or settings change, and advanced only the
 active cache, but the new summary prefix fell through the production log policy
-to `debug` and was discarded. It is therefore excluded from quantitative
-comparison. The bridge now promotes only bounded checkpoint/summary rows to
-`info`, emits an in-run checkpoint after 600 samples and every 3,600 samples,
-and leaves detailed rows hidden. The analyzer accepts the latest checkpoint,
-and the policy probe plus 142 Python tests pass. The next gate is a fresh
-build/commit and log-policy-corrected triple
+to `debug` and was discarded. The user also reported initial mouse focus did
+not attach. Log-file I/O was absent, so it cannot explain that occurrence; the
+from-first-frame common timing wrapper and natural recurrence remain competing
+hypotheses. The run is excluded from quantitative comparison. The bridge now
+promotes only bounded checkpoint/summary rows to `info`, emits an in-run
+checkpoint after 600 samples and every 3,600 samples, leaves detailed rows
+hidden, and forwards acquire/present without measurement overhead until the
+existing ordinal-180 startup gate finishes. The analyzer accepts the latest
+checkpoint, and the policy probe plus 142 Python tests pass. The next gate is a
+fresh build/commit and log-policy/startup-gate-corrected triple
 B installation after the user closes the ZeniMax launcher. Preserve all cache
 generations and settings. After B, collect at least two measured control runs
 before drawing a performance conclusion.
