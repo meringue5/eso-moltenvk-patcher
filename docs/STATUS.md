@@ -167,6 +167,11 @@ returns, zero API errors, and 34,195 samples. Acquire p99 is identical to B at
 close. The mechanism and improvement remain unproven because C1 is shorter and
 control noise is unknown. The immediate gate is the same corrected control
 reinstalled as C2, plus the user's C1 focus/pink/perceived-FPS classification.
-C2 is now installed with identical bridge bytes, exact two-image mode, and C1's
-post-run cache preserved. The immediate gate is the unchanged C2 fixed-route
-run and initial focus observation.
+C2 was installed with identical bridge bytes and C1's cache preserved, but its
+manual gameplay run is canceled. At a matched 32,400-sample horizon, B/control
+p50 and p95 differ by less than 1%; B p99 is 4.5% shorter while p99.9 is 6.1%
+longer, and acquire p99 is unchanged. This is not a coherent performance signal
+and does not support drawable starvation. Experiment 0051 is inconclusive and
+will not request more manual repetition. The immediate gate is restoration of
+the exact supported production 0.2.0 profile; the current local bridge remains
+the unplayed corrected C2 control until that rollback is completed.

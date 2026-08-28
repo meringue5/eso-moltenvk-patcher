@@ -1,8 +1,8 @@
 # Experiment 0051: measured triple-buffer swapchain
 
 - Date: 2026-08-28
-- Outcome: **running; corrected triple-buffer B installed**
-- Rollback: **verified pristine loader available; caches preserved**
+- Outcome: **inconclusive; no demonstrated performance improvement**
+- Rollback: **corrected C2 control installed; production restore pending**
 
 ## Question
 
@@ -251,11 +251,32 @@ C2 installation checkpoint:
 - Marker, bridge bytes, settings, and both cache generations verify. The active
   cache begins C2 at C1's post-run SHA-256 `64d5a045...b340920`.
 
+Matched-horizon analysis and stop decision:
+
+- B and C1 cumulative checkpoints were aligned at 32,400 samples, avoiding B's
+  longer 65,536-sample tail. B versus C1 interval p50 was 16.7 versus 16.8 ms;
+  p95 18.8 versus 18.9 ms; p99 21.0 versus 22.0 ms; and p99.9 39.9 versus
+  37.6 ms.
+- The median and p95 differences are below 1%. B's p99 is 4.5% shorter while
+  its p99.9 is 6.1% longer. The improvement does not persist coherently across
+  the tail.
+- Matched-horizon acquire p95/p99 and present p95/p99/p99.9 are identical at
+  the histogram's resolution. The exact final summaries also show acquire p99
+  12 us in both arms. This directly weakens the drawable-starvation hypothesis.
+- The routes, scene load, and durations were not externally controlled. Treating
+  tens of thousands of autocorrelated frames as independent samples would
+  overstate statistical confidence.
+- The user reported that repeated manual play and condition matching were
+  burdensome. Because the existing signal is mixed and the hypothesized wait
+  mechanism is absent, C2 gameplay was canceled. Further manual repetition is
+  not proportionate to the expected information gain.
+
 ## Result
 
-The corrected B and C1 runs both succeeded structurally. B's frame p99 is lower
-than C1's while acquire p99 is identical, but one corrected control cannot
-separate an image-count effect from route/duration noise. C2 remains pending.
+The corrected B and C1 runs both succeeded structurally. Exact three-image use
+is safe on this target, but no meaningful or coherent performance improvement
+was demonstrated. The experiment is inconclusive as a performance candidate;
+C2 was installed but intentionally not run.
 
 ## Interpretation
 
@@ -264,18 +285,22 @@ generations, completed a long bounded measurement with no API errors, and passed
 the user's focus/rendering/performance observation. The B acquire p99 of 12 us
 is consistent with no material drawable wait in this arm.
 
-Unproven: that three images caused the observed frame-p99 difference. C2 is
-required to establish whether C1 is repeatable and whether B falls outside the
-corrected control range. The unchanged acquire tail weakens the original
-drawable-starvation mechanism.
+Confirmed: B did not reduce the measured acquire p99, and the matched-horizon
+frame-tail differences change sign between p99 and p99.9. The original
+drawable-starvation mechanism is not supported by these runs.
+
+Unproven: whether an automated, scene-controlled workload could find a small
+frame-p99 effect. That possibility does not justify more manual launches or a
+production default.
 
 ## Rollback
 
-The corrected two-image C2 control is installed. The verified pristine-loader
+The corrected two-image C2 control remains installed but was not run. The verified pristine-loader
 restore path remains available, and caches/settings were preserved. Its bridge
 bytes are exactly the same as B; only the attested mode differs.
 
 ## Follow-up
 
-Repeat the fixed route as C2. Compare B only after C1-C2 establish the tail-
-latency range; retain B as experimental until memory/power cost is bounded.
+Do not request further manual repetitions. Restore the exact supported
+production 0.2.0 profile. Revisit three images only if an automated repeatable
+scene harness can bound workload, memory, power, latency, and run-to-run noise.

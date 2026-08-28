@@ -74,11 +74,11 @@ single-variable experiment.
 
 ### Direction A: maximize FPS at fixed visual quality
 
-1. Run Experiment 0051's measured FIFO swapchain A1-B-A2 first. Compare the
-   unchanged two-image control with the capability-gated three-image candidate
-   using common acquire/present/interval timing. Accept it only if the
-   candidate beats A1-A2 tail-latency noise, proves three returned images, and
-   preserves startup, focus, input feel, reset correctness, memory, and power.
+1. Do not resume Experiment 0051's three-image swapchain work through manual
+   launch repetition. Exact three-image operation passed, but matched B/control
+   tails were mixed and acquire p99 was unchanged. Revisit only with an
+   automated scene-controlled harness that can also bound memory, power, and
+   presentation latency.
 2. Keep Experiment 0048's post-window wrapper benchmark as a regression guard,
    but defer self-retiring dispatch. Direct versus cached-wrapper measurements
    found only 8-9 ns for an acquire/present pair, 5 ns per indexed draw, and
