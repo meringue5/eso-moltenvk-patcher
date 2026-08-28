@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 
 ## Current public production baseline
 
@@ -135,8 +135,12 @@ started by the agent.
 
 ## Next gate
 
-Monitor natural launches through public Status and privacy-filtered Diagnostics
-without forced repetition or cache deletion. Preserve exact run evidence before
-changing the production baseline if pink, low FPS, focus loss, update recovery,
-or uninstall behavior regresses. Performance and quality successors remain
-separate single-variable work under [Roadmap](ROADMAP.md).
+Production 0.2.0 remains installed and unchanged. Experiment
+[0051](experiments/0051-triple-buffer-swapchain.md) is the active, separate
+performance successor: its capability-gated two-to-three-image policy,
+common-mode tail-timing wrapper, sub-0.25-us non-game overhead, and full-resolution
+three-image rendering probe pass. The next gate is the control A1 installation
+after a fresh exact-target and shared bundle-idle check, followed by one
+user-controlled fixed-route run. Do not install the triple candidate until A1's
+summary and Metal HUD observation are preserved; do not change or delete caches
+or settings between A1-B-A2.

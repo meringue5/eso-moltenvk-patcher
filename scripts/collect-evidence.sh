@@ -114,6 +114,13 @@ python3 "$ROOT/tools/analyze_reset_bindings.py" \
   || RESET_BINDING_ANALYSIS_EXIT=$?
 echo "$RESET_BINDING_ANALYSIS_EXIT" \
   > "$OUTPUT/reset-binding-events-exit-code.txt"
+SWAPCHAIN_ANALYSIS_EXIT=0
+python3 "$ROOT/tools/analyze_swapchain_experiment.py" \
+  "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" \
+  > "$OUTPUT/swapchain-experiment.txt" 2>&1 \
+  || SWAPCHAIN_ANALYSIS_EXIT=$?
+echo "$SWAPCHAIN_ANALYSIS_EXIT" \
+  > "$OUTPUT/swapchain-experiment-exit-code.txt"
 RENDER_AUDIT_ANALYSIS_EXIT=0
 python3 "$ROOT/tools/analyze_render_audit_log.py" \
   "$OUTPUT/bridge-log-after.txt" --after-epoch "$START_EPOCH" \

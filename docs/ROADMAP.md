@@ -74,21 +74,26 @@ single-variable experiment.
 
 ### Direction A: maximize FPS at fixed visual quality
 
-1. Keep Experiment 0048's post-window wrapper benchmark as a regression guard,
+1. Run Experiment 0051's measured FIFO swapchain A1-B-A2 first. Compare the
+   unchanged two-image control with the capability-gated three-image candidate
+   using common acquire/present/interval timing. Accept it only if the
+   candidate beats A1-A2 tail-latency noise, proves three returned images, and
+   preserves startup, focus, input feel, reset correctness, memory, and power.
+2. Keep Experiment 0048's post-window wrapper benchmark as a regression guard,
    but defer self-retiring dispatch. Direct versus cached-wrapper measurements
    found only 8-9 ns for an acquire/present pair, 5 ns per indexed draw, and
    3 ns per descriptor update. That is too small to justify a mutable
    trampoline without whole-frame evidence that another target amplifies it.
-2. Exclude Metal argument buffers from further production A/B work. Their
+3. Exclude Metal argument buffers from further production A/B work. Their
    14.899% non-game descriptor-path gain did not justify three consecutive
    initial mouse-focus failures, and the OFF control passed without that user-
    visible regression. Preserve the benchmark as evidence, not as a pending
    default candidate.
-3. Test maximum concurrent pipeline compilation only for startup compilation
+4. Test maximum concurrent pipeline compilation only for startup compilation
    latency and stutter. The retained 64 calls are already fast once ESO issues
    them, so do not expect or claim a steady-state FPS gain without direct
    frame-time evidence.
-4. Use VSync-off only during the bounded throughput measurement. The current
+5. Use VSync-off only during the bounded throughput measurement. The current
    100-FPS interval is a cap, not a performance mechanism; a high-refresh
    display is required to validate visible output above 60 Hz.
 

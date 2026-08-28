@@ -60,6 +60,7 @@ xcrun clang -fobjc-arc -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   "$ROOT/src/eso_fx_sentinel.c" "$ROOT/src/eso_inactive_pacing.c" \
   "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_reset_trace.c" \
   "$ROOT/src/mvk_render_audit.c" "$ROOT/src/mvk_present_pixel.m" \
+  "$ROOT/src/mvk_swapchain_experiment.c" \
   -framework Metal -framework Foundation \
   -Wl,-install_name,@executable_path/libBink2Macx64.dylib \
   -Wl,-reexport_library,"$BUILD/libBink2Macx64.teso4m4-original.dylib" \
@@ -106,6 +107,11 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_lifecycle.c" "$ROOT/src/mvk_lifecycle.c" \
   -o "$BUILD/probe_lifecycle"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O2 \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_swapchain_experiment.c" \
+  "$ROOT/src/mvk_swapchain_experiment.c" \
+  -o "$BUILD/probe_swapchain_experiment"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_reset_trace.c" "$ROOT/src/mvk_reset_trace.c" \
@@ -135,6 +141,7 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_log_file"
 "$BUILD/probe_hdr_filter"
 "$BUILD/probe_lifecycle"
+"$BUILD/probe_swapchain_experiment"
 "$BUILD/probe_reset_trace"
 "$BUILD/probe_render_audit"
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" performance-aggressive
@@ -145,4 +152,6 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-neutralize-pacing-bypass
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-neutralize-pacing-release
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-release-argument-buffers
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-release-swapchain-control
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-release-triple-buffer
 echo "Built teso4m4 artifacts in $BUILD"

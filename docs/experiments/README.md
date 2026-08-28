@@ -61,6 +61,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0048 | 2026-08-27 | Post-window wrapper cost | Succeeded; cached wrapper tax measured in single-digit nanoseconds and trampoline work deferred | [Run](0048-post-window-wrapper-cost.md) |
 | 0049 | 2026-08-27 | Metal argument-buffer performance candidate | Rejected after three consecutive focus failures; argument-buffers-off control passed focus and approximately 54 minutes of ordinary play | [Run](0049-metal-argument-buffer-performance.md) |
 | 0050 | 2026-08-27 | Architecture-backed 0.2.0 diagnostics release | Succeeded; exact user launch, final package, annotated tag, latest endpoint, and server asset digest verified | [Run](0050-architecture-backed-diagnostics-release.md) |
+| 0051 | 2026-08-28 | Measured triple-buffer swapchain | Planned; source and full-resolution non-game gates pass, production profile remains installed | [Run](0051-triple-buffer-swapchain.md) |
 
 ## Recording policy
 
