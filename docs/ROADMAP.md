@@ -14,14 +14,18 @@ This roadmap contains future work only. Current verified state is in
   repair while testing performance changes. Do not force ESO's active byte,
   synthesize AppKit focus events, or call private activation APIs.
 - Treat argument buffers as a supported startup-timing hypothesis, not a proven
-  direct focus mechanism. Revisit a short inactive yield only if the OFF
-  production behavior naturally repeats the mouse-capture failure.
+  direct focus mechanism. The 2026-08-30 post-Deep-Idle C2 control recurred with
+  argument buffers off but retained experimental timing wrappers, so it does
+  not yet establish an OFF-production recurrence or a direct sleep cause.
 - Preserve the fixed 1920 x 1200 balanced profile as the standard settings
   control. Performance and quality experiments must use separate opt-in
   profiles and must not silently mutate this checkpoint.
 - On any natural pink, low-FPS, focus, or reset recurrence, preserve the exact
   run and cache identities before retrying. Do not require launcher restarts or
   delete caches as a workaround.
+- For the recurring post-sleep focus report, inspect activation-event ordering
+  and Steam/launcher lifecycle state without treating Cmd-Tab as an acceptable
+  recovery requirement. Do not force ESO's active byte or synthesize focus.
 
 ## P1: isolate an optional pink repair
 

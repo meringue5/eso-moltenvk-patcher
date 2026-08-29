@@ -2,7 +2,7 @@
 
 - Date: 2026-08-28
 - Outcome: **inconclusive; no demonstrated performance improvement**
-- Rollback: **corrected C2 control installed; production restore pending**
+- Rollback: **completed 2026-08-30; pristine loader active, caches preserved**
 
 ## Question
 
@@ -304,3 +304,28 @@ bytes are exactly the same as B; only the attested mode differs.
 Do not request further manual repetitions. Restore the exact supported
 production 0.2.0 profile. Revisit three images only if an automated repeatable
 scene harness can bound workload, memory, power, latency, and run-to-run noise.
+
+## 2026-08-30 amendment: post-sleep C2 recurrence and rollback
+
+The previously unplayed C2 control was launched twice after the Mac returned
+from Deep Idle. Runs `20260829T154951.617917000Z-pid10310` and
+`20260829T155459.311157000Z-pid12910` both loaded the expected runtime,
+redirected all 17 entry points, completed the 79/150/180 startup lifecycle, and
+recorded `active=no` without a later active transition. The user reported low
+FPS and detached mouse focus and rejected application switching as an
+acceptable recovery path. The two runs collected only 1,181 and 992 measured
+frames and do not reopen the closed triple-buffer comparison.
+
+Confirmed: the recurrence followed a sleep/wake boundary and preserved the
+known OS-focus/ESO-active-state divergence. It does not prove whether sleep,
+Steam lifecycle state, or the experimental control timing wrapper caused the
+missed activation sequence. The second run's interval median was 24.325 ms;
+this is evidence for that run, not a general post-sleep FPS rate.
+
+After both runs were preserved, the exact update and shared bundle-idle gates
+passed. The cache-preserving `scripts/restore.sh` path restored the pristine
+Bink loader, disabled the active marker, and preserved every pipeline-cache
+state. Source and packaged Status
+then reported the exact supported client with the bridge not installed. The
+public 0.2.0 ZIP and all embedded files reverified against the published
+SHA-256 manifest. Installation remains a separate player-visible action.

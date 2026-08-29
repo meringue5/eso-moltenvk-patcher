@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-08-28
+Last updated: 2026-08-30
 
 ## Current public production baseline
 
@@ -135,43 +135,23 @@ started by the agent.
 
 ## Next gate
 
-Public production 0.2.0 remains the supported baseline, but the exact local
-target currently retains Experiment [0051](experiments/0051-triple-buffer-swapchain.md)
-B. The first A1 play activated the exact two-image control,
-completed without a crash report or settings change, and advanced only the
-active cache, but the new summary prefix fell through the production log policy
-to `debug` and was discarded. The user also reported initial mouse focus did
-not attach. Log-file I/O was absent, so it cannot explain that occurrence; the
-from-first-frame common timing wrapper and natural recurrence remain competing
-hypotheses. The run is excluded from quantitative comparison. The bridge now
-promotes only bounded checkpoint/summary rows to `info`, emits an in-run
-checkpoint after 600 samples and every 3,600 samples, leaves detailed rows
-hidden, and forwards acquire/present without measurement overhead until the
-existing ordinal-180 startup gate finishes. The analyzer accepts the latest
-checkpoint, and the policy probe plus 142 Python tests pass. The B run used
-exactly three images in both
-swapchain generations with zero fallback, mismatch, acquire error, or present
-error. Its 65,536-sample final summary reports acquire p99 12 us and present-
-entry interval p50/p95/p99/p99.9 of 16.699/18.610/20.230/36.880 ms. The user
-reported everything normal, including startup/focus and ordinary play; settings
-remained exact and no crash report appeared. This proves B operation, not a
-performance improvement. The invalid first A1 cannot supply a comparison, and
-no Metal HUD memory/power capture exists. The next gate is two runs of the same
-corrected binary in two-image control mode, followed by tail-range comparison.
-C1 is now installed with bridge bytes identical to B and only the attested mode
-changed. Exact target, shared idle, restore, installed-byte, and cache-
-preservation checks pass. The immediate gate is one unchanged C1 fixed-route
-run with initial focus observation. C1 has now completed with exact two-image
-returns, zero API errors, and 34,195 samples. Acquire p99 is identical to B at
-12 us; B frame p99 is 20.230 ms versus C1 21.931 ms, while p95 and p99.9 are
-close. The mechanism and improvement remain unproven because C1 is shorter and
-control noise is unknown. The immediate gate is the same corrected control
-reinstalled as C2, plus the user's C1 focus/pink/perceived-FPS classification.
-C2 was installed with identical bridge bytes and C1's cache preserved, but its
-manual gameplay run is canceled. At a matched 32,400-sample horizon, B/control
-p50 and p95 differ by less than 1%; B p99 is 4.5% shorter while p99.9 is 6.1%
-longer, and acquire p99 is unchanged. This is not a coherent performance signal
-and does not support drawable starvation. Experiment 0051 is inconclusive and
-will not request more manual repetition. The immediate gate is restoration of
-the exact supported production 0.2.0 profile; the current local bridge remains
-the unplayed corrected C2 control until that rollback is completed.
+Experiment [0051](experiments/0051-triple-buffer-swapchain.md) remains closed as
+inconclusive. Its previously unplayed corrected C2 control was launched twice
+after a Deep Idle wake on 2026-08-30. Both runs completed the expected bridge
+startup invariants but began and remained `active=no`; the user reported low
+FPS and detached mouse focus and does not accept application switching as a
+recovery path. This confirms another activation-state divergence after a wake
+boundary, but does not isolate sleep, Steam lifecycle state, or the experimental
+timing wrapper as the cause.
+
+The C2 bridge has now been rolled back through the verified pristine-loader
+path with all pipeline-cache generations and settings preserved. Source Status
+and public 0.2.0 `Status.command` report the exact supported ESO client with the
+patch not installed. The local public ZIP matches published SHA-256
+`b65d608010d46836813d3a36df3bd7c44e3ada4c583cbf9e803fbe01c4c0d508`,
+its archive is intact, and every embedded manifest entry passes. The immediate
+operational gate is the user's explicit installation through that public
+package. The next engineering gate is read-only activation-event ordering
+analysis around natural sleep/wake boundaries; do not require Cmd-Tab recovery,
+force the active byte, synthesize focus events, or resume manual swapchain A/B
+runs.
