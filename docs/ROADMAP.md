@@ -4,6 +4,21 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
+## P0: resolve post-sleep activation divergence
+
+- Treat Experiment 0052's public-0.2.0 recurrence as the immediate reliability
+  blocker: detached initial mouse focus and approximately 40 FPS with ESO's
+  internal active byte false after the user reports a hibernation boundary.
+- Keep the old near-10-FPS inactive sleep path separate: 0.2.0 bypassed it in
+  the failing run, so do not claim that the bypass resolves all inactive-state
+  behavior.
+- First establish AppKit, WindowServer, Steam/launcher, and sleep/wake event
+  order through read-only evidence. Improve public Status so `active=no` is
+  clearly diagnostic/review state rather than user-experience acceptance.
+- Do not make application switching a required workaround, force the active
+  byte, synthesize focus, or add default startup instrumentation that can alter
+  the timing under investigation.
+
 ## Reliability guardrails for performance successors
 
 - Keep Metal argument buffers disabled. Experiment 0049's candidate is rejected

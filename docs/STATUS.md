@@ -135,23 +135,19 @@ started by the agent.
 
 ## Next gate
 
-Experiment [0051](experiments/0051-triple-buffer-swapchain.md) remains closed as
-inconclusive. Its previously unplayed corrected C2 control was launched twice
-after a Deep Idle wake on 2026-08-30. Both runs completed the expected bridge
-startup invariants but began and remained `active=no`; the user reported low
-FPS and detached mouse focus and does not accept application switching as a
-recovery path. This confirms another activation-state divergence after a wake
-boundary, but does not isolate sleep, Steam lifecycle state, or the experimental
-timing wrapper as the cause.
+The immediate P0 reliability issue is Experiment
+[0052](experiments/0052-post-sleep-activation-divergence.md). After installing
+the verified public 0.2.0 package, the user again observed detached mouse focus
+and approximately 40 FPS when launching after hibernation. Exact production run
+`20260830T090357.701770000Z-pid36636` loaded the expected runtime and completed
+all structural startup invariants, but began `active=no` and did not record a
+later active transition. The public pacing bypass was active, so this is not a
+return of the former near-10-FPS 100-ms sleep path.
 
-The C2 bridge has now been rolled back through the verified pristine-loader
-path with all pipeline-cache generations and settings preserved. Source Status
-and public 0.2.0 `Status.command` report the exact supported ESO client with the
-patch not installed. The local public ZIP matches published SHA-256
-`b65d608010d46836813d3a36df3bd7c44e3ada4c583cbf9e803fbe01c4c0d508`,
-its archive is intact, and every embedded manifest entry passes. The immediate
-operational gate is the user's explicit installation through that public
-package. The next engineering gate is read-only activation-event ordering
-analysis around natural sleep/wake boundaries; do not require Cmd-Tab recovery,
-force the active byte, synthesize focus events, or resume manual swapchain A/B
-runs.
+Public Status currently classifies that run as structurally passing; its own
+contract says it cannot measure focus or FPS. Treat this as a production
+reliability regression rather than acceptance evidence. The current next gate
+is read-only event-order analysis and better support classification around
+natural sleep/wake boundaries. Do not require Cmd-Tab recovery, force the
+active byte, synthesize AppKit activation, mutate caches/settings, or resume
+manual swapchain A/B runs.
