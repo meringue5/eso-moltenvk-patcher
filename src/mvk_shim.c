@@ -23,6 +23,7 @@
 #include "eso_inactive_pacing.h"
 #include "mvk_lifecycle.h"
 #include "mvk_log_file.h"
+#include "mvk_log_config.h"
 #include "mvk_log_policy.h"
 #include "mvk_present_pixel.h"
 #include "mvk_reset_trace.h"
@@ -52,6 +53,7 @@ static bool g_inactive_pacing_bypass_enabled;
 static bool g_swapchain_experiment_enabled;
 
 static Teso4m4LogLevel g_log_level = TESO4M4_LOG_INFO;
+static const char* g_log_level_source = "default";
 
 typedef enum {
     TESO4M4_MODE_DISABLED = 0,
@@ -120,20 +122,22 @@ static const char* log_level_name(Teso4m4LogLevel level) {
     return "info";
 }
 
-static void configure_log_level(void) {
+static void configure_log_level(const char* bridge_directory) {
     const char* requested = getenv("TESO4M4_LOG_LEVEL");
-    if (!requested || strcmp(requested, "") == 0 ||
-        strcmp(requested, "info") == 0) {
+    if (requested && requested[0] != '\0') {
+        if (teso4m4_log_level_from_name(requested, &g_log_level)) {
+            g_log_level_source = "environment";
+        } else {
+            g_log_level_source = "invalid-environment";
+        }
         return;
     }
-    if (strcmp(requested, "error") == 0) {
-        g_log_level = TESO4M4_LOG_ERROR;
-    } else if (strcmp(requested, "warn") == 0) {
-        g_log_level = TESO4M4_LOG_WARN;
-    } else if (strcmp(requested, "debug") == 0) {
-        g_log_level = TESO4M4_LOG_DEBUG;
-    } else if (strcmp(requested, "trace") == 0) {
-        g_log_level = TESO4M4_LOG_TRACE;
+    const Teso4m4LogConfigResult result =
+        teso4m4_read_log_level_config(bridge_directory, &g_log_level);
+    if (result == TESO4M4_LOG_CONFIG_APPLIED) {
+        g_log_level_source = "config";
+    } else if (result == TESO4M4_LOG_CONFIG_INVALID) {
+        g_log_level_source = "invalid-config";
     }
 }
 
@@ -700,7 +704,9 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
 
 __attribute__((constructor)) static void teso4m4_init(void) {
     initialize_run_id();
-    configure_log_level();
+    char directory[4096] = {0};
+    const bool has_directory = own_directory(directory, sizeof(directory));
+    configure_log_level(has_directory ? directory : NULL);
     g_log = teso4m4_open_production_log();
     if (!g_log) {
         return;
@@ -730,11 +736,10 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_startup_pipeline_timing_enabled = false;
     g_inactive_pacing_bypass_enabled = false;
     g_swapchain_experiment_enabled = false;
-    log_message("RUN_START: bridge starting log_level=%s",
-                log_level_name(g_log_level));
+    log_message("RUN_START: bridge starting log_level=%s log_source=%s",
+                log_level_name(g_log_level), g_log_level_source);
 
-    char directory[4096];
-    if (!own_directory(directory, sizeof(directory))) {
+    if (!has_directory) {
         log_message("SKIP: could not resolve bridge directory");
         return;
     }

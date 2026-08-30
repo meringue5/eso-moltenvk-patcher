@@ -12,7 +12,9 @@ QUICK START
    recovery generation, settings profile, and the latest bounded startup run.
 4. Diagnostics.command writes a privacy-filtered support ZIP to your Desktop.
    It never includes UserSettings.txt, caches, credentials, or game files.
-5. To uninstall, double-click Uninstall.command.
+5. Logging.command selects normal info logging or temporary debug incident
+   capture for the next ESO launch. It changes no bridge, cache, or game setting.
+6. To uninstall, double-click Uninstall.command.
 
 Version 0.2.0 turns the validated runtime structure into public operational
 checks. It retains the strongest startup-stability profile for the validated

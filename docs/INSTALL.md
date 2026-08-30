@@ -18,7 +18,7 @@ contain the prebuilt release payload.
 ![Release Assets example with the prebuilt ZIP highlighted](images/install/01-download.svg)
 
 Unzip the download. Finder shows `Install.command`, `Uninstall.command`,
-`Status.command`, `Diagnostics.command`, and `README.txt`; payloads and
+`Status.command`, `Diagnostics.command`, `Logging.command`, and `README.txt`; payloads and
 checksums remain in the hidden `.eso-moltenvk-patcher` folder.
 
 ![Package folder showing Install, Status, Diagnostics, Uninstall, README, and hidden internals](images/install/02-package.svg)
@@ -101,6 +101,14 @@ privacy-filtered support ZIP to the Desktop. The ZIP contains checksums, client
 and installer state summaries, and a filtered latest-run record. It excludes
 `UserSettings.txt`, pipeline caches, credentials, proprietary game files, home
 paths, pointer-bearing trace records, and unrelated system logs.
+
+`Logging.command` switches the next launch between normal `info` logging and
+temporary `debug` incident capture. It changes only a small per-installation
+preference in Application Support: no bridge reinstall, cache change, or game
+settings change is involved. Use `info` for ordinary operation. For a defined
+issue, choose `debug` before one natural launch, preserve that run and the
+user-observed result, then select `info` again. The current 0.2.0 package does
+not yet include this command; install a later package once it is released.
 
 To uninstall, quit ESO and the launcher and double-click `Uninstall.command`. It
 verifies and restores the recorded original library. Keep the patcher folder

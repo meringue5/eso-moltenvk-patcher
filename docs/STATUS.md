@@ -151,3 +151,12 @@ is read-only event-order analysis and better support classification around
 natural sleep/wake boundaries. Do not require Cmd-Tab recovery, force the
 active byte, synthesize AppKit activation, mutate caches/settings, or resume
 manual swapchain A/B runs.
+
+The next source candidate also adds persistent log-level control for this
+investigation: a separately stored `info`/`debug` preference that applies at
+the next normal ESO launch, without reinstalling or removing the bridge. It
+has passed source, fixture, and archive checks but is not in the already
+installed public 0.2.0 package. Experiment
+[0053](experiments/0053-operational-log-level-control.md) owns its operational
+and privacy rules. A later package release is required before that command is
+available to the user.

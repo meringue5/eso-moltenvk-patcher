@@ -3,7 +3,7 @@
 The release artifact available without an Apple Developer membership is
 **ESO-MoltenVK-Patcher-<version>.zip**. It contains prebuilt payloads plus
 player-facing `Install.command`, `Uninstall.command`, `Status.command`,
-`Diagnostics.command`, and `README.txt`; it is an installer and maintenance
+`Diagnostics.command`, `Logging.command`, and `README.txt`; it is an installer and maintenance
 tool, not a game launcher. A signed **ESO MoltenVK Patcher.app**
 in a compressed DMG remains the future polished distribution channel.
 
@@ -27,7 +27,9 @@ must pass `--apply-settings` or `--skip-settings`. `--yes` accepts only the ESO
 application target and never implies a settings choice.
 Payloads and checksums live under the hidden `.eso-moltenvk-patcher` directory;
 `Status.command` reports read-only health, `Diagnostics.command` exports a
-privacy-filtered support ZIP, and `Uninstall.command` restores the original.
+privacy-filtered support ZIP, `Logging.command` saves an `info` or `debug`
+preference for the next launch without touching the game bundle, and
+`Uninstall.command` restores the original.
 If Finder
 does not permit a downloaded command to run directly, they can drag it into a
 Terminal window or run `zsh Install.command`; this is the unsigned-release
@@ -91,8 +93,10 @@ requires launcher Repair because the current vendor original cannot be proven.
 - Requires the selected bundle to be idle; idle Steam alone is not a blocker.
 - Creates an independently verified original-Bink backup in Application
   Support, while retaining the renamed original needed by the runtime proxy.
-- Exposes visible one-step Install, Uninstall, read-only Status, and private
-  Diagnostics commands while retaining CLI Repair for recovery workflows.
+- Exposes visible one-step Install, Uninstall, read-only Status, private
+  Diagnostics, and non-mutating Logging commands while retaining CLI Repair
+  for recovery workflows. Logging verifies the installed exact bridge and
+  recovery record, then changes only the next-launch `info`/`debug` preference.
 - Optionally merges the versioned `balanced-m4-1920x1200-v1` profile's exactly
   48 allowlisted keys into a verified `UserSettings.txt` backup. Remove restores
   the backup only if the applied settings have not subsequently changed.

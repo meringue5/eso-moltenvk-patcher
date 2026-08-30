@@ -18,7 +18,8 @@ mkdir -p "$INTERNAL/bin" "$INTERNAL/payload"
 cp "$ROOT/release/bin/eso-moltenvk-patcher" "$INTERNAL/bin/"
 cp "$ROOT/release/status.command" "$INTERNAL/"
 cp "$ROOT/release/Install.command" "$ROOT/release/Uninstall.command" \
-  "$ROOT/release/Status.command" "$ROOT/release/Diagnostics.command" "$STAGE/"
+  "$ROOT/release/Status.command" "$ROOT/release/Diagnostics.command" \
+  "$ROOT/release/Logging.command" "$STAGE/"
 cp "$ROOT/release/README.txt" "$STAGE/"
 cp "$ROOT/build/libBink2Macx64.dylib" "$ROOT/build/libMoltenVK.teso4m4.dylib" \
   "$ROOT/build/eso-compat-audit" "$INTERNAL/payload/"
@@ -55,7 +56,7 @@ for text_file in "$INTERNAL/bin/eso-moltenvk-patcher" "$INTERNAL/status.command"
 done
 (cd "$INTERNAL" && shasum -a 256 \
   ../Install.command ../Uninstall.command ../Status.command \
-  ../Diagnostics.command ../README.txt bin/eso-moltenvk-patcher \
+  ../Diagnostics.command ../Logging.command ../README.txt bin/eso-moltenvk-patcher \
   payload/* status.command > SHA256SUMS.txt)
 rm -f "$OUTPUT"
 (cd "$ROOT/dist" && COPYFILE_DISABLE=1 zip -q -r -X "$OUTPUT" "$NAME")

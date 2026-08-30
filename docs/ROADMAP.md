@@ -18,6 +18,11 @@ This roadmap contains future work only. Current verified state is in
 - Do not make application switching a required workaround, force the active
   byte, synthesize focus, or add default startup instrumentation that can alter
   the timing under investigation.
+- Keep normal operation at `info`. For a bounded recurrence capture, use the
+  independent `debug` preference from Experiment 0053, preserve one affected
+  natural launch and its user observation, export the filtered diagnostics,
+  then return to `info`. Do not reintroduce installation/removal cycles merely
+  to alter logging.
 
 ## Reliability guardrails for performance successors
 
