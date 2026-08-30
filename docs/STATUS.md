@@ -152,11 +152,14 @@ natural sleep/wake boundaries. Do not require Cmd-Tab recovery, force the
 active byte, synthesize AppKit activation, mutate caches/settings, or resume
 manual swapchain A/B runs.
 
-The next source candidate also adds persistent log-level control for this
-investigation: a separately stored `info`/`debug` preference that applies at
-the next normal ESO launch, without reinstalling or removing the bridge. It
-has passed source, fixture, and archive checks but is not in the already
-installed public 0.2.0 package. Experiment
-[0053](experiments/0053-operational-log-level-control.md) owns its operational
-and privacy rules. A later package release is required before that command is
-available to the user.
+Local candidate `0.2.1-logger-rc.1` was transactionally installed at 18:24 KST
+on 2026-08-30, after the exact-target and idle gates passed. Its bridge SHA-256
+is `e55e63d661ea4bfcf44327d14b01cb8e62d686fa4041af22032be2d06edbad99`.
+The verified recovery backup remains in place, the user-customized settings
+were preserved, and all pipeline-cache identities remained valid. Its
+separately stored logging preference is now `debug`, mode 0600, for the next
+normal ESO launch. This is a local investigation candidate, not a public
+release or an acceptance result: the next required evidence is one
+user-controlled natural launch and its focus/FPS observation. Experiment
+[0053](experiments/0053-operational-log-level-control.md) owns the operational
+and privacy rules; return the preference to `info` after the bounded capture.

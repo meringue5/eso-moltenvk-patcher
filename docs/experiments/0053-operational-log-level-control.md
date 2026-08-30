@@ -49,6 +49,22 @@ patcher-owned preference after its verified restore completes.
 No ESO, Steam, or launcher process was launched for this work. No public
 package was installed and no gameplay result is claimed.
 
+## 2026-08-30 installation amendment
+
+At 18:24 KST, after the exact-target, source/package, and shared bundle-idle
+gates passed, the user explicitly requested installation of the local
+`0.2.1-logger-rc.1` candidate. Its bridge SHA-256 is
+`e55e63d661ea4bfcf44327d14b01cb8e62d686fa4041af22032be2d06edbad99`.
+The installer upgraded the verified earlier patcher on the same ESO and
+original-loader generation, retained the verified recovery backup, and left
+the user-customized settings unchanged. Read-only status also retained all
+pipeline-cache identity passes.
+
+The user then explicitly selected `debug`. The resulting `logging.env` is
+owner-only mode 0600 and Status reports `debug` as configured for the next ESO
+launch. No ESO, Steam, or launcher was started; no focus or FPS result is yet
+claimed. This local candidate is not a public release.
+
 ## Operational plan
 
 1. Keep `info` selected in ordinary operation; it preserves the bounded
