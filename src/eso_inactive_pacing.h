@@ -30,3 +30,7 @@ TESO4M4_INACTIVE_PACING_HIDDEN bool teso4m4_inactive_pacing_prepare(
     const Teso4m4InactivePacingTarget *target,
     uint8_t patch[TESO4M4_INACTIVE_PACING_PATCH_SIZE]);
 TESO4M4_INACTIVE_PACING_HIDDEN void teso4m4_inactive_pacing_did_install(void);
+/* Observation only: records a bounded, timestamped external event together
+   with ESO's active byte. It never changes ESO or AppKit state. */
+TESO4M4_INACTIVE_PACING_HIDDEN void
+teso4m4_inactive_pacing_note_event(const char *name);

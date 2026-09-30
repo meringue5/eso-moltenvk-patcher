@@ -1,4 +1,5 @@
 #include <CommonCrypto/CommonDigest.h>
+#include <CoreFoundation/CoreFoundation.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <mach/mach.h>
@@ -36,6 +37,8 @@ typedef struct {
 } PatchTarget;
 
 #include "generated_targets.h"
+
+static void observe_activation_notifications(void);
 
 static FILE* g_log;
 static char g_run_id[80] = "uninitialized";
@@ -698,8 +701,56 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
     require_rx_restore(writable_pages, writable_page_count, (mach_vm_size_t)page_size);
     if (inactive_pacing_bypass) {
         teso4m4_inactive_pacing_did_install();
+        observe_activation_notifications();
     }
     return true;
+}
+
+/* AppKit posts these through NSNotificationCenter's default center, which is
+   CoreFoundation's local center. Observation only: callbacks read ESO's
+   active byte and log; they never change focus, activation, or ESO state. */
+static const char* const kActivationNotifications[] = {
+    "NSApplicationDidFinishLaunchingNotification",
+    "NSApplicationDidBecomeActiveNotification",
+    "NSApplicationDidResignActiveNotification",
+    "NSApplicationDidUnhideNotification",
+    "NSWindowDidBecomeKeyNotification",
+    "NSWindowDidResignKeyNotification",
+    "NSWindowDidChangeOcclusionStateNotification",
+};
+
+static void activation_notification(CFNotificationCenterRef center,
+                                    void* observer, CFNotificationName name,
+                                    const void* object,
+                                    CFDictionaryRef user_info) {
+    (void)center;
+    (void)object;
+    (void)user_info;
+    (void)name;
+    teso4m4_inactive_pacing_note_event((const char*)observer);
+}
+
+static void observe_activation_notifications(void) {
+    CFNotificationCenterRef center = CFNotificationCenterGetLocalCenter();
+    size_t count = sizeof(kActivationNotifications) / sizeof(kActivationNotifications[0]);
+    for (size_t index = 0; index < count; ++index) {
+        CFStringRef name = CFStringCreateWithCString(
+            kCFAllocatorDefault, kActivationNotifications[index],
+            kCFStringEncodingASCII);
+        if (!name) {
+            continue;
+        }
+        /* The observer token is the static label, so each callback knows its
+           name without converting a CFString on the main thread. */
+        CFNotificationCenterAddObserver(
+            center, (void*)kActivationNotifications[index],
+            activation_notification, name, NULL,
+            CFNotificationSuspensionBehaviorDeliverImmediately);
+        CFRelease(name);
+    }
+    log_message("INACTIVE_PACING_OBSERVER: appkit_notifications=%zu "
+                "mode=observe-only event_log_limit=48",
+                count);
 }
 
 __attribute__((constructor)) static void teso4m4_init(void) {

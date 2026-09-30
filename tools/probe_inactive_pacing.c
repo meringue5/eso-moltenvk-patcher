@@ -14,6 +14,9 @@ static unsigned g_active_logs;
 static unsigned g_false_logs;
 static unsigned g_true_logs;
 static unsigned g_error_logs;
+static unsigned g_event_logs;
+static unsigned g_event_limit_logs;
+static unsigned g_timed_state_logs;
 
 static void test_log(const char *message) {
   g_ready_logs += strstr(message, "INACTIVE_PACING_READY:") != NULL;
@@ -21,6 +24,11 @@ static void test_log(const char *message) {
   g_false_logs += strstr(message, "active=no action=sleep-bypassed") != NULL;
   g_true_logs += strstr(message, "active=yes action=forward") != NULL;
   g_error_logs += strstr(message, "ERROR:") != NULL;
+  g_event_logs += strstr(message, "INACTIVE_PACING_EVENT: seq=") != NULL &&
+                  strstr(message, " t_ms=") != NULL;
+  g_event_limit_logs += strstr(message, "INACTIVE_PACING_EVENT_LIMIT:") != NULL;
+  g_timed_state_logs += strstr(message, "INACTIVE_PACING_STATE:") != NULL &&
+                        strstr(message, " t_ms=") != NULL;
 }
 
 static bool fail(const char *message) {
@@ -113,6 +121,10 @@ int main(void) {
   if (result != KERN_SUCCESS) {
     return fail("synthetic code page RX restore failed") ? 0 : 1;
   }
+  teso4m4_inactive_pacing_note_event("before-install");
+  if (g_event_logs != 0) {
+    return fail("an event was recorded before installation") ? 0 : 1;
+  }
   teso4m4_inactive_pacing_did_install();
 
   typedef int (*SyntheticLoop)(void);
@@ -125,6 +137,20 @@ int main(void) {
     return fail("active state transition was not forwarded and bounded") ? 0
                                                                          : 1;
   }
+  if (g_timed_state_logs != 2) {
+    return fail("state transitions were not timestamped") ? 0 : 1;
+  }
+  const unsigned before_events = g_error_logs;
+  for (unsigned index = 0; index < 60; ++index) {
+    teso4m4_inactive_pacing_note_event("NSApplicationDidBecomeActiveNotification");
+  }
+  if (g_event_logs != 48 || g_event_limit_logs != 1 ||
+      g_error_logs != before_events) {
+    return fail("observation events were not timestamped and bounded") ? 0 : 1;
+  }
+  if (loop() != 7 || g_true_logs != 1) {
+    return fail("observation changed the forwarded state") ? 0 : 1;
+  }
   if (g_ready_logs != 1 || g_active_logs != 1 || g_error_logs != 1) {
     return fail("install or rejection evidence was incomplete") ? 0 : 1;
   }
@@ -135,6 +161,7 @@ int main(void) {
   }
 
   puts("Inactive pacing smoke: PASS mismatch_rejected=1 absolute_call=1 "
-       "inactive_bypassed=1 active_forwarded=1 rx_restored=1");
+       "inactive_bypassed=1 active_forwarded=1 rx_restored=1 "
+       "timed_states=2 observed_events=48 event_limit=1");
   return 0;
 }
