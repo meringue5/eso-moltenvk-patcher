@@ -105,7 +105,12 @@ the selected reference profile:
   referenced Vulkan export.
 
 Source addresses may move as the surrounding ESO code changes; address values
-alone are not a compatibility boundary. Patch bytes, target semantics,
+alone are not a compatibility boundary. The embedded object may also move: the
+audit accepts a new link delta only when exactly one placement matches every
+non-relocation text byte, and moves every patch site by that proven shift. It
+accepts new GIPA/GDPA slots only when exactly one slot per route reproduces the
+reference query names. It drops a scanned reference only when disassembly
+from the enclosing function start places it inside an instruction. Patch bytes, target semantics,
 reference kinds/counts, routes, and recovered names remain strict. The
 executable, archive, and replacement runtime are hashed again before the
 result is accepted, which rejects files changing during a launcher update.
@@ -148,7 +153,9 @@ launcher-restored original is reused only when its hash matches the release
 profile. A newer supported original generation rotates the old recovery pair
 into history before receiving a fresh backup.
 
-This packaged path avoids a new release for relocation-only ESO updates. It
+This packaged path avoids a new release only when the embedded MoltenVK object
+stays at the same address; its auditor profile is address-fixed. If the object
+moves, as in ESO 12.1.5, run the source audit above and build a new package. It
 does not prove lobby or world rendering and must stop when the archive,
 reference shape, proc route, or patch signature changes. Such a change requires
 manual analysis rather than a weakened profile.
