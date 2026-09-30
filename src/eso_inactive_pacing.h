@@ -33,4 +33,8 @@ TESO4M4_INACTIVE_PACING_HIDDEN void teso4m4_inactive_pacing_did_install(void);
 /* Observation only: records a bounded, timestamped external event together
    with ESO's active byte. It never changes ESO or AppKit state. */
 TESO4M4_INACTIVE_PACING_HIDDEN void
-teso4m4_inactive_pacing_note_event(const char *name);
+teso4m4_inactive_pacing_note_event(const char *name, const char *front);
+/* -1 before installation, otherwise ESO's active byte (0 or 1). */
+TESO4M4_INACTIVE_PACING_HIDDEN int teso4m4_inactive_pacing_active_byte(void);
+TESO4M4_INACTIVE_PACING_HIDDEN unsigned long long
+teso4m4_inactive_pacing_elapsed_ms(void);
