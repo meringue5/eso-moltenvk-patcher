@@ -13,6 +13,7 @@ import tempfile
 import unittest
 import uuid
 
+from analyze_vk_calls import _opcode_rebases
 from eso_update import (
     SCHEMA_VERSION,
     audit_manifest,
@@ -20,6 +21,7 @@ from eso_update import (
     command_check,
     command_select,
     compare_analysis,
+    object_placements,
     patch_targets,
     write_json,
 )
@@ -86,6 +88,86 @@ class UpdateToolTests(unittest.TestCase):
             executable, manifest, {"vkExample": 0x20}
         )
         self.assertTrue(any("symbol address changed" in item for item in failures))
+
+    def test_patch_targets_follow_proven_placement_shift(self) -> None:
+        executable = bytes(range(96))
+        manifest = {
+            "targets": [
+                {
+                    "symbol": "vkExample",
+                    "image_offset": "0x10",
+                    "expected_bytes": executable[0x30:0x3C].hex(),
+                }
+            ]
+        }
+        targets, failures = patch_targets(
+            executable, manifest, {"vkExample": 0x30}, 0x20
+        )
+        self.assertEqual(failures, [])
+        self.assertEqual(targets[0]["image_offset"], "0x30")
+
+        _, failures = patch_targets(executable, manifest, {"vkExample": 0x30})
+        self.assertTrue(any("symbol address changed" in item for item in failures))
+
+    def test_analysis_comparison_ignores_only_link_placement(self) -> None:
+        reference = {
+            "legacy_moltenvk": {"object_sha256": "a", "link_delta": "0x10"},
+            "replacement_runtime": {"sha256": "b"},
+            "external_references": {"total": 1},
+            "proc_queries": {"unnamed_sites": 0},
+        }
+        moved = json.loads(json.dumps(reference))
+        moved["legacy_moltenvk"]["link_delta"] = "0x20"
+        self.assertEqual(compare_analysis(reference, moved), [])
+        moved["legacy_moltenvk"]["object_sha256"] = "c"
+        self.assertEqual(
+            compare_analysis(reference, moved),
+            ["analysis profile changed: legacy_moltenvk"],
+        )
+
+    def test_object_placement_requires_every_unrelocated_byte(self) -> None:
+        text = bytes(range(1, 81)) + b"\x48\x8b\x05\0\0\0\0"
+        masked = bytearray(len(text))
+        masked[83:87] = b"\1\1\1\1"
+        relaxable = {81: 0x8D}
+        linked = bytearray(text)
+        linked[81] = 0x8D  # ld64 GOT-load relaxation
+        linked[83:87] = b"\x11\x22\x33\x44"
+        image = b"\xcc" * 32 + bytes(linked) + b"\xcc" * 16
+        self.assertEqual(object_placements(text, masked, relaxable, image), [32])
+
+        linked[40] ^= 0xFF
+        image = b"\xcc" * 32 + bytes(linked) + b"\xcc" * 16
+        self.assertEqual(object_placements(text, masked, relaxable, image), [])
+
+    def test_opcode_rebases_decode_classic_dyld_info(self) -> None:
+        segment_data = struct.pack("<4Q", 0x1000, 0x2000, 0x3000, 0x4000)
+        data = b"\0" * 16 + segment_data
+        segments = [(0x100000000, 0, 0), (0x200000000, 16, len(segment_data))]
+        stream = bytes(
+            [
+                0x11,  # SET_TYPE_IMM pointer
+                0x21, 0x00,  # segment 1, offset 0
+                0x52,  # DO_REBASE_IMM_TIMES 2
+                0x41,  # ADD_ADDR_IMM_SCALED 1 pointer
+                0x51,  # DO_REBASE_IMM_TIMES 1
+                0x00,  # DONE
+            ]
+        )
+        data += stream
+        rebases = _opcode_rebases(
+            Path("synthetic"), data, segments, (16 + len(segment_data), len(stream))
+        )
+        self.assertEqual(
+            rebases,
+            [
+                (0x200000000, 0x1000),
+                (0x200000008, 0x2000),
+                (0x200000018, 0x4000),
+            ],
+        )
+        with self.assertRaises(ValueError):
+            _opcode_rebases(Path("synthetic"), data + b"\x12", segments, (len(data), 1))
 
     def test_analysis_comparison_is_exact_and_section_named(self) -> None:
         reference = {
