@@ -123,3 +123,31 @@ Make this the current P0 reliability gate. First improve evidence capture and
 status classification without changing runtime control. Consider a behavior
 change only after the causal ordering is established and it has a natural
 initial-focus acceptance result, safe failure mode, and verified restore path.
+
+## 2026-09-30 amendment: recurrence without a sleep boundary
+
+Confirmed observation: user-controlled launch
+`20260930T051907.763625000Z-pid43193` (14:19 KST) of 0.2.1-rc.2 on ESO 12.1.5.
+The launch met every structural startup invariant: 17 redirects,
+`INACTIVE_PACING_ACTIVE`, 79 suppressed draws, ordinal-150 forwarding, and
+ordinal-180 finish, with no bridge error. The first pacing sample was
+`active=no`. The user reported severe low FPS and a detached mouse after
+startup and after world entry. After switching to another app and back, the
+log recorded `transition=2 active=yes`. Mouse capture and 60 FPS returned
+together.
+
+`pmset -g log` shows no system sleep or wake between the 11:09 KST display-on
+event and the launch. This recurrence is therefore not post-sleep.
+
+Retained production logs contain the first pacing sample of 14 runs from
+2026-09-18 to 2026-09-30. Ten began `active=no`: nine on 12.0.8 and this
+12.1.5 run. Four began `active=yes`. For the earlier runs, no per-run user
+focus report is available. The first sample alone therefore does not prove a
+user-visible failure for each of those runs.
+
+Interpretation: the sleep-specific hypothesis is weakened. Initial
+`active=no` is common across both ESO builds and predates the 12.1.5 update
+and relink. Today's recurrence is the same class as this experiment, not a
+regression introduced by Experiment 0054. The records have no per-line
+timestamps, so the time spent inactive and the event order around activation
+remain unmeasured.
