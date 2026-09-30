@@ -13,9 +13,10 @@ Experiment [0054](experiments/0054-eso-12.1.5-relinked-update-rebase.md)
 proved all 17 patch signatures, 40 external references, and GIPA/GDPA query
 shapes unchanged. The selected target is now `targets-eso-2026-09-30.json`.
 
-Local candidate `0.2.1-rc.1` is the 0.2.0 runtime rebuilt for that target
-(branch `release/0.2.1`). It was installed with settings unchanged and a
-verified recovery backup; Status reports `READY`. It is not yet a public
+Local candidate `0.2.1-rc.1` skipped itself at launch because its target
+lacked the inactive pacing profile. `0.2.1-rc.2` is the 0.2.0 runtime rebuilt
+for the corrected target (branch `release/0.2.1`). It was installed with
+settings unchanged and a verified recovery backup; Status reports `READY`. It is not yet a public
 release. The next gate is one natural user launch that meets the pass criteria
 in Experiment 0054. This replaced the 0.2.1-logger candidate, so the `debug`
 capture plan below is inactive until the logger work is rebuilt on 12.1.5.
