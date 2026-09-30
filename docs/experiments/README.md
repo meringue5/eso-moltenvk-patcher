@@ -65,7 +65,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0052 | 2026-08-30 | Post-sleep activation-state divergence | Active; public 0.2.0 reproduces detached focus and approximately 40 FPS with `active=no` | [Run](0052-post-sleep-activation-divergence.md) |
 | 0053 | 2026-08-30 | Operational log-level control | Succeeded in source/package fixtures; later release required before public use | [Run](0053-operational-log-level-control.md) |
 | 0054 | 2026-09-30 | ESO 12.1.5 relinked-update rebase | Succeeded statically and installed as local 0.2.1-rc.1; awaiting one natural launch | [Run](0054-eso-12.1.5-relinked-update-rebase.md) |
-| 0055 | 2026-09-30 | Activation-order observation | Running; observation-only 0.2.1-rc.3 installed | [Run](0055-activation-order-observation.md) |
+| 0055 | 2026-09-30 | Activation-order observation | Succeeded; failed launches never received AppKit activation, so the fault precedes ESO | [Run](0055-activation-order-observation.md) |
 
 ## Recording policy
 

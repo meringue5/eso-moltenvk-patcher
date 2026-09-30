@@ -1,7 +1,7 @@
 # Experiment 0055: activation-order observation
 
 - Date: 2026-09-30
-- Outcome: **running; observation build installed, awaiting natural launches**
+- Outcome: **succeeded; hypothesis falsified (fault precedes ESO)**
 - Rollback: **not required; reinstall 0.2.1-rc.2 or restore via the verified
   same-generation backup**
 
@@ -83,3 +83,63 @@ Evidence supports the hypothesis if affected launches show
 `NSApplicationDidBecomeActive` or `NSWindowDidBecomeKey` while
 `active_byte=no`, with no ESO transition until the manual switch. Evidence
 falsifies it if affected launches lack those events until the manual switch.
+
+## Result (2026-09-30)
+
+The user reported four consecutive natural launches: success, failure,
+failure, success. That meets the stop condition. Every run contained the
+observer, 17 redirects, the ordinal-150 latch and ordinal-180 finish, and no
+bridge error. `t_ms` is measured from pacing preparation.
+
+| Run | User | AppKit key/active | ESO first state |
+|---|---|---|---|
+| `20260930T052813.531663000Z-pid54498` | success | key 1307, active 1310 | `active=yes` 1587 |
+| `20260930T062356.750483000Z-pid54847` | failure | none recorded | `active=no` 1692 |
+| `20260930T062446.071684000Z-pid54864` | failure | none recorded | `active=no` 1625 |
+| `20260930T062512.704249000Z-pid54868` | success | key 1939, active 1943 | `active=yes` 2205 |
+
+In all four runs, `NSApplicationDidFinishLaunching` arrived at 106--183 ms,
+and the window posted occlusion changes about 1.3--1.9 s later. The window
+was therefore on screen in every run.
+
+In both successful runs, `NSWindowDidBecomeKey` and
+`NSApplicationDidBecomeActive` arrived together. ESO's byte followed
+262--277 ms later, with no user action.
+
+In both failed runs, AppKit posted neither event. ESO's byte stayed false
+until each run's last record. Both failed runs were short (about 50 s and
+26 s); the log shows no later activation, which is consistent with the user
+quitting and relaunching rather than switching apps.
+
+The unified log retained no activation records for this interval.
+
+## Interpretation
+
+Confirmed: ESO's active byte tracks AppKit activation. It became true within
+about 0.3 s whenever AppKit made the application active and its window key.
+The hypothesis that ESO misses an activation that AppKit delivered is
+falsified. In the failing launches, macOS never made ESO the active
+application, although its window was visible. This matches the user's
+detached mouse. The bridge's inactive pacing bypass is not the cause: it only
+removes the 100-ms sleep and cannot deliver activation.
+
+Inference: the fault lies in launch-time application activation between the
+launching app (the ZeniMax launcher and/or Steam) and ESO. A likely mechanism,
+not yet tested, is macOS 14+ cooperative activation. There, a newly launched
+app becomes active only if the active app yields, and legacy
+`activateIgnoringOtherApps:` requests may be ignored. ESO 12.1.5 is built for
+a 10.13 minimum with SDK 13.1. It is unknown which activation call ESO makes,
+and which app was frontmost in the failed runs.
+
+## Next gate
+
+1. Agent-only: find ESO's activation calls statically (for example
+   `activateIgnoringOtherApps:` or `NSRunningApplication activate` selector
+   references), and record which launcher/Steam processes exist at launch.
+2. Observation extension: log the frontmost application's bundle identifier
+   at each event through `NSWorkspace` notifications, still observe-only.
+3. A behavior change stays outside the current authorization and needs
+   explicit user approval. One example is a bounded, public-API request for
+   ESO's own activation when AppKit has not activated it after launch. The
+   ROADMAP guardrails (no forced active byte, no synthesized input, no
+   private activation API) remain in force.
