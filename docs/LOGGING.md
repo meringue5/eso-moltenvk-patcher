@@ -58,6 +58,19 @@ source-only because it can include pointer-bearing proc lookup and per-frame or
 per-draw detail that is inappropriate for routine support and can distort the
 timing being investigated.
 
+## Build and probe isolation
+
+Loading the bridge runs its constructor, which writes a run record. Source
+tools that load it outside ESO must set `TESO4M4_LOG_DIR` to an absolute
+temporary directory; the bridge then writes only `<dir>/bridge.log`, and an
+unusable value disables logging rather than falling back to the production or
+temporary log. `scripts/build.sh` sets it for every probe and fails if the
+production log changes, and `smoke_proxy` refuses to run without it.
+
+Status and Diagnostics treat a run whose only records are `RUN_START` and
+`SKIP: enable marker absent` as a non-game load: it is never chosen as the
+"Last launch", and newer ignored loads are counted separately.
+
 ## Maintenance plan
 
 1. Run normal production operation at `info`; Status identifies the configured
