@@ -7,12 +7,10 @@ import argparse
 from collections import Counter
 import json
 from pathlib import Path
-import re
 import struct
-import subprocess
 import tempfile
 
-from analyze_vk_calls import find_section, image_base, load_sections
+from analyze_vk_calls import find_section, fixup_rebases, image_base, load_sections
 from eso_update import archive_member
 
 
@@ -84,18 +82,8 @@ def main() -> None:
                 "immediate",
             )
 
-    fixups = subprocess.check_output(
-        ["xcrun", "dyld_info", "-fixups", str(args.exe)], text=True
-    )
-    fixup_pattern = re.compile(
-        r"^\s*__\w+\s+__\w+\s+0x([0-9A-Fa-f]+)\s+rebase\s+0x([0-9A-Fa-f]+)"
-    )
-    for line in fixups.splitlines():
-        match = fixup_pattern.match(line)
-        if match:
-            add_reference(
-                int(match.group(1), 16), int(match.group(2), 16), "pointer"
-            )
+    for source, target in fixup_rebases(args.exe):
+        add_reference(source, target, "pointer")
 
     references = [
         (target, KIND_VALUES[kind], count)

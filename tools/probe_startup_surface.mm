@@ -39,6 +39,7 @@ typedef struct {
 static char g_audit_log[65536];
 static size_t g_audit_log_length;
 static PFN_vkCreateSwapchainKHR g_create_swapchain = vkCreateSwapchainKHR;
+static uint32_t g_min_swapchain_images = 2;
 static PFN_vkGetSwapchainImagesKHR g_get_swapchain_images =
     vkGetSwapchainImagesKHR;
 static PFN_vkCreateImageView g_create_image_view = vkCreateImageView;
@@ -230,7 +231,7 @@ static bool create_generation(
     const VkSwapchainCreateInfoKHR swapchain_info = {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = surface,
-        .minImageCount = 2,
+        .minImageCount = g_min_swapchain_images,
         .imageFormat = surface_format.format,
         .imageColorSpace = surface_format.colorSpace,
         .imageExtent = extent,
@@ -877,6 +878,10 @@ static FirstFrameMode parse_mode(const char* value) {
 }
 
 int main(int argc, char** argv) {
+    const char* requested_images = getenv("TESO4M4_SWAPCHAIN_MIN_IMAGES");
+    if (requested_images && strcmp(requested_images, "3") == 0) {
+        g_min_swapchain_images = 3;
+    }
     @autoreleasepool {
         if (argc != 2 && argc != 4) {
             fprintf(

@@ -126,6 +126,24 @@ status_output="$(run_tool status)"
 [[ "$status_output" == *'Overall: READY'* ]]
 [[ "$status_output" == *'Runtime profile: startup-compositor-neutralize-pacing-release'* ]]
 [[ "$status_output" == *'Settings profile: balanced-m4-1920x1200-v1 (applied)'* ]]
+[[ "$status_output" == *'Logging: info (operational default for the next ESO launch)'* ]]
+logging_output="$(run_tool logging)"
+[[ "$logging_output" == *'Use Logging.command to choose info or debug.'* ]]
+logging_output="$(run_tool logging --level debug)"
+[[ "$logging_output" == *'Logging: debug (applies to the next ESO launch)'* ]]
+[[ "$(<"$STATE_ROOT/$INSTALL_ID/logging.env")" == 'level=debug' ]]
+[[ "$(stat -f '%Lp' "$STATE_ROOT/$INSTALL_ID/logging.env")" == 600 ]]
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Logging: debug (configured for the next ESO launch)'* ]]
+chmod 620 "$STATE_ROOT/$INSTALL_ID/logging.env"
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Logging: invalid config ignored; runtime defaults to info'* ]]
+chmod 600 "$STATE_ROOT/$INSTALL_ID/logging.env"
+if run_tool logging --level trace >/dev/null 2>&1; then
+  print -u2 -- 'Expected source-only trace level to be rejected by the public logging command.'
+  exit 1
+fi
+run_tool logging --level info >/dev/null
 
 cat > "$PRODUCTION_LOG" <<EOF
 [run=fixture-run] RUN_START: bridge starting log_level=info
@@ -144,6 +162,36 @@ EOF
 status_output="$(run_tool status)"
 [[ "$status_output" == *'Last launch: PASS'* ]]
 [[ "$status_output" == *'Initial activity: active=yes (observed)'* ]]
+# Non-game bridge loads (source build probes) end at the missing enable marker
+# with no game activity; they must not displace the latest launch.
+cp "$PRODUCTION_LOG" "$TEST_ROOT/launch-only.log"
+cat > "$TEST_ROOT/probe-only.log" <<'PROBE_EOF'
+[run=probe-run-1] RUN_START: bridge starting log_level=info log_source=default
+[run=probe-run-1] SKIP: enable marker absent
+[run=probe-run-2] RUN_START: bridge starting log_level=info log_source=default
+[run=probe-run-2] SKIP: enable marker absent
+PROBE_EOF
+cat "$TEST_ROOT/probe-only.log" >> "$PRODUCTION_LOG"
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Last launch: PASS'* ]]
+[[ "$status_output" == *'Run: fixture-run'* ]]
+[[ "$status_output" == *'Ignored: 2 newer non-game bridge load(s) without the enable marker'* ]]
+[[ "$status_output" != *'invariant checks failed'* ]]
+# A marker-absent run with any other record is not a probe and stays reviewable.
+cat >> "$PRODUCTION_LOG" <<'PROBE_EOF'
+[run=marker-absent-launch] RUN_START: bridge starting log_level=info log_source=default
+[run=marker-absent-launch] SKIP: enable marker absent
+[run=marker-absent-launch] ERROR: unexpected record after skip
+PROBE_EOF
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Last launch: REVIEW ('*' invariant checks failed)'* ]]
+[[ "$status_output" == *'Run: marker-absent-launch'* ]]
+[[ "$status_output" != *'Ignored:'* ]]
+cp "$TEST_ROOT/probe-only.log" "$PRODUCTION_LOG"
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Last launch: not available'* ]]
+[[ "$status_output" == *'Ignored: 2 newer non-game bridge load(s) without the enable marker'* ]]
+cat "$TEST_ROOT/launch-only.log" "$TEST_ROOT/probe-only.log" > "$PRODUCTION_LOG"
 sed 's/maximize_concurrent_compilation=0/maximize_concurrent_compilation=1/g' \
   "$PRODUCTION_LOG" > "$TEST_ROOT/invalid-production.log"
 mv "$TEST_ROOT/invalid-production.log" "$PRODUCTION_LOG"
@@ -167,6 +215,8 @@ support_text="$(unzip -p "$SUPPORT_ZIP")"
 [[ "$support_text" != *'branch_offset='* ]]
 [[ "$support_text" != *'descriptor_update_signature='* ]]
 [[ "$support_text" == *'Last launch: PASS'* ]]
+[[ "$support_text" == *'[run=fixture-run] RUN_START:'* ]]
+[[ "$support_text" != *'[run=probe-run-'* ]]
 reinstall_output="$(run_tool install --skip-settings --yes)"
 [[ "$reinstall_output" == *'✓ Patch already installed'* ]]
 [[ "$reinstall_output" == *'No files were changed.'* ]]
@@ -204,6 +254,7 @@ remove_output="$(run_tool remove)"
 [[ ! -e "$GAME_MAC/.teso4m4-enable" \
   && ! -e "$GAME_MAC/libBink2Macx64.teso4m4-original.dylib" \
   && ! -e "$GAME_MAC/libMoltenVK.teso4m4.dylib" ]]
+[[ ! -e "$STATE_ROOT/$INSTALL_ID/logging.env" ]]
 
 mkdir "$STATE_ROOT/$INSTALL_ID/enable-marker"
 if run_tool install --apply-settings --settings-file "$SETTINGS_FILE" --yes >/dev/null 2>&1; then

@@ -23,9 +23,11 @@
 #include "eso_inactive_pacing.h"
 #include "mvk_lifecycle.h"
 #include "mvk_log_file.h"
+#include "mvk_log_config.h"
 #include "mvk_log_policy.h"
 #include "mvk_present_pixel.h"
 #include "mvk_reset_trace.h"
+#include "mvk_swapchain_experiment.h"
 
 typedef struct {
     const char* symbol;
@@ -48,8 +50,10 @@ static bool g_startup_compositor_audit_enabled;
 static bool g_startup_compositor_neutralize_enabled;
 static bool g_startup_pipeline_timing_enabled;
 static bool g_inactive_pacing_bypass_enabled;
+static bool g_swapchain_experiment_enabled;
 
 static Teso4m4LogLevel g_log_level = TESO4M4_LOG_INFO;
+static const char* g_log_level_source = "default";
 
 typedef enum {
     TESO4M4_MODE_DISABLED = 0,
@@ -75,7 +79,20 @@ typedef enum {
     TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS,
     TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE,
     TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS,
+    TESO4M4_MODE_STARTUP_RELEASE_SWAPCHAIN_CONTROL,
+    TESO4M4_MODE_STARTUP_RELEASE_TRIPLE_BUFFER,
 } Teso4m4Mode;
+
+static bool is_swapchain_experiment_mode(Teso4m4Mode mode) {
+    return mode == TESO4M4_MODE_STARTUP_RELEASE_SWAPCHAIN_CONTROL ||
+           mode == TESO4M4_MODE_STARTUP_RELEASE_TRIPLE_BUFFER;
+}
+
+static bool is_measurement_stripped_release_mode(Teso4m4Mode mode) {
+    return mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
+           mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS ||
+           is_swapchain_experiment_mode(mode);
+}
 
 static void initialize_run_id(void) {
     struct timespec now = {0};
@@ -105,20 +122,22 @@ static const char* log_level_name(Teso4m4LogLevel level) {
     return "info";
 }
 
-static void configure_log_level(void) {
+static void configure_log_level(const char* bridge_directory) {
     const char* requested = getenv("TESO4M4_LOG_LEVEL");
-    if (!requested || strcmp(requested, "") == 0 ||
-        strcmp(requested, "info") == 0) {
+    if (requested && requested[0] != '\0') {
+        if (teso4m4_log_level_from_name(requested, &g_log_level)) {
+            g_log_level_source = "environment";
+        } else {
+            g_log_level_source = "invalid-environment";
+        }
         return;
     }
-    if (strcmp(requested, "error") == 0) {
-        g_log_level = TESO4M4_LOG_ERROR;
-    } else if (strcmp(requested, "warn") == 0) {
-        g_log_level = TESO4M4_LOG_WARN;
-    } else if (strcmp(requested, "debug") == 0) {
-        g_log_level = TESO4M4_LOG_DEBUG;
-    } else if (strcmp(requested, "trace") == 0) {
-        g_log_level = TESO4M4_LOG_TRACE;
+    const Teso4m4LogConfigResult result =
+        teso4m4_read_log_level_config(bridge_directory, &g_log_level);
+    if (result == TESO4M4_LOG_CONFIG_APPLIED) {
+        g_log_level_source = "config";
+    } else if (result == TESO4M4_LOG_CONFIG_INVALID) {
+        g_log_level_source = "invalid-config";
     }
 }
 
@@ -154,8 +173,11 @@ static PFN_vkVoidFunction VKAPI_CALL traced_get_device_proc_addr(
         return NULL;
     }
     PFN_vkVoidFunction result = g_next_get_device_proc_addr(device, name);
+    PFN_vkVoidFunction experiment_returned = g_swapchain_experiment_enabled
+        ? teso4m4_swapchain_experiment_intercept(name, result)
+        : result;
     PFN_vkVoidFunction lifecycle_returned =
-        teso4m4_lifecycle_intercept(name, result);
+        teso4m4_lifecycle_intercept(name, experiment_returned);
     PFN_vkVoidFunction returned = lifecycle_returned;
     const char* shim = returned != result ? "lifecycle-trace" : "none";
     if (g_reset_trace_enabled) {
@@ -203,6 +225,11 @@ static PFN_vkVoidFunction VKAPI_CALL traced_get_instance_proc_addr(
         returned_result = (PFN_vkVoidFunction)
             &teso4m4_get_physical_device_surface_formats;
         shim = "surface-format-filter";
+    } else if (raw_result && name && g_swapchain_experiment_enabled &&
+               strcmp(name, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0) {
+        returned_result = teso4m4_swapchain_experiment_intercept(
+            name, raw_result);
+        shim = "swapchain-experiment";
     }
     log_message(
         "GIPA: instance=%p name=%s raw=%p returned=%p shim=%s%s",
@@ -389,6 +416,12 @@ static Teso4m4Mode marker_mode(const char* directory,
     if (strcmp(mode, "startup-release-argument-buffers") == 0) {
         return TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
     }
+    if (strcmp(mode, "startup-release-swapchain-control") == 0) {
+        return TESO4M4_MODE_STARTUP_RELEASE_SWAPCHAIN_CONTROL;
+    }
+    if (strcmp(mode, "startup-release-triple-buffer") == 0) {
+        return TESO4M4_MODE_STARTUP_RELEASE_TRIPLE_BUFFER;
+    }
     return TESO4M4_MODE_DISABLED;
 }
 
@@ -445,8 +478,7 @@ static bool verify_moltenvk_configuration(
         mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-        mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
+        is_measurement_stripped_release_mode(mode);
     const VkBool32 expected_live_resources =
         (mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
          mode == TESO4M4_MODE_STARTUP_COLOR_AUDIT ||
@@ -460,8 +492,7 @@ static bool verify_moltenvk_configuration(
          mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-         mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS)
+         is_measurement_stripped_release_mode(mode))
             ? VK_FALSE
             : VK_TRUE;
     const VkBool32 expected_synchronous_submits =
@@ -473,8 +504,7 @@ static bool verify_moltenvk_configuration(
                 mode != TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS &&
                 mode != TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS &&
                 mode != TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS &&
-                mode != TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE &&
-                mode != TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS
+                !is_measurement_stripped_release_mode(mode)
             ? VK_TRUE
             : VK_FALSE;
     if (configuration.liveCheckAllResources != expected_live_resources ||
@@ -674,7 +704,9 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
 
 __attribute__((constructor)) static void teso4m4_init(void) {
     initialize_run_id();
-    configure_log_level();
+    char directory[4096] = {0};
+    const bool has_directory = own_directory(directory, sizeof(directory));
+    configure_log_level(has_directory ? directory : NULL);
     g_log = teso4m4_open_production_log();
     if (!g_log) {
         return;
@@ -684,6 +716,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     teso4m4_compat_set_logger(&compat_log_message);
     teso4m4_lifecycle_reset();
     teso4m4_lifecycle_set_logger(&compat_log_message);
+    teso4m4_swapchain_experiment_reset();
     teso4m4_present_pixel_reset();
     teso4m4_reset_trace_reset();
     teso4m4_reset_trace_set_logger(&compat_log_message);
@@ -702,11 +735,11 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     g_startup_compositor_neutralize_enabled = false;
     g_startup_pipeline_timing_enabled = false;
     g_inactive_pacing_bypass_enabled = false;
-    log_message("RUN_START: bridge starting log_level=%s",
-                log_level_name(g_log_level));
+    g_swapchain_experiment_enabled = false;
+    log_message("RUN_START: bridge starting log_level=%s log_source=%s",
+                log_level_name(g_log_level), g_log_level_source);
 
-    char directory[4096];
-    if (!own_directory(directory, sizeof(directory))) {
+    if (!has_directory) {
         log_message("SKIP: could not resolve bridge directory");
         return;
     }
@@ -716,6 +749,16 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message("SKIP: enable marker absent");
         return;
     }
+    g_swapchain_experiment_enabled = is_swapchain_experiment_mode(mode);
+    if (g_swapchain_experiment_enabled) {
+        teso4m4_swapchain_experiment_configure(
+            mode == TESO4M4_MODE_STARTUP_RELEASE_TRIPLE_BUFFER
+                ? TESO4M4_SWAPCHAIN_EXPERIMENT_TRIPLE_BUFFER
+                : TESO4M4_SWAPCHAIN_EXPERIMENT_CONTROL,
+            &compat_log_message);
+        teso4m4_swapchain_experiment_set_startup_window_function(
+            &teso4m4_lifecycle_startup_window_open);
+    }
     if (mode == TESO4M4_MODE_STARTUP_FX_NEUTRALIZE &&
         !ESO_HAS_FX_SENTINEL_TARGET) {
         log_message("SKIP: selected target has no FX sentinel profile");
@@ -724,8 +767,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
     if ((mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
          mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-         mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS) &&
+         is_measurement_stripped_release_mode(mode)) &&
         !ESO_HAS_INACTIVE_PACING_TARGET) {
         log_message("SKIP: selected target has no inactive pacing profile");
         return;
@@ -746,8 +788,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-        mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
+        is_measurement_stripped_release_mode(mode);
     g_startup_present_pixel_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_PRESENT_PIXEL_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_DRAW_AUDIT ||
@@ -761,24 +802,21 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-        mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
+        is_measurement_stripped_release_mode(mode);
     g_startup_input_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_INPUT_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-        mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
+        is_measurement_stripped_release_mode(mode);
     g_startup_compositor_audit_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS;
     g_startup_compositor_neutralize_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-        mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
+        is_measurement_stripped_release_mode(mode);
     g_startup_pipeline_timing_enabled =
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE ||
         mode == TESO4M4_MODE_STARTUP_PIPELINE_TIMING_CONTROL ||
@@ -789,8 +827,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-        mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
+        is_measurement_stripped_release_mode(mode);
     const bool performance_mode =
         mode == TESO4M4_MODE_PERFORMANCE_SAFE ||
         mode == TESO4M4_MODE_PERFORMANCE_AGGRESSIVE ||
@@ -805,8 +842,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
         mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-        mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-        mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS;
+        is_measurement_stripped_release_mode(mode);
     teso4m4_lifecycle_set_enabled(
         !performance_mode || g_startup_color_audit_enabled ||
         g_startup_pipeline_timing_enabled);
@@ -842,8 +878,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
              mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-             mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-             mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS) ? "0" : "1",
+             is_measurement_stripped_release_mode(mode)) ? "0" : "1",
             1) != 0 ||
         setenv(
             "MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS",
@@ -863,8 +898,7 @@ __attribute__((constructor)) static void teso4m4_init(void) {
               mode == TESO4M4_MODE_STARTUP_INACTIVE_PACING_BYPASS ||
               mode == TESO4M4_MODE_STARTUP_COMPOSITOR_AUDIT_PACING_BYPASS ||
               mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_BYPASS ||
-              mode == TESO4M4_MODE_STARTUP_COMPOSITOR_NEUTRALIZE_PACING_RELEASE ||
-              mode == TESO4M4_MODE_STARTUP_RELEASE_ARGUMENT_BUFFERS) ? "0" : "1",
+              is_measurement_stripped_release_mode(mode)) ? "0" : "1",
              1) != 0)) {
         log_message("ERROR: could not set selected compatibility mode: %s",
                     strerror(errno));
@@ -1017,6 +1051,20 @@ __attribute__((constructor)) static void teso4m4_init(void) {
             "readiness_canary=disabled pixel_readback=disabled "
             "post_window_bookkeeping=disabled fallback=forward "
             "inactive_100ms_sleep=bypassed experimental=yes");
+    } else if (is_swapchain_experiment_mode(mode)) {
+        log_message(
+            "MODE: startup release swapchain %s enabled "
+            "live_resources=0 metal_argument_buffers=0 use_mtlheap=1 "
+            "command_pooling=1 synchronous_queue_submits=0 "
+            "maximize_concurrent_compilation=0 generation_limit=2 "
+            "generation_2_present_limit=180 draw_provenance=bounded "
+            "input_provenance=bounded pipeline_timing=disabled "
+            "readiness_canary=disabled pixel_readback=disabled "
+            "post_window_bookkeeping=swapchain-timing fallback=forward "
+            "inactive_100ms_sleep=bypassed experimental=yes",
+            mode == TESO4M4_MODE_STARTUP_RELEASE_TRIPLE_BUFFER
+                ? "triple-buffer"
+                : "control");
     } else {
         log_message(
             "MODE: descriptor compatibility enabled live_resources=1 "
@@ -1105,4 +1153,12 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         VK_COLOR_SPACE_HDR10_ST2084_EXT);
     log_message("ACTIVE: redirected %d Vulkan entry points", ESO_TARGET_COUNT);
     log_message("ESO SHA-256: %s", actual_sha256);
+}
+
+__attribute__((destructor)) static void teso4m4_shutdown(void) {
+    teso4m4_swapchain_experiment_log_summary();
+    if (g_log) {
+        fclose(g_log);
+        g_log = NULL;
+    }
 }

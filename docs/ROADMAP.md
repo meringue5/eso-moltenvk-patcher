@@ -4,6 +4,26 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
+## P0: resolve post-sleep activation divergence
+
+- Treat Experiment 0052's public-0.2.0 recurrence as the immediate reliability
+  blocker: detached initial mouse focus and approximately 40 FPS with ESO's
+  internal active byte false after the user reports a hibernation boundary.
+- Keep the old near-10-FPS inactive sleep path separate: 0.2.0 bypassed it in
+  the failing run, so do not claim that the bypass resolves all inactive-state
+  behavior.
+- First establish AppKit, WindowServer, Steam/launcher, and sleep/wake event
+  order through read-only evidence. Improve public Status so `active=no` is
+  clearly diagnostic/review state rather than user-experience acceptance.
+- Do not make application switching a required workaround, force the active
+  byte, synthesize focus, or add default startup instrumentation that can alter
+  the timing under investigation.
+- Keep normal operation at `info`. For a bounded recurrence capture, use the
+  independent `debug` preference from Experiment 0053, preserve one affected
+  natural launch and its user observation, export the filtered diagnostics,
+  then return to `info`. Do not reintroduce installation/removal cycles merely
+  to alter logging.
+
 ## Reliability guardrails for performance successors
 
 - Keep Metal argument buffers disabled. Experiment 0049's candidate is rejected
@@ -14,14 +34,18 @@ This roadmap contains future work only. Current verified state is in
   repair while testing performance changes. Do not force ESO's active byte,
   synthesize AppKit focus events, or call private activation APIs.
 - Treat argument buffers as a supported startup-timing hypothesis, not a proven
-  direct focus mechanism. Revisit a short inactive yield only if the OFF
-  production behavior naturally repeats the mouse-capture failure.
+  direct focus mechanism. The 2026-08-30 post-Deep-Idle C2 control recurred with
+  argument buffers off but retained experimental timing wrappers, so it does
+  not yet establish an OFF-production recurrence or a direct sleep cause.
 - Preserve the fixed 1920 x 1200 balanced profile as the standard settings
   control. Performance and quality experiments must use separate opt-in
   profiles and must not silently mutate this checkpoint.
 - On any natural pink, low-FPS, focus, or reset recurrence, preserve the exact
   run and cache identities before retrying. Do not require launcher restarts or
   delete caches as a workaround.
+- For the recurring post-sleep focus report, inspect activation-event ordering
+  and Steam/launcher lifecycle state without treating Cmd-Tab as an acceptable
+  recovery requirement. Do not force ESO's active byte or synthesize focus.
 
 ## P1: isolate an optional pink repair
 
@@ -74,21 +98,26 @@ single-variable experiment.
 
 ### Direction A: maximize FPS at fixed visual quality
 
-1. Keep Experiment 0048's post-window wrapper benchmark as a regression guard,
+1. Do not resume Experiment 0051's three-image swapchain work through manual
+   launch repetition. Exact three-image operation passed, but matched B/control
+   tails were mixed and acquire p99 was unchanged. Revisit only with an
+   automated scene-controlled harness that can also bound memory, power, and
+   presentation latency.
+2. Keep Experiment 0048's post-window wrapper benchmark as a regression guard,
    but defer self-retiring dispatch. Direct versus cached-wrapper measurements
    found only 8-9 ns for an acquire/present pair, 5 ns per indexed draw, and
    3 ns per descriptor update. That is too small to justify a mutable
    trampoline without whole-frame evidence that another target amplifies it.
-2. Exclude Metal argument buffers from further production A/B work. Their
+3. Exclude Metal argument buffers from further production A/B work. Their
    14.899% non-game descriptor-path gain did not justify three consecutive
    initial mouse-focus failures, and the OFF control passed without that user-
    visible regression. Preserve the benchmark as evidence, not as a pending
    default candidate.
-3. Test maximum concurrent pipeline compilation only for startup compilation
+4. Test maximum concurrent pipeline compilation only for startup compilation
    latency and stutter. The retained 64 calls are already fast once ESO issues
    them, so do not expect or claim a steady-state FPS gain without direct
    frame-time evidence.
-4. Use VSync-off only during the bounded throughput measurement. The current
+5. Use VSync-off only during the bounded throughput measurement. The current
    100-FPS interval is a cap, not a performance mechanism; a high-refresh
    display is required to validate visible output above 60 Hz.
 

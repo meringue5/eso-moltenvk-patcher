@@ -16,6 +16,7 @@ INTERNAL="$STAGE/.eso-moltenvk-patcher"
 typeset -a visible=(
   Diagnostics.command
   Install.command
+  Logging.command
   README.txt
   Status.command
   Uninstall.command
@@ -31,7 +32,7 @@ expected_visible="$(printf '%s\n' "${visible[@]}" | sort)"
 for file in "${visible[@]}"; do
   [[ -f "$STAGE/$file" ]]
 done
-for command in Diagnostics.command Install.command Status.command Uninstall.command; do
+for command in Diagnostics.command Install.command Logging.command Status.command Uninstall.command; do
   [[ -x "$STAGE/$command" ]]
 done
 for file in \

@@ -4,7 +4,8 @@
 The fast rebase path is intentionally narrow.  It accepts a new executable
 only when the embedded MoltenVK object, patch sites, external-reference shape,
 and direct GIPA/GDPA query shape match a profiled reference manifest exactly.
-It never modifies the game bundle.
+The object's link placement may move, but only to one location where every
+non-relocation byte of its text matches.  It never modifies the game bundle.
 """
 
 from __future__ import annotations
@@ -15,12 +16,19 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import struct
 import subprocess
 import tempfile
 from typing import Any
 import uuid
 
 from analyze_vk_calls import (
+    LC_SEGMENT_64,
+    LOAD_COMMAND,
+    MACH_HEADER_64,
+    MH_MAGIC_64,
+    SECTION_64,
+    SEGMENT_COMMAND_64,
     Reference,
     find_section,
     image_base,
@@ -29,13 +37,19 @@ from analyze_vk_calls import (
     load_symbols,
     scan_dyld_fixups,
     scan_text,
+    unaligned_sources,
 )
-from analyze_vk_proc_queries import find_queries
+from analyze_vk_proc_queries import find_queries, named_indirect_calls
 from generate_targets import PATCH_SIZE, macho_uuid
 
 
 SCHEMA_VERSION = 2
 DEFAULT_MEMBER = "MoltenVK-x86_64-master.o"
+RELOCATION_INFO = struct.Struct("<iI")
+X86_64_RELOC_GOT_LOAD = 3
+# ld64 may relax a GOT load to a direct LEA; only the opcode byte changes.
+GOT_LOAD_RELAXED_OPCODES = {0x8B: 0x8D}
+PLACEMENT_ANCHOR_SIZE = 64
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -125,11 +139,100 @@ def archive_member_hashes(archive: Path) -> dict[str, str]:
     }
 
 
+def object_text_layout(object_bytes: bytes) -> tuple[int, bytes, bytearray, dict[int, int]]:
+    """Return an object's __text address, bytes, relocation mask, and relaxable opcodes."""
+    magic, _, _, _, command_count, _, _, _ = MACH_HEADER_64.unpack_from(object_bytes)
+    if magic != MH_MAGIC_64:
+        raise ValueError("MoltenVK object is not a little-endian 64-bit Mach-O")
+    texts = []
+    cursor = MACH_HEADER_64.size
+    for _ in range(command_count):
+        command, command_size = LOAD_COMMAND.unpack_from(object_bytes, cursor)
+        if command == LC_SEGMENT_64:
+            section_count = SEGMENT_COMMAND_64.unpack_from(object_bytes, cursor)[9]
+            section_cursor = cursor + SEGMENT_COMMAND_64.size
+            for _ in range(section_count):
+                section = SECTION_64.unpack_from(object_bytes, section_cursor)
+                if section[0].rstrip(b"\0") == b"__text":
+                    texts.append(section)
+                section_cursor += SECTION_64.size
+        cursor += command_size
+    if len(texts) != 1:
+        raise ValueError(f"expected one MoltenVK object __text section; found {len(texts)}")
+    _, _, address, size, offset, _, relocation_offset, relocation_count = texts[0][:8]
+    text = object_bytes[offset : offset + size]
+    masked = bytearray(size)
+    relaxable: dict[int, int] = {}
+    for index in range(relocation_count):
+        field, info = RELOCATION_INFO.unpack_from(
+            object_bytes, relocation_offset + index * RELOCATION_INFO.size
+        )
+        length = 1 << ((info >> 25) & 3)
+        if field < 0 or field + length > size:
+            raise ValueError("MoltenVK object relocation lies outside __text")
+        for byte in range(field, field + length):
+            masked[byte] = 1
+        if info >> 28 == X86_64_RELOC_GOT_LOAD and field >= 2:
+            opcode = text[field - 2]
+            if opcode in GOT_LOAD_RELAXED_OPCODES:
+                relaxable[field - 2] = GOT_LOAD_RELAXED_OPCODES[opcode]
+    return address, text, masked, relaxable
+
+
+def object_placements(
+    text: bytes, masked: bytearray, relaxable: dict[int, int], image_text: bytes
+) -> list[int]:
+    """Return image_text offsets where every non-relocation byte of text matches."""
+    best_length = best_start = run = 0
+    for index, flag in enumerate(masked):
+        run = 0 if flag else run + 1
+        if run > best_length:
+            best_length, best_start = run, index - run + 1
+    if best_length < PLACEMENT_ANCHOR_SIZE:
+        raise ValueError("MoltenVK object text has no relocation-free placement anchor")
+    anchor = text[best_start : best_start + PLACEMENT_ANCHOR_SIZE]
+    placements = []
+    position = image_text.find(anchor)
+    while position != -1:
+        start = position - best_start
+        if 0 <= start and start + len(text) <= len(image_text):
+            candidate = image_text[start : start + len(text)]
+            if all(
+                masked[index]
+                or candidate[index] == text[index]
+                or candidate[index] == relaxable.get(index)
+                for index in range(len(text))
+            ):
+                placements.append(start)
+        position = image_text.find(anchor, position + 1)
+    return placements
+
+
+def locate_link_delta(executable: Path, object_bytes: bytes) -> int:
+    """Find the unique link delta of the embedded object inside ESO's __text."""
+    object_address, text, masked, relaxable = object_text_layout(object_bytes)
+    sections = load_sections(executable)
+    image_text_section = find_section(sections, "__TEXT", "__text")
+    base = image_base(sections)
+    data = executable.read_bytes()
+    image_text = data[
+        image_text_section.offset : image_text_section.offset + image_text_section.size
+    ]
+    placements = object_placements(text, masked, relaxable, image_text)
+    if len(placements) != 1:
+        raise ValueError(
+            f"expected one exact MoltenVK object placement; found {len(placements)}"
+        )
+    return image_text_section.address + placements[0] - base - object_address
+
+
 def patch_targets(
     executable: bytes,
     manifest: dict[str, Any],
     symbol_offsets: dict[str, int],
+    placement_shift: int = 0,
 ) -> tuple[list[dict[str, Any]], list[str]]:
+    """Validate patch sites, moved by the proven object placement shift."""
     rendered = []
     failures = []
     seen: set[str] = set()
@@ -140,7 +243,7 @@ def patch_targets(
             continue
         seen.add(symbol)
         try:
-            offset = int(target["image_offset"], 0)
+            offset = int(target["image_offset"], 0) + placement_shift
         except (KeyError, TypeError, ValueError):
             failures.append(f"invalid patch offset for {symbol}")
             continue
@@ -217,6 +320,27 @@ def query_shape(executable: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def locate_proc_slots(executable: Path, reference: dict[str, Any]) -> dict[str, str]:
+    """Find the unique GIPA/GDPA pointer slots whose named queries match the reference."""
+    expected = semantic_query_shape(reference["analysis"]["proc_queries"])["routes"]
+    named = named_indirect_calls(executable)
+    slots = {}
+    for route, symbol in (("GIPA", "vkGetInstanceProcAddr"), ("GDPA", "vkGetDeviceProcAddr")):
+        names = expected[route]["names"]
+        matches = [
+            slot
+            for slot, items in named.items()
+            if len(items) == expected[route]["sites"]
+            and dict(sorted(Counter(name for _, name in items).items())) == names
+        ]
+        if len(matches) != 1:
+            raise ValueError(
+                f"expected one {route} slot with the reference query shape; found {len(matches)}"
+            )
+        slots[symbol] = f"0x{matches[0]:x}"
+    return slots
+
+
 def analyze_layout(
     executable: Path,
     object_bytes: bytes,
@@ -248,10 +372,39 @@ def analyze_layout(
         scan_dyld_fixups(
             executable, symbols, references, old_text_start, old_text_end
         )
+        unaligned = unaligned_sources(
+            executable,
+            {
+                reference.source
+                for items in references.values()
+                for reference in items
+                if reference.kind != "pointer"
+            },
+        )
+        rejected = sorted(
+            f"0x{reference.source:x}:{reference.kind}:{symbol}"
+            for symbol, items in references.items()
+            for reference in items
+            if reference.source in unaligned and reference.kind != "pointer"
+        )
+        for symbol in list(references):
+            references[symbol] = {
+                reference
+                for reference in references[symbol]
+                if reference.kind == "pointer" or reference.source not in unaligned
+            }
+            if not references[symbol]:
+                del references[symbol]
 
     symbol_offsets = {name: address - base for address, name in symbols.items()}
+    reference_delta = (
+        manifest.get("analysis", {}).get("legacy_moltenvk", {}).get("link_delta")
+    )
+    placement_shift = (
+        link_delta - int(reference_delta, 0) if reference_delta is not None else 0
+    )
     targets, failures = patch_targets(
-        executable.read_bytes(), manifest, symbol_offsets
+        executable.read_bytes(), manifest, symbol_offsets, placement_shift
     )
     target_symbols = {target["symbol"] for target in targets}
     referenced_symbols = set(references)
@@ -277,6 +430,9 @@ def analyze_layout(
         "external_references": reference_shape(references),
         "proc_queries": query_shape(executable, manifest),
     }
+    if rejected:
+        # Byte-scan coincidences inside decoded instructions; not ESO calls.
+        analysis["external_references"]["rejected_unaligned"] = rejected
     return analysis, targets, failures
 
 
@@ -285,7 +441,7 @@ def compare_analysis(
 ) -> list[str]:
     failures = []
     for key in ("legacy_moltenvk", "replacement_runtime"):
-        if reference.get(key) != actual.get(key):
+        if placement_free(reference.get(key)) != placement_free(actual.get(key)):
             failures.append(f"analysis profile changed: {key}")
     if semantic_reference_shape(reference.get("external_references")) != (
         semantic_reference_shape(actual.get("external_references"))
@@ -296,6 +452,13 @@ def compare_analysis(
     ):
         failures.append("analysis profile changed: proc_queries")
     return failures
+
+
+def placement_free(value: Any) -> Any:
+    """Drop the object's link placement; locate_link_delta proves its bytes."""
+    if isinstance(value, dict) and "link_delta" in value:
+        return {key: item for key, item in value.items() if key != "link_delta"}
+    return value
 
 
 def semantic_reference_shape(value: Any) -> Any:
@@ -397,11 +560,12 @@ def audit_manifest(
     try:
         identity_before = executable_identity(executable)
         object_bytes = archive_member(archive, member)
+        proc_slots = locate_proc_slots(executable, reference)
         actual_analysis, targets, failures = analyze_layout(
             executable,
             object_bytes,
-            reference,
-            int(legacy["link_delta"], 0),
+            dict(reference, proc_addr_slots=proc_slots),
+            locate_link_delta(executable, object_bytes),
             member,
         )
         actual_analysis["legacy_moltenvk"]["archive_members"] = (
@@ -445,6 +609,7 @@ def audit_manifest(
     candidate["sha256"] = actual_sha
     candidate["uuid"] = actual_uuid
     candidate["derived_from_sha256"] = reference["sha256"]
+    candidate["proc_addr_slots"] = proc_slots
     candidate["analysis"] = actual_analysis
     candidate["targets"] = targets
     # Historical diagnostic hooks are not part of the production redirect and

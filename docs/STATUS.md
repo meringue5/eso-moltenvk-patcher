@@ -1,6 +1,24 @@
 # Project status
 
-Last updated: 2026-08-27
+Last updated: 2026-09-30
+
+## 2026-09-30 ESO update
+
+Steam installed ESO 12.1.5, databuild `3303624`, SHA-256
+`027d5a6d0822ffddae308c62f5cd425b425e6188d5606d8c430988761e9e0a26`.
+Public 0.2.0 correctly refuses it: its compatibility auditor pins absolute
+addresses. The update relinked ESO and moved the unchanged embedded MoltenVK
+object by +`0x1de7a0`. It also shipped a new original Bink generation.
+Experiment [0054](experiments/0054-eso-12.1.5-relinked-update-rebase.md)
+proved all 17 patch signatures, 40 external references, and GIPA/GDPA query
+shapes unchanged. The selected target is now `targets-eso-2026-09-30.json`.
+
+Local candidate `0.2.1-rc.1` is the 0.2.0 runtime rebuilt for that target
+(branch `release/0.2.1`). It was installed with settings unchanged and a
+verified recovery backup; Status reports `READY`. It is not yet a public
+release. The next gate is one natural user launch that meets the pass criteria
+in Experiment 0054. This replaced the 0.2.1-logger candidate, so the `debug`
+capture plan below is inactive until the logger work is rebuilt on 12.1.5.
 
 ## Current public production baseline
 
@@ -135,8 +153,31 @@ started by the agent.
 
 ## Next gate
 
-Monitor natural launches through public Status and privacy-filtered Diagnostics
-without forced repetition or cache deletion. Preserve exact run evidence before
-changing the production baseline if pink, low FPS, focus loss, update recovery,
-or uninstall behavior regresses. Performance and quality successors remain
-separate single-variable work under [Roadmap](ROADMAP.md).
+The immediate P0 reliability issue is Experiment
+[0052](experiments/0052-post-sleep-activation-divergence.md). After installing
+the verified public 0.2.0 package, the user again observed detached mouse focus
+and approximately 40 FPS when launching after hibernation. Exact production run
+`20260830T090357.701770000Z-pid36636` loaded the expected runtime and completed
+all structural startup invariants, but began `active=no` and did not record a
+later active transition. The public pacing bypass was active, so this is not a
+return of the former near-10-FPS 100-ms sleep path.
+
+Public Status currently classifies that run as structurally passing; its own
+contract says it cannot measure focus or FPS. Treat this as a production
+reliability regression rather than acceptance evidence. The current next gate
+is read-only event-order analysis and better support classification around
+natural sleep/wake boundaries. Do not require Cmd-Tab recovery, force the
+active byte, synthesize AppKit activation, mutate caches/settings, or resume
+manual swapchain A/B runs.
+
+Local candidate `0.2.1-logger-rc.1` was transactionally installed at 18:24 KST
+on 2026-08-30, after the exact-target and idle gates passed. Its bridge SHA-256
+is `e55e63d661ea4bfcf44327d14b01cb8e62d686fa4041af22032be2d06edbad99`.
+The verified recovery backup remains in place, the user-customized settings
+were preserved, and all pipeline-cache identities remained valid. Its
+separately stored logging preference is now `debug`, mode 0600, for the next
+normal ESO launch. This is a local investigation candidate, not a public
+release or an acceptance result: the next required evidence is one
+user-controlled natural launch and its focus/FPS observation. Experiment
+[0053](experiments/0053-operational-log-level-control.md) owns the operational
+and privacy rules; return the preference to `info` after the bounded capture.

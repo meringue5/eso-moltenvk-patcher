@@ -72,6 +72,25 @@ def find_queries(
     return queries, unknown
 
 
+def named_indirect_calls(executable_path: Path) -> dict[int, list[tuple[int, str]]]:
+    """Group every named RIP-relative indirect call by image-relative slot offset."""
+    data = executable_path.read_bytes()
+    sections = load_sections(executable_path)
+    text = find_section(sections, "__TEXT", "__text")
+    base = image_base(sections)
+    code = data[text.offset : text.offset + text.size]
+    slots: dict[int, list[tuple[int, str]]] = defaultdict(list)
+    offset = code.find(b"\xff\x15")
+    while offset != -1 and offset < len(code) - 6:
+        source = text.address + offset
+        displacement = struct.unpack_from("<i", code, offset + 2)[0]
+        name = nearest_proc_name(data, code, offset, text.address, base)
+        if name:
+            slots[source + 6 + displacement - base].append((source, name))
+        offset = code.find(b"\xff\x15", offset + 1)
+    return slots
+
+
 def load_probe(path: Path) -> dict[str, dict[str, str]]:
     results: dict[str, dict[str, str]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():

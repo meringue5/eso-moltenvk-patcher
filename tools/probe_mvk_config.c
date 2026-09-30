@@ -49,7 +49,9 @@ int main(int argc, char** argv) {
          strcmp(argv[2], "startup-compositor-audit-pacing-bypass") != 0 &&
          strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") != 0 &&
          strcmp(argv[2], "startup-compositor-neutralize-pacing-release") != 0 &&
-         strcmp(argv[2], "startup-release-argument-buffers") != 0)) {
+         strcmp(argv[2], "startup-release-argument-buffers") != 0 &&
+         strcmp(argv[2], "startup-release-swapchain-control") != 0 &&
+         strcmp(argv[2], "startup-release-triple-buffer") != 0)) {
         fprintf(
             stderr,
             "usage: %s libMoltenVK.dylib "
@@ -65,7 +67,8 @@ int main(int argc, char** argv) {
             "startup-compositor-audit-pacing-bypass|"
             "startup-compositor-neutralize-pacing-bypass|"
             "startup-compositor-neutralize-pacing-release|"
-            "startup-release-argument-buffers\n",
+            "startup-release-argument-buffers|"
+            "startup-release-swapchain-control|startup-release-triple-buffer\n",
             argv[0]);
         return 2;
     }
@@ -97,6 +100,8 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0 ||
         strcmp(argv[2], "startup-release-argument-buffers") == 0 ||
+        strcmp(argv[2], "startup-release-swapchain-control") == 0 ||
+        strcmp(argv[2], "startup-release-triple-buffer") == 0 ||
         legacy_allocation;
     const bool no_command_pooling =
         strcmp(argv[2], "no-command-pooling") == 0;
@@ -116,7 +121,9 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0 ||
-        strcmp(argv[2], "startup-release-argument-buffers") == 0;
+        strcmp(argv[2], "startup-release-argument-buffers") == 0 ||
+        strcmp(argv[2], "startup-release-swapchain-control") == 0 ||
+        strcmp(argv[2], "startup-release-triple-buffer") == 0;
     const bool performance_mode =
         performance_safe || performance_aggressive;
     const bool nonmaximized_compilation =
@@ -126,7 +133,9 @@ int main(int argc, char** argv) {
         strcmp(argv[2], "startup-compositor-audit-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-bypass") == 0 ||
         strcmp(argv[2], "startup-compositor-neutralize-pacing-release") == 0 ||
-        strcmp(argv[2], "startup-release-argument-buffers") == 0;
+        strcmp(argv[2], "startup-release-argument-buffers") == 0 ||
+        strcmp(argv[2], "startup-release-swapchain-control") == 0 ||
+        strcmp(argv[2], "startup-release-triple-buffer") == 0;
     const bool argument_buffers =
         strcmp(argv[2], "startup-release-argument-buffers") == 0;
     if (descriptor_compat &&

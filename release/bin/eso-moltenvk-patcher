@@ -140,6 +140,49 @@ ui_choice_menu() {
   done
 }
 
+# Unlike ui_choice_menu, this has three outcomes: info (0), debug (1), and
+# cancel (2).  A cancelled diagnostics choice must never silently enable the
+# higher-volume profile.
+ui_logging_choice() {
+  local selected=1 key="" sequence=""
+  while true; do
+    ui_render_plan
+    print -- "  Logging profile"
+    print -- "  Operational info is selected by default. Debug is for a bounded investigation and can increase log I/O."
+    print -- ""
+    if (( selected == 1 )); then
+      print -- "  ${UI_GREEN}›${UI_RESET} ${UI_BRIGHT}Operational logging (info)${UI_RESET}"
+    else
+      print -- "    Operational logging (info)"
+    fi
+    if (( selected == 2 )); then
+      print -- "  ${UI_GREEN}›${UI_RESET} ${UI_BRIGHT}Diagnostic logging (debug)${UI_RESET}"
+    else
+      print -- "    Diagnostic logging (debug)"
+    fi
+    print -- ""
+    print -- "  ${UI_DIM}Use ↑/↓ and Return. Esc cancels without changing the preference.${UI_RESET}"
+    if ! IFS= read -rsk1 key; then
+      return 2
+    fi
+    case "$key" in
+      $'\n'|$'\r')
+        (( selected == 1 )) && return 0
+        return 1
+        ;;
+      $'\e')
+        sequence=""
+        IFS= read -rsk2 -t 0.2 sequence || true
+        case "$sequence" in
+          '[A'|'[B') selected=$(( selected == 1 ? 2 : 1 )) ;;
+          *) return 2 ;;
+        esac
+        ;;
+      *) printf '\a' ;;
+    esac
+  done
+}
+
 ui_complete() {
   print -- ""
   print -- "${UI_GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%${UI_RESET}"
@@ -179,7 +222,7 @@ marker_mode_value() {
 
 usage() {
   cat <<'EOF'
-Usage: eso-moltenvk-patcher <status|diagnose|install|remove|repair> [options]
+Usage: eso-moltenvk-patcher <status|diagnose|logging|install|remove|repair> [options]
 
 Install options:
   --apply-settings       selectively merge the bundled M4 settings template
@@ -189,6 +232,10 @@ Install options:
 
 Diagnostics options:
   --output PATH          write the privacy-filtered support ZIP to PATH
+
+Logging options:
+  --level LEVEL          set next-launch level: error, warn, info, or debug
+  --interactive          choose info or debug from the Terminal menu
 
 PATH may be eso.app itself or an ESO Launcher.app containing game_mac.
 No game, Steam, or launcher is started by this tool.
@@ -203,6 +250,8 @@ selected_settings="${ESO_SETTINGS_FILE:-}"
 assume_yes=false
 settings_choice=""
 support_output=""
+logging_level=""
+logging_interactive=false
 PRODUCTION_LOG="${ESO_MOLTENVK_PATCHER_LOG_PATH:-$HOME/Library/Logs/ESO MoltenVK Patcher/bridge.log}"
 while (( $# )); do
   case "$1" in
@@ -212,6 +261,8 @@ while (( $# )); do
     --skip-settings) [[ -z "$settings_choice" ]] || die "Choose only one settings action."; settings_choice=skip; shift ;;
     --yes|-y) assume_yes=true; shift ;;
     --output) (( $# >= 2 )) || die "--output needs a path"; support_output="$2"; shift 2 ;;
+    --level) (( $# >= 2 )) || die "--level needs a value"; logging_level="$2"; shift 2 ;;
+    --interactive) logging_interactive=true; shift ;;
     --help|-h) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
@@ -220,6 +271,10 @@ done
   || die "--output is available only with diagnose."
 [[ -z "$settings_choice" || "$command_name" == install || "$command_name" == repair ]] \
   || die "Settings options are available only with install or repair."
+[[ -z "$logging_level" || "$command_name" == logging ]] \
+  || die "--level is available only with logging."
+[[ "$logging_interactive" == false || "$command_name" == logging ]] \
+  || die "--interactive is available only with logging."
 
 resolve_target() {
   local home_dir="$HOME"
@@ -266,6 +321,72 @@ state_directory() {
   VERSION_FILE="$STATE_DIR/.version"
   SETTINGS_PATH_FILE="$STATE_DIR/settings-target-path.txt"
   SETTINGS_APPLIED_SHA_FILE="$STATE_DIR/settings-applied.sha256"
+  LOGGING_CONFIG="$STATE_DIR/logging.env"
+}
+
+read_logging_level() {
+  LOGGING_LEVEL="info"
+  LOGGING_SOURCE="default"
+  [[ -e "$LOGGING_CONFIG" ]] || return 0
+  if [[ -L "$LOGGING_CONFIG" || ! -f "$LOGGING_CONFIG" ]]; then
+    LOGGING_SOURCE="invalid"
+    return 0
+  fi
+  local owner mode
+  owner="$(stat -f '%u' "$LOGGING_CONFIG" 2>/dev/null || true)"
+  mode="$(stat -f '%Lp' "$LOGGING_CONFIG" 2>/dev/null || true)"
+  if [[ "$owner" != "$(id -u)" || ! "$mode" =~ '^[0-7]+$' ]] \
+    || (( (8#$mode & 8#22) != 0 )); then
+    LOGGING_SOURCE="invalid"
+    return 0
+  fi
+  local configured
+  configured="$(<"$LOGGING_CONFIG")"
+  case "$configured" in
+    level=error) LOGGING_LEVEL="error" ;;
+    level=warn) LOGGING_LEVEL="warn" ;;
+    level=info) LOGGING_LEVEL="info" ;;
+    level=debug) LOGGING_LEVEL="debug" ;;
+    *) LOGGING_SOURCE="invalid"; return 0 ;;
+  esac
+  LOGGING_SOURCE="config"
+}
+
+print_logging_status() {
+  read_logging_level
+  case "$LOGGING_SOURCE" in
+    config)
+      print -- "Logging: $LOGGING_LEVEL (configured for the next ESO launch)"
+      ;;
+    invalid)
+      print -- "Logging: invalid config ignored; runtime defaults to info"
+      ;;
+    *)
+      print -- "Logging: info (operational default for the next ESO launch)"
+      ;;
+  esac
+}
+
+require_logging_target() {
+  require_supported_executable
+  load_verified_recovery_record
+  [[ "$(sha256 "$BINK")" == "$(sha256 "$PAYLOAD/libBink2Macx64.dylib")" ]] \
+    || die "The current Bink library is not this package's active bridge. No files were changed."
+  [[ "$(state_value eso_sha256 "$MARKER")" == "$ACTUAL_ESO_SHA256" \
+    && "$(marker_mode_value)" == startup-compositor-neutralize-pacing-release ]] \
+    || die "The active bridge marker is not the supported production profile. No files were changed."
+}
+
+write_logging_level() {
+  local level="$1" temporary
+  case "$level" in
+    error|warn|info|debug) ;;
+    *) die "Logging level must be error, warn, info, or debug. No files were changed." ;;
+  esac
+  temporary="$(mktemp "$STATE_DIR/logging.env.XXXXXXXX")"
+  chmod 600 "$temporary"
+  print -r -- "level=$level" > "$temporary"
+  mv -f "$temporary" "$LOGGING_CONFIG"
 }
 
 choose_settings_action() {
@@ -641,9 +762,44 @@ recover_incomplete_install() {
   record_state recovered
 }
 
-latest_run_id() {
+# A run whose only records are RUN_START and "SKIP: enable marker absent" is a
+# non-game load of the bridge (for example a source build probe); ESO itself
+# always reaches the marker-backed records. Such runs are not a launch, so the
+# latest *launch* is the newest run with any other record. Prints either that
+# run ID ("launch") or the count of newer non-game loads ("ignored").
+classify_runs() {
+  local mode="$1"
   [[ -f "$PRODUCTION_LOG" ]] || return 1
-  sed -n 's/^\[run=\([^]]*\)\].*/\1/p' "$PRODUCTION_LOG" | tail -1
+  awk -v mode="$mode" '
+    match($0, /^\[run=[^]]*\] /) {
+      id = substr($0, 6, RLENGTH - 7)
+      record = substr($0, RLENGTH + 1)
+      if (!(id in seen)) { seen[id] = 1; order[++count] = id }
+      if (record ~ /^SKIP: enable marker absent/) { absent[id] = 1 }
+      else if (record !~ /^RUN_START:/) { activity[id] = 1 }
+    }
+    END {
+      ignored = 0
+      for (index_ = count; index_ >= 1; index_--) {
+        id = order[index_]
+        if (absent[id] && !activity[id]) { ignored++; continue }
+        if (mode == "launch") { print id }
+        break
+      }
+      if (mode == "ignored") { print ignored }
+    }' "$PRODUCTION_LOG"
+}
+
+latest_run_id() {
+  classify_runs launch
+}
+
+print_ignored_non_game_runs() {
+  local ignored
+  ignored="$(classify_runs ignored 2>/dev/null || print 0)"
+  if [[ "$ignored" == <-> ]] && (( ignored > 0 )); then
+    print -- "  Ignored: $ignored newer non-game bridge load(s) without the enable marker"
+  fi
 }
 
 print_latest_run_summary() {
@@ -651,6 +807,7 @@ print_latest_run_summary() {
   run_id="$(latest_run_id || true)"
   if [[ -z "$run_id" ]]; then
     print -- "Last launch: not available"
+    print_ignored_non_game_runs
     return 0
   fi
   run_lines="$(grep -F "[run=$run_id]" "$PRODUCTION_LOG" || true)"
@@ -678,6 +835,7 @@ print_latest_run_summary() {
     print -- "Last launch: REVIEW ($problems invariant checks failed)"
   fi
   print -- "  Run: $run_id"
+  print_ignored_non_game_runs
   print -- "  Initial activity: $initial_state"
   print -- "  Startup control: 79 suppressed, ordinal 150 forwarded, ordinal 180 finished"
   print -- "  Note: this log does not measure FPS or prove visual focus."
@@ -799,6 +957,7 @@ check() {
     print -- "Recovery: not required for current state"
   fi
   print_settings_status
+  print_logging_status
   print -- "Overall: $overall"
   print -- "Compatibility: $TARGET_COMPATIBILITY"
   print -- "Location: $ESO_APP"
@@ -860,6 +1019,40 @@ diagnose() {
   rmdir "$report_dir" "$report_root"
   print -- "Privacy-filtered support report created: $output"
   print -- "It contains no settings file, cache, credentials, proprietary game file, or raw system log."
+}
+
+logging() {
+  resolve_target; state_directory
+  require_logging_target
+  if [[ "$logging_interactive" == true ]]; then
+    ui_plan_start "Logging level for the next ESO launch" \
+      "Verifying installed runtime" \
+      "Saving logging preference"
+    ui_step 1 2 "Verifying installed runtime"
+    if ui_logging_choice; then
+      logging_level="info"
+    else
+      local logging_choice_status=$?
+      if (( logging_choice_status == 1 )); then
+        logging_level="debug"
+      else
+        print -- "Logging preference unchanged."
+        return 0
+      fi
+    fi
+  fi
+  if [[ -n "$logging_level" ]]; then
+    write_logging_level "$logging_level"
+    [[ "$logging_interactive" == true ]] && ui_step 2 2 "Saving logging preference"
+    [[ "$logging_interactive" == true ]] && ui_complete "Logging preference saved"
+    print -- "Logging: $logging_level (applies to the next ESO launch)"
+    if [[ "$logging_level" == debug ]]; then
+      print -- "Debug is diagnostic-only. Return to Logging.command and select info after collecting the affected launch."
+    fi
+    return 0
+  fi
+  print_logging_status
+  print -- "Use Logging.command to choose info or debug. This changes no bridge binary, cache, or game setting."
 }
 
 install() {
@@ -1031,6 +1224,7 @@ remove() {
   write_command "$GAME_MAC" rm -f "$MARKER"
   ui_step 3 4 "Restoring original runtime files"
   restore_settings_if_safe
+  rm -f "$LOGGING_CONFIG"
   record_state removed
   if [[ "$REMOVE_RESTORE_ACTION" == verified-backup-restored ]]; then
     [[ "$(sha256 "$BINK")" == "$RECORDED_ORIGINAL_BINK_SHA256" ]] \
@@ -1059,6 +1253,7 @@ remove() {
 case "$command_name" in
   check|status) check ;;
   diagnose) diagnose ;;
+  logging) logging ;;
   install) install ;;
   remove) remove ;;
   repair)

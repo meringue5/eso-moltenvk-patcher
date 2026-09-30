@@ -931,3 +931,22 @@ contained no raw settings, cache, credential, proprietary game file, home path,
 loaded-runtime path, source offset, pointer trace, pipeline identity, or
 descriptor signature. These are durable support and privacy properties, not a
 new FPS mechanism.
+
+## ESO updates can relink without changing the embedded MoltenVK
+
+ESO 12.1.5 (2026-09-30) kept both embedded MoltenVK archive members
+byte-identical. It still moved the object by +`0x1de7a0`, moved the GIPA/GDPA
+slots, and switched from chained fixups to classic `LC_DYLD_INFO_ONLY` rebases
+(minimum macOS 10.13, SDK 13.1). Consequences, established in
+[Experiment 0054](experiments/0054-eso-12.1.5-relinked-update-rebase.md):
+
+- Address-fixed release profiles, including public 0.2.0's
+  `eso-compat-audit`, fail closed on such an update even though the bridge
+  semantics are unchanged. A new target profile and package are required.
+- Identify the object placement by matching every non-relocation text byte;
+  ld64's GOT-load relaxation changes only the preceding opcode byte.
+- Xcode 27's `dyld_info -fixups` can trap on a valid ESO binary. The analysis
+  tools decode rebases directly instead.
+- The byte scanner over-approximates rel32 sites. A coincidental hit can name a
+  real MoltenVK entry point, so decode from the function start before treating
+  a new reference as an ESO code change.

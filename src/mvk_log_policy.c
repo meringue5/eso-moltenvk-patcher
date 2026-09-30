@@ -25,14 +25,17 @@ Teso4m4LogLevel teso4m4_classify_log_message(const char* message) {
         starts_with(message, "STARTUP_COMPOSITOR_AUDIT_BEGIN:") ||
         starts_with(message, "STARTUP_COMPOSITOR_IMAGE_") ||
         starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_BEGIN:") ||
-        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:")) {
+        starts_with(message, "STARTUP_COMPOSITOR_NEUTRALIZE_LATCH:") ||
+        starts_with(message, "SWAPCHAIN_EXPERIMENT_CHECKPOINT:") ||
+        starts_with(message, "SWAPCHAIN_EXPERIMENT_SUMMARY:")) {
         return TESO4M4_LOG_INFO;
     }
     if (starts_with(message, "GIPA:") || starts_with(message, "GDPA:") ||
         starts_with(message, "STARTUP_COLOR_")) {
         return TESO4M4_LOG_TRACE;
     }
-    if (starts_with(message, "RUN_START:") || starts_with(message, "MODE:") ||
+    if (starts_with(message, "RUN_START:") || starts_with(message, "LOG_CONFIG:") ||
+        starts_with(message, "MODE:") ||
         starts_with(message, "MOLTENVK_CONFIG:") ||
         starts_with(message, "MOLTENVK:") || starts_with(message, "HDR_") ||
         starts_with(message, "ACTIVE:") ||

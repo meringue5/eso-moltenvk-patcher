@@ -61,6 +61,10 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0048 | 2026-08-27 | Post-window wrapper cost | Succeeded; cached wrapper tax measured in single-digit nanoseconds and trampoline work deferred | [Run](0048-post-window-wrapper-cost.md) |
 | 0049 | 2026-08-27 | Metal argument-buffer performance candidate | Rejected after three consecutive focus failures; argument-buffers-off control passed focus and approximately 54 minutes of ordinary play | [Run](0049-metal-argument-buffer-performance.md) |
 | 0050 | 2026-08-27 | Architecture-backed 0.2.0 diagnostics release | Succeeded; exact user launch, final package, annotated tag, latest endpoint, and server asset digest verified | [Run](0050-architecture-backed-diagnostics-release.md) |
+| 0051 | 2026-08-28 | Measured triple-buffer swapchain | Inconclusive; exact three-image operation passed but matched tails were mixed and acquire wait unchanged | [Run](0051-triple-buffer-swapchain.md) |
+| 0052 | 2026-08-30 | Post-sleep activation-state divergence | Active; public 0.2.0 reproduces detached focus and approximately 40 FPS with `active=no` | [Run](0052-post-sleep-activation-divergence.md) |
+| 0053 | 2026-08-30 | Operational log-level control | Succeeded in source/package fixtures; later release required before public use | [Run](0053-operational-log-level-control.md) |
+| 0054 | 2026-09-30 | ESO 12.1.5 relinked-update rebase | Succeeded statically and installed as local 0.2.1-rc.1; awaiting one natural launch | [Run](0054-eso-12.1.5-relinked-update-rebase.md) |
 
 ## Recording policy
 

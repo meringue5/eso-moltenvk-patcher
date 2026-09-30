@@ -26,19 +26,31 @@ ACTUAL_MVK_SHA="$(shasum -a 256 "$MVK" | awk '{print $1}')"
   echo "Actual:   $ACTUAL_MVK_SHA"
   exit 1
 }
+EXPECTED_ORIGINAL_BINK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["original_bink_sha256"])' "$MANIFEST")"
+bink_sha() { shasum -a 256 "$1" | awk '{print $1}'; }
 SOURCE_BINK="$BINK"
 if otool -L "$BINK" | grep -q 'teso4m4-original'; then
-  [[ -f "$PRISTINE" ]] || {
+  # The release installer keeps the current generation's verified original in
+  # its recovery record; read it (never modify it) when the legacy pristine
+  # copy belongs to an older Bink generation.
+  RECOVERY_BINK="${ESO_MOLTENVK_PATCHER_STATE_ROOT:-$HOME/Library/Application Support/ESO MoltenVK Patcher/Installations}/$(print -rn -- "$ESO_APP" | shasum -a 256 | awk '{print $1}')/original-libBink2Macx64.dylib"
+  if [[ -f "$PRISTINE" && "$(bink_sha "$PRISTINE")" == "$EXPECTED_ORIGINAL_BINK_SHA" ]]; then
+    SOURCE_BINK="$PRISTINE"
+  elif [[ -f "$RECOVERY_BINK" && "$(bink_sha "$RECOVERY_BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA" ]]; then
+    SOURCE_BINK="$RECOVERY_BINK"
+  elif [[ -f "$PRISTINE" ]]; then
+    SOURCE_BINK="$PRISTINE"
+  else
     echo "Active Bink is a bridge and the pristine build source is missing."
     exit 1
-  }
-  SOURCE_BINK="$PRISTINE"
-elif [[ -f "$PRISTINE" ]]; then
-  cmp -s "$BINK" "$PRISTINE" || {
-    echo "Active original Bink differs from the pristine build source."
-    exit 1
-  }
+  fi
 fi
+# A launcher update can ship a new original Bink generation while an older
+# pristine backup is preserved; build only from the selected target's original.
+[[ "$(bink_sha "$SOURCE_BINK")" == "$EXPECTED_ORIGINAL_BINK_SHA" ]] || {
+  echo "Bink build source does not match the selected target's original Bink."
+  exit 1
+}
 
 mkdir -p "$BUILD"
 python3 "$ROOT/tools/generate_targets.py" "$ESO" "$MANIFEST" "$BUILD/generated_targets.h"
@@ -54,12 +66,13 @@ cp -p "$MVK" "$BUILD/libMoltenVK.teso4m4.dylib"
 xcrun clang -fobjc-arc -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
   -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
-  "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_log_file.c" \
+  "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_log_file.c" "$ROOT/src/mvk_log_config.c" \
   "$ROOT/src/mvk_log_policy.c" \
   "$ROOT/src/mvk_compat.c" \
   "$ROOT/src/eso_fx_sentinel.c" "$ROOT/src/eso_inactive_pacing.c" \
   "$ROOT/src/mvk_lifecycle.c" "$ROOT/src/mvk_reset_trace.c" \
   "$ROOT/src/mvk_render_audit.c" "$ROOT/src/mvk_present_pixel.m" \
+  "$ROOT/src/mvk_swapchain_experiment.c" \
   -framework Metal -framework Foundation \
   -Wl,-install_name,@executable_path/libBink2Macx64.dylib \
   -Wl,-reexport_library,"$BUILD/libBink2Macx64.teso4m4-original.dylib" \
@@ -86,6 +99,9 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" "$ROOT/tools/probe_log_file.c" \
   "$ROOT/src/mvk_log_file.c" -o "$BUILD/probe_log_file"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
+  -I"$ROOT/src" "$ROOT/tools/probe_log_config.c" \
+  "$ROOT/src/mvk_log_config.c" -o "$BUILD/probe_log_config"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_vulkan.c" "$ROOT/src/mvk_compat.c" -o "$BUILD/probe_vulkan"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
@@ -106,6 +122,11 @@ xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_lifecycle.c" "$ROOT/src/mvk_lifecycle.c" \
   -o "$BUILD/probe_lifecycle"
+xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror -O2 \
+  -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
+  "$ROOT/tools/probe_swapchain_experiment.c" \
+  "$ROOT/src/mvk_swapchain_experiment.c" \
+  -o "$BUILD/probe_swapchain_experiment"
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   -I"$ROOT/src" -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
   "$ROOT/tools/probe_reset_trace.c" "$ROOT/src/mvk_reset_trace.c" \
@@ -127,14 +148,37 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
   -framework IOKit -framework CoreGraphics -framework AppKit -lc++ \
   -o "$BUILD/probe_surface_formats_legacy"
 
+# Every probe that loads the bridge runs its constructor. Redirect those
+# non-game run records to a temporary directory so a build never appends a
+# run to the player's production log, and prove the production log is
+# untouched afterwards.
+PRODUCTION_LOG="$HOME/Library/Logs/ESO MoltenVK Patcher/bridge.log"
+production_log_identity() {
+  [[ -e "$PRODUCTION_LOG" ]] || { print -- absent; return 0; }
+  stat -f '%i %z %m' "$PRODUCTION_LOG"
+}
+PRODUCTION_LOG_BEFORE="$(production_log_identity)"
+PROBE_LOG_DIR="$(mktemp -d "${TMPDIR:-/private/tmp}/teso4m4-build-log.XXXXXX")"
+PROBE_LOG_DIR="${PROBE_LOG_DIR:A}"
+trap 'rm -rf -- "$PROBE_LOG_DIR"' EXIT
+export TESO4M4_LOG_DIR="$PROBE_LOG_DIR"
+
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
+grep -q '\] RUN_START: bridge starting' "$PROBE_LOG_DIR/bridge.log" \
+  && grep -q '\] SKIP: enable marker absent' "$PROBE_LOG_DIR/bridge.log" || {
+  echo "Bridge smoke did not write its non-game run to the probe log."
+  exit 1
+}
+echo "Bridge smoke log isolation: PASS (temporary log, production log untouched)"
 "$BUILD/probe_self_patch"
 "$BUILD/probe_fx_sentinel"
 "$BUILD/probe_inactive_pacing"
 "$BUILD/probe_log_policy"
 "$BUILD/probe_log_file"
+"$BUILD/probe_log_config"
 "$BUILD/probe_hdr_filter"
 "$BUILD/probe_lifecycle"
+"$BUILD/probe_swapchain_experiment"
 "$BUILD/probe_reset_trace"
 "$BUILD/probe_render_audit"
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" performance-aggressive
@@ -145,4 +189,10 @@ xcrun clang -fobjc-arc -arch x86_64 -mmacosx-version-min=11.0 \
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-neutralize-pacing-bypass
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-compositor-neutralize-pacing-release
 "$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-release-argument-buffers
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-release-swapchain-control
+"$BUILD/probe_mvk_config" "$BUILD/libMoltenVK.teso4m4.dylib" startup-release-triple-buffer
+[[ "$(production_log_identity)" == "$PRODUCTION_LOG_BEFORE" ]] || {
+  echo "A build probe changed the production bridge log: $PRODUCTION_LOG"
+  exit 1
+}
 echo "Built teso4m4 artifacts in $BUILD"

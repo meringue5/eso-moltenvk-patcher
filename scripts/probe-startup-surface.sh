@@ -71,4 +71,9 @@ run_probe black 3420 2146
 run_probe draw-neon-pink 3420 2146
 run_probe load 3420 2146
 
+echo "triple-buffer black control"
+TESO4M4_SWAPCHAIN_MIN_IMAGES=3 run_probe black 3420 2146
+echo "triple-buffer draw control"
+TESO4M4_SWAPCHAIN_MIN_IMAGES=3 run_probe draw-neon-pink 3420 2146
+
 echo "Startup surface non-game probe: PASS"

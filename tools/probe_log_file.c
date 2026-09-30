@@ -78,7 +78,52 @@ int main(void) {
 
     unlink(path);
     unlink(previous);
+
+    // A source-maintenance log directory must capture the production log
+    // without touching HOME, and an unusable override must disable logging
+    // rather than fall back to the player's production or /tmp log.
+    char home[1024];
+    char home_library[1024];
+    char override_path[1024];
+    snprintf(home, sizeof(home), "%s/home", directory);
+    snprintf(home_library, sizeof(home_library), "%s/Library", home);
+    snprintf(override_path, sizeof(override_path), "%s/bridge.log", directory);
+    if (mkdir(home, 0700) != 0 || setenv("HOME", home, 1) != 0 ||
+        setenv(TESO4M4_LOG_DIR_ENV, directory, 1) != 0) {
+        return fail("override fixture");
+    }
+    file = teso4m4_open_production_log();
+    if (!file || fputs("override", file) == EOF || fclose(file) != 0 ||
+        stat(override_path, &status) != 0 || status.st_size != 8 ||
+        (status.st_mode & 0777) != 0600 || access(home_library, F_OK) == 0) {
+        return fail("override log directory");
+    }
+    unlink(override_path);
+    const char* unusable[] = {"", "relative/dir", "/missing-parent/logs",
+                              override_path};
+    if (write_bytes(override_path, 'C', 1)) {
+        return fail("override file fixture");
+    }
+    for (size_t index = 0; index < sizeof(unusable) / sizeof(unusable[0]);
+         index++) {
+        if (setenv(TESO4M4_LOG_DIR_ENV, unusable[index], 1) != 0) {
+            return fail("override fixture");
+        }
+        file = teso4m4_open_production_log();
+        if (file) {
+            fclose(file);
+            return fail("unusable override fell back to another log");
+        }
+    }
+    if (access(home_library, F_OK) == 0) {
+        return fail("unusable override created the production log");
+    }
+    unsetenv(TESO4M4_LOG_DIR_ENV);
+
+    unlink(override_path);
+    rmdir(home);
     rmdir(directory);
-    puts("Log file smoke: PASS rotation=1MiB generations=1 mode=0600");
+    puts("Log file smoke: PASS rotation=1MiB generations=1 mode=0600 "
+         "override=isolated fallback=none");
     return 0;
 }
