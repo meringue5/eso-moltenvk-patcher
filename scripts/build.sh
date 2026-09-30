@@ -28,7 +28,11 @@ ACTUAL_MVK_SHA="$(shasum -a 256 "$MVK" | awk '{print $1}')"
 }
 EXPECTED_ORIGINAL_BINK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["original_bink_sha256"])' "$MANIFEST")"
 SOURCE_BINK="$BINK"
-if otool -L "$BINK" | grep -q 'teso4m4-original'; then
+if [[ -n "${TESO4M4_BINK_SOURCE:-}" ]]; then
+  # For example, the release installer's verified original-loader backup when
+  # the bundle's pristine copy belongs to an older Bink generation.
+  SOURCE_BINK="$TESO4M4_BINK_SOURCE"
+elif otool -L "$BINK" | grep -q 'teso4m4-original'; then
   [[ -f "$PRISTINE" ]] || {
     echo "Active Bink is a bridge and the pristine build source is missing."
     exit 1
