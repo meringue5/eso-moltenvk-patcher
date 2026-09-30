@@ -4,12 +4,26 @@
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 static volatile const uint8_t *g_active_flag;
 static Teso4m4InactivePacingLogFunction g_logger;
 static atomic_int g_last_state;
 static atomic_uint g_transition_count;
 static atomic_bool g_installed;
+static atomic_ullong g_origin_ns;
+static atomic_uint g_event_count;
+
+enum { INACTIVE_PACING_EVENT_LIMIT = 48 };
+
+/* Milliseconds since the pacing profile was prepared, on the uptime clock so
+   sleep does not inflate intervals. */
+static unsigned long long elapsed_ms(void) {
+  const unsigned long long origin =
+      atomic_load_explicit(&g_origin_ns, memory_order_relaxed);
+  const unsigned long long now = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+  return origin && now >= origin ? (now - origin) / 1000000ULL : 0;
+}
 
 static void pacing_log(const char *format, ...) {
   if (!g_logger) {
@@ -38,9 +52,11 @@ __attribute__((noinline)) static void inactive_pacing_hook(void) {
                                     memory_order_relaxed) +
           1;
       if (transition <= 16) {
-        pacing_log("INACTIVE_PACING_STATE: transition=%u active=%s action=%s",
-                   transition, state ? "yes" : "no",
-                   state ? "forward" : "sleep-bypassed");
+        pacing_log(
+            "INACTIVE_PACING_STATE: transition=%u active=%s action=%s "
+            "t_ms=%llu",
+            transition, state ? "yes" : "no",
+            state ? "forward" : "sleep-bypassed", elapsed_ms());
       } else if (transition == 17) {
         pacing_log("INACTIVE_PACING_STATE_LIMIT: retained=16 "
                    "further_transitions=unlogged");
@@ -56,6 +72,8 @@ void teso4m4_inactive_pacing_reset(void) {
   atomic_store(&g_last_state, -1);
   atomic_store(&g_transition_count, 0);
   atomic_store(&g_installed, false);
+  atomic_store(&g_origin_ns, 0);
+  atomic_store(&g_event_count, 0);
 }
 
 void teso4m4_inactive_pacing_set_logger(
@@ -97,6 +115,7 @@ bool teso4m4_inactive_pacing_prepare(
   patch[11] = 0xd0;
 
   g_active_flag = (volatile const uint8_t *)header + target->active_flag_offset;
+  atomic_store(&g_origin_ns, clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
   atomic_store(&g_last_state, -1);
   atomic_store(&g_transition_count, 0);
   pacing_log(
@@ -112,4 +131,21 @@ void teso4m4_inactive_pacing_did_install(void) {
   pacing_log("INACTIVE_PACING_ACTIVE: inactive_100ms_sleep=bypassed "
              "focus_callbacks=unmodified active_byte=observed-only "
              "transition_log_limit=16");
+}
+
+void teso4m4_inactive_pacing_note_event(const char *name) {
+  if (!name || !atomic_load(&g_installed) || !g_active_flag) {
+    return;
+  }
+  const unsigned sequence =
+      atomic_fetch_add_explicit(&g_event_count, 1, memory_order_relaxed) + 1;
+  if (sequence <= INACTIVE_PACING_EVENT_LIMIT) {
+    pacing_log("INACTIVE_PACING_EVENT: seq=%u name=%s active_byte=%s t_ms=%llu",
+               sequence, name, *g_active_flag != 0 ? "yes" : "no",
+               elapsed_ms());
+  } else if (sequence == INACTIVE_PACING_EVENT_LIMIT + 1) {
+    pacing_log("INACTIVE_PACING_EVENT_LIMIT: retained=%u "
+               "further_events=unlogged",
+               INACTIVE_PACING_EVENT_LIMIT);
+  }
 }
