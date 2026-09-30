@@ -16,7 +16,12 @@ shapes unchanged. The selected target is now `targets-eso-2026-09-30.json`.
 Local candidate `0.2.1-rc.1` skipped itself at launch because its target
 lacked the inactive pacing profile. `0.2.1-rc.2` is the 0.2.0 runtime rebuilt
 for the corrected target (branch `release/0.2.1`). It was installed with
-settings unchanged and a verified recovery backup; Status reports `READY`. It is not yet a public
+settings unchanged and a verified recovery backup; Status reports `READY`.
+Its first natural launch restored 60 FPS, but it again began with
+`active=no` and a detached mouse until an app switch, without any sleep
+(Experiment 0052 amendment). Observation-only `0.2.1-rc.3` is now installed
+for Experiment [0055](experiments/0055-activation-order-observation.md), which
+records timestamped AppKit activation events against ESO's active byte. It is not yet a public
 release. The next gate is one natural user launch that meets the pass criteria
 in Experiment 0054. This replaced the 0.2.1-logger candidate, so the `debug`
 capture plan below is inactive until the logger work is rebuilt on 12.1.5.
