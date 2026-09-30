@@ -143,3 +143,13 @@ and which app was frontmost in the failed runs.
    ESO's own activation when AppKit has not activated it after launch. The
    ROADMAP guardrails (no forced active byte, no synthesized input, no
    private activation API) remain in force.
+
+## 2026-09-30 static amendment
+
+The 12.1.5 executable's selector strings include `activateIgnoringOtherApps:`,
+`makeKeyAndOrderFront:`, and a bare `activate`. `LSMinimumSystemVersion` is
+10.13. Starting with macOS 14, `activateIgnoringOtherApps:` no longer forces
+activation and takes part in cooperative activation. This is consistent with
+the inference above: ESO requests activation the legacy way, and whether it
+wins depends on the launching app yielding. Call sites and ordering were not
+traced. This remains an inference, not a demonstrated mechanism.
