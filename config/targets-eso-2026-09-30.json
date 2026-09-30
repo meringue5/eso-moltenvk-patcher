@@ -502,5 +502,12 @@
       "vulkan_exports": 431
     }
   },
-  "derived_from_sha256": "a819aa2313e91676bdfa3987ae650d594a86faf2429ad56c736b5e6992680609"
+  "derived_from_sha256": "a819aa2313e91676bdfa3987ae650d594a86faf2429ad56c736b5e6992680609",
+  "experimental_targets": {
+    "inactive_pacing": {
+      "image_offset": "0x33458",
+      "expected_bytes": "7527bfa0860100e8aca1a603",
+      "active_flag_offset": "0x4c688bc"
+    }
+  }
 }

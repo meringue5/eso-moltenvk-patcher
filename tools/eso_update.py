@@ -50,6 +50,11 @@ X86_64_RELOC_GOT_LOAD = 3
 # ld64 may relax a GOT load to a direct LEA; only the opcode byte changes.
 GOT_LOAD_RELAXED_OPCODES = {0x8B: 0x8D}
 PLACEMENT_ANCHOR_SIZE = 64
+# ESO's inactive outer-loop branch: jne +0x27; mov edi, 100000; call usleep.
+INACTIVE_PACING_PREFIX = bytes.fromhex("7527bfa0860100e8")
+INACTIVE_PACING_FLAG_TEST = bytes.fromhex("41807d0000")  # cmpb $0, (%r13)
+INACTIVE_PACING_REJOIN = bytes.fromhex("8a431884c0")  # movb 0x18(%rbx), %al; testb
+INACTIVE_PACING_FLAG_WINDOW = 0x80
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -317,6 +322,65 @@ def query_shape(executable: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     return {
         "routes": routes,
         "unnamed_sites": len(unknown),
+    }
+
+
+def stub_symbols(executable: Path) -> dict[int, str]:
+    output = subprocess.check_output(["otool", "-Iv", str(executable)], text=True)
+    return {
+        int(match.group(1), 16): match.group(2)
+        for line in output.splitlines()
+        if (match := re.match(r"^0x([0-9a-f]+)\s+\d+\s+(\S+)$", line))
+    }
+
+
+def locate_inactive_pacing(executable: Path) -> dict[str, str]:
+    """Find ESO's unique inactive 100-ms sleep branch and its active byte.
+
+    Every structural property the bridge relies on is checked: the flag test
+    immediately before the branch, the branch skipping to the loop test, the
+    call resolving to usleep, the post-call rejoin reloading the loop byte,
+    and exactly one RIP-relative LEA of %r13 within the enclosing loop.
+    """
+    data = executable.read_bytes()
+    sections = load_sections(executable)
+    text = find_section(sections, "__TEXT", "__text")
+    base = image_base(sections)
+    code = data[text.offset : text.offset + text.size]
+    sites = []
+    position = code.find(INACTIVE_PACING_PREFIX)
+    while position != -1:
+        sites.append(position)
+        position = code.find(INACTIVE_PACING_PREFIX, position + 1)
+    if len(sites) != 1:
+        raise ValueError(f"expected one inactive pacing branch; found {len(sites)}")
+    site = sites[0]
+    address = text.address + site
+    if code[site - len(INACTIVE_PACING_FLAG_TEST) : site] != INACTIVE_PACING_FLAG_TEST:
+        raise ValueError("inactive pacing branch is not preceded by the active-byte test")
+    call_target = address + 12 + struct.unpack_from("<i", code, site + 8)[0]
+    if stub_symbols(executable).get(call_target) != "_usleep":
+        raise ValueError("inactive pacing call does not resolve to usleep")
+    if code[site + 12] != 0xEB:
+        raise ValueError("inactive pacing call is not followed by a short jump")
+    rejoin = site + 14 + struct.unpack_from("<b", code, site + 13)[0]
+    if code[rejoin : rejoin + len(INACTIVE_PACING_REJOIN)] != INACTIVE_PACING_REJOIN:
+        raise ValueError("inactive pacing rejoin does not reload and test the loop byte")
+    if site + 2 + code[site + 1] != rejoin + 3:
+        raise ValueError("inactive pacing branch does not skip to the loop test")
+    window_start = max(0, site - INACTIVE_PACING_FLAG_WINDOW)
+    leas = [
+        offset
+        for offset in range(window_start, site)
+        if code[offset : offset + 3] == b"\x4c\x8d\x2d"
+    ]
+    if len(leas) != 1:
+        raise ValueError(f"expected one active-byte LEA of %r13; found {len(leas)}")
+    flag = text.address + leas[0] + 7 + struct.unpack_from("<i", code, leas[0] + 3)[0]
+    return {
+        "image_offset": f"0x{address - base:x}",
+        "expected_bytes": code[site : site + 12].hex(),
+        "active_flag_offset": f"0x{flag - base:x}",
     }
 
 
@@ -612,9 +676,15 @@ def audit_manifest(
     candidate["proc_addr_slots"] = proc_slots
     candidate["analysis"] = actual_analysis
     candidate["targets"] = targets
-    # Historical diagnostic hooks are not part of the production redirect and
-    # must not turn a core-compatible update into a false negative.
+    # The production runtime requires the inactive pacing branch; other
+    # historical diagnostic hooks are not carried to a rebased target.
     candidate.pop("experimental_targets", None)
+    if "inactive_pacing" in reference.get("experimental_targets", {}):
+        try:
+            pacing = locate_inactive_pacing(executable)
+        except (OSError, subprocess.SubprocessError, ValueError) as error:
+            return None, [f"inactive pacing profile: {error}"]
+        candidate["experimental_targets"] = {"inactive_pacing": pacing}
     return candidate, []
 
 
