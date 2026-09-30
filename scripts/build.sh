@@ -26,6 +26,7 @@ ACTUAL_MVK_SHA="$(shasum -a 256 "$MVK" | awk '{print $1}')"
   echo "Actual:   $ACTUAL_MVK_SHA"
   exit 1
 }
+EXPECTED_ORIGINAL_BINK_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["original_bink_sha256"])' "$MANIFEST")"
 SOURCE_BINK="$BINK"
 if otool -L "$BINK" | grep -q 'teso4m4-original'; then
   [[ -f "$PRISTINE" ]] || {
@@ -33,12 +34,13 @@ if otool -L "$BINK" | grep -q 'teso4m4-original'; then
     exit 1
   }
   SOURCE_BINK="$PRISTINE"
-elif [[ -f "$PRISTINE" ]]; then
-  cmp -s "$BINK" "$PRISTINE" || {
-    echo "Active original Bink differs from the pristine build source."
-    exit 1
-  }
 fi
+# A launcher update can ship a new original Bink generation while an older
+# pristine backup is preserved; build only from the selected target's original.
+[[ "$(shasum -a 256 "$SOURCE_BINK" | awk '{print $1}')" == "$EXPECTED_ORIGINAL_BINK_SHA" ]] || {
+  echo "Bink build source does not match the selected target's original Bink."
+  exit 1
+}
 
 mkdir -p "$BUILD"
 python3 "$ROOT/tools/generate_targets.py" "$ESO" "$MANIFEST" "$BUILD/generated_targets.h"
