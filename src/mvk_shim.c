@@ -1,5 +1,7 @@
 #include <CommonCrypto/CommonDigest.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <objc/message.h>
+#include <objc/runtime.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <mach/mach.h>
@@ -677,8 +679,8 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
 }
 
 /* AppKit posts these through NSNotificationCenter's default center, which is
-   CoreFoundation's local center. Observation only: callbacks read ESO's
-   active byte and log; they never change focus, activation, or ESO state. */
+   CoreFoundation's local center. Callbacks run on the main thread; they read
+   state and log. The only action is the bounded activation fallback below. */
 static const char* const kActivationNotifications[] = {
     "NSApplicationDidFinishLaunchingNotification",
     "NSApplicationDidBecomeActiveNotification",
@@ -689,15 +691,133 @@ static const char* const kActivationNotifications[] = {
     "NSWindowDidChangeOcclusionStateNotification",
 };
 
+/* ESO's own legacy activation request lands about 1.3-1.9 s after launch in
+   observed runs; AppKit activation then follows immediately when granted. */
+static const CFTimeInterval kActivationFallbackDelay = 4.0;
+static const CFTimeInterval kActivationResultDelay = 1.5;
+
+typedef id (*ObjcMessage)(id, SEL);
+typedef signed char (*ObjcBoolMessage)(id, SEL);
+typedef signed char (*ObjcBoolSelectorMessage)(id, SEL, SEL);
+typedef void (*ObjcVoidBoolMessage)(id, SEL, signed char);
+typedef pid_t (*ObjcPidMessage)(id, SEL);
+typedef const char* (*ObjcStringMessage)(id, SEL);
+
+static id objc_send(id receiver, const char* selector) {
+    return receiver ? ((ObjcMessage)objc_msgSend)(receiver, sel_registerName(selector))
+                    : NULL;
+}
+
+static id shared_application(void) {
+    return objc_send((id)objc_getClass("NSApplication"), "sharedApplication");
+}
+
+static int application_is_active(void) {
+    id application = shared_application();
+    if (!application) {
+        return -1;
+    }
+    return ((ObjcBoolMessage)objc_msgSend)(application, sel_registerName("isActive")) ? 1 : 0;
+}
+
+/* Only a coarse category is logged, never another application's identity. */
+static const char* frontmost_category(void) {
+    id workspace = objc_send((id)objc_getClass("NSWorkspace"), "sharedWorkspace");
+    id front = objc_send(workspace, "frontmostApplication");
+    if (!front) {
+        return workspace ? "none" : "unknown";
+    }
+    if (((ObjcPidMessage)objc_msgSend)(front, sel_registerName("processIdentifier")) == getpid()) {
+        return "self";
+    }
+    id identifier = objc_send(front, "bundleIdentifier");
+    const char* bundle =
+        identifier ? ((ObjcStringMessage)objc_msgSend)(identifier, sel_registerName("UTF8String"))
+                   : NULL;
+    if (!bundle) {
+        return "other";
+    }
+    if (strcmp(bundle, "com.zenimaxonlinestudios.zenimaxonlinestudioslauncher") == 0) {
+        return "zos-launcher";
+    }
+    if (strcmp(bundle, "com.valvesoftware.steam") == 0) {
+        return "steam";
+    }
+    return "other";
+}
+
+static const char* yes_no_unknown(int value) {
+    return value < 0 ? "unknown" : (value ? "yes" : "no");
+}
+
+static void log_activation(const char* phase, const char* action) {
+    log_message("INACTIVE_PACING_ACTIVATION: phase=%s action=%s app_active=%s "
+                "front=%s active_byte=%s t_ms=%llu",
+                phase, action, yes_no_unknown(application_is_active()),
+                frontmost_category(),
+                yes_no_unknown(teso4m4_inactive_pacing_active_byte()),
+                teso4m4_inactive_pacing_elapsed_ms());
+}
+
+static void activation_result_timer(CFRunLoopTimerRef timer, void* info) {
+    (void)timer;
+    (void)info;
+    log_activation("result", "observe");
+}
+
+static void schedule_main_timer(CFTimeInterval delay, CFRunLoopTimerCallBack callback) {
+    CFRunLoopTimerRef timer = CFRunLoopTimerCreate(
+        kCFAllocatorDefault, CFAbsoluteTimeGetCurrent() + delay, 0, 0, 0,
+        callback, NULL);
+    if (!timer) {
+        log_message("INACTIVE_PACING_ACTIVATION_ERROR: timer=unavailable");
+        return;
+    }
+    CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
+    CFRelease(timer);
+}
+
+/* One public-API activation request, only if AppKit still has not made ESO
+   active. No input is synthesized and ESO's active byte is never written. */
+static void activation_fallback_timer(CFRunLoopTimerRef timer, void* info) {
+    (void)timer;
+    (void)info;
+    const int active = application_is_active();
+    if (active != 0) {
+        log_activation("check", active > 0 ? "not-needed" : "unavailable");
+        return;
+    }
+    /* On macOS 26.6.2 a non-game x86_64 probe that had lost activation was
+       refused by the cooperative -[NSApplication activate] but reactivated by
+       -activateIgnoringOtherApps:YES, so the latter is preferred. */
+    id application = shared_application();
+    SEL legacy = sel_registerName("activateIgnoringOtherApps:");
+    const char* action = "activateIgnoringOtherApps";
+    if (((ObjcBoolSelectorMessage)objc_msgSend)(
+            application, sel_registerName("respondsToSelector:"), legacy)) {
+        ((ObjcVoidBoolMessage)objc_msgSend)(application, legacy, 1);
+    } else {
+        ((void (*)(id, SEL))objc_msgSend)(application, sel_registerName("activate"));
+        action = "activate";
+    }
+    log_activation("request", action);
+    schedule_main_timer(kActivationResultDelay, activation_result_timer);
+}
+
 static void activation_notification(CFNotificationCenterRef center,
                                     void* observer, CFNotificationName name,
                                     const void* object,
                                     CFDictionaryRef user_info) {
     (void)center;
+    (void)name;
     (void)object;
     (void)user_info;
-    (void)name;
-    teso4m4_inactive_pacing_note_event((const char*)observer);
+    const char* label = (const char*)observer;
+    teso4m4_inactive_pacing_note_event(label, frontmost_category());
+    if (label == kActivationNotifications[0]) {
+        log_activation("launch", "arm");
+        schedule_main_timer(kActivationFallbackDelay, activation_fallback_timer);
+    }
 }
 
 static void observe_activation_notifications(void) {
@@ -719,8 +839,9 @@ static void observe_activation_notifications(void) {
         CFRelease(name);
     }
     log_message("INACTIVE_PACING_OBSERVER: appkit_notifications=%zu "
-                "mode=observe-only event_log_limit=48",
-                count);
+                "mode=observe event_log_limit=48 activation_fallback=once "
+                "delay_s=%.1f",
+                count, kActivationFallbackDelay);
 }
 
 __attribute__((constructor)) static void teso4m4_init(void) {

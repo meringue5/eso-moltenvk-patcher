@@ -133,16 +133,28 @@ void teso4m4_inactive_pacing_did_install(void) {
              "transition_log_limit=16");
 }
 
-void teso4m4_inactive_pacing_note_event(const char *name) {
+int teso4m4_inactive_pacing_active_byte(void) {
+  if (!atomic_load(&g_installed) || !g_active_flag) {
+    return -1;
+  }
+  return *g_active_flag != 0 ? 1 : 0;
+}
+
+unsigned long long teso4m4_inactive_pacing_elapsed_ms(void) {
+  return elapsed_ms();
+}
+
+void teso4m4_inactive_pacing_note_event(const char *name, const char *front) {
   if (!name || !atomic_load(&g_installed) || !g_active_flag) {
     return;
   }
   const unsigned sequence =
       atomic_fetch_add_explicit(&g_event_count, 1, memory_order_relaxed) + 1;
   if (sequence <= INACTIVE_PACING_EVENT_LIMIT) {
-    pacing_log("INACTIVE_PACING_EVENT: seq=%u name=%s active_byte=%s t_ms=%llu",
-               sequence, name, *g_active_flag != 0 ? "yes" : "no",
-               elapsed_ms());
+    pacing_log("INACTIVE_PACING_EVENT: seq=%u name=%s front=%s active_byte=%s "
+               "t_ms=%llu",
+               sequence, name, front ? front : "unknown",
+               *g_active_flag != 0 ? "yes" : "no", elapsed_ms());
   } else if (sequence == INACTIVE_PACING_EVENT_LIMIT + 1) {
     pacing_log("INACTIVE_PACING_EVENT_LIMIT: retained=%u "
                "further_events=unlogged",
