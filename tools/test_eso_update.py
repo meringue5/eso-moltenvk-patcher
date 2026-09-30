@@ -13,7 +13,9 @@ import tempfile
 import unittest
 import uuid
 
-from analyze_vk_calls import _opcode_rebases
+from analyze_vk_calls import Section, _opcode_rebases
+from unittest import mock
+import eso_update
 from eso_update import (
     SCHEMA_VERSION,
     audit_manifest,
@@ -168,6 +170,48 @@ class UpdateToolTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             _opcode_rebases(Path("synthetic"), data + b"\x12", segments, (len(data), 1))
+
+    def synthetic_pacing_loop(self, flag_lea: bool = True) -> bytes:
+        loop = bytearray(b"\x90" * 0x20)
+        if flag_lea:
+            loop += b"\x4c\x8d\x2d" + struct.pack("<i", 0x1000)  # leaq flag(%rip), %r13
+        loop += b"\x90" * 8
+        loop += bytes.fromhex("41807d0000")  # cmpb $0, (%r13)
+        site = len(loop)
+        loop += bytes.fromhex("7527bfa0860100e8") + struct.pack("<i", 0x100)
+        loop += bytes.fromhex("eb18") + b"\x90" * 0x18
+        loop += bytes.fromhex("8a431884c0")  # rejoin: reload and test
+        self.assertEqual(site + 2 + 0x27, len(loop) - 2)
+        return bytes(loop)
+
+    def run_pacing_locator(self, code: bytes, stubs: dict[int, str]) -> dict[str, str]:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "eso"
+            path.write_bytes(code)
+            text = Section("__TEXT", "__text", 0x100000000, len(code), 0)
+            with mock.patch.object(eso_update, "load_sections", return_value=[text]), \
+                mock.patch.object(eso_update, "image_base", return_value=0x100000000), \
+                mock.patch.object(eso_update, "stub_symbols", return_value=stubs):
+                return eso_update.locate_inactive_pacing(path)
+
+    def test_inactive_pacing_locator_requires_full_structure(self) -> None:
+        code = self.synthetic_pacing_loop()
+        site = code.find(bytes.fromhex("7527bfa0860100e8"))
+        usleep = 0x100000000 + site + 12 + 0x100
+        found = self.run_pacing_locator(code, {usleep: "_usleep"})
+        self.assertEqual(found["image_offset"], f"0x{site:x}")
+        self.assertEqual(found["active_flag_offset"], f"0x{0x20 + 7 + 0x1000:x}")
+
+        with self.assertRaisesRegex(ValueError, "usleep"):
+            self.run_pacing_locator(code, {usleep: "_sleep"})
+        without_lea = self.synthetic_pacing_loop(False)
+        moved_usleep = (
+            0x100000000 + without_lea.find(bytes.fromhex("7527bfa0860100e8")) + 12 + 0x100
+        )
+        with self.assertRaisesRegex(ValueError, "LEA"):
+            self.run_pacing_locator(without_lea, {moved_usleep: "_usleep"})
+        with self.assertRaisesRegex(ValueError, "expected one"):
+            self.run_pacing_locator(code + code, {usleep: "_usleep"})
 
     def test_analysis_comparison_is_exact_and_section_named(self) -> None:
         reference = {

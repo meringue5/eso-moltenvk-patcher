@@ -13,6 +13,12 @@ ESO_APP="${ESO_APP:-$HOME/Library/Application Support/Steam/steamapps/common/Zen
 LEGACY_MVK="$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK"
 
 "$ROOT/scripts/build.sh"
+# The release runtime profile needs the inactive pacing branch; without it the
+# bridge installs as READY but skips itself at launch.
+grep -qx '#define ESO_HAS_INACTIVE_PACING_TARGET 1' "$ROOT/build/generated_targets.h" || {
+  echo "Selected target has no inactive pacing profile; refusing to package."
+  exit 1
+}
 rm -rf "$STAGE"
 mkdir -p "$INTERNAL/bin" "$INTERNAL/payload"
 cp "$ROOT/release/bin/eso-moltenvk-patcher" "$INTERNAL/bin/"
