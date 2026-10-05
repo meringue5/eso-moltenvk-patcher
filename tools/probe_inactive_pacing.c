@@ -25,7 +25,6 @@ static void test_log(const char *message) {
   g_true_logs += strstr(message, "active=yes action=forward") != NULL;
   g_error_logs += strstr(message, "ERROR:") != NULL;
   g_event_logs += strstr(message, "INACTIVE_PACING_EVENT: seq=") != NULL &&
-                  strstr(message, " front=self ") != NULL &&
                   strstr(message, " t_ms=") != NULL;
   g_event_limit_logs += strstr(message, "INACTIVE_PACING_EVENT_LIMIT:") != NULL;
   g_timed_state_logs += strstr(message, "INACTIVE_PACING_STATE:") != NULL &&
@@ -122,17 +121,11 @@ int main(void) {
   if (result != KERN_SUCCESS) {
     return fail("synthetic code page RX restore failed") ? 0 : 1;
   }
-  teso4m4_inactive_pacing_note_event("before-install", NULL);
+  teso4m4_inactive_pacing_note_event("before-install");
   if (g_event_logs != 0) {
     return fail("an event was recorded before installation") ? 0 : 1;
   }
-  if (teso4m4_inactive_pacing_active_byte() != -1) {
-    return fail("active byte was readable before installation") ? 0 : 1;
-  }
   teso4m4_inactive_pacing_did_install();
-  if (teso4m4_inactive_pacing_active_byte() != 0) {
-    return fail("installed active byte was not reported") ? 0 : 1;
-  }
 
   typedef int (*SyntheticLoop)(void);
   SyntheticLoop loop = (SyntheticLoop)(void *)(code + function_offset);
@@ -149,8 +142,7 @@ int main(void) {
   }
   const unsigned before_events = g_error_logs;
   for (unsigned index = 0; index < 60; ++index) {
-    teso4m4_inactive_pacing_note_event("NSApplicationDidBecomeActiveNotification",
-                                       "self");
+    teso4m4_inactive_pacing_note_event("NSApplicationDidBecomeActiveNotification");
   }
   if (g_event_logs != 48 || g_event_limit_logs != 1 ||
       g_error_logs != before_events) {
