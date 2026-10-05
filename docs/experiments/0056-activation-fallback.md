@@ -1,9 +1,9 @@
 # Experiment 0056: one-shot activation fallback
 
 - Date: 2026-09-30
-- Outcome: **running; 0.2.1-rc.4 installed, awaiting natural launches**
-- Rollback: **reinstall 0.2.1-rc.3 (observation only) or rc.2, or restore via
-  the verified same-generation backup**
+- Outcome: **failed; the first retained one-shot request did not activate ESO**
+- Rollback: **not performed; rc.4 remains installed with verified alternatives
+  available (rc.3 observation-only, rc.2, or same-generation restore)**
 
 ## Question
 
@@ -88,7 +88,7 @@ loading.
 - Launches with `not-needed` are controls. Their `front=` values at the
   early events show which app yields activation in successful launches.
 
-## 2026-10-05 follow-up
+## Earlier 2026-10-05 follow-up
 
 The user recalled that later ordinary play may not have shown another major
 problem, but explicitly said the memory was uncertain. This is retained as a
@@ -99,5 +99,35 @@ The latest retained rc.4 run,
 `20260930T082554.639631000Z-pid70913`, was a control. AppKit made ESO key and
 active, ESO's byte followed at 1,690 ms, and the one-shot check recorded
 `action=not-needed` at 4,160 ms. It therefore supplies no evidence about whether
-an actual `phase=request` repairs a failed launch. Experiment 0056 remains
-running.
+an actual `phase=request` repairs a failed launch. At the time of that note,
+Experiment 0056 remained running.
+
+## Result: one-shot request failed
+
+Later on 2026-10-05, user-controlled run
+`20261005T122449.163336000Z-pid8767` supplied the first retained case in which
+the fallback fired. The bridge loaded normally: 17 redirects, inactive pacing
+bypass, 79 suppressed draws, ordinal-150 forwarding, ordinal-180 finish, and
+no bridge error.
+
+The activation sequence was decisive:
+
+| Time from pacing preparation | Observation |
+|---:|---|
+| 132 ms | Finish-launch event; `front=zos-launcher`, AppKit inactive, ESO byte false |
+| 2,428 ms | First pacing sample `active=no` |
+| 4,137 ms | One-shot `activateIgnoringOtherApps:` request; `front=self`, AppKit inactive, ESO byte false |
+| 5,641 ms | Request result still `app_active=no front=self active_byte=no` |
+| 36,361--36,368 ms | After the user's Cmd-Tab cycle, window-key and app-active events arrived |
+| 36,453 ms | ESO byte changed to `active=yes` |
+
+The user reported low FPS after login until Cmd-Tab out and back. Unlike the
+earlier failures, mouse focus was not visibly detached. The log cannot measure
+either property, but it independently aligns the manual switch with AppKit
+activation and ESO's state transition.
+
+This meets the experiment's explicit fail criterion. A one-shot activation
+request from the child game process is insufficient even when ESO is already
+the frontmost category. More repetitions of rc.4 are not required. The
+remaining repair boundary is the ZeniMax/Steam-to-ESO activation hand-off;
+designing or changing that path is separate work and was not performed here.

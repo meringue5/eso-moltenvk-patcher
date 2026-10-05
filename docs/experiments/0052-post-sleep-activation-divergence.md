@@ -181,3 +181,28 @@ On 2026-10-05 the user additionally recalled that later play may not have had
 another major problem, but was unsure. That low-confidence recollection does
 not supersede the confirmed 2026-09-30 non-sleep recurrence and is not counted
 as a clean-launch sample.
+
+## 2026-10-05 amendment: low FPS without mouse detachment
+
+User-controlled rc.4 run `20261005T122449.163336000Z-pid8767` adds a distinct
+symptom combination. After login, FPS remained degraded until the user
+Cmd-Tabbed out and back, but the user did **not** observe mouse detachment.
+The log independently establishes this activation sequence:
+
+- ESO finished launching with the ZeniMax launcher frontmost at 132 ms.
+- Its first pacing state was `active=no` at 2,428 ms.
+- The one-shot in-process activation request fired at 4,137 ms while the
+  frontmost category was already `self`, but its 5,641-ms result remained
+  `app_active=no active_byte=no`.
+- At 36,361--36,368 ms, during the user's app-switch cycle, ESO received
+  `NSWindowDidBecomeKey` and `NSApplicationDidBecomeActive`; its active byte
+  followed at 36,453 ms.
+- The bridge had all 17 redirects, the 79-draw latch at ordinal 150, and the
+  ordinal-180 finish, with no recorded bridge error.
+
+The log cannot measure FPS or mouse capture, so those facts remain the user's
+observation. Together, the evidence shows that low FPS can occur without the
+visible mouse-detachment symptom, while still ending after AppKit activation
+and ESO's active-state transition. Mouse capture is therefore not a reliable
+proxy for this performance/activation state. Cmd-Tab remains an observed
+recovery path, not an accepted product requirement.

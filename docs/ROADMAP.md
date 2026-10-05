@@ -18,6 +18,14 @@ This roadmap contains future work only. Current verified state is in
 - Do not make application switching a required workaround, force the active
   byte, synthesize focus, or add default startup instrumentation that can alter
   the timing under investigation.
+- Experiment 0056's one-shot in-process `activateIgnoringOtherApps:` fallback
+  is closed as insufficient: its first retained request remained inactive
+  until the user's later Cmd-Tab cycle. Do not request more repetitions of
+  that candidate. Treat launcher-to-game activation hand-off as the remaining
+  repair boundary.
+- Keep mouse capture and performance as separate acceptance dimensions. The
+  2026-10-05 failure had no reported mouse detachment, yet FPS still recovered
+  only after AppKit activation and ESO's active byte changed on an app switch.
 - Keep normal operation at `info`. For a bounded recurrence capture, use the
   independent `debug` preference from Experiment 0053, preserve one affected
   natural launch and its user observation, export the filtered diagnostics,

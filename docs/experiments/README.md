@@ -66,7 +66,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0053 | 2026-08-30 | Operational log-level control | Succeeded in source/package fixtures; later release required before public use | [Run](0053-operational-log-level-control.md) |
 | 0054 | 2026-09-30 | ESO 12.1.5 relinked-update rebase | Succeeded statically and installed as local 0.2.1-rc.1; awaiting one natural launch | [Run](0054-eso-12.1.5-relinked-update-rebase.md) |
 | 0055 | 2026-09-30 | Activation-order observation | Succeeded; failed launches never received AppKit activation, so the fault precedes ESO | [Run](0055-activation-order-observation.md) |
-| 0056 | 2026-09-30 | One-shot activation fallback | Running; 0.2.1-rc.4 installed | [Run](0056-activation-fallback.md) |
+| 0056 | 2026-09-30 / 2026-10-05 | One-shot activation fallback | Failed; in-process request remained inactive until manual app switch | [Run](0056-activation-fallback.md) |
 
 ## Recording policy
 
