@@ -55,3 +55,13 @@ The rc.3 bridge's user launches on 12.1.5 had all 17 redirects, exact
 79/150/180 startup control, and no bridge error. Once ESO was active, the user
 observed 60 FPS. Two of the four launches started inactive. That is the known
 launcher hand-off issue, which also occurs without the patch.
+
+## Publication
+
+Pushed `main` (`36d5df7`), `release/0.2.1`, and annotated tag `v0.2.1`
+(object `d9d65901`, peels to `616fcb69`). GitHub Release
+[v0.2.1](https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.2.1)
+is neither a draft nor a prerelease. The latest-release endpoint returns
+`v0.2.1`. The single asset reports size 3,420,086 bytes and server digest
+`sha256:5cfae50224a91410de4ff7f3bd64c73047402c8c6b9d195015da5249b6619d54`,
+matching the local ZIP.
