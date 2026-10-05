@@ -2,6 +2,16 @@
 
 Last updated: 2026-10-05
 
+## Public 0.2.1 release (2026-10-05)
+
+ESO MoltenVK Patcher 0.2.1 is the public release for ESO 12.1.5 / databuild
+3303624. It ships the runtime of user-launched `0.2.1-rc.3`, byte for byte:
+the 0.2.0 control, the 12.1.5 target, and observation-only activation records.
+The Experiment 0056 fallback is reverted. The launcher-to-game activation
+hand-off failure is documented as a known issue. Identity and gates:
+Experiment [0057](experiments/0057-public-0.2.1-release.md). Public 0.2.0
+remains published and supports only ESO 12.0.8.
+
 ## 2026-09-30 ESO update
 
 Steam installed ESO 12.1.5, databuild `3303624`, SHA-256

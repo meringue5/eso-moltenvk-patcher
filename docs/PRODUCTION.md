@@ -13,8 +13,8 @@ if it had been production at the time.
 
 | Component | Production baseline |
 |---|---|
-| Product | ESO MoltenVK Patcher 0.2.0 |
-| Current exact ESO client | Steam macOS ESO 12.0.8, databuild `3288357` |
+| Product | ESO MoltenVK Patcher 0.2.1 |
+| Current exact ESO client | Steam macOS ESO 12.1.5, databuild `3303624` (0.2.0: 12.0.8, databuild `3288357`) |
 | Extended gameplay client | Steam macOS ESO 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
 | Bridge profile | `startup-compositor-neutralize-pacing-release`; inactive pacing bypass and bounded compositor repair |

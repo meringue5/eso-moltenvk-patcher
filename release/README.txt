@@ -16,12 +16,18 @@ QUICK START
    capture for the next ESO launch. It changes no bridge, cache, or game setting.
 6. To uninstall, double-click Uninstall.command.
 
-Version 0.2.0 turns the validated runtime structure into public operational
-checks. It retains the strongest startup-stability profile for the validated
-M4 and ESO 12.0.8 target, records the Balanced M4 profile explicitly, verifies
-the package before every action, classifies the latest 79/150/180 startup run,
-and keeps the normal Steam/ZeniMax launch path unchanged. It does not promise
-identical FPS on every Mac or claim unmeasured Quality/Efficiency profiles.
+Version 0.2.1 supports the 2026-09-30 ESO update (client 12.1.5, databuild
+3303624). That update relinked the game and moved the unchanged embedded
+MoltenVK, so the 0.2.0 package correctly refused it. 0.2.1 keeps the 0.2.0
+runtime control and settings template unchanged, verifies the new executable
+and its new original Bink library, and adds a few timestamped, bounded
+activation records to the local log. It does not promise identical FPS on
+every Mac or claim unmeasured Quality/Efficiency profiles.
+
+Known issue: on some launches macOS does not make ESO the active application
+when the launcher starts it. ESO then runs at reduced FPS, and the mouse may
+not be captured, until you switch to another app and back (Cmd-Tab). This
+happens with or without the patch and is not fixed by 0.2.1.
 
 Payload files are kept in a hidden internal folder. Keep the entire package
 together and do not move any command out of it.
