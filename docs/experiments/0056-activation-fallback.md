@@ -87,3 +87,17 @@ loading.
   is then insufficient, and the remaining fix is on the launcher's hand-off.
 - Launches with `not-needed` are controls. Their `front=` values at the
   early events show which app yields activation in successful launches.
+
+## 2026-10-05 follow-up
+
+The user recalled that later ordinary play may not have shown another major
+problem, but explicitly said the memory was uncertain. This is retained as a
+low-confidence follow-up only: it has no per-launch focus/FPS report and cannot
+be counted toward the pass criteria or stop condition.
+
+The latest retained rc.4 run,
+`20260930T082554.639631000Z-pid70913`, was a control. AppKit made ESO key and
+active, ESO's byte followed at 1,690 ms, and the one-shot check recorded
+`action=not-needed` at 4,160 ms. It therefore supplies no evidence about whether
+an actual `phase=request` repairs a failed launch. Experiment 0056 remains
+running.

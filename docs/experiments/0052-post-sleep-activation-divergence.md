@@ -151,3 +151,33 @@ and relink. Today's recurrence is the same class as this experiment, not a
 regression introduced by Experiment 0054. The records have no per-line
 timestamps, so the time spent inactive and the event order around activation
 remain unmeasured.
+
+## 2026-10-05 amendment: detailed reconstruction of the 2026-08-30 recovery
+
+The user supplied the following more precise sequence for the debug launch
+that was contemporaneously identified as
+`20260830T092807.016410000Z-pid65555`. The live log generations containing
+that run have since rotated, so the run attribution comes from the inspection
+made at report time; the visual and FPS sequence is the user's direct
+observation.
+
+1. ESO again began near 40 FPS with mouse focus detached.
+2. On the first Cmd-Tab screen transition, a very large macOS mouse pointer
+   appeared. It moved together with the in-game crosshair, so both were visible
+   and moving at the same time.
+3. The user Cmd-Tabbed to another window, explicitly clicked that window to
+   move focus, and then returned to ESO.
+4. After the return, only the in-game crosshair remained. FPS then recovered
+   gradually rather than instantaneously, eventually reaching 60 FPS.
+
+This is stronger temporal evidence that the detached-input state and the
+approximately-40-FPS state ended across the same explicit focus-transfer
+sequence. It does not identify which of the app switch, the other-window click,
+the return, or the elapsed recovery interval caused either change. Cmd-Tab and
+clicking another app remain observations of the failure mode, not an accepted
+required workaround.
+
+On 2026-10-05 the user additionally recalled that later play may not have had
+another major problem, but was unsure. That low-confidence recollection does
+not supersede the confirmed 2026-09-30 non-sleep recurrence and is not counted
+as a clean-launch sample.

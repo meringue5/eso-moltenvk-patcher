@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-09-30
+Last updated: 2026-10-05
 
 ## 2026-09-30 ESO update
 
@@ -27,6 +27,13 @@ activation fallback and frontmost-app category for Experiment
 release. The next gate is one natural user launch that meets the pass criteria
 in Experiment 0054. This replaced the 0.2.1-logger candidate, so the `debug`
 capture plan below is inactive until the logger work is rebuilt on 12.1.5.
+
+On 2026-10-05 the user recalled no major issue in later ordinary play, but
+explicitly said the memory was uncertain. This is not counted as a clean launch
+or as evidence that Experiment 0056 passed. The retained 2026-09-30 rc.4 run
+was a `phase=check action=not-needed` control, not a launch in which the
+fallback fired. Experiment 0056 therefore remains running with its original
+evidence gate.
 
 ## Current public production baseline
 
