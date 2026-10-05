@@ -162,6 +162,36 @@ EOF
 status_output="$(run_tool status)"
 [[ "$status_output" == *'Last launch: PASS'* ]]
 [[ "$status_output" == *'Initial activity: active=yes (observed)'* ]]
+# Non-game bridge loads (source build probes) end at the missing enable marker
+# with no game activity; they must not displace the latest launch.
+cp "$PRODUCTION_LOG" "$TEST_ROOT/launch-only.log"
+cat > "$TEST_ROOT/probe-only.log" <<'PROBE_EOF'
+[run=probe-run-1] RUN_START: bridge starting log_level=info log_source=default
+[run=probe-run-1] SKIP: enable marker absent
+[run=probe-run-2] RUN_START: bridge starting log_level=info log_source=default
+[run=probe-run-2] SKIP: enable marker absent
+PROBE_EOF
+cat "$TEST_ROOT/probe-only.log" >> "$PRODUCTION_LOG"
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Last launch: PASS'* ]]
+[[ "$status_output" == *'Run: fixture-run'* ]]
+[[ "$status_output" == *'Ignored: 2 newer non-game bridge load(s) without the enable marker'* ]]
+[[ "$status_output" != *'invariant checks failed'* ]]
+# A marker-absent run with any other record is not a probe and stays reviewable.
+cat >> "$PRODUCTION_LOG" <<'PROBE_EOF'
+[run=marker-absent-launch] RUN_START: bridge starting log_level=info log_source=default
+[run=marker-absent-launch] SKIP: enable marker absent
+[run=marker-absent-launch] ERROR: unexpected record after skip
+PROBE_EOF
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Last launch: REVIEW ('*' invariant checks failed)'* ]]
+[[ "$status_output" == *'Run: marker-absent-launch'* ]]
+[[ "$status_output" != *'Ignored:'* ]]
+cp "$TEST_ROOT/probe-only.log" "$PRODUCTION_LOG"
+status_output="$(run_tool status)"
+[[ "$status_output" == *'Last launch: not available'* ]]
+[[ "$status_output" == *'Ignored: 2 newer non-game bridge load(s) without the enable marker'* ]]
+cat "$TEST_ROOT/launch-only.log" "$TEST_ROOT/probe-only.log" > "$PRODUCTION_LOG"
 sed 's/maximize_concurrent_compilation=0/maximize_concurrent_compilation=1/g' \
   "$PRODUCTION_LOG" > "$TEST_ROOT/invalid-production.log"
 mv "$TEST_ROOT/invalid-production.log" "$PRODUCTION_LOG"
@@ -185,6 +215,8 @@ support_text="$(unzip -p "$SUPPORT_ZIP")"
 [[ "$support_text" != *'branch_offset='* ]]
 [[ "$support_text" != *'descriptor_update_signature='* ]]
 [[ "$support_text" == *'Last launch: PASS'* ]]
+[[ "$support_text" == *'[run=fixture-run] RUN_START:'* ]]
+[[ "$support_text" != *'[run=probe-run-'* ]]
 reinstall_output="$(run_tool install --skip-settings --yes)"
 [[ "$reinstall_output" == *'✓ Patch already installed'* ]]
 [[ "$reinstall_output" == *'No files were changed.'* ]]

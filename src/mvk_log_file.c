@@ -52,7 +52,22 @@ FILE* teso4m4_open_log_file(const char* path, size_t rotation_bytes) {
     return file;
 }
 
+static FILE* open_override_log(const char* directory) {
+    struct stat status = {0};
+    char path[4096];
+    if (directory[0] != '/' || lstat(directory, &status) != 0 ||
+        !S_ISDIR(status.st_mode) ||
+        !format_path(path, sizeof(path), "%s/bridge.log", directory)) {
+        return NULL;
+    }
+    return teso4m4_open_log_file(path, TESO4M4_PRODUCTION_LOG_ROTATION_BYTES);
+}
+
 FILE* teso4m4_open_production_log(void) {
+    const char* override = getenv(TESO4M4_LOG_DIR_ENV);
+    if (override) {
+        return open_override_log(override);
+    }
     const char* home = getenv("HOME");
     if (home && home[0] != '\0') {
         char library[4096];
