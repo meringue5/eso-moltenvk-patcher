@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.1 - 2026-10-05
+
+- Supports ESO 12.1.5, databuild 3303624 (Steam update of 2026-09-30). The
+  update relinked ESO and moved the byte-identical embedded MoltenVK object by
+  +0x1de7a0. 0.2.0 correctly refused it because its auditor is
+  address-fixed. All 17 patch signatures, 40 external references, GIPA/GDPA
+  query shapes, and the inactive 100-ms pacing branch were re-proven at the
+  new locations.
+- Accepts the new original Bink generation shipped with the update. The
+  previous recovery generation is preserved, not deleted.
+- Keeps the 0.2.0 runtime control and Balanced M4 settings template
+  unchanged. Adds bounded, observation-only activation evidence to the local
+  log: timestamps on pacing state changes and up to 48 AppKit
+  activation/key/occlusion events. Nothing changes focus or activation.
+- Known issue, not fixed: some launches are never made active by macOS when
+  the ZeniMax launcher spawns ESO. ESO then stays in its inactive state,
+  with low FPS and sometimes a detached mouse, until an app switch. Evidence
+  shows that ESO follows AppKit correctly when it is activated. An in-process
+  activation request did not help and is not included.
+- Passes the user's natural launches on ESO 12.1.5 with 60 FPS once active,
+  all 17 redirects, exact 79/150/180 startup control, and no bridge errors.
+  Also passes a fresh build, the installer transaction fixture, the archive
+  test, and the Python tests.
+
 ## 0.2.0 - 2026-08-27
 
 - Productizes the architecture established by the host-loop and compositor

@@ -4,12 +4,13 @@
 Online** from its
 statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
 1.4.2 release. The current patch and installer are validated on the normal
-Steam launch path. The current 0.2.0 release supports ESO 12.0.8 and can
-re-attest later relocation-only game updates when their embedded MoltenVK and
-complete bridge-facing structure remain unchanged. On the tested M4 MacBook
+Steam launch path. The current 0.2.1 release supports ESO 12.1.5 (databuild
+3303624, the 2026-09-30 update) and can re-attest later relocation-only game
+updates when their embedded MoltenVK and complete bridge-facing structure
+remain unchanged. On the tested M4 MacBook
 Air, an earlier 2048 x 1280 medium-to-high checkpoint held the 60 FPS VSync
 ceiling throughout roughly 93 minutes of user-observed active gameplay. The
-0.2.0 package identifies the later gameplay-accepted 1920 x 1200 Balanced M4
+0.2.x packages identify the later gameplay-accepted 1920 x 1200 Balanced M4
 profile separately rather than turning that older observation into a universal
 performance claim.
 
