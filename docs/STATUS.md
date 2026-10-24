@@ -2,46 +2,39 @@
 
 Last updated: 2026-10-24
 
-## Active local blocker: ESO 12.1.6 update
+## Active local gate: dynamic-profile gameplay acceptance
 
-The local client is now ESO 12.1.6 / databuild 3309674. `check-update.sh`
-reports `UNKNOWN_UPDATE`; `status.sh` confirms the bridge remains installed
-with a stale executable attestation. The current loader is not a clean original
-baseline. Existing runs skip redirection on the executable-hash mismatch.
+The local client is ESO 12.1.6 / databuild 3309674. `check-update.sh`
+reports `CURRENT`. After user-run launcher Repair and launcher exit, the
+observed vendor Bink matched the supported raw original. Development candidate
+0.3.0-rc.1 is now installed with settings skipped and caches preserved.
+Status reports `READY`, verified recovery and `Dynamic profile: verified
+(schema 1)`. This is installed-state verification, not gameplay acceptance.
 
-Read-only Experiment [0058](experiments/0058-eso-12.1.6-update-profile-analysis.md)
-established compatible embedded-runtime structure with independently moved
-Vulkan/pacing locations. Experiment
-[0060](experiments/0060-dynamic-update-profile-implementation.md) repeated the
-source audit, selected the 12.1.6 manifest, and implemented native dynamic
-profiles in development candidate 0.3.0-rc.1. `check-update.sh` now reports
-`CURRENT` for the executable; the active installed bridge remains stale.
-Fresh source/non-game builds and 154 Python tests pass, including sanitized
-native differential fixtures. Static compatibility is not gameplay acceptance.
+Experiment [0060](experiments/0060-dynamic-update-profile-implementation.md)
+owns the source/native/transaction checks, 154 Python tests, post-Repair
+loader observation, installed payload/profile identities and preservation
+comparison. The executable, settings, all inventoried caches, production log,
+legacy pristine and current raw recovery backup were unchanged by installation.
+Idle Steam passed the shared bundle-idle gate; no app was launched by the agent.
 
-The current vendor original Bink cannot be established from a retained bridge
-or the previous recovery backup. A future install still requires user-run
-launcher Repair to materialize that original, followed by supported-loader,
-fresh-build, non-game, restore, and bundle-idle gates. Do not restore the old
-backup across this update.
+[ADR-001](UPDATE-COMPATIBILITY.md) is implemented in the local candidate.
+Its remaining gate is one bounded user-controlled normal Steam-path launch to
+verify runtime profile re-discovery, all 17 redirects and existing startup
+controls, with independent rendering/focus/FPS observations. The last retained
+log predates this installation and its attestation failure is historical.
+No public release has been created. The activation hand-off issue remains
+unresolved and separate; dynamic relocation is not an activation fix.
 
-The implementation is governed by [ADR-001](UPDATE-COMPATIBILITY.md). Its
-remaining gate is a current-original observation through user-run Repair,
-followed by exact-input/restore/idle checks, cache-preserving candidate install
-and one separately bounded normal-launch acceptance run. No public release,
-installed-file mutation, settings/cache change, or game launch has occurred in
-this work. The activation hand-off issue remains unresolved and separate.
-
-The following release and runtime records are historical checkpoints; they do
-not describe the currently updated local bundle as ready.
+The following release and runtime records are historical checkpoints.
 
 ## macOS 27 and upstream runtime preflight (2026-10-24)
 
 Experiment [0059](experiments/0059-macos-27-rosetta-runtime-preflight.md) confirms
 fresh non-game x86_64 execution, self-patching, pinned runtime configuration,
 and ESO-era Vulkan device/HDR-filter operation on macOS 27.0.1. This is not a
-current-game acceptance result or proof of macOS 28 support. The installed
-update/loader blocker above remains unchanged.
+current-game acceptance result or proof of macOS 28 support. The installed-state
+and remaining gameplay gate are described above.
 
 The [official-source review](research/macos-27-rosetta-moltenvk-review.md)
 finds MoltenVK 1.4.2 still the latest official release, with 1.4.3 development

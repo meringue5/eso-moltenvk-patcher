@@ -1,8 +1,8 @@
 # Experiment 0060: native dynamic update profiles
 
 - Date: 2026-10-24
-- Outcome: **running; implementation/non-game gates pass, current-original observation and reinstall pending**
-- Rollback: **no installed-bundle mutation; previous installed bridge remains in place**
+- Outcome: **running; implementation/non-game and reinstall gates pass, gameplay acceptance pending**
+- Rollback: **verified current-original backup available; candidate installed, settings/caches preserved**
 
 ## Question and hypothesis
 
@@ -160,3 +160,52 @@ bounded normal Steam-path user launch must verify new profile validation, all
 17 redirects, pacing and 79/150/180 startup control, with focus/rendering/FPS
 observations supplied by the user. No request for that launch precedes a
 verified installed candidate.
+
+
+## Post-Repair installation amendment (2026-10-24)
+
+The user reported Repair complete and launcher closed. A fresh read-only check
+confirmed the same 12.1.6 executable hash/UUID/databuild and `CURRENT` result.
+The active original Bink was now directly observed as
+`9a0872f484a970bfcaa0b7bf76906822143c1d30358ee17dcd30c4b4dc2e6de8`,
+matching both the supported generation and verified raw recovery backup. This
+satisfies the provenance gate that retained bridge/backup files alone could
+not satisfy. Earlier pending observations above remain historical.
+
+The verified packaged CLI completed `install --skip-settings --yes` with exit
+0. Platform capability, current input identities, native derivation and shared
+bundle-idle checks passed. Steam was idle and allowed. The installer recognized
+the vendor-restored loader and preserved recovery state. No application was
+started by the agent.
+
+Post-install Status reports `READY`, release 0.3.0-rc.1, recovery verified and
+dynamic profile verified (schema 1). The installed bridge, runtime and canonical
+profile hashes match the delivery identities above. The 1664-byte profile has
+digest `ed4970761703564d57f677e01f3641b6275a1bc3f4756da6f80b14b76476686a`;
+both marker and installed journal bind it to the current executable. Journal
+phase is `installed`. The renamed original has SHA-256
+`7fac596c99afc36cbd5fc462aac74333d6ed76ecc9de591052201c5abee2eaa3`.
+
+A fresh pre-install/post-install identity comparison confirms unchanged
+executable, user settings, every inventoried active/backup pipeline cache,
+production log (including inode/size/mtime), legacy pristine and raw recovery
+backup. The seven changed inventory entries are active bridge, renamed
+original, runtime, marker, new profile, journal and release version. Companion
+file replacement with identical content is recorded as an inode change rather
+than hidden as no change. Older recovery inventory entries remain intact.
+Machine-local evidence is retained in the Experiment 0060 temporary directory:
+`preservation-after-repair-before-install.json`, `preservation-after-install.json`,
+`actual-install-after-repair.txt`, and `actual-status-after-install.txt`.
+
+Rollback remains available through the candidate's verified Remove path using
+the current raw original; the older legacy pristine must not be restored across
+this update. No rollback was exercised on the real bundle because that would
+unnecessarily replace the installed candidate; disposable transaction fixtures
+cover removal. No public release or gameplay PASS is claimed.
+
+One bounded user-controlled normal Steam-path run was requested after installed
+verification: at most five minutes, no settings change or required app-switch
+workaround, stop on crash/pink/focus failure/sustained low FPS. Runtime profile
+validation, 17 redirects and existing 79/150/180 startup control must be checked
+against the new run, alongside the user's rendering/focus/FPS observations.
+The pre-install attestation-failure log remains historical evidence.

@@ -9,19 +9,14 @@ This roadmap contains future work only. Current verified state is in
 The remaining gates for [ADR-001](UPDATE-COMPATIBILITY.md) and development
 candidate 0.3.0-rc.1 are:
 
-1. Obtain the current vendor original through user-run Repair. If its hash is
-   unsupported, complete loader analysis and non-game re-export validation
-   before broadening the allowlist; never restore the old backup instead.
-2. Recheck platform, executable/archive/build stamp, current original, restore
-   record and shared bundle-idle state. Install the verified candidate with
-   settings skipped and cache identities preserved.
-3. Prepare one bounded normal Steam-path acceptance run only after installed
-   profile/payload verification. Require structural logs and independent user
-   focus, rendering and FPS observations; do not claim an activation fix.
-4. Decide public-release eligibility only after acceptance, keeping prior
+1. Complete the requested bounded normal Steam-path acceptance run on the
+   installed candidate. Require runtime profile/17-redirect/startup-control logs
+   and independent user focus, rendering and FPS observations; do not claim an
+   activation fix from structural success.
+2. Decide public-release eligibility only after acceptance, keeping prior
    immutable releases and all recovery generations available.
 
-The first milestone is compatible reinstall through an explicit Install action.
+The next milestone is runtime acceptance after the verified explicit Install action.
 Background monitoring, launch-time installation, and automatic adoption of
 arbitrary Bink generations are deferred. The activation work below remains a
 separate reliability priority.
