@@ -1,5 +1,9 @@
 # ESO update runbook
 
+For the accepted successor design and implementation gates, see
+[installer-derived update profiles (ADR-001)](UPDATE-COMPATIBILITY.md).
+That path is not implemented; the commands below retain their existing gates.
+
 Launcher-managed updates replace files after the launcher opens, so a local
 tool cannot promise that no remote update is pending. The update gate instead
 detects the resulting local build boundary immediately, prevents stale

@@ -4,6 +4,29 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
+## Active update-maintenance gate: installer-derived profiles
+
+The current development order is owned by [ADR-001](UPDATE-COMPATIBILITY.md).
+Complete the native resolver/profile path before requesting scarce gameplay
+validation for it:
+
+1. Implement bounded profile parsing and native structural discovery, using
+   source-auditor differential fixtures for independent Vulkan/pacing movement.
+2. Integrate profile-derived runtime targets and all pre-write validation;
+   rebuild and pass non-game probes before installer integration.
+3. Extend journaled install/remove/status fixtures to bind profiles and current
+   original-loader generations without crossing the vendor-update boundary.
+4. Pass full checks, fresh isolated-log builds, packaging, interruption and
+   preservation tests. Keep unsupported Bink generations blocked.
+5. Only then obtain the vendor original through user-run Repair if still
+   required, repeat exact-input/install gates, and prepare one bounded normal
+   Steam-path user acceptance run.
+
+The first milestone is compatible reinstall through an explicit Install action.
+Background monitoring, launch-time installation, and automatic adoption of
+arbitrary Bink generations are deferred. The activation work below remains a
+separate reliability priority.
+
 ## P0: resolve post-sleep activation divergence
 
 - Treat Experiment 0052's public-0.2.0 recurrence as the immediate reliability
@@ -174,9 +197,9 @@ baseline.
 ## P4: maintain ESO update support
 
 - Run the quick update gate after every ESO or launcher content update.
-- Allow the packaged auditor to re-attest relocation-only executable updates
-  only when embedded MoltenVK, patch sites, reference shape, proc routes, and
-  runtime boundaries remain compatible; any mismatch requires manual analysis.
+- Implement the native dynamic-profile contract and validation gates in
+  [ADR-001](UPDATE-COMPATIBILITY.md); do not describe the present fixed-location
+  package as accepting independent target relocations.
 - Require launcher Repair when an executable update leaves the bridge active;
   never use an older original-loader backup as a substitute for observing the
   vendor's current original generation.

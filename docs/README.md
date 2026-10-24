@@ -21,6 +21,7 @@ claims belong in `PRODUCTION.md`, `STATUS.md`, and the top-level README.
 | How does the bridge work? | [Architecture](ARCHITECTURE.md) |
 | How does ESO's host loop gate application activity and pacing? | [ESO host runtime structure](ESO-HOST-RUNTIME.md) |
 | How is a launcher update checked and rebased? | [Update runbook](UPDATES.md) |
+| How will compatible updates be handled without rebuilding the bridge? | [Installer-derived update profiles (ADR-001)](UPDATE-COMPATIBILITY.md) |
 | What does the production bridge log? | [Logging policy](LOGGING.md) |
 | How is the public DMG built and released? | [Release packaging](RELEASE.md) |
 | What happened in a specific run? | [Experiment index](experiments/README.md) |

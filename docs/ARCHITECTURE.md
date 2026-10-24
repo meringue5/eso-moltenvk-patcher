@@ -149,6 +149,11 @@ or selectable production runtimes.
 
 ## Update gate
 
+The current packaged auditor and runtime use compiled patch locations; their
+relocation tolerance covers surrounding reference movement, not arbitrary
+movement of the embedded object or host pacing branch. The accepted successor
+design, not yet implemented, is [ADR-001](UPDATE-COMPATIBILITY.md).
+
 `config/current-target.txt` selects the supported manifest. The source update
 checker compares executable SHA-256, Mach-O UUID, client version, databuild,
 patch-site bytes, embedded archive members, external-reference shape,

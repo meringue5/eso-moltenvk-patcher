@@ -62,6 +62,17 @@ passes are semantically mergeable.
 - Therefore swapping the framework/archive does nothing to an already linked
   executable.
 
+### Update relocation domains
+
+Experiments [0054](experiments/0054-eso-12.1.5-relinked-update-rebase.md) and
+[0058](experiments/0058-eso-12.1.6-update-profile-analysis.md) independently
+establish that an unchanged embedded MoltenVK object can move when ESO is
+relinked. Experiment 0058 additionally proves the host pacing branch can move
+by a different amount from the Vulkan entry points while the active-flag and
+proc-query slots stay fixed. A single global relocation delta cannot represent
+the complete production patch. Each domain requires its own structural proof;
+these static observations do not establish gameplay compatibility.
+
 ## Why MoltenVK 1.4.1 is still worth investigating
 
 Official 1.4.1 testing on the M4 confirmed support for ESO's old instance and

@@ -1,6 +1,35 @@
 # Project status
 
-Last updated: 2026-10-05
+Last updated: 2026-10-24
+
+## Active local blocker: ESO 12.1.6 update
+
+The local client is now ESO 12.1.6 / databuild 3309674. `check-update.sh`
+reports `UNKNOWN_UPDATE`; `status.sh` confirms the bridge remains installed
+with a stale executable attestation. The current loader is not a clean original
+baseline. Existing runs skip redirection on the executable-hash mismatch.
+
+Read-only Experiment [0058](experiments/0058-eso-12.1.6-update-profile-analysis.md)
+reproduced `FAST_REBASE_SAFE` twice with identical candidate output. The
+embedded-runtime structure passes the source audit; Vulkan locations and the
+host pacing branch moved by different amounts. The selected target remains
+12.1.5. No rebuild, installation, restore, cache/settings mutation, or game
+launch occurred. Static compatibility does not establish gameplay acceptance.
+
+The current vendor original Bink cannot be established from a retained bridge
+or the previous recovery backup. A future install still requires user-run
+launcher Repair to materialize that original, followed by supported-loader,
+fresh-build, non-game, restore, and bundle-idle gates. Do not restore the old
+backup across this update.
+
+The analysis/design phase is complete. The next development gate is the bounded
+profile codec and shared native compatibility resolver in disposable fixtures,
+as specified in [ADR-001](UPDATE-COMPATIBILITY.md). Dynamic-profile support is
+not implemented or released. The activation hand-off issue below remains
+unresolved and must stay separate from this update-compatibility work.
+
+The following release and runtime records are historical checkpoints; they do
+not describe the currently updated local bundle as ready.
 
 ## Public 0.2.1 release (2026-10-05)
 
@@ -48,11 +77,11 @@ activation/FPS symptom and closes the in-process one-shot request as
 insufficient. No further launch repetition is required for that candidate;
 the remaining repair boundary is the launcher-to-game activation hand-off.
 
-## Current public production baseline
+## Historical 0.2.0 production checkpoint
 
-ESO MoltenVK Patcher 0.2.0 is the current public production release. GitHub's
-latest-release endpoint selects annotated tag `v0.2.0`, which peels to release
-commit `c063214ac9f0a8eaa56c11eb4c04c6dd282f1f2d`. Its one asset,
+At the 0.2.0 checkpoint, ESO MoltenVK Patcher 0.2.0 was the public production
+release. GitHub's latest-release endpoint selected annotated tag `v0.2.0`,
+which peels to release commit `c063214ac9f0a8eaa56c11eb4c04c6dd282f1f2d`. Its one asset,
 `ESO-MoltenVK-Patcher-0.2.0.zip`, has matching local and server SHA-256
 `b65d608010d46836813d3a36df3bd7c44e3ada4c583cbf9e803fbe01c4c0d508`
 and size 3,419,041 bytes. The server-reported download count was zero after
@@ -74,7 +103,7 @@ Experiments
 [0046](experiments/0046-original-loader-generation-aware-recovery.md), and
 [0047](experiments/0047-stable-0.1.3-release.md).
 
-## Current 0.2.0 production package
+## Historical 0.2.0 package validation
 
 Version 0.2.0 is an architecture-backed operations release. It deliberately
 retains the exact 0.1.3 runtime control instead of introducing another startup
@@ -179,7 +208,7 @@ started by the agent.
   the allowlisted settings merge. Historical backups are preservation data and
   are never automatically deleted.
 
-## Next gate
+## Retained activation-investigation gate (12.0.8 / 12.1.5)
 
 The immediate P0 reliability issue is Experiment
 [0052](experiments/0052-post-sleep-activation-divergence.md). After installing

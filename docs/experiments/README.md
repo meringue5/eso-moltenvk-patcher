@@ -68,6 +68,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0055 | 2026-09-30 | Activation-order observation | Succeeded; failed launches never received AppKit activation, so the fault precedes ESO | [Run](0055-activation-order-observation.md) |
 | 0056 | 2026-09-30 / 2026-10-05 | One-shot activation fallback | Failed; in-process request remained inactive until manual app switch | [Run](0056-activation-fallback.md) |
 | 0057 | 2026-10-05 | Public 0.2.1 release | Succeeded; rc.3 runtime published for ESO 12.1.5, fallback reverted | [Run](0057-public-0.2.1-release.md) |
+| 0058 | 2026-10-24 | ESO 12.1.6 static audit and dynamic-profile design | Succeeded in read-only analysis/design; install and runtime unvalidated | [Run](0058-eso-12.1.6-update-profile-analysis.md) |
 
 ## Recording policy
 
