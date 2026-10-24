@@ -2,7 +2,9 @@
 
 For the accepted successor design and implementation gates, see
 [installer-derived update profiles (ADR-001)](UPDATE-COMPATIBILITY.md).
-That path is not implemented; the commands below retain their existing gates.
+That path is implemented in the source development candidate, with installation
+and gameplay acceptance still pending in Experiment 0060. Public 0.2.1 retains
+the older fixed-location gate. The commands below retain their source gates.
 
 Launcher-managed updates replace files after the launcher opens, so a local
 tool cannot promise that no remote update is pending. The update gate instead
@@ -133,8 +135,8 @@ the game bundle. Review and commit both source changes before continuing.
 
 ## 5. Rebuild and install through the normal gate
 
-A successful fast audit establishes only static equivalence. With ESO, Steam,
-and the launcher stopped, the existing guarded sequence still applies:
+A successful fast audit establishes only static equivalence. With the shared
+bundle-idle gate satisfied (idle Steam is allowed), the guarded sequence applies:
 
 1. Verify the current status and required restore path.
 2. Restore the pristine loader only when needed for a clean source rebuild.
@@ -157,8 +159,8 @@ launcher-restored original is reused only when its hash matches the release
 profile. A newer supported original generation rotates the old recovery pair
 into history before receiving a fresh backup.
 
-This packaged path avoids a new release only when the embedded MoltenVK object
-stays at the same address; its auditor profile is address-fixed. If the object
+The public 0.1.x/0.2.x packaged path avoids a new release only when the embedded
+MoltenVK object stays at the same address; its auditor profile is address-fixed. If the object
 moves, as in ESO 12.1.5, run the source audit above and build a new package. It
 does not prove lobby or world rendering and must stop when the archive,
 reference shape, proc route, or patch signature changes. Such a change requires

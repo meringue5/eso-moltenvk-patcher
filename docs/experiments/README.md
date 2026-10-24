@@ -70,6 +70,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0057 | 2026-10-05 | Public 0.2.1 release | Succeeded; rc.3 runtime published for ESO 12.1.5, fallback reverted | [Run](0057-public-0.2.1-release.md) |
 | 0058 | 2026-10-24 | ESO 12.1.6 static audit and dynamic-profile design | Succeeded in read-only analysis/design; install and runtime unvalidated | [Run](0058-eso-12.1.6-update-profile-analysis.md) |
 | 0059 | 2026-10-24 | macOS 27 Rosetta and pinned runtime preflight | Succeeded in fresh non-game translation, self-patch, configuration and device probes; gameplay untested | [Run](0059-macos-27-rosetta-runtime-preflight.md) |
+| 0060 | 2026-10-24 | Native dynamic update profiles | Running; source/native/transaction gates pass, original-loader observation and reinstall pending | [Run](0060-dynamic-update-profile-implementation.md) |
 
 ## Recording policy
 

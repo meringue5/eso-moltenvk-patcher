@@ -31,6 +31,8 @@ cp "$ROOT/build/libBink2Macx64.dylib" "$ROOT/build/libMoltenVK.teso4m4.dylib" \
   "$ROOT/build/eso-compat-audit" "$INTERNAL/payload/"
 cp "$ROOT/config/usersettings-m4-moltenvk-1.4.2-standard.txt" "$INTERNAL/payload/"
 cp "$ROOT/config/settings-profile.env" "$INTERNAL/payload/"
+cp "$ROOT/scripts/lib-target.sh" "$INTERNAL/payload/bundle-idle.sh"
+cp "$ROOT/src/third_party/hde64/LICENSE.txt" "$INTERNAL/payload/third-party-notices.txt"
 python3 - "$TARGET" "$INTERNAL/payload/target-profile.env" "$VERSION" <<'PY'
 import json
 import shlex
@@ -42,6 +44,7 @@ missing = [key for key in required if key not in profile]
 if missing:
     raise SystemExit(f"Target profile lacks release fields: {', '.join(missing)}")
 with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as output:
+    output.write("DYNAMIC_PROFILE_SCHEMA=1\n")
     output.write(f"RELEASE_VERSION={shlex.quote(sys.argv[3])}\n")
     output.write(f"PROFILE_DESCRIPTION={shlex.quote(profile['description'])}\n")
     output.write(f"EXPECTED_ESO_SHA256={shlex.quote(profile['sha256'])}\n")

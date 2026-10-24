@@ -9,6 +9,7 @@ ESO="$GAME_MAC/eso"
 BINK="$GAME_MAC/libBink2Macx64.dylib"
 PRISTINE="$GAME_MAC/libBink2Macx64.teso4m4-pristine.dylib"
 MARKER="$GAME_MAC/.teso4m4-enable"
+PROFILE="$GAME_MAC/.teso4m4-profile"
 ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
@@ -34,6 +35,12 @@ if ! otool -L "$BINK" 2>/dev/null \
     echo "A different launcher-provided Bink generation is already active; refusing to overwrite it with the older backup."
     exit 1
   }
+else
+  MARKER_SHA="$(sed -n 's/^eso_sha256=//p' "$MARKER" 2>/dev/null | head -1)"
+  [[ "$MARKER_SHA" == "$ACTUAL_SHA" ]] || {
+    echo "Retained bridge has no matching current executable attestation; use launcher Repair. The older backup was not restored."
+    exit 1
+  }
 fi
 if [[ -n "$PRESERVE_CACHE_STATE" && "$PRESERVE_CACHE_STATE" != "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
   echo "Unsupported TESO4M4_PRESERVE_CACHE_STATE value."
@@ -50,6 +57,15 @@ if [[ "$PRESERVE_CACHE_STATE" == "I_ACCEPT_EXISTING_CACHE_STATE" ]]; then
   }
 fi
 
+if [[ -e "$PROFILE" || -L "$PROFILE" ]]; then
+  PROFILE_SHA="$(sed -n 's/^profile_sha256=//p' "$MARKER" 2>/dev/null | head -1)"
+  [[ -f "$PROFILE" && ! -L "$PROFILE" && -n "$PROFILE_SHA" \
+    && "$(shasum -a 256 "$PROFILE" | awk '{print $1}')" == "$PROFILE_SHA" ]] || {
+    echo "Unexpected dynamic profile; use the transaction-aware release installer."
+    exit 1
+  }
+  mv "$PROFILE" "$PROFILE.disabled-$STAMP"
+fi
 cp -p "$PRISTINE" "$BINK.restoring"
 mv -f "$BINK.restoring" "$BINK"
 if [[ -f "$MARKER" ]]; then

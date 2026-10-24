@@ -1,0 +1,513 @@
+{
+  "description": "Steam macOS ESO 12.1.6 databuild 3309674; static audit 2026-10-24; supported original loader still requires current vendor observation",
+  "sha256": "3bdcfda575da791d6a337ef34afe3390d0a373aacdcaad033b2b454ddce804e6",
+  "original_bink_sha256": "9a0872f484a970bfcaa0b7bf76906822143c1d30358ee17dcd30c4b4dc2e6de8",
+  "retagged_original_bink_sha256": "7fac596c99afc36cbd5fc462aac74333d6ed76ecc9de591052201c5abee2eaa3",
+  "uuid": "b21e7036-3add-3db0-bd78-bd2ea5fb791a",
+  "client_build": {
+    "version": "12.1.6",
+    "databuild": "3309674"
+  },
+  "proc_addr_slots": {
+    "vkGetInstanceProcAddr": "0x4d97fd0",
+    "vkGetDeviceProcAddr": "0x4d97fd8"
+  },
+  "targets": [
+    {
+      "symbol": "vkGetPhysicalDeviceProperties",
+      "image_offset": "0x1bf21a0",
+      "expected_bytes": "554889e5488b7f085de9e2b0"
+    },
+    {
+      "symbol": "vkGetPhysicalDeviceMemoryProperties",
+      "image_offset": "0x1bf21c0",
+      "expected_bytes": "554889e5488b7f085de922b7"
+    },
+    {
+      "symbol": "vkGetInstanceProcAddr",
+      "image_offset": "0x1bf21d0",
+      "expected_bytes": "554889e54156534889f34989"
+    },
+    {
+      "symbol": "vkAllocateMemory",
+      "image_offset": "0x1bf2510",
+      "expected_bytes": "554889e553504889cb488b7f"
+    },
+    {
+      "symbol": "vkFreeMemory",
+      "image_offset": "0x1bf2540",
+      "expected_bytes": "554889e54885f6740a488b7f"
+    },
+    {
+      "symbol": "vkMapMemory",
+      "image_offset": "0x1bf2560",
+      "expected_bytes": "554889e54889f74889d64889"
+    },
+    {
+      "symbol": "vkUnmapMemory",
+      "image_offset": "0x1bf2580",
+      "expected_bytes": "554889e54889f75de9338600"
+    },
+    {
+      "symbol": "vkBindBufferMemory",
+      "image_offset": "0x1bf2650",
+      "expected_bytes": "554889e5488b06488b402048"
+    },
+    {
+      "symbol": "vkBindImageMemory",
+      "image_offset": "0x1bf2670",
+      "expected_bytes": "554889e5488b06488b402048"
+    },
+    {
+      "symbol": "vkGetBufferMemoryRequirements",
+      "image_offset": "0x1bf2690",
+      "expected_bytes": "554889e5488b06488b401848"
+    },
+    {
+      "symbol": "vkGetImageMemoryRequirements",
+      "image_offset": "0x1bf26b0",
+      "expected_bytes": "554889e5488b06488b401848"
+    },
+    {
+      "symbol": "vkCreateBuffer",
+      "image_offset": "0x1bf2920",
+      "expected_bytes": "554889e553504889cb488b7f"
+    },
+    {
+      "symbol": "vkDestroyBuffer",
+      "image_offset": "0x1bf2940",
+      "expected_bytes": "554889e54885f6740a488b7f"
+    },
+    {
+      "symbol": "vkCreateImage",
+      "image_offset": "0x1bf29a0",
+      "expected_bytes": "554889e553504889cb488b7f"
+    },
+    {
+      "symbol": "vkDestroyImage",
+      "image_offset": "0x1bf29c0",
+      "expected_bytes": "554889e54885f6740a488b7f"
+    },
+    {
+      "symbol": "vkEndCommandBuffer",
+      "image_offset": "0x1bf2de0",
+      "expected_bytes": "554889e5488b7f085de9b222"
+    },
+    {
+      "symbol": "vkCmdEndRenderPass",
+      "image_offset": "0x1bf30d0",
+      "expected_bytes": "554889e5488b7f085de9b269"
+    }
+  ],
+  "schema_version": 2,
+  "analysis": {
+    "legacy_moltenvk": {
+      "archive_member": "MoltenVK-x86_64-master.o",
+      "object_sha256": "7dfdcb34f8e1395410b8bd639c46398a1318429c5a9a6e53784356c86723a85a",
+      "link_delta": "0x1be5fb0",
+      "vulkan_text_symbols": 162,
+      "archive_members": {
+        "MoltenVK-x86_64-master.o": "7dfdcb34f8e1395410b8bd639c46398a1318429c5a9a6e53784356c86723a85a",
+        "MoltenVKSPIRVToMSLConverter-x86_64-master.o": "91e64ae01914fe333e69202b3ad6ae456ed03416514a89b2314aae11e2b2e298"
+      }
+    },
+    "external_references": {
+      "total": 40,
+      "by_symbol": {
+        "vkAllocateMemory": {
+          "total": 4,
+          "kinds": {
+            "call": 4
+          },
+          "sites": [
+            "0x1037dd68e:call",
+            "0x1037dd9dc:call",
+            "0x1037dda1b:call",
+            "0x1037ddad6:call"
+          ]
+        },
+        "vkBindBufferMemory": {
+          "total": 1,
+          "kinds": {
+            "call": 1
+          },
+          "sites": [
+            "0x1037defd1:call"
+          ]
+        },
+        "vkBindImageMemory": {
+          "total": 1,
+          "kinds": {
+            "call": 1
+          },
+          "sites": [
+            "0x1037df115:call"
+          ]
+        },
+        "vkCmdEndRenderPass": {
+          "total": 1,
+          "kinds": {
+            "call": 1
+          },
+          "sites": [
+            "0x1037ce09d:call"
+          ]
+        },
+        "vkCreateBuffer": {
+          "total": 1,
+          "kinds": {
+            "call": 1
+          },
+          "sites": [
+            "0x1037def47:call"
+          ]
+        },
+        "vkCreateImage": {
+          "total": 1,
+          "kinds": {
+            "call": 1
+          },
+          "sites": [
+            "0x1037df07f:call"
+          ]
+        },
+        "vkDestroyBuffer": {
+          "total": 2,
+          "kinds": {
+            "call": 2
+          },
+          "sites": [
+            "0x1037defc1:call",
+            "0x1037df031:call"
+          ]
+        },
+        "vkDestroyImage": {
+          "total": 2,
+          "kinds": {
+            "call": 2
+          },
+          "sites": [
+            "0x1037df105:call",
+            "0x1037df175:call"
+          ]
+        },
+        "vkEndCommandBuffer": {
+          "total": 2,
+          "kinds": {
+            "call": 2
+          },
+          "sites": [
+            "0x1037ce0da:call",
+            "0x1037ce585:call"
+          ]
+        },
+        "vkFreeMemory": {
+          "total": 4,
+          "kinds": {
+            "call": 4
+          },
+          "sites": [
+            "0x1037dbdd8:call",
+            "0x1037dda4a:call",
+            "0x1037ddc3d:call",
+            "0x1037de1eb:call"
+          ]
+        },
+        "vkGetBufferMemoryRequirements": {
+          "total": 2,
+          "kinds": {
+            "call": 2
+          },
+          "sites": [
+            "0x1037deded:call",
+            "0x1037def6d:call"
+          ]
+        },
+        "vkGetImageMemoryRequirements": {
+          "total": 3,
+          "kinds": {
+            "call": 3
+          },
+          "sites": [
+            "0x1037dee49:call",
+            "0x1037df0b2:call",
+            "0x1037df3d5:call"
+          ]
+        },
+        "vkGetInstanceProcAddr": {
+          "total": 1,
+          "kinds": {
+            "address": 1
+          },
+          "sites": [
+            "0x1037cf7ef:address"
+          ]
+        },
+        "vkGetPhysicalDeviceMemoryProperties": {
+          "total": 1,
+          "kinds": {
+            "call": 1
+          },
+          "sites": [
+            "0x1037dd0c0:call"
+          ]
+        },
+        "vkGetPhysicalDeviceProperties": {
+          "total": 1,
+          "kinds": {
+            "call": 1
+          },
+          "sites": [
+            "0x1037dd0ad:call"
+          ]
+        },
+        "vkMapMemory": {
+          "total": 6,
+          "kinds": {
+            "call": 5,
+            "jump": 1
+          },
+          "sites": [
+            "0x1037dc73f:call",
+            "0x1037dcd38:call",
+            "0x1037dd6d3:call",
+            "0x1037ddb0e:call",
+            "0x1037de6b3:call",
+            "0x1037deec8:jump"
+          ]
+        },
+        "vkUnmapMemory": {
+          "total": 7,
+          "kinds": {
+            "call": 6,
+            "jump": 1
+          },
+          "sites": [
+            "0x1037dbd9c:call",
+            "0x1037dc6d9:call",
+            "0x1037dcf61:call",
+            "0x1037de1d0:call",
+            "0x1037de56c:call",
+            "0x1037deeed:jump",
+            "0x1037dfaeb:call"
+          ]
+        }
+      },
+      "rejected_unaligned": [
+        "0x101aefeb3:call:vkCreateDescriptorPool"
+      ]
+    },
+    "proc_queries": {
+      "routes": {
+        "GIPA": {
+          "sites": 19,
+          "names": [
+            "vkCreateDevice",
+            "vkCreateInstance",
+            "vkDestroyInstance",
+            "vkDestroySurfaceKHR",
+            "vkEnumerateDeviceExtensionProperties",
+            "vkEnumerateInstanceExtensionProperties",
+            "vkEnumerateInstanceLayerProperties",
+            "vkEnumeratePhysicalDevices",
+            "vkGetDeviceProcAddr",
+            "vkGetPhysicalDeviceFeatures",
+            "vkGetPhysicalDeviceMemoryProperties",
+            "vkGetPhysicalDeviceProperties",
+            "vkGetPhysicalDeviceQueueFamilyProperties",
+            "vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
+            "vkGetPhysicalDeviceSurfaceFormatsKHR",
+            "vkGetPhysicalDeviceSurfacePresentModesKHR",
+            "vkGetPhysicalDeviceSurfaceSupportKHR"
+          ],
+          "queries": [
+            "0x1037d0a5f:vkDestroySurfaceKHR",
+            "0x1037d0a98:vkDestroyInstance",
+            "0x1037d0bb8:vkEnumerateInstanceLayerProperties",
+            "0x1037d0d1c:vkEnumerateInstanceExtensionProperties",
+            "0x1037d0e2b:vkCreateInstance",
+            "0x1037d0ee5:vkGetDeviceProcAddr",
+            "0x1037d103b:vkGetPhysicalDeviceProperties",
+            "0x1037d127d:vkEnumeratePhysicalDevices",
+            "0x1037d1389:vkGetPhysicalDeviceFeatures",
+            "0x1037d1446:vkGetPhysicalDeviceProperties",
+            "0x1037d1584:vkGetPhysicalDeviceQueueFamilyProperties",
+            "0x1037d16dc:vkGetPhysicalDeviceSurfaceSupportKHR",
+            "0x1037d1824:vkGetPhysicalDeviceFeatures",
+            "0x1037d192a:vkEnumerateDeviceExtensionProperties",
+            "0x1037d1dc8:vkCreateDevice",
+            "0x1037d1f08:vkGetPhysicalDeviceMemoryProperties",
+            "0x1037d2658:vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
+            "0x1037d288a:vkGetPhysicalDeviceSurfacePresentModesKHR",
+            "0x1037d2a43:vkGetPhysicalDeviceSurfaceFormatsKHR"
+          ]
+        },
+        "GDPA": {
+          "sites": 80,
+          "names": [
+            "vkAcquireNextImageKHR",
+            "vkAllocateCommandBuffers",
+            "vkAllocateDescriptorSets",
+            "vkAllocateMemory",
+            "vkBindBufferMemory",
+            "vkBindImageMemory",
+            "vkCmdDebugMarkerBeginEXT",
+            "vkCmdDebugMarkerEndEXT",
+            "vkCmdDebugMarkerInsertEXT",
+            "vkCreateBuffer",
+            "vkCreateBufferView",
+            "vkCreateCommandPool",
+            "vkCreateComputePipelines",
+            "vkCreateDescriptorPool",
+            "vkCreateDescriptorSetLayout",
+            "vkCreateFence",
+            "vkCreateFramebuffer",
+            "vkCreateGraphicsPipelines",
+            "vkCreateImage",
+            "vkCreateImageView",
+            "vkCreatePipelineCache",
+            "vkCreatePipelineLayout",
+            "vkCreateQueryPool",
+            "vkCreateRenderPass",
+            "vkCreateSampler",
+            "vkCreateSemaphore",
+            "vkCreateShaderModule",
+            "vkCreateSwapchainKHR",
+            "vkDestroyBuffer",
+            "vkDestroyBufferView",
+            "vkDestroyCommandPool",
+            "vkDestroyDescriptorPool",
+            "vkDestroyDescriptorSetLayout",
+            "vkDestroyDevice",
+            "vkDestroyFence",
+            "vkDestroyFramebuffer",
+            "vkDestroyImage",
+            "vkDestroyImageView",
+            "vkDestroyPipeline",
+            "vkDestroyPipelineCache",
+            "vkDestroyPipelineLayout",
+            "vkDestroyQueryPool",
+            "vkDestroyRenderPass",
+            "vkDestroySampler",
+            "vkDestroySemaphore",
+            "vkDestroyShaderModule",
+            "vkDestroySwapchainKHR",
+            "vkDeviceWaitIdle",
+            "vkFreeDescriptorSets",
+            "vkFreeMemory",
+            "vkGetBufferMemoryRequirements",
+            "vkGetDeviceQueue",
+            "vkGetImageMemoryRequirements",
+            "vkGetPipelineCacheData",
+            "vkGetQueryPoolResults",
+            "vkGetSwapchainImagesKHR",
+            "vkMapMemory",
+            "vkQueuePresentKHR",
+            "vkQueueSubmit",
+            "vkResetDescriptorPool",
+            "vkResetFences",
+            "vkSetHdrMetadataEXT",
+            "vkUnmapMemory",
+            "vkUpdateDescriptorSets",
+            "vkWaitForFences"
+          ],
+          "queries": [
+            "0x1037cf34f:vkCmdDebugMarkerBeginEXT",
+            "0x1037cf37d:vkCmdDebugMarkerEndEXT",
+            "0x1037cf3ab:vkCmdDebugMarkerInsertEXT",
+            "0x1037d086a:vkDeviceWaitIdle",
+            "0x1037d099a:vkDestroyPipelineCache",
+            "0x1037d09d3:vkDestroySwapchainKHR",
+            "0x1037d0a28:vkDestroyDevice",
+            "0x1037d1e84:vkGetDeviceQueue",
+            "0x1037d2c21:vkCreateSwapchainKHR",
+            "0x1037d2d36:vkDestroySwapchainKHR",
+            "0x1037d2edd:vkSetHdrMetadataEXT",
+            "0x1037d304e:vkDeviceWaitIdle",
+            "0x1037d33ac:vkCreateSemaphore",
+            "0x1037d3468:vkGetSwapchainImagesKHR",
+            "0x1037d3b8a:vkGetImageMemoryRequirements",
+            "0x1037d3c9b:vkDestroySemaphore",
+            "0x1037d3d42:vkDestroyImageView",
+            "0x1037d3dd3:vkDestroyImageView",
+            "0x1037d3fae:vkQueueSubmit",
+            "0x1037d406a:vkQueuePresentKHR",
+            "0x1037d4101:vkQueueSubmit",
+            "0x1037d41b9:vkAcquireNextImageKHR",
+            "0x1037d441c:vkCreateBuffer",
+            "0x1037d44cf:vkGetBufferMemoryRequirements",
+            "0x1037d46e3:vkBindBufferMemory",
+            "0x1037d477f:vkAllocateMemory",
+            "0x1037d4803:vkDestroyBuffer",
+            "0x1037d4859:vkFreeMemory",
+            "0x1037d48ad:vkGetBufferMemoryRequirements",
+            "0x1037d4910:vkMapMemory",
+            "0x1037d4977:vkUnmapMemory",
+            "0x1037d49c6:vkCreateImage",
+            "0x1037d4a2c:vkCreateImageView",
+            "0x1037d4a8f:vkDestroyImage",
+            "0x1037d4b09:vkCreateBufferView",
+            "0x1037d4b6b:vkDestroyBufferView",
+            "0x1037d4beb:vkCreateCommandPool",
+            "0x1037d4c4d:vkDestroyCommandPool",
+            "0x1037d4cb7:vkAllocateCommandBuffers",
+            "0x1037d4d36:vkCreateDescriptorSetLayout",
+            "0x1037d4d97:vkDestroyDescriptorSetLayout",
+            "0x1037d4fa2:vkCreatePipelineLayout",
+            "0x1037d5025:vkDestroyPipelineLayout",
+            "0x1037d51df:vkDestroyPipeline",
+            "0x1037d53bd:vkCreateDescriptorPool",
+            "0x1037d541f:vkDestroyDescriptorPool",
+            "0x1037d5499:vkAllocateDescriptorSets",
+            "0x1037d550a:vkAllocateDescriptorSets",
+            "0x1037d5585:vkResetDescriptorPool",
+            "0x1037d56d9:vkUpdateDescriptorSets",
+            "0x1037d578a:vkAllocateDescriptorSets",
+            "0x1037d651a:vkBindImageMemory",
+            "0x1037d68c9:vkBindImageMemory",
+            "0x1037d6c62:vkBindImageMemory",
+            "0x1037d7a62:vkCreateShaderModule",
+            "0x1037d7ac5:vkDestroyShaderModule",
+            "0x1037d7c54:vkCreateGraphicsPipelines",
+            "0x1037d7d30:vkCreateComputePipelines",
+            "0x1037d7dff:vkCreateFence",
+            "0x1037d7e61:vkDestroyFence",
+            "0x1037d7eb9:vkWaitForFences",
+            "0x1037d7f23:vkWaitForFences",
+            "0x1037d7f82:vkWaitForFences",
+            "0x1037d7feb:vkResetFences",
+            "0x1037d8049:vkResetFences",
+            "0x1037d8097:vkResetFences",
+            "0x1037d80f2:vkCreateRenderPass",
+            "0x1037d814d:vkDestroyRenderPass",
+            "0x1037d81a6:vkCreateFramebuffer",
+            "0x1037d8201:vkDestroyFramebuffer",
+            "0x1037d8398:vkCreateSampler",
+            "0x1037d84f5:vkDestroySampler",
+            "0x1037d8745:vkQueueSubmit",
+            "0x1037d8d70:vkFreeDescriptorSets",
+            "0x1037d9614:vkCreateQueryPool",
+            "0x1037d9675:vkDestroyQueryPool",
+            "0x1037d96e2:vkGetQueryPoolResults",
+            "0x1037d9758:vkDestroyPipelineCache",
+            "0x1037d9798:vkCreatePipelineCache",
+            "0x1037d97f7:vkGetPipelineCacheData"
+          ]
+        }
+      },
+      "unnamed_sites": 0
+    },
+    "replacement_runtime": {
+      "sha256": "aef00b13bcc808adf15b85bef9ae67393d92be7ed5dfe41cad16fa809e4a4c5f",
+      "vulkan_exports": 431
+    }
+  },
+  "derived_from_sha256": "027d5a6d0822ffddae308c62f5cd425b425e6188d5606d8c430988761e9e0a26",
+  "experimental_targets": {
+    "inactive_pacing": {
+      "image_offset": "0x32a98",
+      "expected_bytes": "7527bfa0860100e84c9fa603",
+      "active_flag_offset": "0x4c688bc"
+    }
+  }
+}

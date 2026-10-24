@@ -14,12 +14,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/sysctl.h>
 #include <time.h>
 #include <unistd.h>
 #include <vulkan/vulkan.h>
 #include <MoltenVK/mvk_private_api.h>
 
 #include "mvk_compat.h"
+#include "update_profile.h"
 #include "eso_fx_sentinel.h"
 #include "eso_inactive_pacing.h"
 #include "mvk_lifecycle.h"
@@ -37,6 +39,13 @@ typedef struct {
 } PatchTarget;
 
 #include "generated_targets.h"
+
+static const PatchTarget *g_patch_targets = kPatchTargets;
+static const Teso4m4InactivePacingTarget *g_pacing_target = &kInactivePacingTarget;
+static PatchTarget g_dynamic_targets[ESO_TARGET_COUNT];
+static Teso4m4InactivePacingTarget g_dynamic_pacing;
+static char g_profile_digest[65];
+static bool g_profile_marker_seen;
 
 static void observe_activation_notifications(void);
 
@@ -241,7 +250,7 @@ static PFN_vkVoidFunction VKAPI_CALL traced_get_instance_proc_addr(
     return returned_result;
 }
 
-static bool has_expected_uuid(const struct mach_header_64* header) {
+static bool has_uuid(const struct mach_header_64* header, const uint8_t expected[16]) {
     const uint8_t* cursor = (const uint8_t*)(header + 1);
     for (uint32_t index = 0; index < header->ncmds; ++index) {
         const struct load_command* command = (const struct load_command*)cursor;
@@ -250,7 +259,7 @@ static bool has_expected_uuid(const struct mach_header_64* header) {
         }
         if (command->cmd == LC_UUID && command->cmdsize >= sizeof(struct uuid_command)) {
             const struct uuid_command* uuid = (const struct uuid_command*)command;
-            return memcmp(uuid->uuid, kExpectedUUID, sizeof(kExpectedUUID)) == 0;
+            return memcmp(uuid->uuid, expected, 16) == 0;
         }
         cursor += command->cmdsize;
     }
@@ -348,6 +357,12 @@ static Teso4m4Mode marker_mode(const char* directory,
         } else if (strncmp(line, "eso_sha256=", 11) == 0 &&
                    valid_sha256(line + 11)) {
             strlcpy(attested_sha256, line + 11, 65);
+        } else if (strncmp(line, "profile_sha256=", 15) == 0) {
+            if (g_profile_marker_seen || !valid_sha256(line + 15)) {
+                fclose(marker); return TESO4M4_MODE_DISABLED;
+            }
+            g_profile_marker_seen = true;
+            strlcpy(g_profile_digest, line + 15, sizeof(g_profile_digest));
         } else if (mode[0] == '\0' && strchr(line, '=') == NULL) {
             strlcpy(mode, line, sizeof(mode));
         }
@@ -566,17 +581,21 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
     if (inactive_pacing_bypass &&
         (!ESO_HAS_INACTIVE_PACING_TARGET ||
          !teso4m4_inactive_pacing_prepare(
-             header, &kInactivePacingTarget, inactive_pacing_patch))) {
+             header, g_pacing_target, inactive_pacing_patch))) {
         log_message("ERROR: inactive pacing patch preparation failed");
         return false;
     }
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
-        const PatchTarget* target = &kPatchTargets[index];
+        const PatchTarget* target = &g_patch_targets[index];
         const uint8_t* address = (const uint8_t*)header + target->image_offset;
         if (memcmp(address, target->expected, sizeof(target->expected)) != 0) {
             log_message("ERROR: original bytes differ at %s", target->symbol);
             return false;
+        }
+        uintptr_t first_page = (uintptr_t)address & ~((uintptr_t)page_size - 1);
+        if ((uintptr_t)address + sizeof(target->expected) > first_page + (uintptr_t)page_size) {
+            log_message("ERROR: Vulkan patch crosses a code page"); return false;
         }
         destinations[index] = dlsym(moltenvk, target->symbol);
         if (!destinations[index]) {
@@ -625,7 +644,7 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
     teso4m4_compat_set_get_surface_formats(get_surface_formats);
 
     for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
-        uintptr_t address = (uintptr_t)header + kPatchTargets[index].image_offset;
+        uintptr_t address = (uintptr_t)header + g_patch_targets[index].image_offset;
         uintptr_t page = address & ~((uintptr_t)page_size - 1);
         bool seen = false;
         for (size_t page_index = 0; page_index < writable_page_count; ++page_index) {
@@ -648,7 +667,7 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
 
     if (inactive_pacing_bypass) {
         const uintptr_t address =
-            (uintptr_t)header + kInactivePacingTarget.image_offset;
+            (uintptr_t)header + g_pacing_target->image_offset;
         const uintptr_t page =
             address & ~((uintptr_t)page_size - 1);
         if (address + TESO4M4_INACTIVE_PACING_PATCH_SIZE >
@@ -684,14 +703,14 @@ static bool install_patches(const struct mach_header_64* header, void* moltenvk,
         memcpy(&patch[2], &destination, sizeof(destination));
         patch[10] = 0xff;
         patch[11] = 0xe0;
-        uint8_t* address = (uint8_t*)header + kPatchTargets[index].image_offset;
+        uint8_t* address = (uint8_t*)header + g_patch_targets[index].image_offset;
         memcpy(address, patch, sizeof(patch));
         __builtin___clear_cache((char*)address, (char*)address + sizeof(patch));
     }
 
     if (inactive_pacing_bypass) {
         uint8_t* address =
-            (uint8_t*)header + kInactivePacingTarget.image_offset;
+            (uint8_t*)header + g_pacing_target->image_offset;
         memcpy(address, inactive_pacing_patch, sizeof(inactive_pacing_patch));
         __builtin___clear_cache(
             (char*)address,
@@ -1140,15 +1159,64 @@ __attribute__((constructor)) static void teso4m4_init(void) {
         log_message("SKIP: ESO SHA-256 differs from installer attestation");
         return;
     }
-    if (attested_sha256[0] == '\0' && !has_expected_uuid(header)) {
+    if (attested_sha256[0] == '\0' && !has_uuid(header, kExpectedUUID)) {
         log_message("SKIP: legacy marker ESO UUID mismatch");
         return;
+    }
+
+    char profile_path[4096];
+    if (snprintf(profile_path, sizeof(profile_path), "%s/.teso4m4-profile", directory) >= (int)sizeof(profile_path)) return;
+    struct stat profile_status;
+    bool profile_present = lstat(profile_path, &profile_status) == 0;
+    if (g_profile_marker_seen || profile_present) {
+        char os_version[64] = {0};
+        size_t os_size = sizeof(os_version);
+        if (sysctlbyname("kern.osproductversion", os_version, &os_size, NULL, 0) != 0 ||
+            os_size == 0 || os_size > sizeof(os_version)) {
+            log_message("SKIP: dynamic profile platform could not be verified"); return;
+        }
+        os_version[sizeof(os_version)-1] = '\0';
+        char *major_end = NULL;
+        long major = strtol(os_version, &major_end, 10);
+        if (!major_end || *major_end != '.' || major < 12 || major > 27) {
+            log_message("SKIP: dynamic profile macOS version is unvalidated"); return;
+        }
+        char executable[4096], archive[4096], digest[65];
+        uint32_t size = sizeof(executable);
+        TesoUpdateProfile derived;
+        if (snprintf(archive, sizeof(archive), "%s/../Frameworks/MoltenVK.framework/Versions/A/MoltenVK", directory) >= (int)sizeof(archive)) return;
+        /* A malformed profile must never fall back to legacy. */
+        if (!g_profile_marker_seen || _NSGetExecutablePath(executable, &size) != 0 ||
+            !teso_update_resolve(executable, archive, &derived) ||
+            !teso_update_verify_file(&derived, profile_path, digest) ||
+            strcmp(digest, g_profile_digest) != 0 ||
+            strcmp(derived.executable_sha256, actual_sha256) != 0 ||
+            !has_uuid(header, derived.uuid)) {
+            log_message("SKIP: dynamic profile validation failed"); return;
+        }
+        for (size_t index = 0; index < ESO_TARGET_COUNT; ++index) {
+            g_dynamic_targets[index] = kPatchTargets[index];
+            g_dynamic_targets[index].image_offset = derived.targets[index].offset;
+            memcpy(g_dynamic_targets[index].expected, derived.targets[index].expected, 12);
+        }
+        g_dynamic_pacing = derived.pacing;
+        g_patch_targets = g_dynamic_targets; g_pacing_target = &g_dynamic_pacing;
+        log_message("UPDATE_PROFILE_VALIDATED: schema=1 digest=%s", digest);
+    } else if (strcmp(actual_sha256, ESO_EXPECTED_SHA256) != 0) {
+        log_message("SKIP: non-exact executable requires a dynamic profile"); return;
     }
 
     char moltenvk_path[4096];
     if (snprintf(moltenvk_path, sizeof(moltenvk_path), "%s/libMoltenVK.teso4m4.dylib",
                  directory) >= (int)sizeof(moltenvk_path)) {
         return;
+    }
+    if (g_profile_marker_seen) {
+        char renamed[4096];
+        if (snprintf(renamed, sizeof(renamed), "%s/libBink2Macx64.teso4m4-original.dylib", directory) >= (int)sizeof(renamed) ||
+            !teso_update_payloads_match(moltenvk_path, renamed)) {
+            log_message("SKIP: dynamic profile payload identity mismatch"); return;
+        }
     }
     void* moltenvk = dlopen(moltenvk_path, RTLD_NOW | RTLD_LOCAL);
     if (!moltenvk) {

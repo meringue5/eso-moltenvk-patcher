@@ -1,9 +1,33 @@
 # ADR-001: installer-derived update profiles
 
-- Status: accepted direction; implementation and release validation pending
+- Status: implemented as development candidate; installation/gameplay acceptance pending
 - Date: 2026-10-24
 - Decision owner: project maintainer; direction authorized in the project chat
 - Evidence: [Experiment 0058](experiments/0058-eso-12.1.6-update-profile-analysis.md)
+
+## Implementation amendment (2026-10-24)
+
+[Experiment 0060](experiments/0060-dynamic-update-profile-implementation.md)
+owns the implementation and validation evidence. The shared native resolver,
+canonical profile verification, runtime re-discovery and installer recovery
+binding are implemented. The following design sections explain the contract;
+the remaining gates are current-original observation, installation and gameplay
+acceptance, followed separately by any public release decision.
+
+Schema 1 uses derive-and-compare rather than parsing profile-supplied addresses.
+It bounds the entire file at 4096 bytes and requires canonical fields/order,
+owner-only access and a matching marker/journal digest. Profiles bind the
+compiled rule-set ID/bridge ABI, executable hash/UUID/client identity,
+archive/runtime/original hashes, recovered slots and patch plans. The bridge
+payload hash is recorded in the package checksums and recovery journal rather
+than inside the canonical profile. Runtime checks the pinned runtime and
+renamed-original hashes before loading the replacement.
+
+The native full-object reference boundary is bootstrapped from the audited
+12.1.6 executable, and is stricter than the source auditor's Vulkan-only
+reference comparison. Unsupported instruction encodings, multi-start chained
+pages, ambiguous locations, and other unproved layouts stop for analysis.
+Executable discovery remains separate from original Bink provenance.
 
 ## Context
 
@@ -55,7 +79,7 @@ Install produces a versioned profile with these logical fields:
 | proc routes | Independently recovered GIPA/GDPA slots and verified query shape |
 | pacing target | Independently recovered branch, original bytes, active-flag location and control-flow proof |
 | loader identity | Current observed original hash, supported loader rule, renamed-copy hash |
-| payload identity | Bridge/runtime hashes and supported production mode |
+| payload identity | Compiled bridge ABI/rule set, pinned runtime hash and supported production mode; bridge hash in package/journal |
 
 The fixed hook-ID table chooses destinations inside the bridge. Profiles may
 not supply arbitrary symbol names, paths, function pointers, absolute process
@@ -89,11 +113,11 @@ same user's write access. Package signing remains a separate release concern.
 5. Recheck every input identity after all analysis, including pacing analysis,
    and again immediately before the transaction's mutation boundary.
 
-Porting the source audit's semantics to the native helper is required work,
-not an existing capability. In particular, changing just the current native
+The native helper ports the discovery and validation semantics described above.
+In particular, changing just the former native
 auditor's address comparisons or only externalizing the patch table is
-insufficient. The normalization format and native instruction-boundary decoder
-must pass differential fixtures before this path can ship.
+insufficient. The normalization format and instruction-boundary decoder are
+covered by differential fixtures; unrepresented layouts remain fail-closed.
 
 ### Runtime enforcement
 

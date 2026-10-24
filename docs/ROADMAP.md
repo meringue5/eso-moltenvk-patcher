@@ -6,24 +6,20 @@ This roadmap contains future work only. Current verified state is in
 
 ## Active update-maintenance gate: installer-derived profiles
 
-The current development order is owned by [ADR-001](UPDATE-COMPATIBILITY.md).
-Complete the native resolver/profile path before requesting scarce gameplay
-validation for it:
+The remaining gates for [ADR-001](UPDATE-COMPATIBILITY.md) and development
+candidate 0.3.0-rc.1 are:
 
-1. Add read-only platform capability reporting (OS/build, architecture, actual
-   x86_64 execution) with clear unavailable/indeterminate outcomes. Keep official
-   MoltenVK 1.4.2 pinned; a future runtime upgrade is a separate experiment.
-2. Implement bounded profile parsing and native structural discovery, using
-   source-auditor differential fixtures for independent Vulkan/pacing movement.
-3. Integrate profile-derived runtime targets and all pre-write validation;
-   rebuild and pass non-game probes before installer integration.
-4. Extend journaled install/remove/status fixtures to bind profiles and current
-   original-loader generations without crossing the vendor-update boundary.
-5. Pass full checks, fresh isolated-log builds, packaging, interruption and
-   preservation tests. Keep unsupported Bink generations blocked.
-6. Only then obtain the vendor original through user-run Repair if still
-   required, repeat exact-input/install gates, and prepare one bounded normal
-   Steam-path user acceptance run.
+1. Obtain the current vendor original through user-run Repair. If its hash is
+   unsupported, complete loader analysis and non-game re-export validation
+   before broadening the allowlist; never restore the old backup instead.
+2. Recheck platform, executable/archive/build stamp, current original, restore
+   record and shared bundle-idle state. Install the verified candidate with
+   settings skipped and cache identities preserved.
+3. Prepare one bounded normal Steam-path acceptance run only after installed
+   profile/payload verification. Require structural logs and independent user
+   focus, rendering and FPS observations; do not claim an activation fix.
+4. Decide public-release eligibility only after acceptance, keeping prior
+   immutable releases and all recovery generations available.
 
 The first milestone is compatible reinstall through an explicit Install action.
 Background monitoring, launch-time installation, and automatic adoption of
@@ -200,9 +196,9 @@ baseline.
 ## P4: maintain ESO update support
 
 - Run the quick update gate after every ESO or launcher content update.
-- Implement the native dynamic-profile contract and validation gates in
-  [ADR-001](UPDATE-COMPATIBILITY.md); do not describe the present fixed-location
-  package as accepting independent target relocations.
+- Maintain the native dynamic-profile contract and remaining acceptance gates
+  in [ADR-001](UPDATE-COMPATIBILITY.md); public 0.2.1 still uses its older
+  fixed-location path until a successor is accepted and released.
 - Require launcher Repair when an executable update leaves the bridge active;
   never use an older original-loader backup as a substitute for observing the
   vendor's current original generation.

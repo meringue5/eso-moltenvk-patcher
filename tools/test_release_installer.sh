@@ -24,6 +24,7 @@ cp "$ROOT/build/libBink2Macx64.dylib" "$PAYLOAD/"
 cp "$ROOT/build/libMoltenVK.teso4m4.dylib" "$PAYLOAD/"
 cp "$ROOT/config/usersettings-m4-moltenvk-1.4.2-standard.txt" "$PAYLOAD/"
 cp "$ROOT/config/settings-profile.env" "$PAYLOAD/"
+cp "$ROOT/scripts/lib-target.sh" "$PAYLOAD/bundle-idle.sh"
 print -r -- 'SET FULLSCREEN "0"' > "$SETTINGS_FILE"
 print -r -- 'SET LANGUAGE.2 "en"' >> "$SETTINGS_FILE"
 SETTINGS_ORIGINAL_SHA="$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')"
@@ -64,7 +65,7 @@ run_tool() {
 }
 write_package_manifest() {
   (cd "$PACKAGE" && shasum -a 256 bin/eso-moltenvk-patcher \
-    payload/eso-compat-audit payload/libBink2Macx64.dylib \
+    payload/eso-compat-audit payload/bundle-idle.sh payload/libBink2Macx64.dylib \
     payload/libMoltenVK.teso4m4.dylib payload/settings-profile.env \
     payload/target-profile.env \
     payload/usersettings-m4-moltenvk-1.4.2-standard.txt > SHA256SUMS.txt)
@@ -376,4 +377,126 @@ grep -q "^eso_sha256=$(shasum -a 256 "$GAME_MAC/eso" | awk '{print $1}')$" \
 run_tool remove >/dev/null
 [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$NEW_ORIGINAL_BINK_SHA" ]]
 find "$STATE_ROOT" -name .version -type f -exec grep -q 'fixture-1.0.1' {} \;
-print -- 'Release installer transaction: PASS (package integrity, status/diagnostics privacy, settings profile, interruption recovery, same-generation and same-payload package promotion, update repair gate, external-original preservation, and original-generation rotation)'
+# The shell transaction is tested with a deterministic audit double. Native
+# structural discovery is independently tested against real synthetic Mach-O
+# executables in test_dynamic_profiles.py, never against this /usr/bin/true.
+print -r -- 'DYNAMIC_PROFILE_SCHEMA=1' >> "$PAYLOAD/target-profile.env"
+cat > "$PAYLOAD/eso-compat-audit" <<'EOF'
+#!/bin/zsh
+set -euo pipefail
+render() { print -r -- 'schema=1'; print -r -- "fixture_executable=$(shasum -a 256 "$1" | awk '{print $1}')"; }
+case "${1:-}" in
+  --derive) render "$2" ;;
+  --verify)
+    if [[ -n "${ESO_FIXTURE_CHANGE_COUNTER:-}" && -f "$ESO_FIXTURE_CHANGE_COUNTER" ]]; then
+      counter="$(<"$ESO_FIXTURE_CHANGE_COUNTER")"
+      if (( counter == 1 )); then
+        if [[ -n "${ESO_FIXTURE_LOADER_RACE_PATH:-}" ]]; then
+          cp "$ESO_FIXTURE_LOADER_RACE_SOURCE" "$ESO_FIXTURE_LOADER_RACE_PATH"
+        else
+          print -r -- 'fixture vendor update during transaction' >> "$2"
+        fi
+        rm -f "$ESO_FIXTURE_CHANGE_COUNTER"
+      else
+        print -r -- "$((counter-1))" > "$ESO_FIXTURE_CHANGE_COUNTER"
+      fi
+    fi
+    [[ -f "$4" && ! -L "$4" && "$(stat -f '%Lp' "$4")" == 600 ]]
+    cmp -s <(render "$2") "$4"
+    shasum -a 256 "$4" | awk '{print $1}'
+    ;;
+  *) exit 0 ;;
+esac
+EOF
+chmod 755 "$PAYLOAD/eso-compat-audit"
+PROFILE_FILE="$GAME_MAC/.teso4m4-profile"
+FIXTURE_STATE="$STATE_ROOT/$INSTALL_ID/install-state.env"
+SETTINGS_BEFORE_DYNAMIC="$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')"
+run_tool install --skip-settings --yes >/dev/null
+[[ "$(stat -f '%Lp' "$PROFILE_FILE")" == 600 ]]
+DYNAMIC_DIGEST="$(shasum -a 256 "$PROFILE_FILE" | awk '{print $1}')"
+grep -qx "profile_sha256=$DYNAMIC_DIGEST" "$GAME_MAC/.teso4m4-enable"
+grep -qx "dynamic_profile_sha256=$DYNAMIC_DIGEST" "$FIXTURE_STATE"
+[[ "$(run_tool status)" == *'Dynamic profile: verified'* ]]
+[[ "$(run_tool install --skip-settings --yes)" == *'Patch already installed'* ]]
+
+# Corrupted or unowned profile data must not be silently replaced or removed.
+print -r -- 'corrupted=1' >> "$PROFILE_FILE"
+CORRUPT_PROFILE_SHA="$(shasum -a 256 "$PROFILE_FILE" | awk '{print $1}')"
+[[ "$(run_tool status)" == *'Dynamic profile: INVALID'* ]]
+[[ "$(run_tool install --skip-settings --yes 2>&1 || true)" == *'modified outside the recorded transaction'* ]]
+run_tool remove >/dev/null
+[[ "$(shasum -a 256 "$PROFILE_FILE" | awk '{print $1}')" == "$CORRUPT_PROFILE_SHA" ]]
+mv "$PROFILE_FILE" "$TEST_ROOT/corrupted-profile-preserved"
+run_tool install --skip-settings --yes >/dev/null
+
+# Interrupted same-generation publication can be recovered, with profile history.
+mv "$GAME_MAC/.teso4m4-enable" "$TEST_ROOT/interrupted-marker-preserved"
+sed -i '' 's/^transaction_phase=.*/transaction_phase=prepared/' "$FIXTURE_STATE"
+run_tool install --skip-settings --yes >/dev/null
+[[ "$(run_tool status)" == *'Dynamic profile: verified'* ]]
+find "$STATE_ROOT/$INSTALL_ID" -name 'profile.before-*' -type f | grep -q .
+
+# An executable update retaining the bridge still requires vendor Repair.
+print -r -- 'dynamic-compatible fixture update' >> "$GAME_MAC/eso"
+PROFILE_BEFORE_UPDATE="$(shasum -a 256 "$PROFILE_FILE" | awk '{print $1}')"
+[[ "$(run_tool install --skip-settings --yes 2>&1 || true)" == *'Run the ESO launcher Repair to materialize the current original Bink library'* ]]
+[[ "$(shasum -a 256 "$PROFILE_FILE" | awk '{print $1}')" == "$PROFILE_BEFORE_UPDATE" ]]
+cp "$TEST_ROOT/new-original-bink.dylib" "$GAME_MAC/libBink2Macx64.dylib"
+run_tool install --skip-settings --yes >/dev/null
+[[ "$(shasum -a 256 "$PROFILE_FILE" | awk '{print $1}')" != "$PROFILE_BEFORE_UPDATE" ]]
+run_tool remove >/dev/null
+[[ ! -e "$PROFILE_FILE" ]]
+[[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$NEW_ORIGINAL_BINK_SHA" ]]
+
+# Detect an updater before any mutation, and again after staged payload copies.
+cp "$GAME_MAC/eso" "$TEST_ROOT/executable-before-race"
+for verify_count in 1 6; do
+  print -r -- "$verify_count" > "$TEST_ROOT/update-counter"
+  race_output="$(ESO_FIXTURE_CHANGE_COUNTER="$TEST_ROOT/update-counter" run_tool install --skip-settings --yes 2>&1 || true)"
+  [[ "$race_output" == *'Audited inputs changed during installation'* ]]
+  [[ ! -e "$GAME_MAC/.teso4m4-enable" ]]
+  if (( verify_count == 6 )); then
+    # Once the executable differs, recovery must not restore an old original.
+    race_loader="$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')"
+    [[ "$(run_tool install --skip-settings --yes 2>&1 || true)" == *'incomplete patch state does not match this exact client'* ]]
+    [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$race_loader" ]]
+  fi
+  cp "$TEST_ROOT/executable-before-race" "$GAME_MAC/eso"
+done
+run_tool install --skip-settings --yes >/dev/null
+run_tool remove >/dev/null
+# A Bink-only vendor update must also survive both early and late races.
+cp "$TEST_ROOT/new-original-bink.dylib" "$TEST_ROOT/raced-original-bink.dylib"
+install_name_tool -id '@loader_path/libBink2Macx64.raced-vendor.dylib' "$TEST_ROOT/raced-original-bink.dylib"
+RACED_LOADER_SHA="$(shasum -a 256 "$TEST_ROOT/raced-original-bink.dylib" | awk '{print $1}')"
+for verify_count in 1 6; do
+  print -r -- "$verify_count" > "$TEST_ROOT/update-counter"
+  loader_race_output="$(ESO_FIXTURE_CHANGE_COUNTER="$TEST_ROOT/update-counter" \
+    ESO_FIXTURE_LOADER_RACE_PATH="$GAME_MAC/libBink2Macx64.dylib" \
+    ESO_FIXTURE_LOADER_RACE_SOURCE="$TEST_ROOT/raced-original-bink.dylib" \
+    run_tool install --skip-settings --yes 2>&1 || true)"
+  [[ "$loader_race_output" == *'active loader changed during installation'* ]]
+  [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$RACED_LOADER_SHA" ]]
+  [[ ! -e "$GAME_MAC/.teso4m4-enable" ]]
+  [[ "$(run_tool install --skip-settings --yes 2>&1 || true)" == *'Operation stopped safely'* ]]
+  [[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$RACED_LOADER_SHA" ]]
+  cp "$TEST_ROOT/new-original-bink.dylib" "$GAME_MAC/libBink2Macx64.dylib"
+done
+run_tool install --skip-settings --yes >/dev/null
+run_tool remove >/dev/null
+[[ "$(shasum -a 256 "$SETTINGS_FILE" | awk '{print $1}')" == "$SETTINGS_BEFORE_DYNAMIC" ]]
+# Indeterminate process checks and unvalidated operating systems stop safely.
+print -r -- '#!/bin/zsh' > "$MOCK_BIN/pgrep"
+print -r -- 'exit 2' >> "$MOCK_BIN/pgrep"
+[[ "$(run_tool install --skip-settings --yes 2>&1 || true)" == *'idle state is indeterminate'* ]]
+[[ ! -e "$GAME_MAC/.teso4m4-enable" ]]
+print -r -- '#!/bin/zsh' > "$MOCK_BIN/pgrep"
+print -r -- 'exit 1' >> "$MOCK_BIN/pgrep"
+print -r -- '#!/bin/zsh' > "$MOCK_BIN/sw_vers"
+print -r -- 'print -- 28.0' >> "$MOCK_BIN/sw_vers"
+chmod 755 "$MOCK_BIN/sw_vers"
+[[ "$(run_tool install --skip-settings --yes 2>&1 || true)" == *'macOS 28 is unvalidated'* ]]
+[[ ! -e "$GAME_MAC/.teso4m4-enable" ]]
+[[ "$(shasum -a 256 "$GAME_MAC/libBink2Macx64.dylib" | awk '{print $1}')" == "$NEW_ORIGINAL_BINK_SHA" ]]
+print -- 'Release installer transaction: PASS (legacy recovery, dynamic profile ownership/publication, corruption preservation, compatible reinstall, independent audit fixtures, interrupted publication and updater-race refusal)'

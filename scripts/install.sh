@@ -33,6 +33,7 @@ PRISTINE="$GAME_MAC/libBink2Macx64.teso4m4-pristine.dylib"
 ORIGINAL="$GAME_MAC/libBink2Macx64.teso4m4-original.dylib"
 MVK="$GAME_MAC/libMoltenVK.teso4m4.dylib"
 MARKER="$GAME_MAC/.teso4m4-enable"
+PROFILE="$GAME_MAC/.teso4m4-profile"
 ESO_LIVE="${ESO_LIVE:-$HOME/Documents/Elder Scrolls Online/live}"
 PIPELINE_CACHE="$ESO_LIVE/PipelineCache.esopc"
 OLD_PIPELINE_CACHE="${PIPELINE_CACHE}.teso4m4-old-backup"
@@ -100,6 +101,14 @@ if [[ -e "$ORIGINAL" ]]; then
     exit 1
   }
 fi
+[[ ! -e "$PROFILE" && ! -L "$PROFILE" ]] || { echo "Dynamic profile already exists; use the transaction-aware release installer."; exit 1; }
+PROFILE_TEMP="$(mktemp "${TMPDIR:-/private/tmp}/eso-source-profile.XXXXXXXX")"
+trap 'rm -f -- "$PROFILE_TEMP"' EXIT
+chmod 600 "$PROFILE_TEMP"
+"$ROOT/build/eso-compat-audit" --derive "$ESO" "$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK" > "$PROFILE_TEMP"
+PROFILE_SHA="$(shasum -a 256 "$PROFILE_TEMP" | awk '{print $1}')"
+teso4m4_require_bundle_idle "$ESO_APP"
+[[ "$(shasum -a 256 "$ESO" | awk '{print $1}')" == "$EXPECTED_SHA" ]] || exit 1
 cp -p "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" "$ORIGINAL.installing"
 cp -p "$ROOT/build/libMoltenVK.teso4m4.dylib" "$MVK.installing"
 cp -p "$ROOT/build/libBink2Macx64.dylib" "$BINK.installing"
@@ -107,11 +116,16 @@ cmp -s "$ROOT/build/libBink2Macx64.teso4m4-original.dylib" "$ORIGINAL.installing
 cmp -s "$ROOT/build/libMoltenVK.teso4m4.dylib" "$MVK.installing"
 cmp -s "$ROOT/build/libBink2Macx64.dylib" "$BINK.installing"
 
+[[ "$(shasum -a 256 "$BINK" | awk '{print $1}')" == "$EXPECTED_ORIGINAL_BINK_SHA" ]] || { echo "Vendor loader changed during staging; refusing replacement."; exit 1; }
 mv -f "$ORIGINAL.installing" "$ORIGINAL"
 mv -f "$MVK.installing" "$MVK"
 mv -f "$BINK.installing" "$BINK"
 
-printf '%s\n' "$MODE" > "$MARKER.installing"
+cp -p "$PROFILE_TEMP" "$PROFILE.installing"
+"$ROOT/build/eso-compat-audit" --verify "$ESO" "$ESO_APP/Contents/Frameworks/MoltenVK.framework/Versions/A/MoltenVK" "$PROFILE_TEMP" >/dev/null
+[[ "$(shasum -a 256 "$BINK" | awk '{print $1}')" == "$(shasum -a 256 "$ROOT/build/libBink2Macx64.dylib" | awk '{print $1}')" ]] || { echo "Vendor loader changed before marker publication."; exit 1; }
+mv -f "$PROFILE.installing" "$PROFILE"
+printf 'mode=%s\neso_sha256=%s\nprofile_sha256=%s\n' "$MODE" "$EXPECTED_SHA" "$PROFILE_SHA" > "$MARKER.installing"
 mv "$MARKER.installing" "$MARKER"
 if [[ "$PRESERVE_CACHE_STATE" != "I_ACCEPT_EXISTING_CACHE_STATE" \
   && -f "$PIPELINE_CACHE" && ! -e "$OLD_PIPELINE_CACHE" ]]; then

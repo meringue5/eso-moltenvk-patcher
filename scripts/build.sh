@@ -58,9 +58,9 @@ fi
 
 mkdir -p "$BUILD"
 python3 "$ROOT/tools/generate_targets.py" "$ESO" "$MANIFEST" "$BUILD/generated_targets.h"
-python3 "$ROOT/tools/generate_compat_audit_profile.py" \
+python3 "$ROOT/tools/generate_update_rules.py" \
   --exe "$ESO" --archive "$LEGACY_MVK" --manifest "$MANIFEST" \
-  --output "$BUILD/generated_compat_audit.h"
+  --output "$BUILD/generated_update_rules.h"
 
 cp -p "$SOURCE_BINK" "$BUILD/libBink2Macx64.teso4m4-original.dylib"
 install_name_tool -id @loader_path/libBink2Macx64.teso4m4-original.dylib \
@@ -70,7 +70,8 @@ cp -p "$MVK" "$BUILD/libMoltenVK.teso4m4.dylib"
 xcrun clang -fobjc-arc -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" -I"$ROOT/src" \
   -I"$MVK_INCLUDE_ROOT/MoltenVK/include" \
-  "$ROOT/src/mvk_shim.c" "$ROOT/src/mvk_log_file.c" "$ROOT/src/mvk_log_config.c" \
+  "$ROOT/src/mvk_shim.c" "$ROOT/src/update_profile.c" \
+  "$ROOT/src/third_party/hde64/hde64.c" "$ROOT/src/mvk_log_file.c" "$ROOT/src/mvk_log_config.c" \
   "$ROOT/src/mvk_log_policy.c" \
   "$ROOT/src/mvk_compat.c" \
   "$ROOT/src/eso_fx_sentinel.c" "$ROOT/src/eso_inactive_pacing.c" \
@@ -84,7 +85,9 @@ xcrun clang -fobjc-arc -dynamiclib -arch x86_64 -mmacosx-version-min=11.0 \
 
 xcrun clang -arch arm64 -arch x86_64 -mmacosx-version-min=11.0 \
   -Wall -Wextra -Werror -O2 -I"$BUILD" \
-  "$ROOT/tools/compat_audit.c" -o "$BUILD/eso-compat-audit"
+  "$ROOT/tools/compat_audit.c" "$ROOT/src/update_profile.c" \
+  "$ROOT/src/third_party/hde64/hde64.c" -I"$ROOT/src" \
+  -o "$BUILD/eso-compat-audit"
 
 xcrun clang -arch x86_64 -mmacosx-version-min=11.0 -Wall -Wextra -Werror \
   "$ROOT/tools/smoke_proxy.c" -o "$BUILD/smoke_proxy"
@@ -166,6 +169,11 @@ PROBE_LOG_DIR="$(mktemp -d "${TMPDIR:-/private/tmp}/teso4m4-build-log.XXXXXX")"
 PROBE_LOG_DIR="${PROBE_LOG_DIR:A}"
 trap 'rm -rf -- "$PROBE_LOG_DIR"' EXIT
 export TESO4M4_LOG_DIR="$PROBE_LOG_DIR"
+
+"$BUILD/eso-compat-audit" --derive "$ESO" "$LEGACY_MVK" > "$PROBE_LOG_DIR/update-profile"
+chmod 600 "$PROBE_LOG_DIR/update-profile"
+"$BUILD/eso-compat-audit" --verify "$ESO" "$LEGACY_MVK" "$PROBE_LOG_DIR/update-profile" >/dev/null
+echo "Dynamic update profile: PASS (native discovery and canonical verification)"
 
 "$BUILD/smoke_proxy" "$BUILD/libBink2Macx64.dylib"
 grep -q '\] RUN_START: bridge starting' "$PROBE_LOG_DIR/bridge.log" \

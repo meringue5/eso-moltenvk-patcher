@@ -10,11 +10,14 @@ with a stale executable attestation. The current loader is not a clean original
 baseline. Existing runs skip redirection on the executable-hash mismatch.
 
 Read-only Experiment [0058](experiments/0058-eso-12.1.6-update-profile-analysis.md)
-reproduced `FAST_REBASE_SAFE` twice with identical candidate output. The
-embedded-runtime structure passes the source audit; Vulkan locations and the
-host pacing branch moved by different amounts. The selected target remains
-12.1.5. No rebuild, installation, restore, cache/settings mutation, or game
-launch occurred. Static compatibility does not establish gameplay acceptance.
+established compatible embedded-runtime structure with independently moved
+Vulkan/pacing locations. Experiment
+[0060](experiments/0060-dynamic-update-profile-implementation.md) repeated the
+source audit, selected the 12.1.6 manifest, and implemented native dynamic
+profiles in development candidate 0.3.0-rc.1. `check-update.sh` now reports
+`CURRENT` for the executable; the active installed bridge remains stale.
+Fresh source/non-game builds and 154 Python tests pass, including sanitized
+native differential fixtures. Static compatibility is not gameplay acceptance.
 
 The current vendor original Bink cannot be established from a retained bridge
 or the previous recovery backup. A future install still requires user-run
@@ -22,11 +25,12 @@ launcher Repair to materialize that original, followed by supported-loader,
 fresh-build, non-game, restore, and bundle-idle gates. Do not restore the old
 backup across this update.
 
-The analysis/design phase is complete. The next development gate is the bounded
-profile codec and shared native compatibility resolver in disposable fixtures,
-as specified in [ADR-001](UPDATE-COMPATIBILITY.md). Dynamic-profile support is
-not implemented or released. The activation hand-off issue below remains
-unresolved and must stay separate from this update-compatibility work.
+The implementation is governed by [ADR-001](UPDATE-COMPATIBILITY.md). Its
+remaining gate is a current-original observation through user-run Repair,
+followed by exact-input/restore/idle checks, cache-preserving candidate install
+and one separately bounded normal-launch acceptance run. No public release,
+installed-file mutation, settings/cache change, or game launch has occurred in
+this work. The activation hand-off issue remains unresolved and separate.
 
 The following release and runtime records are historical checkpoints; they do
 not describe the currently updated local bundle as ready.

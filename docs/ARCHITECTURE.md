@@ -149,10 +149,13 @@ or selectable production runtimes.
 
 ## Update gate
 
-The current packaged auditor and runtime use compiled patch locations; their
-relocation tolerance covers surrounding reference movement, not arbitrary
-movement of the embedded object or host pacing branch. The accepted successor
-design, not yet implemented, is [ADR-001](UPDATE-COMPATIBILITY.md).
+Public 0.2.1 uses compiled patch locations and cannot accept arbitrary movement
+of the embedded object or host pacing branch. The source 0.3.0 development
+candidate implements [ADR-001](UPDATE-COMPATIBILITY.md): one native resolver
+independently discovers each domain, and the runtime re-derives the plan and
+compares its canonical profile with the digest-bound installed file. Profiles
+never supply unchecked patch addresses. Current loader provenance, installation
+and gameplay acceptance remain separate gates in Experiment 0060.
 
 `config/current-target.txt` selects the supported manifest. The source update
 checker compares executable SHA-256, Mach-O UUID, client version, databuild,
