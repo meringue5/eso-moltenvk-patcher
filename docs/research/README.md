@@ -6,6 +6,9 @@ do not replace local experiment records or establish the current safety state.
 
 ## Reviews
 
+- [macOS 27 Rosetta and MoltenVK maintenance review](macos-27-rosetta-moltenvk-review.md)
+  (2026-10-24): Rosetta installation/support boundaries, current official
+  release versus development runtime, and platform checks for dynamic profiles.
 - [GitHub precedents for replacing a bundled MoltenVK runtime](github-moltenvk-runtime-replacement-precedents.md)
   (2026-07-19): closest public game/runtime replacement attempts, observed
   compatibility failures, and implications for ESO's statically linked runtime.

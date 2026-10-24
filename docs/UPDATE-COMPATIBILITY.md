@@ -165,6 +165,32 @@ separately; static compatibility must not be displayed as gameplay acceptance.
 
 ## Consequences and implementation gates
 
+### Platform capability amendment (2026-10-24)
+
+[Experiment 0059](experiments/0059-macos-27-rosetta-runtime-preflight.md) and the
+[primary-source review](research/macos-27-rosetta-moltenvk-review.md) add an
+independent platform gate. Before deriving a profile or mutating files, record
+OS version/build and host/payload architectures; verify actual non-game x86_64
+execution instead of inferring Rosetta from the OS version or a receipt. Source
+maintenance also requires a fresh self-patch probe. Permission-denied
+diagnostics are indeterminate, not missing-translation proof.
+
+Run the standalone native auditor as arm64 on Apple Silicon. Retain x86_64 for
+the bridge and runtime slice in the observed x86_64 ESO process. Keep platform
+validation provenance in the journal/status alongside executable compatibility;
+an OS upgrade triggers capability reassessment even if ESO's hash is equal.
+macOS 28 and its limited game-support path remain unvalidated. An external
+profile does not remove the game's Rosetta dependency.
+
+If translation is unavailable, stop before mutation and explain Apple's manual
+installation route where supported. Install/Status must not silently install
+Rosetta, accept licenses, enable beta legacy-game mode, change architecture
+preferences, or reboot. Preserve official MoltenVK 1.4.2 as this implementation's
+runtime; a later release requires separate ABI/header, configuration,
+cache-preservation, and functional validation.
+
+### Implementation gates
+
 This design reduces maintenance for compatible executable changes. It does not
 establish compatibility for changed engine behavior, fix launcher activation,
 or eliminate Repair when the current original is unavailable.

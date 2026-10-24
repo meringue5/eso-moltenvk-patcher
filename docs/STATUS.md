@@ -31,6 +31,19 @@ unresolved and must stay separate from this update-compatibility work.
 The following release and runtime records are historical checkpoints; they do
 not describe the currently updated local bundle as ready.
 
+## macOS 27 and upstream runtime preflight (2026-10-24)
+
+Experiment [0059](experiments/0059-macos-27-rosetta-runtime-preflight.md) confirms
+fresh non-game x86_64 execution, self-patching, pinned runtime configuration,
+and ESO-era Vulkan device/HDR-filter operation on macOS 27.0.1. This is not a
+current-game acceptance result or proof of macOS 28 support. The installed
+update/loader blocker above remains unchanged.
+
+The [official-source review](research/macos-27-rosetta-moltenvk-review.md)
+finds MoltenVK 1.4.2 still the latest official release, with 1.4.3 development
+work unreleased. ADR-001 now includes platform capability reassessment before
+mutation. No runtime upgrade or automatic Rosetta installation is selected.
+
 ## Public 0.2.1 release (2026-10-05)
 
 ESO MoltenVK Patcher 0.2.1 is the public release for ESO 12.1.5 / databuild

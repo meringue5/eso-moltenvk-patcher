@@ -10,15 +10,18 @@ The current development order is owned by [ADR-001](UPDATE-COMPATIBILITY.md).
 Complete the native resolver/profile path before requesting scarce gameplay
 validation for it:
 
-1. Implement bounded profile parsing and native structural discovery, using
+1. Add read-only platform capability reporting (OS/build, architecture, actual
+   x86_64 execution) with clear unavailable/indeterminate outcomes. Keep official
+   MoltenVK 1.4.2 pinned; a future runtime upgrade is a separate experiment.
+2. Implement bounded profile parsing and native structural discovery, using
    source-auditor differential fixtures for independent Vulkan/pacing movement.
-2. Integrate profile-derived runtime targets and all pre-write validation;
+3. Integrate profile-derived runtime targets and all pre-write validation;
    rebuild and pass non-game probes before installer integration.
-3. Extend journaled install/remove/status fixtures to bind profiles and current
+4. Extend journaled install/remove/status fixtures to bind profiles and current
    original-loader generations without crossing the vendor-update boundary.
-4. Pass full checks, fresh isolated-log builds, packaging, interruption and
+5. Pass full checks, fresh isolated-log builds, packaging, interruption and
    preservation tests. Keep unsupported Bink generations blocked.
-5. Only then obtain the vendor original through user-run Repair if still
+6. Only then obtain the vendor original through user-run Repair if still
    required, repeat exact-input/install gates, and prepare one bounded normal
    Steam-path user acceptance run.
 
