@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-25
 
-## Active local blocker: initial activation after dynamic-profile validation
+## Current release: user-authorized 0.3.0-rc.1 prerelease
 
 The local client is ESO 12.1.6 / databuild 3309674. `check-update.sh`
 reports `CURRENT`. After user-run launcher Repair and launcher exit, the
@@ -35,13 +35,13 @@ one healthy launch; a first-run-only cause remains unproven.
 
 No additional launch repetition is requested. Dynamic update/runtime validation
 passes on this target; initial activation remains an intermittent known issue.
-A public prerelease with that limitation disclosed is recommended for scope
-review, while stable-release acceptance requires an explicit known-issue
-decision. Nothing has been published. The candidate remains installed with
-verified removal available. No unattended update/reinstall component exists;
-changed executable inputs still require explicit Install (and vendor Repair
-when the old proxy remains). This analysis changes no runtime/settings/cache
-files.
+The user authorized publication of 0.3.0-rc.1 with that limitation disclosed.
+Experiment [0061](experiments/0061-public-dynamic-profile-prerelease.md) owns
+release checks and publication evidence. This accepts the known issue for a
+prerelease; stable promotion and an activation fix remain separate decisions.
+The installed candidate and verified removal remain available. No unattended
+update/reinstall component exists; changed executable inputs still require
+explicit Install (and vendor Repair when the old proxy remains).
 
 The following release and runtime records are historical checkpoints.
 

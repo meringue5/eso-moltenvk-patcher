@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.0-rc.1 - 2026-10-25 (prerelease)
+
+- Supports ESO 12.1.6 / databuild 3309674 with native installer-derived
+  profiles that discover compatible relocated Vulkan and host-pacing sites.
+  Runtime independently re-discovers the plan and checks its executable-bound
+  digest before redirecting all 17 entries.
+- Reuses the same package for structurally compatible relocation updates;
+  Install must still be run again after executable changes. A retained bridge
+  requires launcher Repair first. Unsupported code or original-loader
+  generations stop safely; no unattended reinstall is included.
+- Preserves current original-loader recovery generations, settings and caches,
+  and detects executable-only and loader-only updater races during install.
+- Keeps MoltenVK 1.4.2, the existing startup controls and Balanced M4 profile.
+  Validated on Apple M4 / macOS 27.0.1, including Rosetta self-patching and two
+  normal Steam-path user launches with profile/17-redirect/79-150-180 evidence.
+- Known issue: intermittent initial focus loss and reduced FPS remains. The
+  first run reproduced it; the second began active normally. This does not
+  establish a first-run-only cause or an activation fix.
+- Release evidence and artifact identities: Experiment 0061.
+
 ## 0.2.1 - 2026-10-05
 
 - Supports ESO 12.1.5, databuild 3303624 (Steam update of 2026-09-30). The

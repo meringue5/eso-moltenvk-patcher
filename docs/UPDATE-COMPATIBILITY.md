@@ -13,7 +13,9 @@ canonical profile verification, runtime re-discovery and installer recovery
 binding are implemented. The following design sections explain the contract;
 current-original observation, installation and real-game runtime validation
 have passed. The 2026-10-25 run failed initial focus/FPS acceptance; activation
-repair and user-visible acceptance remain prerequisites to any public release.
+repair and user-visible acceptance remain gates for stable promotion. The user
+authorized a public 0.3.0-rc.1 prerelease with the issue disclosed; see
+[Experiment 0061](experiments/0061-public-dynamic-profile-prerelease.md).
 
 Schema 1 uses derive-and-compare rather than parsing profile-supplied addresses.
 It bounds the entire file at 4096 bytes and requires canonical fields/order,

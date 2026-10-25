@@ -9,6 +9,18 @@ project's prior work remains preserved as research and experiment history; it
 is the evidence that led to this release baseline and must not be rewritten as
 if it had been production at the time.
 
+## Dynamic-profile prerelease
+
+User-authorized 0.3.0-rc.1 targets ESO 12.1.6 / databuild 3309674 and adds
+native installer-derived update profiles. It is separate from the stable 0.2.1
+baseline below. Two normal Steam-path launches validate profile re-discovery,
+17 redirects and 79/150/180 startup controls; one failed initial focus/FPS
+acceptance and the next began active normally. This is a disclosed known issue,
+not a fixed or proven first-run-only condition. Updates still require explicit
+Install and may require launcher Repair; there is no unattended recovery.
+Release identity and publication evidence:
+[Experiment 0061](experiments/0061-public-dynamic-profile-prerelease.md).
+
 ## Production baseline identity
 
 | Component | Production baseline |

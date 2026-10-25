@@ -16,6 +16,15 @@ performance claim.
 
 [![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
 
+**New prerelease for ESO 12.1.6:**
+[Download 0.3.0-rc.1 — dynamic update profiles](https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0-rc.1).
+It discovers compatible relocated Vulkan and host-pacing sites, then rechecks
+the derived profile at game launch. After a game update, **run Install again**;
+if the old bridge remains, run launcher Repair first. Unattended reinstall and
+arbitrary Bink-generation support are not included. Initial focus/low-FPS can
+still occur intermittently; this release does not claim to fix activation.
+The stable release button above continues to select 0.2.1 for ESO 12.1.5.
+
 ## Effects
 
 ### What the patch delivers
@@ -273,11 +282,12 @@ When a new ESO build retains the verified binary layout,
 `scripts/rebase-update.sh` can audit and create a new target manifest without
 modifying the game bundle. See the [update runbook](docs/UPDATES.md).
 
-The source 0.3.0 development candidate adds native installer-derived profiles
-for independently relocated Vulkan and host-pacing sites. It remains separate
-from public 0.2.1. Current-original observation, installation and real-game
-profile validation passed on 12.1.6; initial focus/FPS acceptance failed and
-remains a release gate. See [ADR-001](docs/UPDATE-COMPATIBILITY.md) and
+The 0.3.0-rc.1 prerelease adds native installer-derived profiles for
+independently relocated Vulkan and host-pacing sites. Current-original
+observation, installation and real-game profile validation passed on 12.1.6.
+One launch failed initial focus/FPS acceptance; a second had normal initial
+activation. This remains a disclosed known issue, and stable promotion is a
+separate decision. See [ADR-001](docs/UPDATE-COMPATIBILITY.md) and
 [Experiment 0060](docs/experiments/0060-dynamic-update-profile-implementation.md).
 
 ## Documentation

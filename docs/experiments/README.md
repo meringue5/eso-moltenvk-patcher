@@ -72,6 +72,8 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0059 | 2026-10-24 | macOS 27 Rosetta and pinned runtime preflight | Succeeded in fresh non-game translation, self-patch, configuration and device probes; gameplay untested | [Run](0059-macos-27-rosetta-runtime-preflight.md) |
 | 0060 | 2026-10-24 / 2026-10-25 | Native dynamic update profiles | Partial success; reinstall/runtime profile pass, initial focus/FPS fail | [Run](0060-dynamic-update-profile-implementation.md) |
 
+| 0061 | 2026-10-25 | Public dynamic-profile prerelease | User-authorized; publication checks in progress | [Run](0061-public-dynamic-profile-prerelease.md) |
+
 ## Recording policy
 
 - Assign the next zero-padded ID before changing the game bundle.

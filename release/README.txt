@@ -16,18 +16,33 @@ QUICK START
    capture for the next ESO launch. It changes no bridge, cache, or game setting.
 6. To uninstall, double-click Uninstall.command.
 
-Version 0.2.1 supports the 2026-09-30 ESO update (client 12.1.5, databuild
-3303624). That update relinked the game and moved the unchanged embedded
-MoltenVK, so the 0.2.0 package correctly refused it. 0.2.1 keeps the 0.2.0
-runtime control and settings template unchanged, verifies the new executable
-and its new original Bink library, and adds a few timestamped, bounded
-activation records to the local log. It does not promise identical FPS on
-every Mac or claim unmeasured Quality/Efficiency profiles.
+Version 0.3.0-rc.1 is a prerelease for ESO 12.1.6, databuild 3309674,
+validated on Apple M4 / macOS 27.0.1 through the normal Steam launch path.
+It discovers compatible relocated Vulkan and host-pacing connection points
+instead of requiring fixed addresses for each game update. At Install, the
+native auditor generates a profile for the current executable; at game launch,
+the bridge independently re-discovers and verifies that plan before connecting
+all 17 Vulkan entry points. The pinned runtime remains MoltenVK 1.4.2 and the
+existing startup control and Balanced M4 settings template are unchanged.
 
-Known issue: on some launches macOS does not make ESO the active application
-when the launcher starts it. ESO then runs at reduced FPS, and the mouse may
-not be captured, until you switch to another app and back (Cmd-Tab). This
-happens with or without the patch and is not fixed by 0.2.1.
+UPDATE RECOVERY STILL REQUIRES AN EXPLICIT INSTALL
+
+After an official game update, close ESO and its launcher and run
+Install.command again. Compatible relocation changes can reuse this package;
+structurally incompatible builds or unsupported original Bink generations stop
+safely. If the old bridge remains active after an executable update, run the
+ESO launcher's Repair, close the launcher, then run Install again. The patcher
+preserves the current vendor original and never restores an older generation
+across an update. It does not install in the background or repair itself if
+the updater replaces the bridge.
+
+Known issue: initial application activation can fail intermittently, with low
+FPS and lost mouse focus. One 12.1.6 launch reproduced it; the next launched
+with normal initial activation. The first recovered after the user's app
+switch, but this prerelease does not fix or require that workaround. A
+first-run-only cause is unproven. Status's Last launch PASS checks bridge
+startup structure, not visual focus or measured FPS. No universal FPS or
+future-update compatibility guarantee is made.
 
 Payload files are kept in a hidden internal folder. Keep the entire package
 together and do not move any command out of it.
@@ -70,5 +85,8 @@ never resumes from an unverified partially copied binary.
 Source, supported builds, and troubleshooting:
 https://github.com/meringue5/eso-moltenvk-patcher
 
-Latest release:
+Stable release (0.2.1; older ESO target):
 https://github.com/meringue5/eso-moltenvk-patcher/releases/latest
+
+This prerelease:
+https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0-rc.1

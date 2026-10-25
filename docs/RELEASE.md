@@ -7,6 +7,18 @@ player-facing `Install.command`, `Uninstall.command`, `Status.command`,
 tool, not a game launcher. A signed **ESO MoltenVK Patcher.app**
 in a compressed DMG remains the future polished distribution channel.
 
+## 0.3.0-rc.1 publication scope
+
+The dynamic-profile update support is published as a prerelease, keeping
+stable 0.2.1 and its assets immutable. The release carries the user-launched
+bridge/auditor/runtime bytes from Experiment 0060; packaging updates the player
+README and checksum manifest. The public description must state that compatible
+locations are discovered automatically but Install still has to be re-run after
+executable changes, that Repair is needed for a stale retained bridge, and that
+unsupported original-loader generations stop safely. Intermittent initial
+activation is disclosed. See
+[Experiment 0061](experiments/0061-public-dynamic-profile-prerelease.md).
+
 ## Build a release candidate
 
 ```sh

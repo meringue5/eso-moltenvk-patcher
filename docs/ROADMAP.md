@@ -8,7 +8,7 @@ This roadmap contains future work only. Current verified state is in
 
 [ADR-001](UPDATE-COMPATIBILITY.md) has runtime evidence on the installed
 candidate 0.3.0-rc.1, but initial focus/FPS acceptance failed in Experiment
-0060. Before a public-release decision:
+0060. Before stable promotion beyond the user-authorized prerelease:
 
 1. Investigate the Steam/launcher-to-AppKit activation hand-off using retained
    evidence and agent-only source/non-game checks. Do not repeat the same
@@ -193,8 +193,8 @@ baseline.
 
 - Run the quick update gate after every ESO or launcher content update.
 - Maintain the native dynamic-profile contract and remaining acceptance gates
-  in [ADR-001](UPDATE-COMPATIBILITY.md); public 0.2.1 still uses its older
-  fixed-location path until a successor is accepted and released.
+  in [ADR-001](UPDATE-COMPATIBILITY.md); stable 0.2.1 retains its older
+  fixed-location path; the 0.3.0-rc.1 prerelease carries native dynamic profiles.
 - Require launcher Repair when an executable update leaves the bridge active;
   never use an older original-loader backup as a substitute for observing the
   vendor's current original generation.
