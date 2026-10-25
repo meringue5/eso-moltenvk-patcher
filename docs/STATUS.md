@@ -27,13 +27,21 @@ the world, followed by restored focus and approximately 60 FPS after Cmd-Tab.
 The log starts `active=no` and first becomes active at 45.954 seconds, after
 key/active notifications. Overall initial-focus/FPS acceptance therefore fails.
 
-No additional launch repetition is requested. Experiment 0060 is closed with
-partial success: dynamic update/runtime validation passes on this target;
-activation remains unresolved. The next investigation is the Steam/launcher
-to AppKit activation hand-off, without treating app switching as a supported
-recovery requirement. The candidate remains installed with verified removal
-available. No public release or runtime/settings/cache mutation follows this
-analysis.
+A second natural run, `20261025T121527.882687000Z-pid52734`, validates the
+same profile and startup controls and receives key/active notifications at
+1.332/1.341 seconds, followed by an initial `active=yes` at 1.659 seconds.
+The user reports no initial-focus recurrence. This establishes one failed and
+one healthy launch; a first-run-only cause remains unproven.
+
+No additional launch repetition is requested. Dynamic update/runtime validation
+passes on this target; initial activation remains an intermittent known issue.
+A public prerelease with that limitation disclosed is recommended for scope
+review, while stable-release acceptance requires an explicit known-issue
+decision. Nothing has been published. The candidate remains installed with
+verified removal available. No unattended update/reinstall component exists;
+changed executable inputs still require explicit Install (and vendor Repair
+when the old proxy remains). This analysis changes no runtime/settings/cache
+files.
 
 The following release and runtime records are historical checkpoints.
 

@@ -265,3 +265,38 @@ AppKit activation boundary remains the next investigation; no further manual
 launch repetition or one-shot activation fallback is requested. Candidate
 0.3.0-rc.1 remains installed with verified same-generation removal available.
 No rollback, public release or overall gameplay PASS is claimed.
+
+
+## Second natural-launch amendment and release scope (2026-10-25)
+
+The user subsequently reported that the second launch did not repeat the
+initial focus defect, and asked whether to release the dynamic update feature
+now rather than continue extending the scope. This preserves the first failure
+above; it does not prove a first-run-only cause or a permanent activation fix.
+
+Read-only update verification remains CURRENT. The matching second run is
+`20261025T121527.882687000Z-pid52734` (21:15:27 KST). It independently logs
+the same validated schema-1 digest, all 17 redirects, the 79-draw/ordinal-150
+latch and ordinal-180 finish. Unlike the first run, become-key arrives at
+1,332 ms, become-active at 1,341 ms, and the first observed internal state is
+`active=yes` at 1,659 ms. Much later resignation/reactivation events do not
+invalidate the initially healthy activation. No additional controlled launch
+was requested. The second run and current full log are preserved in ignored
+`artifacts/0060-user-launch-20261025-second/` with a SHA-256 identity manifest;
+analysis does not modify the production log.
+
+The release recommendation is a public 0.3.0 prerelease with the intermittent
+initial-activation issue disclosed, rather than expanding this candidate into
+an unattended installer. This is a recommendation, not publication authority
+or a completed release. The first-run acceptance failure remains recorded and
+public stable-release eligibility needs an explicit scope/known-issue decision.
+
+Current capability: the installer derives a new compatible executable profile;
+the loaded bridge independently re-discovers and verifies that installed plan
+at runtime. It does not re-attest a changed executable automatically: the
+marker hash check precedes discovery. If an official updater replaces the Bink
+proxy, that proxy cannot execute to restore itself. Re-running Install remains
+necessary for changed executable inputs; a retained proxy requires vendor
+Repair first, and unsupported original generations still stop. Future support
+for unattended recovery would require an external component and the same
+provenance/idle/transaction gates. No such component was added here.
