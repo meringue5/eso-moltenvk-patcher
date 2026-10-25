@@ -1,7 +1,7 @@
 # Experiment 0061: public dynamic-profile prerelease
 
 - Date: 2026-10-25
-- Outcome: **user-authorized; release gates and publication in progress**
+- Outcome: **succeeded; public prerelease published and remote artifact verified**
 - Rollback: **stable v0.2.1 and its immutable assets retained; verified
   current-generation removal available on the local installation**
 
@@ -50,7 +50,34 @@ is preserved in ignored evidence storage. No new game launch or real install
 cycle is needed for documentation-only packaging changes. A separate SHA-256
 asset accompanies the ZIP. Raw logs, game binaries and caches are not committed.
 
-## Publication
+## Publication (confirmed 2026-10-25)
 
-Pending final checks and remote confirmation. No release is claimed by this
-preparation record until the publication amendment is added.
+Annotated tag `v0.3.0-rc.1` peels to source release commit
+`e48cda10b8f868709f8baaee6a64c4e19903c199`, pushed on `main`. The tag is
+immutable; subsequent publication-evidence commits do not change its payload.
+GitHub static checks passed for both
+[main](https://github.com/meringue5/eso-moltenvk-patcher/actions/runs/40200615233)
+and [tag](https://github.com/meringue5/eso-moltenvk-patcher/actions/runs/40200639540).
+Those CI jobs check syntax and source hygiene; the native/runtime/transaction
+and Python test results above are local macOS evidence, not CI gameplay tests.
+
+The uploaded draft ZIP and SHA-256 asset were downloaded and checked against
+the local artifact. The clean-extraction archive test passed on that download.
+The release was then published at 2026-10-25 23:06:33 KST (14:06:33 UTC):
+[v0.3.0-rc.1](https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0-rc.1).
+Remote metadata confirms `draft=false`, `prerelease=true`, ZIP size 3,475,263
+bytes and server digest matching the SHA-256 above. The public asset is
+[ESO-MoltenVK-Patcher-0.3.0-rc.1.zip](https://github.com/meringue5/eso-moltenvk-patcher/releases/download/v0.3.0-rc.1/ESO-MoltenVK-Patcher-0.3.0-rc.1.zip).
+The latest-stable endpoint still returns `v0.2.1`; old releases/assets remain
+unchanged. No real bundle reinstall, launch, settings/cache-policy change or
+activation workaround was introduced for publication.
+
+## Rollback and next gate
+
+The local installation retains the same tested payloads with verified current
+original recovery. Use the new package's generation-checked Remove path when
+needed; do not install the old 12.1.5 package over the 12.1.6 client as a
+compatibility workaround. For a release-blocking regression, mark this
+prerelease as affected/withdraw its recommendation and retain its evidence;
+never silently replace an uploaded immutable asset. Stable promotion requires
+a separate scope/known-issue review. No repeated manual launch is requested.

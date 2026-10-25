@@ -300,3 +300,14 @@ necessary for changed executable inputs; a retained proxy requires vendor
 Repair first, and unsupported original generations still stop. Future support
 for unattended recovery would require an external component and the same
 provenance/idle/transaction gates. No such component was added here.
+
+
+## Publication decision amendment (2026-10-25)
+
+Following the second normal initial-activation run and explicit review of
+unattended-reinstall limits, the user authorized immediate publication.
+Experiment [0061](0061-public-dynamic-profile-prerelease.md) records public
+0.3.0-rc.1 with byte-identical tested bridge/auditor/runtime payloads, updated
+player documentation and the activation issue disclosed. This supersedes the
+prior no-publication state without changing the first failure, second success,
+or the lack of a proven first-run-only cause. Stable promotion is separate.

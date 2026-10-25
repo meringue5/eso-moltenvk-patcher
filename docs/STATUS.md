@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-25
 
-## Current release: user-authorized 0.3.0-rc.1 prerelease
+## Current release: public 0.3.0-rc.1 prerelease
 
 The local client is ESO 12.1.6 / databuild 3309674. `check-update.sh`
 reports `CURRENT`. After user-run launcher Repair and launcher exit, the
@@ -36,6 +36,8 @@ one healthy launch; a first-run-only cause remains unproven.
 No additional launch repetition is requested. Dynamic update/runtime validation
 passes on this target; initial activation remains an intermittent known issue.
 The user authorized publication of 0.3.0-rc.1 with that limitation disclosed.
+It is now [public](https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0-rc.1),
+with CI and the remote asset verified; stable latest remains 0.2.1.
 Experiment [0061](experiments/0061-public-dynamic-profile-prerelease.md) owns
 release checks and publication evidence. This accepts the known issue for a
 prerelease; stable promotion and an activation fix remain separate decisions.
