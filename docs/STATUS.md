@@ -1,8 +1,8 @@
 # Project status
 
-Last updated: 2026-10-24
+Last updated: 2026-10-25
 
-## Active local gate: dynamic-profile gameplay acceptance
+## Active local blocker: initial activation after dynamic-profile validation
 
 The local client is ESO 12.1.6 / databuild 3309674. `check-update.sh`
 reports `CURRENT`. After user-run launcher Repair and launcher exit, the
@@ -18,13 +18,22 @@ comparison. The executable, settings, all inventoried caches, production log,
 legacy pristine and current raw recovery backup were unchanged by installation.
 Idle Steam passed the shared bundle-idle gate; no app was launched by the agent.
 
-[ADR-001](UPDATE-COMPATIBILITY.md) is implemented in the local candidate.
-Its remaining gate is one bounded user-controlled normal Steam-path launch to
-verify runtime profile re-discovery, all 17 redirects and existing startup
-controls, with independent rendering/focus/FPS observations. The last retained
-log predates this installation and its attestation failure is historical.
-No public release has been created. The activation hand-off issue remains
-unresolved and separate; dynamic relocation is not an activation fix.
+[ADR-001](UPDATE-COMPATIBILITY.md) now has real-game runtime evidence:
+run `20261025T120456.428363000Z-pid50997` validates the installed profile,
+redirects all 17 entries and completes the 79/150/180 startup controls.
+Packaged Status `Last launch: PASS` evaluates those structural invariants only.
+The user reports initial focus loss and approximately 40 FPS after entering
+the world, followed by restored focus and approximately 60 FPS after Cmd-Tab.
+The log starts `active=no` and first becomes active at 45.954 seconds, after
+key/active notifications. Overall initial-focus/FPS acceptance therefore fails.
+
+No additional launch repetition is requested. Experiment 0060 is closed with
+partial success: dynamic update/runtime validation passes on this target;
+activation remains unresolved. The next investigation is the Steam/launcher
+to AppKit activation hand-off, without treating app switching as a supported
+recovery requirement. The candidate remains installed with verified removal
+available. No public release or runtime/settings/cache mutation follows this
+analysis.
 
 The following release and runtime records are historical checkpoints.
 

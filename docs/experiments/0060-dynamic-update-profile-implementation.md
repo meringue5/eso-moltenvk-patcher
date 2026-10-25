@@ -1,7 +1,7 @@
 # Experiment 0060: native dynamic update profiles
 
-- Date: 2026-10-24
-- Outcome: **running; implementation/non-game and reinstall gates pass, gameplay acceptance pending**
+- Date: 2026-10-24 / 2026-10-25
+- Outcome: **partial success; dynamic-profile runtime and reinstall pass, initial focus/FPS acceptance fails**
 - Rollback: **verified current-original backup available; candidate installed, settings/caches preserved**
 
 ## Question and hypothesis
@@ -209,3 +209,59 @@ workaround, stop on crash/pink/focus failure/sustained low FPS. Runtime profile
 validation, 17 redirects and existing 79/150/180 startup control must be checked
 against the new run, alongside the user's rendering/focus/FPS observations.
 The pre-install attestation-failure log remains historical evidence.
+
+
+## User-launch result amendment (2026-10-25)
+
+The user completed one normal Steam-path launch and exit, shorter than the
+five-minute bound. On entering the world after character selection, initial
+focus was lost and the displayed FPS was approximately 40. The user switched
+away with Cmd-Tab and returned; focus then attached to the game and the FPS
+returned to approximately 60. This was a recovery action observed in a failed
+initial-focus test, not an acceptable required workflow. No matched-scene
+performance benchmark or independently measured frame-time result is claimed.
+
+The matching retained run is `20261025T120456.428363000Z-pid50997`
+(2026-10-25 21:04:56 KST). Confirmed log evidence:
+
+- `UPDATE_PROFILE_VALIDATED`: schema 1, installed digest
+  `ed4970761703564d57f677e01f3641b6275a1bc3f4756da6f80b14b76476686a`.
+- Pinned runtime effective configuration verified, all 17 Vulkan entries
+  redirected, inactive 100-ms sleep bypass active, focus callbacks unmodified
+  and active byte observed only.
+- Compositor latch: generation 2, ordinal 150, 79 suppressed draws; startup
+  finished at ordinal 180. No ERROR/FATAL/SKIP record appears in this run.
+- Initial `active=no` at 1,686 ms. No prior key/active notification appears.
+  Resign-active notification at 44,545 ms still has `active_byte=no`.
+- Become-key at 45,887 ms; become-active at 45,899 ms; internal `active=yes`
+  at 45,954 ms. This ordering is consistent with the reported app-switch
+  recovery. It does not independently locate the character-selection/world
+  transition or prove which upstream component failed activation.
+
+The packaged Status reports `Last launch: PASS` for its seven structural
+invariants and explicitly disclaims FPS/focus verification. That verdict does
+not override this experiment's initial-focus/FPS failure. The historical
+`tools/check_startup_log.py` checker was also tried; it rejected six legacy
+instrumentation expectations absent from this production mode (including
+RUN_START PID/config/proc-route trace fields). Its verdict is not used to
+classify this candidate; current packaged checks and direct milestone review
+supply the structural evidence.
+
+The production log was copied without modification into ignored local evidence
+storage `artifacts/0060-user-launch-20261025/`, alongside an extracted 649-line
+run and identity manifest. Full log SHA-256 is
+`3a528c1018f2b7238217e17393924c9599ad7eee29cbee3bea45714be570e29b`,
+size 284,717 bytes. Raw logs remain uncommitted. Post-run executable, bridge,
+renamed original, runtime, profile, marker, journal and raw recovery hashes all
+match the verified installation. No installed files, settings or caches were
+changed by this analysis, and no app was started by the agent.
+
+Result: runtime dynamic discovery/revalidation and startup controls are proven
+on this exact 12.1.6 run; initial focus and approximately-60-FPS acceptance
+failed. This repeats the activation symptom on macOS 27 with argument buffers
+off and the inactive sleep already bypassed. Neither dynamic relocation nor
+the runtime upgrade is shown to repair activation. The known Steam/launcher to
+AppKit activation boundary remains the next investigation; no further manual
+launch repetition or one-shot activation fallback is requested. Candidate
+0.3.0-rc.1 remains installed with verified same-generation removal available.
+No rollback, public release or overall gameplay PASS is claimed.

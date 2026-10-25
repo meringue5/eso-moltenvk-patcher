@@ -871,6 +871,18 @@ mechanism. A short-yield pacing successor is therefore conditional on a natural
 focus recurrence with argument buffers off, not required for the current
 production behavior.
 
+
+The 2026-10-25 Experiment [0060](experiments/0060-dynamic-update-profile-implementation.md)
+run reproduces initial focus loss and user-observed approximately 40 FPS on
+ESO 12.1.6 / macOS 27.0.1, despite verified dynamic-profile redirection,
+argument buffers disabled and inactive 100-ms sleep bypassed. The first
+key/active notifications arrive at approximately 45.9 seconds, followed by
+`active=yes`; the user reports focus and approximately 60 FPS after Cmd-Tab.
+This independently extends the recurrence to the updated platform/client, but
+does not prove its upstream cause or require a preceding sleep/wake boundary.
+Structural startup PASS and later active state do not establish successful
+initial focus or independently measured performance.
+
 ## Fixed-window pink neutralization and inactive pacing bypass coexist
 
 Experiment 0044 combines the already validated generation-2 compositor window

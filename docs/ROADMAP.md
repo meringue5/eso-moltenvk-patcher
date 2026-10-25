@@ -6,22 +6,23 @@ This roadmap contains future work only. Current verified state is in
 
 ## Active update-maintenance gate: installer-derived profiles
 
-The remaining gates for [ADR-001](UPDATE-COMPATIBILITY.md) and development
-candidate 0.3.0-rc.1 are:
+[ADR-001](UPDATE-COMPATIBILITY.md) has runtime evidence on the installed
+candidate 0.3.0-rc.1, but initial focus/FPS acceptance failed in Experiment
+0060. Before a public-release decision:
 
-1. Complete the requested bounded normal Steam-path acceptance run on the
-   installed candidate. Require runtime profile/17-redirect/startup-control logs
-   and independent user focus, rendering and FPS observations; do not claim an
-   activation fix from structural success.
-2. Decide public-release eligibility only after acceptance, keeping prior
-   immutable releases and all recovery generations available.
+1. Investigate the Steam/launcher-to-AppKit activation hand-off using retained
+   evidence and agent-only source/non-game checks. Do not repeat the same
+   manual launch or reintroduce the failed one-shot activation request.
+2. Define a specific repair hypothesis and non-game evidence before proposing
+   any new bounded user acceptance run. Preserve dynamic-profile and startup
+   structural controls as regression requirements.
+3. Decide release eligibility only after the remaining user-visible acceptance
+   gate passes, preserving immutable releases and recovery generations.
 
-The next milestone is runtime acceptance after the verified explicit Install action.
 Background monitoring, launch-time installation, and automatic adoption of
-arbitrary Bink generations are deferred. The activation work below remains a
-separate reliability priority.
+arbitrary Bink generations remain deferred.
 
-## P0: resolve post-sleep activation divergence
+## P0: resolve initial activation divergence
 
 - Treat Experiment 0052's public-0.2.0 recurrence as the immediate reliability
   blocker: detached initial mouse focus and approximately 40 FPS with ESO's

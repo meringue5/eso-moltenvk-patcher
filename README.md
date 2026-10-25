@@ -275,8 +275,9 @@ modifying the game bundle. See the [update runbook](docs/UPDATES.md).
 
 The source 0.3.0 development candidate adds native installer-derived profiles
 for independently relocated Vulkan and host-pacing sites. It remains separate
-from public 0.2.1 and awaits current-original observation, installation and
-gameplay acceptance. See [ADR-001](docs/UPDATE-COMPATIBILITY.md) and
+from public 0.2.1. Current-original observation, installation and real-game
+profile validation passed on 12.1.6; initial focus/FPS acceptance failed and
+remains a release gate. See [ADR-001](docs/UPDATE-COMPATIBILITY.md) and
 [Experiment 0060](docs/experiments/0060-dynamic-update-profile-implementation.md).
 
 ## Documentation

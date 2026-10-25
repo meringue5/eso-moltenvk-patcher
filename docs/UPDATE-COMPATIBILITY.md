@@ -1,6 +1,6 @@
 # ADR-001: installer-derived update profiles
 
-- Status: implemented and installed as development candidate; gameplay acceptance pending
+- Status: implemented and installed as development candidate; runtime verified; initial focus/FPS acceptance failed
 - Date: 2026-10-24
 - Decision owner: project maintainer; direction authorized in the project chat
 - Evidence: [Experiment 0058](experiments/0058-eso-12.1.6-update-profile-analysis.md)
@@ -11,8 +11,9 @@
 owns the implementation and validation evidence. The shared native resolver,
 canonical profile verification, runtime re-discovery and installer recovery
 binding are implemented. The following design sections explain the contract;
-current-original observation and installation have passed; the remaining gate
-is gameplay acceptance, followed separately by any public release decision.
+current-original observation, installation and real-game runtime validation
+have passed. The 2026-10-25 run failed initial focus/FPS acceptance; activation
+repair and user-visible acceptance remain prerequisites to any public release.
 
 Schema 1 uses derive-and-compare rather than parsing profile-supplied addresses.
 It bounds the entire file at 4096 bytes and requires canonical fields/order,
