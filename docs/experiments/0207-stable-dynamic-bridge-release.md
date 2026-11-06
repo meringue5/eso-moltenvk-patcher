@@ -68,3 +68,20 @@ FPS, focus or automatic-loading guarantee is claimed.
 Publication metadata, final source commit/tag, CI and downloaded-asset verification
 are recorded after successful upload. Until then this section is preparation
 evidence, not a claim that the final release is publicly available.
+
+## Publication confirmed — 2026-11-06
+
+Annotated tag v0.3.0 peels to ec80f18f44e2152e24fd1607909a8a2140a59d5f,
+from the public baseline plus documentation/version updates only. Release and
+source CI pass:
+[branch check](https://github.com/meringue5/eso-moltenvk-patcher/actions/runs/42156531892),
+[tag check](https://github.com/meringue5/eso-moltenvk-patcher/actions/runs/42156590409).
+The uploaded draft ZIP was downloaded, matched the exact final SHA-256 and
+passed clean-archive checks before publication. GitHub now reports draft=false,
+prerelease=false and latest=v0.3.0. Prior releases/assets are unchanged.
+
+[Stable 0.3.0](https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0)
+is published at 2026-11-06T03:28:10Z. The ZIP is 3,476,618 bytes with server
+digest sha256:fcae1194bb1e63ae444ad95d049e25e35825819b3782393c89895ee3293fdb32.
+Local unpublished research was not pushed or packaged. All 34 production
+preservation records match and no real install or app launch occurs.
