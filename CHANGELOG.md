@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0 - 2026-11-06
+
+- Promotes the user-validated 0.3.0-rc.1 dynamic-bridge baseline to stable.
+  Bridge, native auditor and official MoltenVK 1.4.2 are byte-identical to the
+  published prerelease; installer logic and runtime behavior are unchanged.
+- Dynamically discovers and validates compatible relocated Vulkan/host-pacing
+  entry points. The installer derives an executable-bound profile and the
+  runtime independently re-derives it before redirecting all 17 Vulkan entries.
+- Retains manual Install after official updates and launcher Repair when a stale
+  proxy remains. This release does not include unattended recovery, Starter
+  diagnostics, external launch wrappers or private runtime-attestation features.
+- Discloses intermittent initial focus loss/low FPS as an existing known issue.
+  Unknown structural changes and unsupported Bink generations still fail closed.
+- Preserves normal Steam authentication, settings/cache policy and original-loader
+  generations. Release identity and validation: Experiment 0207.
+
 ## 0.3.0-rc.1 - 2026-10-25 (prerelease)
 
 - Supports ESO 12.1.6 / databuild 3309674 with native installer-derived

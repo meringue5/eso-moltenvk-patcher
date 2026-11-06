@@ -4,10 +4,11 @@
 Online** from its
 statically embedded MoltenVK 1.0.18 runtime to the current official MoltenVK
 1.4.2 release. The current patch and installer are validated on the normal
-Steam launch path. The current 0.2.1 release supports ESO 12.1.5 (databuild
-3303624, the 2026-09-30 update) and can re-attest later relocation-only game
-updates when their embedded MoltenVK and complete bridge-facing structure
-remain unchanged. On the tested M4 MacBook
+Steam launch path. The current 0.3.0 release supports ESO 12.1.6 (databuild
+3309674) with dynamic discovery of compatible relocated bridge connection
+points. The installer derives a profile and the bridge independently rechecks
+that plan at game launch. Compatible updates can reuse the same package after
+manual installation. On the tested M4 MacBook
 Air, an earlier 2048 x 1280 medium-to-high checkpoint held the 60 FPS VSync
 ceiling throughout roughly 93 minutes of user-observed active gameplay. The
 0.2.x packages identify the later gameplay-accepted 1920 x 1200 Balanced M4
@@ -16,14 +17,15 @@ performance claim.
 
 [![Download the latest ESO MoltenVK Patcher release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github)](https://github.com/meringue5/eso-moltenvk-patcher/releases/latest)
 
-**New prerelease for ESO 12.1.6:**
-[Download 0.3.0-rc.1 — dynamic update profiles](https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0-rc.1).
-It discovers compatible relocated Vulkan and host-pacing sites, then rechecks
-the derived profile at game launch. After a game update, **run Install again**;
-if the old bridge remains, run launcher Repair first. Unattended reinstall and
-arbitrary Bink-generation support are not included. Initial focus/low-FPS can
-still occur intermittently; this release does not claim to fix activation.
-The stable release button above continues to select 0.2.1 for ESO 12.1.5.
+**Stable 0.3.0 — dynamic bridge, manual installation after updates:**
+[Download 0.3.0](https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0).
+The bridge and MoltenVK are separate libraries. Compatible entry points are
+discovered automatically; after an official executable update, **run Install
+again**. If the old bridge remains, use launcher Repair first. Structurally
+changed builds and unsupported original Bink generations stop safely.
+Intermittent initial focus/low FPS remains a known issue. No automatic recovery,
+external Steam wrapper or guarantee that the loading path survives an update
+is included.
 
 ## Effects
 
@@ -200,7 +202,7 @@ limitations are recorded in [Production baseline](docs/PRODUCTION.md).
 | Component | Verified value |
 |---|---|
 | Mac | Apple M4 MacBook Air |
-| Current supported ESO | Steam macOS client 12.0.8, databuild `3288357` |
+| Current supported ESO | Steam macOS client 12.1.6, databuild `3309674` |
 | Extended gameplay baseline | Steam macOS client 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
 | Bridge profile | Stable 1.4.2 profile; inactive-pacing bypass plus bounded compositor repair |
@@ -282,12 +284,11 @@ When a new ESO build retains the verified binary layout,
 `scripts/rebase-update.sh` can audit and create a new target manifest without
 modifying the game bundle. See the [update runbook](docs/UPDATES.md).
 
-The 0.3.0-rc.1 prerelease adds native installer-derived profiles for
+The 0.3.0 stable release ships native installer-derived profiles for
 independently relocated Vulkan and host-pacing sites. Current-original
 observation, installation and real-game profile validation passed on 12.1.6.
 One launch failed initial focus/FPS acceptance; a second had normal initial
-activation. This remains a disclosed known issue, and stable promotion is a
-separate decision. See [ADR-001](docs/UPDATE-COMPATIBILITY.md) and
+activation. This remains a disclosed known issue in the user-authorized stable baseline. See [ADR-001](docs/UPDATE-COMPATIBILITY.md) and
 [Experiment 0060](docs/experiments/0060-dynamic-update-profile-implementation.md).
 
 ## Documentation

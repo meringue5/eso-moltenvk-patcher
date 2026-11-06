@@ -4,23 +4,14 @@ This roadmap contains future work only. Current verified state is in
 [Project status](STATUS.md); completed work remains in the
 [experiment index](experiments/README.md).
 
-## Active update-maintenance gate: installer-derived profiles
+## Stable 0.3.0 baseline and future loading research
 
-[ADR-001](UPDATE-COMPATIBILITY.md) has runtime evidence on the installed
-candidate 0.3.0-rc.1, but initial focus/FPS acceptance failed in Experiment
-0060. Before stable promotion beyond the user-authorized prerelease:
-
-1. Investigate the Steam/launcher-to-AppKit activation hand-off using retained
-   evidence and agent-only source/non-game checks. Do not repeat the same
-   manual launch or reintroduce the failed one-shot activation request.
-2. Define a specific repair hypothesis and non-game evidence before proposing
-   any new bounded user acceptance run. Preserve dynamic-profile and startup
-   structural controls as regression requirements.
-3. Decide release eligibility only after the remaining user-visible acceptance
-   gate passes, preserving immutable releases and recovery generations.
-
-Background monitoring, launch-time installation, and automatic adoption of
-arbitrary Bink generations remain deferred.
+The user selects the dynamic bridge plus manual installation as the release
+baseline. Keep known focus limitations explicit. Future update-independent
+loading research must distinguish preserved external bridge code, a surviving
+per-launch loading route, and dynamic discovery in the changed game. Automatic
+reinstallation is a fallback approach, not a substitute for that intended
+architecture. No such research component is shipped in stable 0.3.0.
 
 ## P0: resolve initial activation divergence
 
@@ -194,7 +185,7 @@ baseline.
 - Run the quick update gate after every ESO or launcher content update.
 - Maintain the native dynamic-profile contract and remaining acceptance gates
   in [ADR-001](UPDATE-COMPATIBILITY.md); stable 0.2.1 retains its older
-  fixed-location path; the 0.3.0-rc.1 prerelease carries native dynamic profiles.
+  fixed-location path; stable 0.3.0 carries native dynamic profiles.
 - Require launcher Repair when an executable update leaves the bridge active;
   never use an older original-loader backup as a substitute for observing the
   vendor's current original generation.

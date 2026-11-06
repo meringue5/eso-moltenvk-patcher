@@ -2,7 +2,15 @@
 
 Last updated: 2026-10-25
 
-## Current release: public 0.3.0-rc.1 prerelease
+## Current release: stable 0.3.0
+
+User-authorized stable promotion on 2026-11-06 uses the exact RC1 native payloads,
+with manual update installation and the known intermittent focus issue disclosed.
+Dynamic profile discovery is the release feature; automatic recovery and external
+Steam entry research are not shipped. Publication evidence belongs to
+[Experiment 0207](experiments/0207-stable-dynamic-bridge-release.md).
+
+## Historical prerelease validation
 
 The local client is ESO 12.1.6 / databuild 3309674. `check-update.sh`
 reports `CURRENT`. After user-run launcher Repair and launcher exit, the

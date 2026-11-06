@@ -73,6 +73,7 @@ production scope belongs in `docs/PRODUCTION.md`.
 | 0060 | 2026-10-24 / 2026-10-25 | Native dynamic update profiles | Partial success; reinstall/runtime profile pass, initial focus/FPS fail | [Run](0060-dynamic-update-profile-implementation.md) |
 
 | 0061 | 2026-10-25 | Public dynamic-profile prerelease | Succeeded; public 0.3.0-rc.1, unchanged tested payloads and remote ZIP verified | [Run](0061-public-dynamic-profile-prerelease.md) |
+| 0207 | 2026-11-06 | Stable dynamic bridge 0.3.0 | User-authorized exact-payload RC1 promotion; dynamic discovery with manual update installation and disclosed focus issue | [Run](0207-stable-dynamic-bridge-release.md) |
 
 ## Recording policy
 

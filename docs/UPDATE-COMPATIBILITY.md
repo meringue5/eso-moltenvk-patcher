@@ -5,6 +5,11 @@
 - Decision owner: project maintainer; direction authorized in the project chat
 - Evidence: [Experiment 0058](experiments/0058-eso-12.1.6-update-profile-analysis.md)
 
+Stable promotion decision, 2026-11-06: the user selects 0.3.0's dynamic bridge
+and manual update installation as the supported baseline, retaining the known
+focus limitation. This does not establish update-independent bootstrap survival;
+see [Experiment 0207](experiments/0207-stable-dynamic-bridge-release.md).
+
 ## Implementation amendment (2026-10-24)
 
 [Experiment 0060](experiments/0060-dynamic-update-profile-implementation.md)

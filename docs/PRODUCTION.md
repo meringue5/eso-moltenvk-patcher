@@ -9,24 +9,26 @@ project's prior work remains preserved as research and experiment history; it
 is the evidence that led to this release baseline and must not be rewritten as
 if it had been production at the time.
 
-## Dynamic-profile prerelease
+## Stable dynamic-bridge baseline: 0.3.0
 
-User-authorized 0.3.0-rc.1 targets ESO 12.1.6 / databuild 3309674 and adds
-native installer-derived update profiles. It is separate from the stable 0.2.1
-baseline below. Two normal Steam-path launches validate profile re-discovery,
-17 redirects and 79/150/180 startup controls; one failed initial focus/FPS
-acceptance and the next began active normally. This is a disclosed known issue,
-not a fixed or proven first-run-only condition. Updates still require explicit
-Install and may require launcher Repair; there is no unattended recovery.
-Release identity and publication evidence:
-[Experiment 0061](experiments/0061-public-dynamic-profile-prerelease.md).
+On 2026-11-06 the user authorizes stable publication of the dynamic bridge plus
+manual-reinstall baseline, accepting the already disclosed activation issue.
+The bridge, auditor and MoltenVK bytes are unchanged from public 0.3.0-rc.1.
+Installer-native discovery and runtime independent profile validation cover
+compatible relocated Vulkan/host-pacing sites. Two normal Steam launches provide
+profile/17-redirect/79-150-180 structural evidence; one had initial focus loss
+and one began active normally. This is no activation fix or universal FPS claim.
+After official updates manual Install may be needed; a stale retained bridge
+requires launcher Repair. Automatic recovery, private attestation and experimental
+Steam entry mechanisms are not part of this stable package. See
+[Experiment 0207](experiments/0207-stable-dynamic-bridge-release.md).
 
 ## Production baseline identity
 
 | Component | Production baseline |
 |---|---|
-| Product | ESO MoltenVK Patcher 0.2.1 |
-| Current exact ESO client | Steam macOS ESO 12.1.5, databuild `3303624` (0.2.0: 12.0.8, databuild `3288357`) |
+| Product | ESO MoltenVK Patcher 0.3.0 |
+| Current exact ESO client | Steam macOS ESO 12.1.6, databuild `3309674` |
 | Extended gameplay client | Steam macOS ESO 12.0.7, databuild `3281538` |
 | Replacement runtime | Official MoltenVK 1.4.2 |
 | Bridge profile | `startup-compositor-neutralize-pacing-release`; inactive pacing bypass and bounded compositor repair |

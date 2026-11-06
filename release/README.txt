@@ -16,7 +16,7 @@ QUICK START
    capture for the next ESO launch. It changes no bridge, cache, or game setting.
 6. To uninstall, double-click Uninstall.command.
 
-Version 0.3.0-rc.1 is a prerelease for ESO 12.1.6, databuild 3309674,
+Version 0.3.0 is the stable dynamic-bridge release for ESO 12.1.6, databuild 3309674,
 validated on Apple M4 / macOS 27.0.1 through the normal Steam launch path.
 It discovers compatible relocated Vulkan and host-pacing connection points
 instead of requiring fixed addresses for each game update. At Install, the
@@ -25,7 +25,12 @@ the bridge independently re-discovers and verifies that plan before connecting
 all 17 Vulkan entry points. The pinned runtime remains MoltenVK 1.4.2 and the
 existing startup control and Balanced M4 settings template are unchanged.
 
-UPDATE RECOVERY STILL REQUIRES AN EXPLICIT INSTALL
+DYNAMIC ENTRY-POINT DISCOVERY AND UPDATE INSTALLATION
+
+The bridge and replacement MoltenVK are separate libraries. Dynamic discovery
+finds compatible connection points; it does not keep the game-bundle Bink load
+path alive if an official update replaces it. Your normal Steam launch path
+remains unchanged. No external Steam wrapper or automatic recovery is installed.
 
 After an official game update, close ESO and its launcher and run
 Install.command again. Compatible relocation changes can reuse this package;
@@ -39,7 +44,7 @@ the updater replaces the bridge.
 Known issue: initial application activation can fail intermittently, with low
 FPS and lost mouse focus. One 12.1.6 launch reproduced it; the next launched
 with normal initial activation. The first recovered after the user's app
-switch, but this prerelease does not fix or require that workaround. A
+switch, but this release does not fix or require that workaround. A
 first-run-only cause is unproven. Status's Last launch PASS checks bridge
 startup structure, not visual focus or measured FPS. No universal FPS or
 future-update compatibility guarantee is made.
@@ -85,8 +90,8 @@ never resumes from an unverified partially copied binary.
 Source, supported builds, and troubleshooting:
 https://github.com/meringue5/eso-moltenvk-patcher
 
-Stable release (0.2.1; older ESO target):
+Latest stable release:
 https://github.com/meringue5/eso-moltenvk-patcher/releases/latest
 
-This prerelease:
-https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0-rc.1
+This release:
+https://github.com/meringue5/eso-moltenvk-patcher/releases/tag/v0.3.0
